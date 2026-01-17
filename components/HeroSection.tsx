@@ -129,7 +129,7 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
           color: 'rgba(255, 255, 255, 0.8)',
           font: {
             size: 12,
-            weight: '600',
+            weight: 'bold' as const,
           },
         },
       },
@@ -143,7 +143,7 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
           padding: 20,
           font: {
             size: 13,
-            weight: '600',
+            weight: 'bold' as const,
           },
           usePointStyle: true,
         },
