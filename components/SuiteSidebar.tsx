@@ -176,7 +176,7 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
         <LayoutGroup>
           {/* Header */}
           <div className="relative p-4 border-b border-white/5">
-            <div className={`flex items-center gap-3 overflow-hidden transition-all duration-300 ${isCollapsed ? 'flex-col !gap-2' : ''}`}>
+            <div className={`flex items-center gap-3 overflow-hidden transition-all duration-300 w-full ${isCollapsed ? 'flex-col !gap-4' : ''}`}>
               {/* Suite Icon - always visible */}
               <motion.div
                 layout
@@ -195,7 +195,7 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
                   marginBottom: isCollapsed ? 0 : 0,
                 }}
                 transition={{ duration: 0.2, ease: 'easeOut' }}
-                className="overflow-hidden whitespace-nowrap flex-1"
+                className={`overflow-hidden whitespace-nowrap ${isCollapsed ? '' : 'flex-1'}`}
               >
                 <h1 className="text-base font-bold text-white">{suite.name}</h1>
                 <p className={`text-xs bg-gradient-to-r ${suite.gradient} bg-clip-text text-transparent font-medium`}>
@@ -207,10 +207,11 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
               <motion.button
                 layout
                 onClick={() => setIsCollapsed(!isCollapsed)}
-                className="p-2 rounded-lg hover:bg-white/5 transition-colors flex-shrink-0"
+                className={`p-2 rounded-lg transition-colors flex-shrink-0 ${isCollapsed ? 'w-full flex justify-center bg-white/5 hover:bg-white/10 hover:border-cyan-500/30' : 'hover:bg-white/5'}`}
                 title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               >
                 <motion.svg
+                  layout
                   animate={{ rotate: isCollapsed ? 180 : 0 }}
                   transition={{ duration: 0.2 }}
                   className="w-5 h-5 text-slate-400"
