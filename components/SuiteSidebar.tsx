@@ -176,64 +176,50 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
         <LayoutGroup>
           {/* Header */}
           <div className="relative p-4 border-b border-white/5">
-            <div className="flex items-center justify-between">
-              <AnimatePresence mode="wait">
-                {!isCollapsed && (
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    className="flex items-center gap-3"
-                  >
-                    <motion.div
-                      whileHover={{ scale: 1.05, rotate: 5 }}
-                      className={`w-10 h-10 rounded-xl bg-gradient-to-br ${suite.gradient} flex items-center justify-center shadow-lg`}
-                    >
-                      <span className="text-xl">{suite.icon}</span>
-                    </motion.div>
-                    <div>
-                      <h1 className="text-base font-bold text-white">{suite.name}</h1>
-                      <p className={`text-xs bg-gradient-to-r ${suite.gradient} bg-clip-text text-transparent font-medium`}>
-                        {suite.tagline}
-                      </p>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {isCollapsed && (
-                <motion.div
-                  initial={{ scale: 0.8 }}
-                  animate={{ scale: 1 }}
-                  className={`w-10 h-10 rounded-xl bg-gradient-to-br ${suite.gradient} flex items-center justify-center mx-auto`}
-                >
-                  <span className="text-xl">{suite.icon}</span>
-                </motion.div>
-              )}
-
-              {!isCollapsed && (
-                <button
-                  onClick={() => setIsCollapsed(!isCollapsed)}
-                  className="p-2 rounded-lg hover:bg-white/5 transition-colors"
-                >
-                  <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-                  </svg>
-                </button>
-              )}
-            </div>
-
-            {isCollapsed && (
-              <button
-                onClick={() => setIsCollapsed(false)}
-                className="w-full flex justify-center mt-2 p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-cyan-500/30 transition-all group"
-                title="Expand sidebar"
+            <div className="flex items-center gap-3 overflow-hidden">
+              {/* Suite Icon - always visible */}
+              <motion.div
+                layout
+                whileHover={{ scale: 1.05, rotate: 5 }}
+                className={`w-10 h-10 rounded-xl bg-gradient-to-br ${suite.gradient} flex items-center justify-center shadow-lg flex-shrink-0`}
               >
-                <svg className="w-5 h-5 text-slate-400 group-hover:text-cyan-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                </svg>
-              </button>
-            )}
+                <span className="text-xl">{suite.icon}</span>
+              </motion.div>
+
+              {/* Suite Text - animated opacity and width */}
+              <motion.div
+                animate={{
+                  opacity: isCollapsed ? 0 : 1,
+                  width: isCollapsed ? 0 : 'auto',
+                }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                className="overflow-hidden whitespace-nowrap flex-1"
+              >
+                <h1 className="text-base font-bold text-white">{suite.name}</h1>
+                <p className={`text-xs bg-gradient-to-r ${suite.gradient} bg-clip-text text-transparent font-medium`}>
+                  {suite.tagline}
+                </p>
+              </motion.div>
+
+              {/* Collapse/Expand Button */}
+              <motion.button
+                layout
+                onClick={() => setIsCollapsed(!isCollapsed)}
+                className="p-2 rounded-lg hover:bg-white/5 transition-colors flex-shrink-0"
+                title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              >
+                <motion.svg
+                  animate={{ rotate: isCollapsed ? 180 : 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="w-5 h-5 text-slate-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                </motion.svg>
+              </motion.button>
+            </div>
           </div>
 
           {/* Suite Switcher */}
