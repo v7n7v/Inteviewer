@@ -366,11 +366,36 @@ export default function HelpPage() {
             </AnimatePresence>
 
             {/* Easter Egg */}
-            <div className="absolute bottom-4 right-6 pointer-events-none opacity-20 hover:opacity-80 transition-opacity duration-300">
-                <p className="text-xs font-medium bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-                    made with love for sona ❤️
-                </p>
-            </div>
+            <motion.div
+                className="absolute bottom-4 right-6 pointer-events-auto cursor-default"
+                initial={{ opacity: 0.3 }}
+                whileHover={{ opacity: 1, scale: 1.05 }}
+            >
+                <motion.p
+                    className="text-xs font-bold bg-gradient-to-r from-pink-300 via-purple-300 to-cyan-300 bg-clip-text text-transparent flex items-center gap-1.5"
+                    whileHover={{
+                        textShadow: "0px 0px 8px rgba(244, 114, 182, 0.8), 0px 0px 15px rgba(168, 85, 247, 0.6)",
+                        x: [0, -2, 2, -1, 1, 0],
+                        transition: {
+                            x: { repeat: Infinity, duration: 0.2 },
+                            textShadow: { duration: 0.2 }
+                        }
+                    }}
+                >
+                    made with love for Sona
+                    <motion.span
+                        className="inline-block text-pink-500 drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]"
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{
+                            repeat: Infinity,
+                            duration: 0.8,
+                            ease: "easeInOut"
+                        }}
+                    >
+                        ❤️
+                    </motion.span>
+                </motion.p>
+            </motion.div>
         </div>
     );
 }
