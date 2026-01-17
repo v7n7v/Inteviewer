@@ -11,6 +11,7 @@ export interface QuestionData {
   keywords: string[];
   status: 'not-started' | 'in-progress' | 'completed';
   timestamp: string | null;
+  captureMode?: 'mic-only' | 'meeting';
 }
 
 interface AppState {
