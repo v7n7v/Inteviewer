@@ -364,6 +364,13 @@ export default function HelpPage() {
                     </div>
                 )}
             </AnimatePresence>
+
+            {/* Easter Egg */}
+            <div className="absolute bottom-4 right-6 pointer-events-none opacity-20 hover:opacity-80 transition-opacity duration-300">
+                <p className="text-xs font-medium bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                    made with love for sona ❤️
+                </p>
+            </div>
         </div>
     );
 }
