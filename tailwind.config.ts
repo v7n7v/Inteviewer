@@ -9,10 +9,11 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        'cyber-cyan': '#00f5ff',
-        'neon-blue': '#0099ff',
-        'electric-blue': '#3b82f6',
-        'obsidian': '#030303',
+        'obsidian': '#000000',
+        'charcoal': '#111111',
+        'silver': '#A1A1AA',
+        'vercel-blue': '#0070F3',
+        'hairline': 'rgba(255,255,255,0.1)',
       },
       fontFamily: {
         sans: ['var(--font-inter)', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
@@ -20,7 +21,7 @@ const config: Config = {
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
         'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
-        'mesh-gradient': 'linear-gradient(rgba(0, 245, 255, 0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 245, 255, 0.02) 1px, transparent 1px)',
+        'mesh-gradient': 'radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px)',
       },
       animation: {
         'float': 'float 20s ease-in-out infinite',
@@ -39,8 +40,8 @@ const config: Config = {
           '66%': { transform: 'translate(-30px, 30px) scale(0.9)' },
         },
         'pulse-glow': {
-          '0%, 100%': { boxShadow: '0 0 20px rgba(0, 245, 255, 0.3)' },
-          '50%': { boxShadow: '0 0 40px rgba(0, 245, 255, 0.6)' },
+          '0%, 100%': { boxShadow: '0 0 20px rgba(255, 255, 255, 0.1)' },
+          '50%': { boxShadow: '0 0 40px rgba(255, 255, 255, 0.2)' },
         },
         'gradient-flow': {
           '0%': { backgroundPosition: '0% center' },

@@ -78,7 +78,7 @@ export default function AnalyticsTab() {
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="text-center">
         <div className="w-16 h-16 rounded-full border-4 border-cyan-500/20 border-t-cyan-500 animate-spin mx-auto mb-4" />
-        <p className="text-slate-400">Loading candidates...</p>
+        <p className="text-silver">Loading candidates...</p>
       </div>
     </div>
   );
@@ -87,7 +87,7 @@ export default function AnalyticsTab() {
     <div className="p-8 rounded-2xl bg-red-500/10 border border-red-500/30 text-center">
       <span className="text-4xl mb-4 block">❌</span>
       <h3 className="text-xl font-bold text-red-400 mb-2">Error Loading Data</h3>
-      <p className="text-slate-400 mb-4">{error}</p>
+      <p className="text-silver mb-4">{error}</p>
       <button onClick={fetchCandidates} className="px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold transition-colors">Retry</button>
     </div>
   );
@@ -97,7 +97,7 @@ export default function AnalyticsTab() {
       <div className="space-y-6">
         {/* Hero Header */}
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900/90 via-slate-800/50 to-blue-900/20 border border-white/10 p-8"
+          className="relative overflow-hidden rounded-3xl bg-[#0A0A0A] to-blue-900/20 border border-white/10 p-8"
         >
           <div className="absolute inset-0 opacity-30">
             <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl" />
@@ -111,7 +111,7 @@ export default function AnalyticsTab() {
               <span className="text-xs font-medium text-blue-400">Phase 4 • Data Intelligence</span>
             </motion.div>
             <h1 className="text-4xl lg:text-5xl font-bold mb-3"><span className="text-gradient">Analytics</span></h1>
-            <p className="text-slate-400 text-lg max-w-xl">Candidate comparison, leaderboards, and exportable reports</p>
+            <p className="text-silver text-lg max-w-xl">Candidate comparison, leaderboards, and exportable reports</p>
           </div>
         </motion.div>
 
@@ -124,18 +124,18 @@ export default function AnalyticsTab() {
             { icon: '🏆', label: 'Top Candidate', value: stats.topCandidate?.name.substring(0, 15) || 'N/A', color: 'green', sub: stats.topCandidate ? `${calcAvg(stats.topCandidate.humanGrades).toFixed(1)}/10` : '' },
           ].map((stat, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-              className={`p-5 rounded-2xl bg-gradient-to-br from-slate-900/80 to-${stat.color}-900/10 border border-${stat.color}-500/20`}
+              className={`p-5 rounded-2xl bg-[#0A0A0A] to-${stat.color}-900/10 border border-${stat.color}-500/20`}
             >
               <div className="flex items-center gap-3">
                 <div className={`w-12 h-12 rounded-xl bg-${stat.color}-500/20 flex items-center justify-center`}>
                   <span className="text-2xl">{stat.icon}</span>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-500">{stat.label}</p>
+                  <p className="text-xs text-silver">{stat.label}</p>
                   <p className={`text-xl font-bold ${stat.color === 'cyan' ? 'text-cyan-400' : stat.color === 'blue' ? 'text-blue-400' : 'text-green-400'}`}>
                     {stat.value}
                   </p>
-                  {stat.sub && <p className="text-xs text-slate-500">{stat.sub}</p>}
+                  {stat.sub && <p className="text-xs text-silver">{stat.sub}</p>}
                 </div>
               </div>
             </motion.div>
@@ -145,7 +145,7 @@ export default function AnalyticsTab() {
         {/* Comparison Chart */}
         {candidates.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-            className="rounded-2xl bg-gradient-to-br from-slate-900/80 to-cyan-900/10 border border-cyan-500/20 overflow-hidden"
+            className="rounded-2xl bg-[#0A0A0A] to-cyan-900/10 border border-cyan-500/20 overflow-hidden"
           >
             <div className="p-6 border-b border-white/5 flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -154,7 +154,7 @@ export default function AnalyticsTab() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white">Score Comparison</h3>
-                  <p className="text-sm text-slate-400">Top 8 candidates (Human vs AI)</p>
+                  <p className="text-sm text-silver">Top 8 candidates (Human vs AI)</p>
                 </div>
               </div>
               <button onClick={() => window.print()}
@@ -167,7 +167,7 @@ export default function AnalyticsTab() {
 
         {/* Candidate Matrix */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-          className="rounded-2xl bg-gradient-to-br from-slate-900/80 to-slate-800/50 border border-white/10 overflow-hidden"
+          className="rounded-2xl bg-[#0A0A0A] border border-white/10 overflow-hidden"
         >
           <div className="p-6 border-b border-white/5 flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -176,7 +176,7 @@ export default function AnalyticsTab() {
               </div>
               <div>
                 <h3 className="text-xl font-bold text-white">Candidate Leaderboard</h3>
-                <p className="text-sm text-slate-400">{candidates.length} candidates</p>
+                <p className="text-sm text-silver">{candidates.length} candidates</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -198,7 +198,7 @@ export default function AnalyticsTab() {
               <div className="text-center py-12">
                 <span className="text-6xl block mb-4">📭</span>
                 <h3 className="text-xl font-bold text-white mb-2">No Candidates Yet</h3>
-                <p className="text-slate-400">Complete interviews to see them here.</p>
+                <p className="text-silver">Complete interviews to see them here.</p>
               </div>
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -213,7 +213,7 @@ export default function AnalyticsTab() {
                       <div className="flex items-start justify-between mb-4">
                         <div>
                           <h4 className="font-bold text-white group-hover:text-cyan-400 transition-colors">{c.name}</h4>
-                          {c.timestamp && <p className="text-xs text-slate-500">{new Date(c.timestamp).toLocaleDateString()}</p>}
+                          {c.timestamp && <p className="text-xs text-silver">{new Date(c.timestamp).toLocaleDateString()}</p>}
                         </div>
                         <span className={`text-xs font-bold px-2 py-1 rounded-full ${
                           hAvg >= 8 ? 'bg-green-500/20 text-green-400' : hAvg >= 6 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'
@@ -221,15 +221,15 @@ export default function AnalyticsTab() {
                       </div>
                       <div className="space-y-2">
                         <div>
-                          <div className="flex justify-between text-xs mb-1"><span className="text-slate-500">Human</span><span className="text-cyan-400">{hAvg.toFixed(1)}</span></div>
+                          <div className="flex justify-between text-xs mb-1"><span className="text-silver">Human</span><span className="text-cyan-400">{hAvg.toFixed(1)}</span></div>
                           <div className="h-2 bg-white/5 rounded-full overflow-hidden"><div className="h-full bg-cyan-500/60 rounded-full" style={{ width: `${hAvg * 10}%` }} /></div>
                         </div>
                         <div>
-                          <div className="flex justify-between text-xs mb-1"><span className="text-slate-500">AI</span><span className="text-blue-400">{aAvg.toFixed(1)}</span></div>
+                          <div className="flex justify-between text-xs mb-1"><span className="text-silver">AI</span><span className="text-blue-400">{aAvg.toFixed(1)}</span></div>
                           <div className="h-2 bg-white/5 rounded-full overflow-hidden"><div className="h-full bg-blue-500/60 rounded-full" style={{ width: `${aAvg * 10}%` }} /></div>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between text-xs text-slate-500 pt-3 mt-3 border-t border-white/10">
+                      <div className="flex items-center justify-between text-xs text-silver pt-3 mt-3 border-t border-white/10">
                         <span>{c.questions.length} Qs</span>
                         <span>{c.riskFactors.length} risks</span>
                       </div>
@@ -251,7 +251,7 @@ export default function AnalyticsTab() {
           >
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 border border-white/10"
+              className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl bg-[#0A0A0A] border border-white/10"
             >
               <div className="p-6 border-b border-white/10 flex items-center justify-between sticky top-0 bg-slate-900/95 backdrop-blur-sm">
                 <div className="flex items-center gap-3">
@@ -260,11 +260,11 @@ export default function AnalyticsTab() {
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-white">{selectedCandidate.name}</h3>
-                    {selectedCandidate.timestamp && <p className="text-xs text-slate-500">{new Date(selectedCandidate.timestamp).toLocaleString()}</p>}
+                    {selectedCandidate.timestamp && <p className="text-xs text-silver">{new Date(selectedCandidate.timestamp).toLocaleString()}</p>}
                   </div>
                 </div>
                 <button onClick={() => setSelectedCandidate(null)} className="p-2 rounded-lg hover:bg-white/10 transition-colors">
-                  <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
+                  <svg className="w-5 h-5 text-silver" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
               </div>
               <div className="p-6 space-y-6">
@@ -274,7 +274,7 @@ export default function AnalyticsTab() {
                     <h4 className="font-bold text-white mb-4">Human Assessment</h4>
                     {Object.entries(selectedCandidate.humanGrades).map(([k, v]) => (
                       <div key={k} className="flex items-center justify-between py-1">
-                        <span className="text-sm text-slate-400 capitalize">{k.replace(/([A-Z])/g, ' $1').trim()}</span>
+                        <span className="text-sm text-silver capitalize">{k.replace(/([A-Z])/g, ' $1').trim()}</span>
                         <span className="text-sm font-bold text-cyan-400">{v.toFixed(1)}</span>
                       </div>
                     ))}
@@ -288,7 +288,7 @@ export default function AnalyticsTab() {
                     <h4 className="font-bold text-white mb-4">AI Assessment</h4>
                     {Object.entries(selectedCandidate.aiGrades).map(([k, v]) => (
                       <div key={k} className="flex items-center justify-between py-1">
-                        <span className="text-sm text-slate-400 capitalize">{k.replace(/([A-Z])/g, ' $1').trim()}</span>
+                        <span className="text-sm text-silver capitalize">{k.replace(/([A-Z])/g, ' $1').trim()}</span>
                         <span className="text-sm font-bold text-blue-400">{v.toFixed(1)}</span>
                       </div>
                     ))}
@@ -301,7 +301,7 @@ export default function AnalyticsTab() {
                 {selectedCandidate.notes && (
                   <div className="p-5 rounded-xl bg-white/5 border border-white/10">
                     <h4 className="font-bold text-white mb-2">Notes</h4>
-                    <p className="text-sm text-slate-300 whitespace-pre-wrap">{selectedCandidate.notes}</p>
+                    <p className="text-sm text-silver whitespace-pre-wrap">{selectedCandidate.notes}</p>
                   </div>
                 )}
                 {selectedCandidate.riskFactors.length > 0 && (
@@ -310,7 +310,7 @@ export default function AnalyticsTab() {
                     {selectedCandidate.riskFactors.map((rf, i) => (
                       <div key={i} className="flex items-start gap-2 py-1">
                         <span>{rf.level === 'high' ? '🔴' : rf.level === 'medium' ? '🟡' : '🟢'}</span>
-                        <p className="text-sm text-slate-300">{rf.description}</p>
+                        <p className="text-sm text-silver">{rf.description}</p>
                       </div>
                     ))}
                   </div>

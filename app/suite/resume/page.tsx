@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { groqCompletion, groqJSONCompletion } from '@/lib/ai/groq-client';
-import { saveResumeVersion, getResumeVersions, createJobApplication, type ResumeVersion } from '@/lib/database-suite';
+import { saveResumeVersion, getResumeVersions, createJobApplication, deleteResumeVersion, type ResumeVersion } from '@/lib/database-suite';
 import { useStore } from '@/lib/store';
 import { showToast } from '@/components/Toast';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -58,7 +58,7 @@ const TEMPLATES = [
 
 // Skill categories for builder
 const SKILL_CATEGORIES = [
-  'Technical', 'Programming Languages', 'Frameworks', 'Tools & Platforms', 
+  'Technical', 'Programming Languages', 'Frameworks', 'Tools & Platforms',
   'Soft Skills', 'Leadership', 'Languages', 'Certifications'
 ];
 
@@ -76,11 +76,13 @@ export default function LiquidResumePage() {
   const [matchScore, setMatchScore] = useState<number | null>(null);
   const [morphPercentage, setMorphPercentage] = useState<number>(75);
   const [versions, setVersions] = useState<ResumeVersion[]>([]);
+  const [vaultSortOrder, setVaultSortOrder] = useState<'date' | 'name' | 'score'>('date');
   const [dragActive, setDragActive] = useState(false);
   const [buildStep, setBuildStep] = useState(0); // For guided builder
   const [aiSuggesting, setAiSuggesting] = useState(false);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [applicationData, setApplicationData] = useState({ companyName: '', jobTitle: '', notes: '' });
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const resumeRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -152,11 +154,22 @@ Extract as much detail as possible. For achievements, focus on quantifiable resu
     return await groqJSONCompletion<ResumeData>(systemPrompt, `Parse this resume:\n\n${text}`, { temperature: 0.3, maxTokens: 4096 });
   };
 
+  const extractCompanyFromJD = async (jd: string): Promise<string> => {
+    try {
+      const res = await groqJSONCompletion<{ company: string }>(
+        'Extract the Company Name from this Job Description. If none found, return empty string.',
+        `JOB DESCRIPTION:\n${jd.substring(0, 2000)}\n\nReturn JSON: { "company": "Name" }`,
+        { temperature: 0, maxTokens: 50 }
+      );
+      return res.company || '';
+    } catch { return ''; }
+  };
+
   const morphResumeToJD = async (resume: ResumeData, jd: string, percentage: number): Promise<{ morphed: ResumeData; score: number }> => {
     // Calculate exact proportions based on percentage
     const keepOriginal = 100 - percentage; // How much to keep from original
     const alignToJD = percentage; // How much to align to JD
-    
+
     const systemPrompt = `You are an expert resume writer. Your task is to BLEND the original resume with job description requirements using EXACT proportions.
 
 ═══════════════════════════════════════════════════════════════
@@ -169,45 +182,46 @@ QUANTITATIVE RULES - FOLLOW EXACTLY:
    - Keep ${keepOriginal}% of original wording/structure
    - Modify ${alignToJD}% to include JD keywords and requirements
    ${percentage <= 30 ? '→ Only add 1-2 keywords, keep original tone completely' :
-     percentage <= 50 ? '→ Blend in 3-4 JD keywords while preserving core message' :
-     percentage <= 70 ? '→ Rewrite to emphasize JD requirements while keeping facts' :
-     '→ Fully rewrite as a pitch for this specific role'}
+        percentage <= 50 ? '→ Blend in 3-4 JD keywords while preserving core message' :
+          percentage <= 70 ? '→ Rewrite to emphasize JD requirements while keeping facts' :
+            '→ Fully rewrite as a pitch for this specific role'}
 
 2. EXPERIENCE BULLET POINTS (${percentage}% morph per bullet):
    - For each achievement, keep ${keepOriginal}% of original phrasing
    - Modify ${alignToJD}% to align with JD requirements
    ${percentage <= 30 ? '→ Change only 1-2 words per bullet to add keywords' :
-     percentage <= 50 ? '→ Rephrase about half of each bullet to match JD language' :
-     percentage <= 70 ? '→ Significantly reword bullets to emphasize relevant skills' :
-     '→ Completely rewrite bullets to maximize JD alignment'}
+        percentage <= 50 ? '→ Rephrase about half of each bullet to match JD language' :
+          percentage <= 70 ? '→ Significantly reword bullets to emphasize relevant skills' :
+            '→ Completely rewrite bullets to maximize JD alignment'}
 
 3. SKILLS SECTION (${percentage}% morph):
    - Keep ${keepOriginal}% of original skills in their original order
    - Reorder/add ${alignToJD}% to prioritize JD-relevant skills
    ${percentage <= 30 ? '→ Keep original order, maybe add 1 relevant skill' :
-     percentage <= 50 ? '→ Move top JD skills higher, add 2-3 relevant skills' :
-     percentage <= 70 ? '→ Reorganize to lead with JD skills, add several relevant ones' :
-     '→ Fully reorganize around JD requirements, add all applicable skills'}
+        percentage <= 50 ? '→ Move top JD skills higher, add 2-3 relevant skills' :
+          percentage <= 70 ? '→ Reorganize to lead with JD skills, add several relevant ones' :
+            '→ Fully reorganize around JD requirements, add all applicable skills'}
 
 4. OVERALL KEYWORD DENSITY:
    - Target: Insert JD keywords into ${Math.round(percentage / 10)} out of every 10 sentences
    ${percentage <= 30 ? '→ Very light keyword insertion (1-2 per section)' :
-     percentage <= 50 ? '→ Moderate keyword insertion (3-4 per section)' :
-     percentage <= 70 ? '→ Heavy keyword insertion (5-6 per section)' :
-     '→ Maximum keyword density while staying natural'}
+        percentage <= 50 ? '→ Moderate keyword insertion (3-4 per section)' :
+          percentage <= 70 ? '→ Heavy keyword insertion (5-6 per section)' :
+            '→ Maximum keyword density while staying natural'}
 
-ABSOLUTE RULES (never break):
 ✓ NEVER fabricate companies, dates, degrees, or job titles
 ✓ NEVER add skills the candidate couldn't reasonably have
 ✓ NEVER change factual information (numbers, metrics, dates)
-✓ Keep professional tone regardless of morph percentage
+✓ CRITICAL: Write as HUMANLY as possible. Avoid "robot" words like "leveraged", "utilized", "synergized" unless present in original.
+✓ Keep professional tone but maintain the candidate's authentic voice.
+
 
 EXAMPLE at ${percentage}%:
 Original bullet: "Managed a team of 5 engineers to deliver projects on time"
 ${percentage <= 30 ? 'Morphed: "Managed a team of 5 engineers to deliver projects on time" (minimal change, maybe add 1 keyword)' :
-  percentage <= 50 ? 'Morphed: "Led a cross-functional team of 5 engineers to deliver [JD-relevant] projects on schedule"' :
-  percentage <= 70 ? 'Morphed: "Spearheaded a team of 5 engineers, driving [JD-specific outcomes] and ensuring on-time delivery"' :
-  'Morphed: "Directed high-performing team of 5 engineers, achieving [JD-aligned metrics] through [JD-methodology]"'}
+        percentage <= 50 ? 'Morphed: "Led a cross-functional team of 5 engineers to deliver [JD-relevant] projects on schedule"' :
+          percentage <= 70 ? 'Morphed: "Spearheaded a team of 5 engineers, driving [JD-specific outcomes] and ensuring on-time delivery"' :
+            'Morphed: "Directed high-performing team of 5 engineers, achieving [JD-aligned metrics] through [JD-methodology]"'}
 
 Return JSON:
 {
@@ -271,9 +285,20 @@ Apply EXACTLY ${percentage}% morphing as specified above.`,
       const { morphed, score } = await morphResumeToJD(originalResume, jobDescription, morphPercentage);
       setMorphedResume(morphed);
       setMatchScore(score);
+      setMorphedResume(morphed);
+      setMatchScore(score);
       showToast(`Resume morphed! ${score}% match`, '✅');
+
+      // Extract company name automatically
+      if (!applicationData.companyName) {
+        const extractedCompany = await extractCompanyFromJD(jobDescription);
+        if (extractedCompany) {
+          setApplicationData(prev => ({ ...prev, companyName: extractedCompany }));
+        }
+      }
+
       // Show application modal instead of going to template
-      setShowApplicationModal(true);
+      setStep('template');
     } catch (error) {
       console.error('Morph error:', error);
       showToast('Failed to morph resume', '❌');
@@ -287,7 +312,7 @@ Apply EXACTLY ${percentage}% morphing as specified above.`,
       showToast('Please enter a company name', '❌');
       return;
     }
-    
+
     setIsLoading(true);
     try {
       const result = await createJobApplication({
@@ -297,7 +322,7 @@ Apply EXACTLY ${percentage}% morphing as specified above.`,
         morphedResumeName: `${applicationData.companyName} - ${morphedResume?.title || 'Resume'}`,
         talentDensityScore: matchScore || undefined,
       });
-      
+
       if (result.success) {
         showToast('Application created! Redirecting...', '🎉');
         setShowApplicationModal(false);
@@ -333,7 +358,7 @@ Experience: ${buildResume.experience.map(e => `${e.role} at ${e.company}`).join(
 Skills: ${buildResume.skills.flatMap(s => s.items).join(', ') || 'Multiple skills'}
 
 Write in first person, be confident, and highlight value proposition. Return ONLY the summary text.`;
-      
+
       const summary = await groqCompletion('You are an expert resume writer.', prompt, { temperature: 0.7, maxTokens: 200 });
       setBuildResume({ ...buildResume, summary: summary.trim() });
       showToast('Summary generated!', '✨');
@@ -420,9 +445,31 @@ Return a JSON object with categorized skills:
     const name = prompt('Enter version name:', `${resumeToSave.title || 'My Resume'}`);
     if (!name) return;
     try {
-      const result = await saveResumeVersion(name, resumeToSave as any, { matchScore, template: selectedTemplate.id }, 'technical');
+      const result = await saveResumeVersion(name, resumeToSave as any, { matchScore, template: selectedTemplate.id, morphPercentage }, 'technical');
       if (result.success) { showToast('Saved!', '✅'); loadVersions(); }
     } catch { showToast('Save failed', '❌'); }
+  };
+
+  const handleDeleteVersion = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setDeleteConfirmId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirmId) return;
+    try {
+      const result = await deleteResumeVersion(deleteConfirmId);
+      if (result.success) {
+        showToast('Version deleted', '🗑️');
+        loadVersions();
+      } else {
+        showToast('Failed to delete', '❌');
+      }
+    } catch {
+      showToast('Error deleting version', '❌');
+    } finally {
+      setDeleteConfirmId(null);
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -451,7 +498,7 @@ Return a JSON object with categorized skills:
       <div className="glass-card p-12 text-center max-w-md">
         <span className="text-6xl mb-4 block">🔒</span>
         <h2 className="text-2xl font-bold text-white mb-3">Sign In Required</h2>
-        <p className="text-slate-400">Please sign in to access the Resume Builder</p>
+        <p className="text-silver">Please sign in to access the Resume Builder</p>
       </div>
     </div>
   );
@@ -460,7 +507,7 @@ Return a JSON object with categorized skills:
     <div className="min-h-screen p-6 lg:p-8">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900/90 via-slate-800/50 to-cyan-900/20 border border-white/10 p-8 mb-8"
+        className="relative overflow-hidden rounded-3xl bg-[#0A0A0A] to-cyan-900/20 border border-white/10 p-8 mb-8"
       >
         <div className="absolute inset-0 opacity-20">
           <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/30 rounded-full blur-3xl" />
@@ -475,10 +522,10 @@ Return a JSON object with categorized skills:
             <h1 className="text-4xl lg:text-5xl font-bold mb-3">
               <span className="text-gradient">Liquid Resume Architect</span>
             </h1>
-            <p className="text-slate-400 text-lg max-w-2xl">
+            <p className="text-silver text-lg max-w-2xl">
               {mode === 'choose' ? 'Morph your existing resume or build a stunning new one from scratch' :
-               mode === 'morph' ? 'Upload → Match to JD → Download tailored resume' :
-               'Build your professional resume step by step with AI assistance'}
+                mode === 'morph' ? 'Upload → Match to JD → Download tailored resume' :
+                  'Build your professional resume step by step with AI assistance'}
             </p>
           </div>
           {mode !== 'choose' && (
@@ -499,19 +546,19 @@ Return a JSON object with categorized skills:
                 onClick={() => { setMode('morph'); setStep('upload'); }}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="group relative p-8 rounded-3xl bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border-2 border-cyan-500/30 hover:border-cyan-400 text-left transition-all overflow-hidden"
+                className="group relative p-8 rounded-3xl bg-[#0A0A0A] border border-white/10 hover:border-[#0070F3]/50 text-left transition-all overflow-hidden"
               >
-                <div className="absolute top-0 right-0 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl group-hover:bg-cyan-500/20 transition-colors" />
+                <div className="absolute top-0 right-0 w-40 h-40 bg-[#0070F3]/5 rounded-full blur-3xl group-hover:bg-[#0070F3]/10 transition-colors" />
                 <div className="relative">
-                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center mb-6 shadow-lg shadow-cyan-500/25">
+                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#0070F3] to-[#0070F3]/60 flex items-center justify-center mb-6 shadow-lg shadow-[#0070F3]/25">
                     <span className="text-4xl">🔄</span>
                   </div>
                   <h2 className="text-2xl font-bold text-white mb-2">Morph Existing Resume</h2>
-                  <p className="text-slate-400 mb-4">Upload your resume and let AI tailor it perfectly to any job description</p>
+                  <p className="text-silver mb-4">Upload your resume and let AI tailor it perfectly to any job description</p>
                   <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-1 rounded-full bg-white/10 text-xs text-slate-300">📄 PDF/Word</span>
-                    <span className="px-3 py-1 rounded-full bg-white/10 text-xs text-slate-300">🧠 AI Rewrite</span>
-                    <span className="px-3 py-1 rounded-full bg-white/10 text-xs text-slate-300">📊 Match Score</span>
+                    <span className="px-3 py-1 rounded-full bg-[#111111] border border-white/10 text-xs text-silver">📄 PDF/Word</span>
+                    <span className="px-3 py-1 rounded-full bg-[#111111] border border-white/10 text-xs text-silver">🧠 AI Rewrite</span>
+                    <span className="px-3 py-1 rounded-full bg-[#111111] border border-white/10 text-xs text-silver">📊 Match Score</span>
                   </div>
                 </div>
               </motion.button>
@@ -521,38 +568,102 @@ Return a JSON object with categorized skills:
                 onClick={() => { setMode('create'); setStep('build'); setBuildStep(0); }}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="group relative p-8 rounded-3xl bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border-2 border-cyan-500/30 hover:border-cyan-400 text-left transition-all overflow-hidden"
+                className="group relative p-8 rounded-3xl bg-[#0A0A0A] border border-white/10 hover:border-[#0070F3]/50 text-left transition-all overflow-hidden"
               >
-                <div className="absolute top-0 right-0 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl group-hover:bg-cyan-500/20 transition-colors" />
+                <div className="absolute top-0 right-0 w-40 h-40 bg-[#0070F3]/5 rounded-full blur-3xl group-hover:bg-[#0070F3]/10 transition-colors" />
                 <div className="relative">
-                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center mb-6 shadow-lg shadow-cyan-500/25">
+                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#0070F3] to-[#0070F3]/60 flex items-center justify-center mb-6 shadow-lg shadow-[#0070F3]/25">
                     <span className="text-4xl">✨</span>
                   </div>
                   <h2 className="text-2xl font-bold text-white mb-2">Build From Scratch</h2>
-                  <p className="text-slate-400 mb-4">Create a stunning resume step by step with AI-powered suggestions</p>
+                  <p className="text-silver mb-4">Create a stunning resume step by step with AI-powered suggestions</p>
                   <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-1 rounded-full bg-white/10 text-xs text-slate-300">✏️ Guided Builder</span>
-                    <span className="px-3 py-1 rounded-full bg-white/10 text-xs text-slate-300">💡 AI Suggestions</span>
-                    <span className="px-3 py-1 rounded-full bg-white/10 text-xs text-slate-300">🎨 5 Templates</span>
+                    <span className="px-3 py-1 rounded-full bg-[#111111] border border-white/10 text-xs text-silver">✏️ Guided Builder</span>
+                    <span className="px-3 py-1 rounded-full bg-[#111111] border border-white/10 text-xs text-silver">💡 AI Suggestions</span>
+                    <span className="px-3 py-1 rounded-full bg-[#111111] border border-white/10 text-xs text-silver">🎨 5 Templates</span>
                   </div>
                 </div>
               </motion.button>
             </div>
 
             {/* Recent Versions */}
+            {/* Recent Versions Redesigned */}
             {versions.length > 0 && (
-              <div className="rounded-2xl bg-white/5 border border-white/10 p-6">
-                <h3 className="font-bold text-white mb-4">📁 Recent Versions</h3>
-                <div className="grid md:grid-cols-3 gap-3">
-                  {versions.slice(0, 6).map((v) => (
-                    <button key={v.id} onClick={() => {
-                      setBuildResume(v.content as any);
-                      setMode('create');
-                      setStep('template');
-                    }} className="p-4 rounded-xl bg-white/5 hover:bg-white/10 text-left transition-colors">
-                      <p className="font-medium text-white truncate">{v.version_name}</p>
-                      <p className="text-xs text-slate-500">{new Date(v.created_at).toLocaleDateString()}</p>
-                    </button>
+              <div className="mt-12">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="h-px bg-white/10 flex-1" />
+                  <h3 className="text-silver font-medium text-sm tracking-widest uppercase">My Resume Vault</h3>
+                  <div className="h-px bg-white/10 flex-1" />
+
+                  {/* Sort Dropdown */}
+                  <select
+                    value={vaultSortOrder}
+                    onChange={(e) => setVaultSortOrder(e.target.value as any)}
+                    className="px-3 py-1.5 rounded-lg bg-[#111111] border border-white/10 text-silver text-xs focus:outline-none focus:border-cyan-500/50 cursor-pointer"
+                  >
+                    <option value="date">📅 By Date</option>
+                    <option value="name">📝 By Name</option>
+                    <option value="score">📊 By Match %</option>
+                  </select>
+                </div>
+
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 max-h-[600px] overflow-y-auto pr-2">
+                  {[...versions].sort((a, b) => {
+                    if (vaultSortOrder === 'date') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+                    if (vaultSortOrder === 'name') return a.version_name.localeCompare(b.version_name);
+                    if (vaultSortOrder === 'score') return ((b as any).matchScore || 0) - ((a as any).matchScore || 0);
+                    return 0;
+                  }).map((v) => (
+                    <motion.button
+                      key={v.id}
+                      onClick={() => {
+                        setBuildResume(v.content as any);
+                        setMode('create');
+                        setStep('template');
+                      }}
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="group relative flex flex-col items-start p-5 rounded-2xl bg-[#111111] border border-white/5 hover:border-cyan-500/30 hover:shadow-xl hover:shadow-cyan-500/10 transition-all text-left overflow-hidden"
+                    >
+                      <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                        <button
+                          onClick={(e) => handleDeleteVersion(e, v.id)}
+                          className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors"
+                          title="Delete Version"
+                        >
+                          🗑️
+                        </button>
+                        <span className="p-2 text-xl">↗</span>
+                      </div>
+
+                      {/* Match Score & Morph Badge */}
+                      <div className="flex gap-2 mb-3">
+                        {v.matchScore && (
+                          <div className="px-2 py-1 rounded-md bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-bold">
+                            {v.matchScore}% Match
+                          </div>
+                        )}
+                        {(v.skill_graph as any)?.morphPercentage && (
+                          <div className="px-2 py-1 rounded-md bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-bold">
+                            🧬 {(v.skill_graph as any).morphPercentage}% Morph
+                          </div>
+                        )}
+                        {!v.matchScore && !(v.skill_graph as any)?.morphPercentage && (
+                          <div className="px-2 py-1 rounded-md bg-white/5 border border-white/10 text-silver text-xs font-bold">
+                            Draft
+                          </div>
+                        )}
+                      </div>
+
+                      <h4 className="font-bold text-white text-lg truncate w-full mb-1 group-hover:text-cyan-400 transition-colors">
+                        {v.version_name}
+                      </h4>
+                      <p className="text-xs text-silver mt-auto flex items-center gap-2">
+                        <span>📅 {new Date(v.created_at).toLocaleDateString()}</span>
+                        <span>•</span>
+                        <span>{(v.content as any).title || 'Resume'}</span>
+                      </p>
+                    </motion.button>
                   ))}
                 </div>
               </div>
@@ -580,11 +691,10 @@ Return a JSON object with categorized skills:
                         else if (s.id === 'template' && morphedResume) setStep('template');
                         else if (s.id === 'preview' && morphedResume) setStep('preview');
                       }}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${
-                        step === s.id ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white' :
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${step === s.id ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white' :
                         (s.id === 'upload' || (s.id === 'jd' && originalResume) || ((s.id === 'template' || s.id === 'preview') && morphedResume))
-                          ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-white/5 text-slate-500'
-                      }`}
+                          ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-[#111111] text-silver'
+                        }`}
                     >
                       <span>{s.icon}</span>
                       <span className="text-sm font-medium hidden md:inline">{s.label}</span>
@@ -607,23 +717,22 @@ Return a JSON object with categorized skills:
                         onDragLeave={() => setDragActive(false)}
                         onDrop={handleDrop}
                         onClick={() => fileInputRef.current?.click()}
-                        className={`rounded-2xl border-2 border-dashed p-12 text-center cursor-pointer transition-all ${
-                          dragActive ? 'border-cyan-400 bg-cyan-500/10' : 'border-white/20 hover:border-white/40 bg-white/5'
-                        }`}
+                        className={`rounded-2xl border-2 border-dashed p-12 text-center cursor-pointer transition-all ${dragActive ? 'border-cyan-400 bg-cyan-500/10' : 'border-white/20 hover:border-white/40 bg-[#111111]'
+                          }`}
                       >
                         <input ref={fileInputRef} type="file" accept=".pdf,.docx,.doc,.txt" onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])} className="hidden" />
                         <div className="w-24 h-24 mx-auto rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center mb-6">
                           <svg className="w-12 h-12 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                           </svg>
                         </div>
                         <h3 className="text-2xl font-bold text-white mb-2">{dragActive ? 'Drop it!' : 'Upload Resume'}</h3>
-                        <p className="text-slate-400 mb-6">Drag & drop or click to browse</p>
-                        <div className="flex justify-center gap-6 text-sm text-slate-500">
+                        <p className="text-silver mb-6">Drag & drop or click to browse</p>
+                        <div className="flex justify-center gap-6 text-sm text-silver">
                           <span>📄 PDF</span><span>📘 Word</span><span>📝 TXT</span>
                         </div>
                       </div>
-                      <div className="rounded-2xl bg-white/5 border border-white/10 p-6">
+                      <div className="rounded-2xl bg-[#111111] border border-white/10 p-6">
                         <h3 className="text-lg font-bold text-white mb-4">✨ How Morphing Works</h3>
                         <div className="space-y-4">
                           {[
@@ -638,7 +747,7 @@ Return a JSON object with categorized skills:
                               </div>
                               <div>
                                 <h4 className="font-semibold text-white">{item.title}</h4>
-                                <p className="text-sm text-slate-400">{item.desc}</p>
+                                <p className="text-sm text-silver">{item.desc}</p>
                               </div>
                             </div>
                           ))}
@@ -652,68 +761,112 @@ Return a JSON object with categorized skills:
                 {step === 'jd' && originalResume && (
                   <motion.div key="jd" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
                     <div className="grid lg:grid-cols-2 gap-6">
-                      <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
+                      <div className="rounded-2xl bg-[#111111] border border-white/10 overflow-hidden">
                         <div className="p-6 border-b border-white/10">
                           <h3 className="text-lg font-bold text-white">Your Resume ✅</h3>
                         </div>
                         <div className="p-6 max-h-[500px] overflow-y-auto">
                           <h4 className="text-2xl font-bold text-white">{originalResume.name}</h4>
                           <p className="text-cyan-400">{originalResume.title}</p>
-                          <p className="text-sm text-slate-400 mt-1">{originalResume.email}</p>
-                          <div className="mt-4 p-3 rounded-lg bg-white/5">
-                            <p className="text-sm text-slate-300">{originalResume.summary}</p>
+                          <p className="text-sm text-silver mt-1">{originalResume.email}</p>
+                          <div className="mt-4 p-3 rounded-lg bg-[#111111]">
+                            <p className="text-sm text-silver">{originalResume.summary}</p>
                           </div>
                           <div className="mt-4">
-                            <p className="text-sm text-slate-400 mb-2">{originalResume.experience?.length} experiences • {originalResume.skills?.flatMap(s => s.items).length} skills</p>
+                            <p className="text-sm text-silver mb-2">{originalResume.experience?.length} experiences • {originalResume.skills?.flatMap(s => s.items).length} skills</p>
                           </div>
                         </div>
                       </div>
-                      <div className="rounded-2xl bg-gradient-to-br from-slate-900/80 to-blue-900/10 border border-blue-500/20 overflow-hidden">
+                      <div className="rounded-2xl bg-[#0A0A0A] to-blue-900/10 border border-blue-500/20 overflow-hidden">
                         <div className="p-6 border-b border-white/10">
                           <h3 className="text-lg font-bold text-white">Target Job Description</h3>
                         </div>
                         <div className="p-6">
                           <textarea value={jobDescription} onChange={(e) => setJobDescription(e.target.value)} rows={10}
-                            className="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-slate-300 focus:border-blue-500/50 focus:outline-none resize-none mb-4"
+                            className="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-silver focus:border-blue-500/50 focus:outline-none resize-none mb-4"
                             placeholder="Paste the job description here..."
                           />
-                          
-                          {/* Morph Percentage Slider */}
-                          <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/20">
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center gap-2">
-                                <span className="text-lg">🎚️</span>
-                                <span className="font-semibold text-white">Morph Intensity</span>
+
+                          {/* Premium Morph Intensity Meter */}
+                          <div className="mb-8 p-6 rounded-2xl bg-[#0F0F0F] border border-white/10 relative overflow-hidden group">
+                            {/* Animated Background */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-cyan-900/10 via-transparent to-blue-900/10 opacity-50 pointer-events-none" />
+
+                            <div className="flex items-center justify-between mb-6 relative z-10">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center border border-white/5">
+                                  <span className="text-xl">🧬</span>
+                                </div>
+                                <div>
+                                  <h4 className="font-bold text-white">Morph Intensity</h4>
+                                  <p className="text-xs text-silver">Adjust how much AI adapts your resume</p>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-2xl font-bold text-cyan-400">{morphPercentage}%</span>
+                              <div className="text-right">
+                                <span className={`text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r ${morphPercentage < 40 ? 'from-green-400 to-emerald-400' :
+                                  morphPercentage < 70 ? 'from-cyan-400 to-blue-400' :
+                                    'from-orange-400 to-red-400'
+                                  }`}>
+                                  {morphPercentage}%
+                                </span>
                               </div>
                             </div>
-                            <input
-                              type="range"
-                              min="10"
-                              max="100"
-                              step="5"
-                              value={morphPercentage}
-                              onChange={(e) => setMorphPercentage(Number(e.target.value))}
-                              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
-                            />
-                            <div className="flex justify-between mt-2 text-xs text-slate-400">
-                              <span>Subtle</span>
-                              <span>Moderate</span>
-                              <span>Substantial</span>
-                              <span>Aggressive</span>
+
+                            <div className="relative h-4 bg-black/50 rounded-full mb-8 overflow-visible">
+                              {/* Track Background */}
+                              <div className="absolute inset-0 rounded-full bg-white/5" />
+
+                              {/* Fill Bar */}
+                              <motion.div
+                                className={`absolute top-0 left-0 h-full rounded-full bg-gradient-to-r ${morphPercentage < 40 ? 'from-green-500 to-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.3)]' :
+                                  morphPercentage < 70 ? 'from-cyan-500 to-blue-500 shadow-[0_0_20px_rgba(6,182,212,0.3)]' :
+                                    'from-orange-500 to-red-500 shadow-[0_0_20px_rgba(239,68,68,0.3)]'
+                                  }`}
+                                initial={{ width: 0 }}
+                                animate={{ width: `${morphPercentage}%` }}
+                                transition={{ type: 'spring', damping: 20 }}
+                              />
+
+                              {/* Slider Input (Invisible overlay) */}
+                              <input
+                                type="range"
+                                min="10"
+                                max="100"
+                                step="5"
+                                value={morphPercentage}
+                                onChange={(e) => setMorphPercentage(Number(e.target.value))}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                              />
+
+                              {/* Custom Handle */}
+                              <motion.div
+                                className="absolute top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white border-4 border-[#0F0F0F] shadow-lg z-10 pointer-events-none flex items-center justify-center transform transition-transform group-hover:scale-110"
+                                animate={{ left: `${morphPercentage}%`, x: '-50%' }}
+                              >
+                                <div className={`w-2 h-2 rounded-full ${morphPercentage < 40 ? 'bg-emerald-500' :
+                                  morphPercentage < 70 ? 'bg-cyan-500' :
+                                    'bg-red-500'
+                                  }`} />
+                              </motion.div>
                             </div>
-                            <p className="mt-3 text-sm text-slate-400">
-                              <span className="font-medium text-cyan-400">{morphPercentage}% JD alignment</span> / <span className="font-medium text-white">{100 - morphPercentage}% original content</span>
-                              <br />
-                              {morphPercentage <= 30 ? '🔹 Light touch - adds 1-2 keywords per section, keeps your voice intact' :
-                               morphPercentage <= 50 ? '🔸 Balanced blend - rephrases ~50% of content to match JD language' :
-                               morphPercentage <= 70 ? '🔶 Strong alignment - rewrites most bullets to emphasize JD requirements' :
-                               '🔴 Maximum optimization - fully rewrites content for ATS and JD match'}
-                            </p>
+
+                            {/* Descriptive Labels */}
+                            <div className="grid grid-cols-3 text-center gap-2">
+                              <div className={`transition-opacity duration-300 ${morphPercentage <= 40 ? 'opacity-100' : 'opacity-30'}`}>
+                                <h5 className="text-sm font-bold text-emerald-400">Human Polish</h5>
+                                <p className="text-[10px] text-silver mt-1">Refines tone, keeps original structure.</p>
+                              </div>
+                              <div className={`transition-opacity duration-300 ${morphPercentage > 40 && morphPercentage <= 75 ? 'opacity-100' : 'opacity-30'}`}>
+                                <h5 className="text-sm font-bold text-cyan-400">Smart Tailor</h5>
+                                <p className="text-[10px] text-silver mt-1">Balances keywords with natural flow.</p>
+                              </div>
+                              <div className={`transition-opacity duration-300 ${morphPercentage > 75 ? 'opacity-100' : 'opacity-30'}`}>
+                                <h5 className="text-sm font-bold text-red-400">Deep Morph</h5>
+                                <p className="text-[10px] text-silver mt-1">Aggressive rewrite for max ATS score.</p>
+                              </div>
+                            </div>
                           </div>
-                          
+
                           <button onClick={handleMorph} disabled={isLoading || !jobDescription.trim()}
                             className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-cyan-500 to-blue-500 text-white disabled:opacity-50"
                           >
@@ -739,6 +892,7 @@ Return a JSON object with categorized skills:
                     handleSave={handleSave}
                     resumeRef={resumeRef}
                     templates={TEMPLATES}
+                    setShowApplicationModal={setShowApplicationModal}
                   />
                 )}
               </AnimatePresence>
@@ -752,13 +906,12 @@ Return a JSON object with categorized skills:
             {/* Builder Progress */}
             {step === 'build' && (
               <div className="max-w-4xl mx-auto mb-6">
-                <div className="flex items-center justify-between p-1 rounded-xl bg-white/5 border border-white/10">
+                <div className="flex items-center justify-between p-1 rounded-xl bg-[#111111] border border-white/10">
                   {['Personal', 'Experience', 'Education', 'Skills', 'Summary'].map((label, i) => (
                     <button key={i} onClick={() => setBuildStep(i)}
-                      className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                        buildStep === i ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white' : 
-                        buildStep > i ? 'bg-white/10 text-white' : 'text-slate-500'
-                      }`}
+                      className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${buildStep === i ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white' :
+                        buildStep > i ? 'bg-white/10 text-white' : 'text-silver'
+                        }`}
                     >
                       {buildStep > i ? '✓ ' : ''}{label}
                     </button>
@@ -774,7 +927,7 @@ Return a JSON object with categorized skills:
                     <div className="grid lg:grid-cols-3 gap-6">
                       {/* Builder Form */}
                       <div className="lg:col-span-2">
-                        <div className="rounded-2xl bg-gradient-to-br from-slate-900/80 to-cyan-900/10 border border-cyan-500/20 overflow-hidden">
+                        <div className="rounded-2xl bg-[#0A0A0A] to-cyan-900/10 border border-cyan-500/20 overflow-hidden">
                           <div className="p-6 border-b border-white/10">
                             <h3 className="text-xl font-bold text-white">
                               {['👤 Personal Info', '💼 Experience', '🎓 Education', '⚡ Skills', '✍️ Summary'][buildStep]}
@@ -825,7 +978,7 @@ Return a JSON object with categorized skills:
                             {buildStep === 1 && (
                               <div className="space-y-4">
                                 {buildResume.experience.map((exp, i) => (
-                                  <div key={i} className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-3">
+                                  <div key={i} className="p-4 rounded-xl bg-[#111111] border border-white/10 space-y-3">
                                     <div className="flex justify-between items-start">
                                       <span className="text-xs font-semibold text-cyan-400">Experience {i + 1}</span>
                                       <button onClick={() => {
@@ -849,7 +1002,7 @@ Return a JSON object with categorized skills:
                                     />
                                     <div>
                                       <div className="flex justify-between items-center mb-2">
-                                        <span className="text-xs text-slate-400">Achievements</span>
+                                        <span className="text-xs text-silver">Achievements</span>
                                         <button onClick={() => generateAchievements(i)} disabled={aiSuggesting}
                                           className="text-xs px-2 py-1 rounded bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 disabled:opacity-50"
                                         >{aiSuggesting ? '...' : '✨ AI Generate'}</button>
@@ -877,7 +1030,7 @@ Return a JSON object with categorized skills:
                                   </div>
                                 ))}
                                 <button onClick={() => setBuildResume({ ...buildResume, experience: [...buildResume.experience, { role: '', company: '', duration: '', achievements: [''] }] })}
-                                  className="w-full p-4 rounded-xl border-2 border-dashed border-white/20 text-slate-400 hover:border-cyan-500/50 hover:text-cyan-400 transition-colors"
+                                  className="w-full p-4 rounded-xl border-2 border-dashed border-white/20 text-silver hover:border-cyan-500/50 hover:text-cyan-400 transition-colors"
                                 >+ Add Experience</button>
                               </div>
                             )}
@@ -886,7 +1039,7 @@ Return a JSON object with categorized skills:
                             {buildStep === 2 && (
                               <div className="space-y-4">
                                 {buildResume.education.map((edu, i) => (
-                                  <div key={i} className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-3">
+                                  <div key={i} className="p-4 rounded-xl bg-[#111111] border border-white/10 space-y-3">
                                     <div className="flex justify-between items-start">
                                       <span className="text-xs font-semibold text-cyan-400">Education {i + 1}</span>
                                       <button onClick={() => {
@@ -915,7 +1068,7 @@ Return a JSON object with categorized skills:
                                   </div>
                                 ))}
                                 <button onClick={() => setBuildResume({ ...buildResume, education: [...buildResume.education, { degree: '', institution: '', year: '', details: '' }] })}
-                                  className="w-full p-4 rounded-xl border-2 border-dashed border-white/20 text-slate-400 hover:border-cyan-500/50 hover:text-cyan-400 transition-colors"
+                                  className="w-full p-4 rounded-xl border-2 border-dashed border-white/20 text-silver hover:border-cyan-500/50 hover:text-cyan-400 transition-colors"
                                 >+ Add Education</button>
                               </div>
                             )}
@@ -924,13 +1077,13 @@ Return a JSON object with categorized skills:
                             {buildStep === 3 && (
                               <div className="space-y-4">
                                 <div className="flex justify-between items-center mb-2">
-                                  <span className="text-sm text-slate-400">Add skills by category</span>
+                                  <span className="text-sm text-silver">Add skills by category</span>
                                   <button onClick={suggestSkills} disabled={aiSuggesting}
                                     className="px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-400 text-sm hover:bg-cyan-500/30 disabled:opacity-50"
                                   >{aiSuggesting ? 'Suggesting...' : '✨ AI Suggest Skills'}</button>
                                 </div>
                                 {buildResume.skills.map((cat, i) => (
-                                  <div key={i} className="p-4 rounded-xl bg-white/5 border border-white/10">
+                                  <div key={i} className="p-4 rounded-xl bg-[#111111] border border-white/10">
                                     <div className="flex justify-between items-center mb-3">
                                       <select value={cat.category} onChange={(e) => {
                                         const newSkills = [...buildResume.skills];
@@ -962,12 +1115,12 @@ Return a JSON object with categorized skills:
                                           newSkills[i].items.push(skill);
                                           setBuildResume({ ...buildResume, skills: newSkills });
                                         }
-                                      }} className="px-3 py-1.5 rounded-full border border-dashed border-white/20 text-slate-400 text-sm hover:border-cyan-500/50">+ Add</button>
+                                      }} className="px-3 py-1.5 rounded-full border border-dashed border-white/20 text-silver text-sm hover:border-cyan-500/50">+ Add</button>
                                     </div>
                                   </div>
                                 ))}
                                 <button onClick={() => setBuildResume({ ...buildResume, skills: [...buildResume.skills, { category: 'Technical', items: [] }] })}
-                                  className="w-full p-4 rounded-xl border-2 border-dashed border-white/20 text-slate-400 hover:border-cyan-500/50 hover:text-cyan-400 transition-colors"
+                                  className="w-full p-4 rounded-xl border-2 border-dashed border-white/20 text-silver hover:border-cyan-500/50 hover:text-cyan-400 transition-colors"
                                 >+ Add Skill Category</button>
                               </div>
                             )}
@@ -976,7 +1129,7 @@ Return a JSON object with categorized skills:
                             {buildStep === 4 && (
                               <div className="space-y-4">
                                 <div className="flex justify-between items-center">
-                                  <span className="text-sm text-slate-400">Professional summary (2-3 sentences)</span>
+                                  <span className="text-sm text-silver">Professional summary (2-3 sentences)</span>
                                   <button onClick={generateSummary} disabled={aiSuggesting}
                                     className="px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-400 text-sm hover:bg-cyan-500/30 disabled:opacity-50"
                                   >{aiSuggesting ? 'Generating...' : '✨ AI Generate'}</button>
@@ -1008,7 +1161,7 @@ Return a JSON object with categorized skills:
                       </div>
 
                       {/* Live Preview Card */}
-                      <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
+                      <div className="rounded-2xl bg-[#111111] border border-white/10 overflow-hidden">
                         <div className="p-4 border-b border-white/10">
                           <h4 className="font-semibold text-white">Live Preview</h4>
                         </div>
@@ -1016,7 +1169,7 @@ Return a JSON object with categorized skills:
                           <div className="bg-white rounded-xl p-4 text-slate-900 text-xs">
                             <h2 className="text-lg font-bold text-slate-800">{buildResume.name || 'Your Name'}</h2>
                             <p className="text-cyan-600">{buildResume.title || 'Your Title'}</p>
-                            <p className="text-slate-500 text-[10px] mt-1">{[buildResume.email, buildResume.phone, buildResume.location].filter(Boolean).join(' • ') || 'Contact info'}</p>
+                            <p className="text-silver text-[10px] mt-1">{[buildResume.email, buildResume.phone, buildResume.location].filter(Boolean).join(' • ') || 'Contact info'}</p>
                             {buildResume.summary && <p className="mt-3 text-slate-600">{buildResume.summary}</p>}
                             {buildResume.experience.length > 0 && (
                               <div className="mt-3">
@@ -1024,7 +1177,7 @@ Return a JSON object with categorized skills:
                                 {buildResume.experience.slice(0, 2).map((exp, i) => (
                                   <div key={i} className="mt-2">
                                     <p className="font-semibold">{exp.role || 'Role'}</p>
-                                    <p className="text-slate-500">{exp.company} {exp.duration && `• ${exp.duration}`}</p>
+                                    <p className="text-silver">{exp.company} {exp.duration && `• ${exp.duration}`}</p>
                                   </div>
                                 ))}
                               </div>
@@ -1056,6 +1209,7 @@ Return a JSON object with categorized skills:
                     handleSave={handleSave}
                     resumeRef={resumeRef}
                     templates={TEMPLATES}
+                    setShowApplicationModal={setShowApplicationModal}
                   />
                 )}
               </AnimatePresence>
@@ -1076,15 +1230,63 @@ Return a JSON object with categorized skills:
                 <div className="absolute inset-0 rounded-full border-4 border-cyan-400 border-t-transparent animate-spin" />
               </div>
               <h3 className="text-xl font-bold text-white mb-2">Processing...</h3>
-              <p className="text-slate-400">AI is working on your resume</p>
+              <p className="text-silver">AI is working on your resume</p>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deleteConfirmId && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setDeleteConfirmId(null)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md"
+            >
+              <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-8 shadow-2xl">
+                <div className="text-center">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/10 flex items-center justify-center">
+                    <span className="text-3xl">🗑️</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">Delete Resume?</h3>
+                  <p className="text-silver text-sm mb-6">
+                    This action cannot be undone. The resume version will be permanently removed from your vault.
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setDeleteConfirmId(null)}
+                      className="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-silver hover:bg-white/10 transition-colors font-medium"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={confirmDelete}
+                      className="flex-1 px-4 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white font-medium transition-colors"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* Application Creation Modal */}
       <AnimatePresence>
-        {showApplicationModal && morphedResume && (
+        {showApplicationModal && (morphedResume || buildResume.name) && (
           <>
             <motion.div
               initial={{ opacity: 0 }}
@@ -1122,12 +1324,12 @@ Return a JSON object with categorized skills:
 
                 {/* Form */}
                 <div className="p-6 space-y-4">
-                  <p className="text-slate-400 text-center mb-4">
+                  <p className="text-silver text-center mb-4">
                     Track this application to monitor your job search progress
                   </p>
-                  
+
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                    <label className="block text-sm font-medium text-silver mb-2">
                       Company Name <span className="text-red-400">*</span>
                     </label>
                     <input
@@ -1135,12 +1337,12 @@ Return a JSON object with categorized skills:
                       value={applicationData.companyName}
                       onChange={(e) => setApplicationData({ ...applicationData, companyName: e.target.value })}
                       placeholder="e.g., Google, Microsoft, Startup Inc."
-                      className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20"
+                      className="w-full px-4 py-3 rounded-xl bg-[#111111] border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                    <label className="block text-sm font-medium text-silver mb-2">
                       Job Title
                     </label>
                     <input
@@ -1148,12 +1350,12 @@ Return a JSON object with categorized skills:
                       value={applicationData.jobTitle}
                       onChange={(e) => setApplicationData({ ...applicationData, jobTitle: e.target.value })}
                       placeholder={morphedResume?.title || 'e.g., Senior Software Engineer'}
-                      className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20"
+                      className="w-full px-4 py-3 rounded-xl bg-[#111111] border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                    <label className="block text-sm font-medium text-silver mb-2">
                       Notes (optional)
                     </label>
                     <textarea
@@ -1161,13 +1363,13 @@ Return a JSON object with categorized skills:
                       onChange={(e) => setApplicationData({ ...applicationData, notes: e.target.value })}
                       placeholder="Add any notes about this application..."
                       rows={3}
-                      className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 resize-none"
+                      className="w-full px-4 py-3 rounded-xl bg-[#111111] border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 resize-none"
                     />
                   </div>
 
                   {/* Quick Status Selection */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                    <label className="block text-sm font-medium text-silver mb-2">
                       Initial Status
                     </label>
                     <div className="grid grid-cols-3 gap-2">
@@ -1179,11 +1381,10 @@ Return a JSON object with categorized skills:
                         <button
                           key={status.id}
                           type="button"
-                          className={`p-3 rounded-xl border text-center transition-all hover:scale-105 ${
-                            status.color === 'slate' ? 'bg-slate-500/20 border-slate-500/30 text-slate-300' :
+                          className={`p-3 rounded-xl border text-center transition-all hover:scale-105 ${status.color === 'slate' ? 'bg-slate-500/20 border-slate-500/30 text-silver' :
                             status.color === 'blue' ? 'bg-blue-500/20 border-blue-500/30 text-blue-300' :
-                            'bg-cyan-500/20 border-cyan-500/30 text-cyan-300'
-                          }`}
+                              'bg-cyan-500/20 border-cyan-500/30 text-cyan-300'
+                            }`}
                         >
                           <span className="text-xl block mb-1">{status.icon}</span>
                           <span className="text-xs font-medium">{status.label}</span>
@@ -1197,7 +1398,7 @@ Return a JSON object with categorized skills:
                 <div className="p-6 pt-0 flex gap-3">
                   <button
                     onClick={handleSkipApplication}
-                    className="flex-1 px-4 py-3 rounded-xl bg-white/5 text-slate-300 hover:bg-white/10 transition-colors font-medium"
+                    className="flex-1 px-4 py-3 rounded-xl bg-[#111111] text-silver hover:bg-white/10 transition-colors font-medium"
                   >
                     Skip & Preview Resume
                   </button>
@@ -1220,7 +1421,7 @@ Return a JSON object with categorized skills:
 
 // ============ SHARED TEMPLATE & PREVIEW COMPONENT ============
 function TemplateAndPreview({
-  step, setStep, resume, selectedTemplate, setSelectedTemplate, matchScore, isLoading, downloadPDF, handleSave, resumeRef, templates
+  step, setStep, resume, selectedTemplate, setSelectedTemplate, matchScore, isLoading, downloadPDF, handleSave, resumeRef, templates, setShowApplicationModal
 }: {
   step: string;
   setStep: (s: any) => void;
@@ -1233,6 +1434,7 @@ function TemplateAndPreview({
   handleSave: () => void;
   resumeRef: React.RefObject<HTMLDivElement>;
   templates: typeof TEMPLATES;
+  setShowApplicationModal: (show: boolean) => void;
 }) {
   return (
     <AnimatePresence mode="wait">
@@ -1247,10 +1449,10 @@ function TemplateAndPreview({
                   </div>
                   <div>
                     <h3 className="font-bold text-white">Resume Morphed!</h3>
-                    <p className="text-sm text-slate-400">Matches {matchScore}% of job requirements</p>
+                    <p className="text-sm text-silver">Matches {matchScore}% of job requirements</p>
                   </div>
                 </div>
-                <button onClick={() => setStep('preview')} className="px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 text-white">
+                <button onClick={() => setStep('preview')} className="px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:shadow-lg hover:shadow-cyan-500/20 transition-all">
                   Preview & Download →
                 </button>
               </div>
@@ -1260,17 +1462,17 @@ function TemplateAndPreview({
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
             {templates.map((template) => (
               <motion.button key={template.id} onClick={() => setSelectedTemplate(template)} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                className={`p-4 rounded-2xl border-2 transition-all text-left ${selectedTemplate.id === template.id ? 'border-cyan-400 bg-cyan-500/10' : 'border-white/10 bg-white/5 hover:border-white/30'}`}
+                className={`p-4 rounded-2xl border-2 transition-all text-left ${selectedTemplate.id === template.id ? 'border-cyan-400 bg-cyan-500/10' : 'border-white/10 bg-[#111111] hover:border-white/30'}`}
               >
                 <div className="w-12 h-12 rounded-xl mb-3 flex items-center justify-center text-2xl" style={{ background: `linear-gradient(135deg, ${template.colors.primary}40, ${template.colors.accent}40)` }}>
                   {template.preview}
                 </div>
                 <h4 className="font-bold text-white">{template.name}</h4>
-                <p className="text-xs text-slate-400">{template.description}</p>
+                <p className="text-xs text-silver">{template.description}</p>
               </motion.button>
             ))}
           </div>
-          <div className="rounded-2xl bg-white/5 border border-white/10 p-6">
+          <div className="rounded-2xl bg-[#111111] border border-white/10 p-6">
             <div className="flex justify-between mb-4">
               <h4 className="font-bold text-white">Preview</h4>
               <button onClick={() => setStep('preview')} className="text-sm text-cyan-400">Full Size →</button>
@@ -1297,14 +1499,19 @@ function TemplateAndPreview({
         <motion.div key="preview" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
           <div className="grid lg:grid-cols-3 gap-6">
             <div className="space-y-4">
-              <div className="rounded-2xl bg-gradient-to-br from-slate-900/80 to-slate-800/50 border border-white/10 p-6">
+              <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
                 <h3 className="font-bold text-white mb-4">Actions</h3>
                 <div className="space-y-3">
                   <button onClick={downloadPDF} disabled={isLoading}
-                    className="w-full py-4 rounded-xl font-bold bg-gradient-to-r from-green-500 to-cyan-500 text-white disabled:opacity-50"
+                    className="w-full py-4 rounded-xl font-bold bg-white text-slate-900 hover:bg-slate-200 transition-colors disabled:opacity-50"
                   >{isLoading ? '⏳ Generating...' : '⬇️ Download PDF'}</button>
+
+                  <button onClick={() => setShowApplicationModal(true)}
+                    className="w-full py-4 rounded-xl font-bold bg-gradient-to-r from-green-500 to-cyan-500 text-white hover:shadow-lg hover:shadow-green-500/25 transition-all"
+                  >🎯 Track Application</button>
+
                   <button onClick={handleSave} className="w-full py-3 rounded-xl font-semibold bg-white/10 hover:bg-white/20 text-white">💾 Save Version</button>
-                  <button onClick={() => setStep('template')} className="w-full py-3 rounded-xl font-semibold bg-white/5 hover:bg-white/10 text-slate-300">🎨 Change Template</button>
+                  <button onClick={() => setStep('template')} className="w-full py-3 rounded-xl font-semibold bg-[#111111] hover:bg-white/10 text-silver">🎨 Change Template</button>
                 </div>
               </div>
               {matchScore && (
@@ -1322,13 +1529,13 @@ function TemplateAndPreview({
                   </div>
                 </div>
               )}
-              <div className="rounded-2xl bg-white/5 border border-white/10 p-6">
+              <div className="rounded-2xl bg-[#111111] border border-white/10 p-6">
                 <h4 className="font-bold text-white mb-2">Template: {selectedTemplate.name}</h4>
-                <p className="text-sm text-slate-400">{selectedTemplate.description}</p>
+                <p className="text-sm text-silver">{selectedTemplate.description}</p>
               </div>
             </div>
             <div className="lg:col-span-2">
-              <div className="rounded-2xl bg-slate-800/50 border border-white/10 p-4">
+              <div className="rounded-2xl bg-[#111111]/50 border border-white/10 p-4">
                 <div ref={resumeRef} className="bg-white rounded-xl shadow-2xl overflow-hidden" style={{ minHeight: '800px' }}>
                   <ResumeTemplate resume={resume} template={selectedTemplate} />
                 </div>

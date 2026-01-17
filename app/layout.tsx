@@ -23,17 +23,18 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${inter.variable} font-sans antialiased`}>
-        {/* Dynamic Ambient Mesh Background */}
+        {/* Dynamic Ambient Background - Vercel/Linear Style */}
         <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-          {/* Obsidian Base */}
-          <div className="absolute inset-0 bg-[#030303]" />
+          {/* Pure Obsidian Base */}
+          <div className="absolute inset-0 bg-black" />
 
-          {/* Ambient Orbs */}
-          <div className="ambient-orb orb-1" />
-          <div className="ambient-orb orb-2" />
-          <div className="ambient-orb orb-3" />
+          {/* Subtle Radial Glow at Top */}
+          <div
+            className="absolute inset-0"
+            style={{ background: 'radial-gradient(ellipse 80% 50% at 50% 0%, #111111, #000000)' }}
+          />
 
-          {/* Mesh Overlay */}
+          {/* Dot Grid Overlay */}
           <div className="mesh-gradient" />
         </div>
 

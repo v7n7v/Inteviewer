@@ -10,6 +10,7 @@ interface DocSection {
     icon: string;
     description: string;
     color: string;
+    borderColor: string;
     content: {
         title: string;
         steps: string[];
@@ -19,11 +20,47 @@ interface DocSection {
 
 const docs: DocSection[] = [
     {
+        id: 'dashboard',
+        title: 'Hub & Dashboard',
+        icon: '🏠',
+        description: 'Master your command center with AI-powered insights.',
+        color: 'from-[#EC4899] to-[#8B5CF6]',
+        borderColor: 'border-[#EC4899]/30',
+        content: [
+            {
+                title: 'AI Pulse Dashboard',
+                steps: [
+                    'The Dashboard automatically generates real-time insights based on your role.',
+                    'Data is fetched from your database or simulated by AI if no data exists.',
+                    'Click **Refresh AI Insights** in the top right to generate a new analysis.'
+                ],
+                tips: ['The "Generating Insights..." animation means the AI is currently analyzing your profile or candidates.']
+            },
+            {
+                title: 'Switching Personas',
+                steps: [
+                    'Use the toggle at the top to switch between **Hiring Team** and **Job Seeker** modes.',
+                    '**Hiring Team**: Focuses on candidate matches and team skill gaps.',
+                    '**Job Seeker**: Focuses on job opportunities and your personal career roadmap.'
+                ]
+            },
+            {
+                title: 'Interactive Widgets',
+                steps: [
+                    '**Discovery Spotlight**: Shows top candidates or jobs. Click to view full details in the Detective/Search suite.',
+                    '**Career Roadmap**: Visualizes skill gaps. Click to access the Market Oracle for deep analysis.',
+                    '**Market Pulse**: Live market trends. Click to explore salary data and demand heatmaps.'
+                ]
+            }
+        ]
+    },
+    {
         id: 'talent-suite',
         title: 'Talent Suite',
         icon: '✨',
         description: 'Tools for job seekers to optimize their applications.',
-        color: 'from-emerald-500 to-blue-500',
+        color: 'from-[#0070F3] to-[#0070F3]/60',
+        borderColor: 'border-[#0070F3]/30',
         content: [
             {
                 title: 'Liquid Resume',
@@ -68,7 +105,8 @@ const docs: DocSection[] = [
         title: 'Interview Suite',
         icon: '🎯',
         description: 'Tools for hiring teams to conduct better interviews.',
-        color: 'from-cyan-500 to-blue-500',
+        color: 'from-[#22C55E] to-[#22C55E]/60',
+        borderColor: 'border-[#22C55E]/30',
         content: [
             {
                 title: 'Detective',
@@ -122,7 +160,8 @@ const docs: DocSection[] = [
         title: 'General & Settings',
         icon: '⚙️',
         description: 'Account management and platform configuration.',
-        color: 'from-cyan-500 to-blue-500',
+        color: 'from-white/20 to-white/5',
+        borderColor: 'border-white/20',
         content: [
             {
                 title: 'Profile & Settings',
@@ -156,11 +195,11 @@ export default function HelpPage() {
     );
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white relative overflow-hidden">
-            {/* Background Ambience */}
+        <div className="min-h-screen bg-black text-white relative overflow-hidden">
+            {/* Background Ambience - subtle */}
             <div className="fixed inset-0 pointer-events-none">
-                <div className="absolute top-0 left-0 w-[800px] h-[800px] bg-blue-500/10 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2" />
-                <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-[100px] translate-x-1/3 translate-y-1/3" />
+                <div className="absolute top-0 left-0 w-[800px] h-[800px] bg-[#0070F3]/5 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2" />
+                <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-[#22C55E]/5 rounded-full blur-[100px] translate-x-1/3 translate-y-1/3" />
             </div>
 
             <div className="relative z-10 max-w-7xl mx-auto px-6 py-12">
@@ -171,7 +210,7 @@ export default function HelpPage() {
                         animate={{ opacity: 1, y: 0 }}
                         className="inline-block"
                     >
-                        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 flex items-center justify-center">
+                        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-[#111111] border border-white/10 flex items-center justify-center">
                             <span className="text-4xl">📚</span>
                         </div>
                     </motion.div>
@@ -180,7 +219,7 @@ export default function HelpPage() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1 }}
-                        className="text-4xl font-bold mb-4 bg-gradient-to-r from-white via-cyan-100 to-cyan-400 bg-clip-text text-transparent"
+                        className="text-4xl font-bold mb-4 text-white"
                     >
                         How can we help you?
                     </motion.h1>
@@ -189,7 +228,7 @@ export default function HelpPage() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="text-slate-400 max-w-2xl mx-auto text-lg"
+                        className="text-silver max-w-2xl mx-auto text-lg"
                     >
                         Explore our comprehensive guides to master the Talent Consulting Platform.
                     </motion.p>
@@ -202,9 +241,8 @@ export default function HelpPage() {
                         className="mt-8 max-w-xl mx-auto"
                     >
                         <div className="relative group">
-                            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-xl blur-md group-hover:blur-lg transition-all" />
-                            <div className="relative bg-white/5 border border-white/10 rounded-xl flex items-center p-1 focus-within:border-cyan-500/50 focus-within:bg-white/10 transition-all">
-                                <span className="pl-4 text-slate-400">
+                            <div className="relative bg-[#111111] border border-white/10 rounded-xl flex items-center p-1 focus-within:border-white/20 transition-all">
+                                <span className="pl-4 text-silver">
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                     </svg>
@@ -214,7 +252,7 @@ export default function HelpPage() {
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     placeholder="Search for tools, features, or guides..."
-                                    className="w-full bg-transparent border-none text-white px-4 py-3 focus:outline-none placeholder-slate-500"
+                                    className="w-full bg-transparent border-none text-white px-4 py-3 focus:outline-none placeholder-silver/50"
                                 />
                             </div>
                         </div>
@@ -232,23 +270,22 @@ export default function HelpPage() {
                             onClick={() => setSelectedDoc(doc)}
                             className="relative group text-left h-full"
                         >
-                            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-white/0 rounded-2xl border border-white/10 group-hover:border-white/20 transition-all" />
-                            <div className={`absolute inset-0 bg-gradient-to-br ${doc.color} opacity-0 group-hover:opacity-10 rounded-2xl transition-all duration-500`} />
+                            <div className={`absolute inset-0 bg-[#0A0A0A] rounded-2xl border ${doc.borderColor} group-hover:border-opacity-60 transition-all`} />
 
                             <div className="relative p-6 h-full flex flex-col">
                                 <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${doc.color} flex items-center justify-center text-2xl mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
                                     {doc.icon}
                                 </div>
 
-                                <h3 className="text-xl font-bold text-white mb-2 group-hover:text-cyan-200 transition-colors">
+                                <h3 className="text-xl font-bold text-white mb-2 group-hover:text-white/90 transition-colors">
                                     {doc.title}
                                 </h3>
 
-                                <p className="text-slate-400 text-sm leading-relaxed mb-6 flex-1">
+                                <p className="text-silver text-sm leading-relaxed mb-6 flex-1">
                                     {doc.description}
                                 </p>
 
-                                <div className="flex items-center text-sm font-medium text-cyan-400 group-hover:translate-x-1 transition-transform">
+                                <div className="flex items-center text-sm font-medium text-silver group-hover:text-white group-hover:translate-x-1 transition-all">
                                     View Guides
                                     <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
@@ -268,7 +305,7 @@ export default function HelpPage() {
                 >
                     <button
                         onClick={() => router.back()}
-                        className="text-slate-500 hover:text-white transition-colors flex items-center justify-center gap-2 mx-auto"
+                        className="text-silver hover:text-white transition-colors flex items-center justify-center gap-2 mx-auto"
                     >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -294,14 +331,14 @@ export default function HelpPage() {
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="relative w-full max-w-4xl max-h-[85vh] bg-slate-900 rounded-2xl border border-white/10 shadow-2xl overflow-hidden flex flex-col"
+                            className="relative w-full max-w-4xl max-h-[85vh] bg-[#0A0A0A] rounded-2xl border border-white/10 shadow-2xl overflow-hidden flex flex-col"
                         >
                             {/* Modal Header */}
                             <div className="relative p-8 pb-6 border-b border-white/10 z-10 shrink-0">
                                 <div className={`absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r ${selectedDoc.color}`} />
                                 <button
                                     onClick={() => setSelectedDoc(null)}
-                                    className="absolute top-4 right-4 p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-colors"
+                                    className="absolute top-4 right-4 p-2 rounded-lg hover:bg-white/5 text-silver hover:text-white transition-colors"
                                 >
                                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -314,7 +351,7 @@ export default function HelpPage() {
                                     </div>
                                     <div>
                                         <h2 className="text-2xl font-bold text-white">{selectedDoc.title}</h2>
-                                        <p className="text-slate-400">{selectedDoc.description}</p>
+                                        <p className="text-silver">{selectedDoc.description}</p>
                                     </div>
                                 </div>
                             </div>
@@ -335,8 +372,8 @@ export default function HelpPage() {
                                                 <div className="space-y-4">
                                                     {section.steps.map((step, stepIdx) => (
                                                         <div key={stepIdx} className="flex gap-4">
-                                                            <div className="w-1.5 h-1.5 mt-2 rounded-full bg-slate-600 shrink-0" />
-                                                            <p className="text-slate-300 leading-relaxed"
+                                                            <div className="w-1.5 h-1.5 mt-2 rounded-full bg-silver/50 shrink-0" />
+                                                            <p className="text-silver leading-relaxed"
                                                                 dangerouslySetInnerHTML={{
                                                                     __html: step.replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-medium">$1</strong>')
                                                                 }}
@@ -346,9 +383,9 @@ export default function HelpPage() {
                                                 </div>
 
                                                 {section.tips && section.tips.length > 0 && (
-                                                    <div className="mt-4 p-4 rounded-xl bg-cyan-500/5 border border-cyan-500/10 flex gap-4">
+                                                    <div className="mt-4 p-4 rounded-xl bg-[#111111] border border-white/10 flex gap-4">
                                                         <span className="text-xl">💡</span>
-                                                        <div className="text-sm text-cyan-200/80">
+                                                        <div className="text-sm text-silver">
                                                             {section.tips.map((tip, tipIdx) => (
                                                                 <p key={tipIdx}>{tip}</p>
                                                             ))}

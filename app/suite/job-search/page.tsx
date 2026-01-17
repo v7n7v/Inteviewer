@@ -11,11 +11,11 @@ export default function JobSearchPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 className="relative max-w-2xl w-full"
             >
-                {/* Background glow */}
-                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 via-blue-500/10 to-cyan-500/20 rounded-3xl blur-3xl" />
+                {/* Background glow - using Talent Suite blue */}
+                <div className="absolute inset-0 bg-[#0070F3]/10 rounded-3xl blur-3xl" />
 
-                {/* Card */}
-                <div className="relative rounded-3xl bg-gradient-to-br from-slate-900/90 via-slate-800/90 to-slate-900/90 border border-white/10 p-12 text-center backdrop-blur-xl">
+                {/* Card - obsidian theme */}
+                <div className="relative rounded-3xl bg-[#0A0A0A] border border-white/10 p-12 text-center">
                     {/* Icon */}
                     <motion.div
                         animate={{
@@ -32,26 +32,26 @@ export default function JobSearchPage() {
                         🔍
                     </motion.div>
 
-                    {/* Badge */}
+                    {/* Badge - Talent Suite blue */}
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 mb-6"
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#0070F3]/10 border border-[#0070F3]/30 mb-6"
                     >
-                        <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-                        <span className="text-sm font-medium text-cyan-400">Coming Soon</span>
+                        <div className="w-2 h-2 rounded-full bg-[#0070F3] animate-pulse" />
+                        <span className="text-sm font-medium text-[#0070F3]">Coming Soon</span>
                     </motion.div>
 
                     {/* Title */}
                     <h1 className="text-4xl lg:text-5xl font-bold mb-4">
-                        <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                        <span className="bg-gradient-to-r from-[#0070F3] via-[#0070F3]/80 to-[#0070F3]/60 bg-clip-text text-transparent">
                             Job Search
                         </span>
                     </h1>
 
                     {/* Description */}
-                    <p className="text-slate-400 text-lg mb-8 max-w-md mx-auto">
+                    <p className="text-silver text-lg mb-8 max-w-md mx-auto">
                         Smart job discovery that searches, curates, and recommends opportunities
                         tailored to your skills and career goals.
                     </p>
@@ -68,27 +68,27 @@ export default function JobSearchPage() {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.3 + i * 0.1 }}
-                                className="p-4 rounded-xl bg-white/5 border border-white/10"
+                                className="p-4 rounded-xl bg-[#111111] border border-white/10 hover:border-[#0070F3]/30 transition-colors"
                             >
                                 <span className="text-2xl block mb-2">{feature.icon}</span>
                                 <h3 className="font-semibold text-white text-sm">{feature.title}</h3>
-                                <p className="text-xs text-slate-500">{feature.desc}</p>
+                                <p className="text-xs text-silver">{feature.desc}</p>
                             </motion.div>
                         ))}
                     </div>
 
-                    {/* CTA */}
+                    {/* CTA - Talent Suite blue */}
                     <Link href="/suite/resume">
                         <motion.button
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
-                            className="px-8 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-medium hover:shadow-lg hover:shadow-cyan-500/25 transition-all"
+                            className="px-8 py-3 rounded-xl bg-[#0070F3] text-white font-medium hover:shadow-lg hover:shadow-[#0070F3]/25 transition-all"
                         >
                             Build Your Resume First →
                         </motion.button>
                     </Link>
 
-                    <p className="text-xs text-slate-500 mt-4">
+                    <p className="text-xs text-silver mt-4">
                         Having a polished resume ready will help you get better job matches!
                     </p>
                 </div>

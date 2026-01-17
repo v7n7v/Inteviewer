@@ -420,7 +420,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
         <div className="glass-card p-12 text-center max-w-md">
           <span className="text-6xl mb-4 block">🔒</span>
           <h2 className="text-2xl font-bold text-white mb-3">Sign In Required</h2>
-          <p className="text-slate-400">Please sign in to access Shadow Interview</p>
+          <p className="text-silver">Please sign in to access Shadow Interview</p>
         </div>
       </div>
     );
@@ -442,7 +442,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
             <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900/90 via-slate-800/50 to-cyan-900/30 border border-white/10 p-8 mb-8"
+              className="relative overflow-hidden rounded-3xl bg-[#0A0A0A] to-cyan-900/30 border border-white/10 p-8 mb-8"
             >
               <div className="absolute inset-0 opacity-30">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/30 rounded-full blur-3xl" />
@@ -458,7 +458,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                     Shadow Interview
                   </span>
                 </h1>
-                <p className="text-slate-400 text-lg max-w-2xl">
+                <p className="text-silver text-lg max-w-2xl">
                   AI-powered 1:1 interview simulation with adaptive difficulty, real-time coaching, and persona switching
                 </p>
               </div>
@@ -469,7 +469,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="rounded-2xl bg-gradient-to-br from-slate-900/80 to-cyan-900/10 border border-cyan-500/20 p-6"
+                className="rounded-2xl bg-[#0A0A0A] to-cyan-900/10 border border-cyan-500/20 p-6"
               >
                 <h3 className="text-xl font-bold text-white mb-4">Choose Your Interviewer</h3>
                 <div className="grid md:grid-cols-3 gap-4">
@@ -482,14 +482,14 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                       className={`relative p-5 rounded-2xl border-2 transition-all text-left overflow-hidden ${
                         selectedPersona.id === persona.id
                           ? `border-${persona.bgColor}-400 bg-${persona.bgColor}-500/10`
-                          : 'border-white/10 hover:border-white/30 bg-white/5'
+                          : 'border-white/10 hover:border-white/30 bg-[#111111]'
                       }`}
                     >
                       <div className={`absolute inset-0 bg-gradient-to-br ${persona.color} opacity-5`} />
                       <div className="relative">
                         <span className="text-4xl block mb-3">{persona.icon}</span>
                         <h4 className="font-bold text-white mb-1">{persona.name}</h4>
-                        <p className="text-sm text-slate-400">{persona.description}</p>
+                        <p className="text-sm text-silver">{persona.description}</p>
                         {selectedPersona.id === persona.id && (
                           <motion.div
                             layoutId="persona-indicator"
@@ -511,7 +511,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
-                  className="rounded-2xl bg-white/5 border border-white/10 p-6"
+                  className="rounded-2xl bg-[#111111] border border-white/10 p-6"
                 >
                   <h3 className="font-bold text-white mb-4 flex items-center gap-2">
                     <span>📄</span> Your Resume
@@ -528,7 +528,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                     >
                       <span className="text-4xl block mb-3">📤</span>
                       <p className="text-white font-medium">Drop resume or click to upload</p>
-                      <p className="text-sm text-slate-400 mt-1">PDF, Word, or TXT</p>
+                      <p className="text-sm text-silver mt-1">PDF, Word, or TXT</p>
                       <input
                         ref={fileInputRef}
                         type="file"
@@ -547,13 +547,13 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                             className="text-xs text-red-400 hover:text-red-300"
                           >Clear</button>
                         </div>
-                        <p className="text-xs text-slate-400 mt-1">{resumeText.length.toLocaleString()} characters</p>
+                        <p className="text-xs text-silver mt-1">{resumeText.length.toLocaleString()} characters</p>
                       </div>
                       <textarea
                         rows={6}
                         value={resumeText}
                         onChange={(e) => setResumeText(e.target.value)}
-                        className="w-full rounded-xl p-3 text-sm bg-black/30 border border-white/10 text-slate-300 focus:outline-none resize-none"
+                        className="w-full rounded-xl p-3 text-sm bg-black/30 border border-white/10 text-silver focus:outline-none resize-none"
                         placeholder="Or paste resume text..."
                       />
                     </div>
@@ -565,7 +565,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="rounded-2xl bg-white/5 border border-white/10 p-6"
+                  className="rounded-2xl bg-[#111111] border border-white/10 p-6"
                 >
                   <h3 className="font-bold text-white mb-4 flex items-center gap-2">
                     <span>💼</span> Target Job Description
@@ -574,7 +574,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                     rows={10}
                     value={jdText}
                     onChange={(e) => setJdText(e.target.value)}
-                    className="w-full rounded-xl p-4 text-sm bg-black/30 border border-white/10 text-slate-300 focus:outline-none resize-none"
+                    className="w-full rounded-xl p-4 text-sm bg-black/30 border border-white/10 text-silver focus:outline-none resize-none"
                     placeholder="Paste the job description you're preparing for..."
                   />
                 </motion.div>
@@ -614,7 +614,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
             className="h-screen flex flex-col"
           >
             {/* Top Bar */}
-            <div className="flex-shrink-0 border-b border-white/10 bg-slate-900/80 backdrop-blur-xl">
+            <div className="flex-shrink-0 border-b border-white/10 bg-[#0A0A0A]/80 backdrop-blur-xl">
               <div className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-4">
                   {/* Persona Switcher */}
@@ -626,7 +626,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                         className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
                           selectedPersona.id === persona.id
                             ? `bg-gradient-to-r ${persona.color} shadow-lg`
-                            : 'bg-white/5 hover:bg-white/10'
+                            : 'bg-[#111111] hover:bg-white/10'
                         }`}
                         title={persona.name}
                       >
@@ -636,7 +636,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                   </div>
                   <div>
                     <p className="font-bold text-white">{selectedPersona.name}</p>
-                    <p className="text-xs text-slate-400">{selectedPersona.description}</p>
+                    <p className="text-xs text-silver">{selectedPersona.description}</p>
                   </div>
                 </div>
 
@@ -653,13 +653,13 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                   {/* Score */}
                   <div className="text-center">
                     <p className="text-2xl font-bold text-white">{avgScore}</p>
-                    <p className="text-xs text-slate-400">Avg Score</p>
+                    <p className="text-xs text-silver">Avg Score</p>
                   </div>
 
                   {/* Actions */}
                   <button
                     onClick={() => setShowTips(true)}
-                    className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white text-sm font-medium"
+                    className="px-4 py-2 rounded-xl bg-[#111111] hover:bg-white/10 text-white text-sm font-medium"
                   >💡 Tips</button>
                   <button
                     onClick={endInterview}
@@ -690,7 +690,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                         {msg.role === 'assistant' && (
                           <div className="flex items-center gap-2 mb-3">
                             <span className="text-xl">{selectedPersona.icon}</span>
-                            <span className="text-sm font-semibold text-slate-400">{selectedPersona.name}</span>
+                            <span className="text-sm font-semibold text-silver">{selectedPersona.name}</span>
                           </div>
                         )}
                         <p className="text-slate-200 whitespace-pre-wrap">{msg.content}</p>
@@ -712,17 +712,17 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                               }`}>
                                 {msg.feedback.score}
                               </div>
-                              <p className="text-xs text-slate-500 mt-1">Score</p>
+                              <p className="text-xs text-silver mt-1">Score</p>
                             </div>
                             <div className="flex-1">
                               <p className="text-xs font-semibold text-cyan-400 uppercase mb-1">Shadow Insight</p>
-                              <p className="text-sm text-slate-300">{msg.feedback.trap}</p>
+                              <p className="text-sm text-silver">{msg.feedback.trap}</p>
                             </div>
                           </div>
                           {msg.feedback.refinement && (
                             <div className="pt-3 border-t border-white/10">
                               <p className="text-xs font-semibold text-cyan-400 uppercase mb-1">💎 Better Way to Say It</p>
-                              <p className="text-sm text-slate-300 italic">"{msg.feedback.refinement}"</p>
+                              <p className="text-sm text-silver italic">"{msg.feedback.refinement}"</p>
                             </div>
                           )}
                         </motion.div>
@@ -738,14 +738,14 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                     animate={{ opacity: 1 }}
                     className="flex justify-start"
                   >
-                    <div className="p-5 rounded-2xl bg-slate-800/50 border border-white/10">
+                    <div className="p-5 rounded-2xl bg-[#111111]/50 border border-white/10">
                       <div className="flex items-center gap-3">
                         <div className="flex gap-1">
                           <div className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce" style={{ animationDelay: '0ms' }} />
                           <div className="w-2 h-2 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '150ms' }} />
                           <div className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce" style={{ animationDelay: '300ms' }} />
                         </div>
-                        <span className="text-sm text-slate-400">
+                        <span className="text-sm text-silver">
                           {selectedPersona.name} is {difficulty === 'high-stress' ? 'evaluating critically' : 'thinking'}...
                         </span>
                       </div>
@@ -757,7 +757,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
               </div>
 
               {/* Neural Sphere */}
-              <div className="w-48 flex-shrink-0 flex items-center justify-center bg-slate-900/50 border-l border-white/10">
+              <div className="w-48 flex-shrink-0 flex items-center justify-center bg-[#0A0A0A]/50 border-l border-white/10">
                 <div className="text-center">
                   <motion.div
                     animate={{
@@ -778,7 +778,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                       'bg-gradient-to-br from-cyan-500 to-blue-500'
                     }`}
                   />
-                  <p className="text-xs text-slate-400 mt-4">
+                  <p className="text-xs text-silver mt-4">
                     {sphereState === 'listening' ? '🎤 Listening' :
                      sphereState === 'thinking' ? '🧠 Processing' :
                      sphereState === 'stress' ? '⚡ Stress Test' :
@@ -789,7 +789,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
             </div>
 
             {/* Input Area */}
-            <div className="flex-shrink-0 border-t border-white/10 bg-slate-900/80 backdrop-blur-xl p-4">
+            <div className="flex-shrink-0 border-t border-white/10 bg-[#0A0A0A]/80 backdrop-blur-xl p-4">
               <div className="max-w-4xl mx-auto flex gap-3">
                 <div className="flex-1 relative">
                   <textarea
@@ -797,7 +797,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                     onChange={(e) => setCurrentInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendResponse(); } }}
                     rows={2}
-                    className="w-full px-5 py-4 pr-24 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none resize-none"
+                    className="w-full px-5 py-4 pr-24 rounded-2xl bg-[#111111] border border-white/10 text-white placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none resize-none"
                     placeholder="Type your response... (Shift+Enter for new line, /tips for help)"
                     disabled={isThinking}
                   />
@@ -806,7 +806,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                       <button
                         onClick={toggleVoice}
                         className={`p-2 rounded-xl transition-all ${
-                          isListening ? 'bg-green-500 text-white' : 'bg-white/10 text-slate-400 hover:text-white'
+                          isListening ? 'bg-green-500 text-white' : 'bg-white/10 text-silver hover:text-white'
                         }`}
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -841,26 +841,26 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="rounded-3xl bg-gradient-to-br from-slate-900/90 via-slate-800/50 to-cyan-900/30 border border-white/10 p-8 text-center"
+                className="rounded-3xl bg-[#0A0A0A] to-cyan-900/30 border border-white/10 p-8 text-center"
               >
                 <span className="text-6xl block mb-6">🎉</span>
                 <h1 className="text-4xl font-bold text-white mb-4">Interview Complete!</h1>
                 
                 <div className="grid grid-cols-3 gap-4 my-8">
-                  <div className="p-4 rounded-xl bg-white/5">
+                  <div className="p-4 rounded-xl bg-[#111111]">
                     <p className="text-3xl font-bold text-cyan-400">{questionCount}</p>
-                    <p className="text-sm text-slate-400">Questions</p>
+                    <p className="text-sm text-silver">Questions</p>
                   </div>
-                  <div className="p-4 rounded-xl bg-white/5">
+                  <div className="p-4 rounded-xl bg-[#111111]">
                     <p className={`text-3xl font-bold ${
                       parseFloat(avgScore) >= 7 ? 'text-green-400' :
                       parseFloat(avgScore) >= 5 ? 'text-yellow-400' : 'text-red-400'
                     }`}>{avgScore}</p>
-                    <p className="text-sm text-slate-400">Avg Score</p>
+                    <p className="text-sm text-silver">Avg Score</p>
                   </div>
-                  <div className="p-4 rounded-xl bg-white/5">
+                  <div className="p-4 rounded-xl bg-[#111111]">
                     <p className="text-3xl font-bold text-cyan-400">{selectedPersona.icon}</p>
-                    <p className="text-sm text-slate-400">{selectedPersona.name.split(' ').pop()}</p>
+                    <p className="text-sm text-silver">{selectedPersona.name.split(' ').pop()}</p>
                   </div>
                 </div>
 
@@ -884,16 +884,16 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
               <div className="mt-8 space-y-4">
                 <h3 className="text-xl font-bold text-white">Interview Recap</h3>
                 {messages.filter(m => m.feedback).map((msg, idx) => (
-                  <div key={idx} className="p-4 rounded-xl bg-white/5 border border-white/10">
+                  <div key={idx} className="p-4 rounded-xl bg-[#111111] border border-white/10">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-slate-400">Q{idx + 1}</span>
+                      <span className="text-sm text-silver">Q{idx + 1}</span>
                       <span className={`text-lg font-bold ${
                         (msg.feedback?.score || 0) >= 7 ? 'text-green-400' :
                         (msg.feedback?.score || 0) >= 5 ? 'text-yellow-400' : 'text-red-400'
                       }`}>{msg.feedback?.score}/10</span>
                     </div>
                     {msg.feedback?.trap && (
-                      <p className="text-sm text-slate-300">{msg.feedback.trap}</p>
+                      <p className="text-sm text-silver">{msg.feedback.trap}</p>
                     )}
                   </div>
                 ))}
@@ -919,13 +919,13 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 20 }}
-              className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-slate-900 border-l border-white/10 z-50 overflow-y-auto"
+              className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-[#0A0A0A] border-l border-white/10 z-50 overflow-y-auto"
             >
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-xl font-bold text-white">💡 Unfair Advantage Tips</h3>
                   <button onClick={() => setShowTips(false)} className="p-2 rounded-lg hover:bg-white/10">
-                    <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-silver" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
                     </svg>
                   </button>
@@ -934,7 +934,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                 {tips.length === 0 && !loadingTips && (
                   <button
                     onClick={generateTips}
-                    className="w-full p-4 rounded-xl border-2 border-dashed border-white/20 text-slate-400 hover:border-cyan-500/50 hover:text-cyan-400 transition-colors"
+                    className="w-full p-4 rounded-xl border-2 border-dashed border-white/20 text-silver hover:border-cyan-500/50 hover:text-cyan-400 transition-colors"
                   >
                     Click to generate personalized tips
                   </button>
@@ -953,18 +953,18 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: idx * 0.05 }}
-                      className="p-4 rounded-xl bg-white/5 border border-white/10"
+                      className="p-4 rounded-xl bg-[#111111] border border-white/10"
                     >
                       <div className="flex items-center gap-2 mb-2">
                         <span className={`text-xs px-2 py-0.5 rounded-full ${
                           tip.category === 'behavioral' ? 'bg-cyan-500/20 text-cyan-400' :
                           tip.category === 'technical' ? 'bg-cyan-500/20 text-cyan-400' :
                           tip.category === 'negotiation' ? 'bg-green-500/20 text-green-400' :
-                          'bg-slate-500/20 text-slate-400'
+                          'bg-slate-500/20 text-silver'
                         }`}>{tip.category}</span>
                       </div>
                       <h4 className="font-semibold text-white mb-1">{tip.title}</h4>
-                      <p className="text-sm text-slate-400">{tip.content}</p>
+                      <p className="text-sm text-silver">{tip.content}</p>
                     </motion.div>
                   ))}
                 </div>

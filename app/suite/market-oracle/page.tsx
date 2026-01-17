@@ -226,7 +226,7 @@ export default function MarketOraclePage() {
         <div className="glass-card p-12 text-center max-w-md">
           <span className="text-6xl mb-4 block">🔒</span>
           <h2 className="text-2xl font-bold text-white mb-3">Sign In Required</h2>
-          <p className="text-slate-400">Please sign in to access Market Oracle</p>
+          <p className="text-silver">Please sign in to access Market Oracle</p>
         </div>
       </div>
     );
@@ -286,7 +286,7 @@ export default function MarketOraclePage() {
                     Market Oracle
                   </span>
                 </h1>
-                <p className="text-slate-400 text-lg max-w-2xl">
+                <p className="text-silver text-lg max-w-2xl">
                   Navigate the 3D Opportunity Starfield. Discover your market position, find bridge skills, and chart your path to higher-paying roles.
                 </p>
               </div>
@@ -297,7 +297,7 @@ export default function MarketOraclePage() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="rounded-2xl bg-white/5 border border-white/10 p-6"
+                className="rounded-2xl bg-[#111111] border border-white/10 p-6"
               >
                 <h3 className="font-bold text-white mb-4 flex items-center gap-2">
                   <span>📄</span> Your Resume
@@ -313,7 +313,7 @@ export default function MarketOraclePage() {
                   >
                     <span className="text-4xl block mb-3">🚀</span>
                     <p className="text-white font-medium">Drop resume or click to upload</p>
-                    <p className="text-sm text-slate-400 mt-1">PDF, Word, or TXT</p>
+                    <p className="text-sm text-silver mt-1">PDF, Word, or TXT</p>
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -339,7 +339,7 @@ export default function MarketOraclePage() {
                 transition={{ delay: 0.1 }}
                 className="grid md:grid-cols-2 gap-4"
               >
-                <div className="rounded-2xl bg-white/5 border border-white/10 p-6">
+                <div className="rounded-2xl bg-[#111111] border border-white/10 p-6">
                   <h3 className="font-bold text-white mb-3 flex items-center gap-2">
                     <span>🎯</span> Target Role (Optional)
                   </h3>
@@ -351,7 +351,7 @@ export default function MarketOraclePage() {
                     placeholder="e.g., Senior ML Engineer"
                   />
                 </div>
-                <div className="rounded-2xl bg-white/5 border border-white/10 p-6">
+                <div className="rounded-2xl bg-[#111111] border border-white/10 p-6">
                   <h3 className="font-bold text-white mb-3 flex items-center gap-2">
                     <span>📍</span> Location (Optional)
                   </h3>
@@ -398,10 +398,10 @@ export default function MarketOraclePage() {
                   { icon: '🌉', title: 'Bridge Skills', desc: 'Discover skills that unlock higher salaries' },
                   { icon: '💎', title: 'Talent Density', desc: 'See how rare you are in the market' },
                 ].map((feature, i) => (
-                  <div key={i} className="p-4 rounded-xl bg-white/5 border border-white/10 text-center">
+                  <div key={i} className="p-4 rounded-xl bg-[#111111] border border-white/10 text-center">
                     <span className="text-3xl block mb-2">{feature.icon}</span>
                     <h4 className="font-semibold text-white">{feature.title}</h4>
-                    <p className="text-xs text-slate-400">{feature.desc}</p>
+                    <p className="text-xs text-silver">{feature.desc}</p>
                   </div>
                 ))}
               </motion.div>
@@ -438,7 +438,7 @@ export default function MarketOraclePage() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: i * 0.5 }}
-                    className="px-3 py-1 rounded-full bg-white/5 text-xs text-slate-400"
+                    className="px-3 py-1 rounded-full bg-[#111111] text-xs text-silver"
                   >{text}</motion.span>
                 ))}
               </div>
@@ -462,7 +462,7 @@ export default function MarketOraclePage() {
                 <motion.div
                   initial={{ x: -50, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
-                  className="glass-card p-4 rounded-2xl border border-cyan-500/30 bg-slate-900/80 backdrop-blur-xl max-w-xs"
+                  className="glass-card p-4 rounded-2xl border border-cyan-500/30 bg-[#0A0A0A]/80 backdrop-blur-xl max-w-xs"
                 >
                   <div className="flex items-center gap-4">
                     <div className="relative w-20 h-20">
@@ -488,7 +488,7 @@ export default function MarketOraclePage() {
                       </div>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-400 uppercase tracking-wider">Talent Density</p>
+                      <p className="text-xs text-silver uppercase tracking-wider">Talent Density</p>
                       <p className="text-lg font-bold text-white">Top {100 - analysis.talentDensityPercentile}%</p>
                       <p className="text-xs text-cyan-400">
                         {analysis.talentDensityPercentile > 80 ? 'Unicorn Status' :
@@ -504,9 +504,9 @@ export default function MarketOraclePage() {
                   initial={{ y: -50, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.1 }}
-                  className="glass-card p-4 rounded-2xl border border-cyan-500/30 bg-slate-900/80 backdrop-blur-xl"
+                  className="glass-card p-4 rounded-2xl border border-cyan-500/30 bg-[#0A0A0A]/80 backdrop-blur-xl"
                 >
-                  <p className="text-xs text-slate-400 uppercase tracking-wider mb-2 text-center">🌉 Bridge Skills</p>
+                  <p className="text-xs text-silver uppercase tracking-wider mb-2 text-center">🌉 Bridge Skills</p>
                   <div className="flex gap-2">
                     {analysis.bridgeSkills.map((skill, i) => (
                       <button
@@ -564,9 +564,9 @@ export default function MarketOraclePage() {
                   initial={{ y: 50, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.3 }}
-                  className="glass-card p-4 rounded-2xl border border-white/10 bg-slate-900/80 backdrop-blur-xl max-w-md"
+                  className="glass-card p-4 rounded-2xl border border-white/10 bg-[#0A0A0A]/80 backdrop-blur-xl max-w-md"
                 >
-                  <p className="text-xs text-slate-400 uppercase tracking-wider mb-2">Your Top Skills</p>
+                  <p className="text-xs text-silver uppercase tracking-wider mb-2">Your Top Skills</p>
                   <div className="flex flex-wrap gap-2">
                     {analysis.topSkills.map((skill) => (
                       <span key={skill} className="px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-400 text-xs border border-cyan-500/30">
@@ -574,7 +574,7 @@ export default function MarketOraclePage() {
                       </span>
                     ))}
                   </div>
-                  <p className="text-xs text-slate-400 uppercase tracking-wider mt-3 mb-2">Missing Skills</p>
+                  <p className="text-xs text-silver uppercase tracking-wider mt-3 mb-2">Missing Skills</p>
                   <div className="flex flex-wrap gap-2">
                     {analysis.missingSkills.map((skill) => (
                       <span key={skill} className="px-3 py-1 rounded-full bg-red-500/20 text-red-400 text-xs border border-red-500/30">
@@ -589,9 +589,9 @@ export default function MarketOraclePage() {
                   initial={{ y: 50, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.4 }}
-                  className="glass-card p-4 rounded-2xl border border-white/10 bg-slate-900/80 backdrop-blur-xl max-w-sm"
+                  className="glass-card p-4 rounded-2xl border border-white/10 bg-[#0A0A0A]/80 backdrop-blur-xl max-w-sm"
                 >
-                  <p className="text-xs text-slate-400 uppercase tracking-wider mb-2">📈 Market Trends</p>
+                  <p className="text-xs text-silver uppercase tracking-wider mb-2">📈 Market Trends</p>
                   <div className="space-y-2">
                     {analysis.marketTrends.slice(0, 4).map((trend) => (
                       <div key={trend.skill} className="flex items-center justify-between">
@@ -609,9 +609,9 @@ export default function MarketOraclePage() {
                   initial={{ y: 50, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.5 }}
-                  className="glass-card p-4 rounded-2xl border border-white/10 bg-slate-900/80 backdrop-blur-xl"
+                  className="glass-card p-4 rounded-2xl border border-white/10 bg-[#0A0A0A]/80 backdrop-blur-xl"
                 >
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-silver">
                     🖱️ Drag to rotate • Scroll to zoom • Click stars for details
                   </p>
                   <p className="text-xs text-cyan-400 mt-1">
@@ -630,7 +630,7 @@ export default function MarketOraclePage() {
                   exit={{ opacity: 0, scale: 0.9 }}
                   className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20"
                 >
-                  <div className="glass-card p-6 rounded-2xl border border-cyan-500/30 bg-slate-900/95 backdrop-blur-xl w-96">
+                  <div className="glass-card p-6 rounded-2xl border border-cyan-500/30 bg-[#0A0A0A]/95 backdrop-blur-xl w-96">
                     <div className="flex items-start justify-between mb-4">
                       <div>
                         <h3 className="text-xl font-bold text-white">{selectedJob.title}</h3>
@@ -640,7 +640,7 @@ export default function MarketOraclePage() {
                         onClick={() => { setShowJobCard(false); setSelectedJob(null); }}
                         className="p-2 rounded-lg hover:bg-white/10"
                       >
-                        <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5 text-silver" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                       </button>
@@ -648,13 +648,13 @@ export default function MarketOraclePage() {
 
                     <div className="space-y-4">
                       <div className="flex items-center justify-between p-3 rounded-xl bg-green-500/10 border border-green-500/30">
-                        <span className="text-sm text-slate-400">Salary</span>
+                        <span className="text-sm text-silver">Salary</span>
                         <span className="text-xl font-bold text-green-400">${selectedJob.salary.toLocaleString()}</span>
                       </div>
 
-                      <div className="p-3 rounded-xl bg-white/5">
+                      <div className="p-3 rounded-xl bg-[#111111]">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm text-slate-400">Match Score</span>
+                          <span className="text-sm text-silver">Match Score</span>
                           <span className={`text-lg font-bold ${selectedJob.fitScore > 0.8 ? 'text-cyan-400' :
                             selectedJob.fitScore > 0.6 ? 'text-green-400' : 'text-yellow-400'
                             }`}>{Math.round(selectedJob.fitScore * 100)}%</span>
@@ -668,7 +668,7 @@ export default function MarketOraclePage() {
                       </div>
 
                       <div>
-                        <p className="text-xs text-slate-400 uppercase tracking-wider mb-2">Required Skills</p>
+                        <p className="text-xs text-silver uppercase tracking-wider mb-2">Required Skills</p>
                         <div className="flex flex-wrap gap-2">
                           {selectedJob.skills.map((skill) => (
                             <span
@@ -686,7 +686,7 @@ export default function MarketOraclePage() {
 
                       <div className="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/30">
                         <p className="text-xs text-cyan-400 uppercase tracking-wider mb-1">💡 Why You'll Win</p>
-                        <p className="text-sm text-slate-300">
+                        <p className="text-sm text-silver">
                           {selectedJob.fitScore > 0.8
                             ? "Your skills are a near-perfect match. You're a top candidate for this role."
                             : selectedJob.fitScore > 0.6
@@ -709,33 +709,33 @@ export default function MarketOraclePage() {
                   exit={{ opacity: 0, x: 50 }}
                   className="absolute right-4 top-1/2 -translate-y-1/2 z-10"
                 >
-                  <div className="glass-card p-6 rounded-2xl border border-cyan-500/30 bg-slate-900/95 backdrop-blur-xl w-80">
+                  <div className="glass-card p-6 rounded-2xl border border-cyan-500/30 bg-[#0A0A0A]/95 backdrop-blur-xl w-80">
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center">
                         <span className="text-2xl">🌉</span>
                       </div>
                       <div>
-                        <p className="text-xs text-slate-400 uppercase">Bridge Skill</p>
+                        <p className="text-xs text-silver uppercase">Bridge Skill</p>
                         <h4 className="text-lg font-bold text-white">{activeBridgeSkill.skill}</h4>
                       </div>
                     </div>
 
                     <div className="space-y-3">
                       <div className="flex items-center justify-between p-3 rounded-xl bg-green-500/10">
-                        <span className="text-sm text-slate-400">Salary Increase</span>
+                        <span className="text-sm text-silver">Salary Increase</span>
                         <span className="text-lg font-bold text-green-400">+${activeBridgeSkill.salaryIncrease.toLocaleString()}</span>
                       </div>
                       <div className="flex items-center justify-between p-3 rounded-xl bg-cyan-500/10">
-                        <span className="text-sm text-slate-400">New Fit Score</span>
+                        <span className="text-sm text-silver">New Fit Score</span>
                         <span className="text-lg font-bold text-cyan-400">{Math.round(activeBridgeSkill.newFitScore * 100)}%</span>
                       </div>
                       <div className="flex items-center justify-between p-3 rounded-xl bg-cyan-500/10">
-                        <span className="text-sm text-slate-400">Impact Rating</span>
+                        <span className="text-sm text-silver">Impact Rating</span>
                         <span className="text-lg font-bold text-cyan-400">{activeBridgeSkill.impact}/10</span>
                       </div>
                     </div>
 
-                    <p className="text-xs text-slate-400 mt-4 text-center">
+                    <p className="text-xs text-silver mt-4 text-center">
                       🟣 Purple marker shows your projected position
                     </p>
                   </div>

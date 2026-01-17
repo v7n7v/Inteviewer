@@ -133,7 +133,7 @@ Return JSON: { "grades": { "communication": X, "technical": X, "problemSolving":
     <div className="space-y-6">
       {/* Hero Header */}
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900/90 via-slate-800/50 to-cyan-900/20 border border-white/10 p-8"
+        className="relative overflow-hidden rounded-3xl bg-[#0A0A0A] to-cyan-900/20 border border-white/10 p-8"
       >
         <div className="absolute inset-0 opacity-30">
           <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl" />
@@ -148,7 +148,7 @@ Return JSON: { "grades": { "communication": X, "technical": X, "problemSolving":
               <span className="text-xs font-medium text-cyan-400">Phase 3 • Hybrid Assessment</span>
             </motion.div>
             <h1 className="text-4xl lg:text-5xl font-bold mb-3"><span className="text-gradient">Calibration</span></h1>
-            <p className="text-slate-400 text-lg max-w-xl">Human intuition meets AI logic — compare assessments side by side</p>
+            <p className="text-silver text-lg max-w-xl">Human intuition meets AI logic — compare assessments side by side</p>
           </div>
           
           {/* Score Comparison */}
@@ -159,14 +159,14 @@ Return JSON: { "grades": { "communication": X, "technical": X, "problemSolving":
               <div className="w-20 h-20 rounded-2xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center mb-2">
                 <span className="text-2xl font-bold text-cyan-400">{calcAvg(currentCandidate.humanGrades).toFixed(1)}</span>
               </div>
-              <span className="text-xs text-slate-400">Human</span>
+              <span className="text-xs text-silver">Human</span>
             </div>
             <div className="text-slate-600 text-2xl">vs</div>
             <div className="text-center">
               <div className="w-20 h-20 rounded-2xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center mb-2">
                 <span className="text-2xl font-bold text-blue-400">{calcAvg(currentCandidate.aiGrades).toFixed(1)}</span>
               </div>
-              <span className="text-xs text-slate-400">AI</span>
+              <span className="text-xs text-silver">AI</span>
             </div>
           </motion.div>
         </div>
@@ -180,7 +180,7 @@ Return JSON: { "grades": { "communication": X, "technical": X, "problemSolving":
           <span className="text-2xl">💡</span>
           <div>
             <h3 className="font-semibold text-yellow-400">No Interview Data</h3>
-            <p className="text-sm text-slate-400">Complete Detective and Co-Pilot phases first.</p>
+            <p className="text-sm text-silver">Complete Detective and Co-Pilot phases first.</p>
           </div>
         </motion.div>
       )}
@@ -188,7 +188,7 @@ Return JSON: { "grades": { "communication": X, "technical": X, "problemSolving":
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Human Grading */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl bg-gradient-to-br from-slate-900/80 to-cyan-900/10 border border-cyan-500/20 overflow-hidden"
+          className="rounded-2xl bg-[#0A0A0A] to-cyan-900/10 border border-cyan-500/20 overflow-hidden"
         >
           <div className="p-6 border-b border-white/5 flex items-center gap-4">
             <div className="w-14 h-14 rounded-2xl bg-cyan-500/20 flex items-center justify-center">
@@ -196,14 +196,14 @@ Return JSON: { "grades": { "communication": X, "technical": X, "problemSolving":
             </div>
             <div>
               <h3 className="text-xl font-bold text-white">Human Assessment</h3>
-              <p className="text-sm text-slate-400">Your intuitive evaluation</p>
+              <p className="text-sm text-silver">Your intuitive evaluation</p>
             </div>
           </div>
           <div className="p-6 space-y-6">
             {GRADE_KEYS.map((key, i) => (
               <div key={key} className="group">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">
+                  <label className="text-sm font-medium text-silver group-hover:text-white transition-colors">
                     {GRADE_LABELS[i]}
                   </label>
                   <span className="text-lg font-bold text-cyan-400">{currentCandidate.humanGrades[key].toFixed(1)}</span>
@@ -219,7 +219,7 @@ Return JSON: { "grades": { "communication": X, "technical": X, "problemSolving":
               </div>
             ))}
             <div className="pt-4 border-t border-white/10 flex items-center justify-between">
-              <span className="text-sm font-semibold text-slate-400">Average</span>
+              <span className="text-sm font-semibold text-silver">Average</span>
               <span className="text-2xl font-bold text-gradient">{calcAvg(currentCandidate.humanGrades).toFixed(1)}</span>
             </div>
           </div>
@@ -227,7 +227,7 @@ Return JSON: { "grades": { "communication": X, "technical": X, "problemSolving":
 
         {/* AI Assessment */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-          className="rounded-2xl bg-gradient-to-br from-slate-900/80 to-blue-900/10 border border-blue-500/20 overflow-hidden"
+          className="rounded-2xl bg-[#0A0A0A] to-blue-900/10 border border-blue-500/20 overflow-hidden"
         >
           <div className="p-6 border-b border-white/5 flex items-center gap-4">
             <div className="w-14 h-14 rounded-2xl bg-blue-500/20 flex items-center justify-center">
@@ -235,7 +235,7 @@ Return JSON: { "grades": { "communication": X, "technical": X, "problemSolving":
             </div>
             <div>
               <h3 className="text-xl font-bold text-white">AI Assessment</h3>
-              <p className="text-sm text-slate-400">GPT-OSS 120B analysis</p>
+              <p className="text-sm text-silver">GPT-OSS 120B analysis</p>
             </div>
           </div>
           <div className="p-6">
@@ -250,7 +250,7 @@ Return JSON: { "grades": { "communication": X, "technical": X, "problemSolving":
                   {GRADE_KEYS.map((key, i) => (
                     <div key={key}>
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm text-slate-400">{GRADE_LABELS[i]}</span>
+                        <span className="text-sm text-silver">{GRADE_LABELS[i]}</span>
                         <span className="text-sm font-bold text-blue-400">{currentCandidate.aiGrades[key].toFixed(1)}</span>
                       </div>
                       <div className="h-2 bg-white/5 rounded-full overflow-hidden">
@@ -262,12 +262,12 @@ Return JSON: { "grades": { "communication": X, "technical": X, "problemSolving":
                   ))}
                 </div>
                 <div className="pt-4 border-t border-white/10 mt-4 flex items-center justify-between">
-                  <span className="text-sm font-semibold text-slate-400">AI Average</span>
+                  <span className="text-sm font-semibold text-silver">AI Average</span>
                   <span className="text-xl font-bold text-blue-400">{calcAvg(currentCandidate.aiGrades).toFixed(1)}</span>
                 </div>
               </>
             ) : (
-              <div className="text-center py-8 text-slate-500">No transcript available. Complete interview in Co-Pilot first.</div>
+              <div className="text-center py-8 text-silver">No transcript available. Complete interview in Co-Pilot first.</div>
             )}
           </div>
         </motion.div>
@@ -275,7 +275,7 @@ Return JSON: { "grades": { "communication": X, "technical": X, "problemSolving":
 
       {/* Radar Chart */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-        className="rounded-2xl bg-gradient-to-br from-slate-900/80 to-cyan-900/10 border border-cyan-500/20 overflow-hidden"
+        className="rounded-2xl bg-[#0A0A0A] to-cyan-900/10 border border-cyan-500/20 overflow-hidden"
       >
         <div className="p-6 border-b border-white/5 flex items-center gap-4">
           <div className="w-14 h-14 rounded-2xl bg-cyan-500/20 flex items-center justify-center">
@@ -283,7 +283,7 @@ Return JSON: { "grades": { "communication": X, "technical": X, "problemSolving":
           </div>
           <div>
             <h3 className="text-xl font-bold text-white">Calibration Radar</h3>
-            <p className="text-sm text-slate-400">Human vs AI visual comparison</p>
+            <p className="text-sm text-silver">Human vs AI visual comparison</p>
           </div>
         </div>
         <div className="p-6">
@@ -292,12 +292,12 @@ Return JSON: { "grades": { "communication": X, "technical": X, "problemSolving":
           </div>
           <div className="flex items-center justify-center gap-8 mt-4">
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-cyber-cyan" />
-              <span className="text-sm text-slate-400">Human</span>
+              <div className="w-4 h-4 rounded-full bg-white" />
+              <span className="text-sm text-silver">Human</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded-full bg-blue-500" />
-              <span className="text-sm text-slate-400">AI</span>
+              <span className="text-sm text-silver">AI</span>
             </div>
           </div>
         </div>
@@ -305,7 +305,7 @@ Return JSON: { "grades": { "communication": X, "technical": X, "problemSolving":
 
       {/* Notes & Save */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-        className="rounded-2xl bg-gradient-to-br from-slate-900/80 to-green-900/10 border border-green-500/20 overflow-hidden"
+        className="rounded-2xl bg-[#0A0A0A] to-green-900/10 border border-green-500/20 overflow-hidden"
       >
         <div className="p-6 border-b border-white/5 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -314,7 +314,7 @@ Return JSON: { "grades": { "communication": X, "technical": X, "problemSolving":
             </div>
             <div>
               <h3 className="text-xl font-bold text-white">Interview Notes</h3>
-              <p className="text-sm text-slate-400">Additional observations</p>
+              <p className="text-sm text-silver">Additional observations</p>
             </div>
           </div>
           {hasTranscript && (

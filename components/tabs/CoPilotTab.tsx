@@ -280,7 +280,7 @@ export default function CoPilotTab() {
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900/90 via-slate-800/50 to-green-900/20 border border-white/10 p-8"
+        className="relative overflow-hidden rounded-3xl bg-[#0A0A0A] to-green-900/20 border border-white/10 p-8"
       >
         <div className="absolute inset-0 opacity-30">
           <div className="absolute top-0 right-0 w-96 h-96 bg-green-500/20 rounded-full blur-3xl" />
@@ -296,7 +296,7 @@ export default function CoPilotTab() {
               <span className="text-xs font-medium text-green-400">Phase 2 • Live Interview Assistant</span>
             </motion.div>
             <h1 className="text-4xl lg:text-5xl font-bold mb-3"><span className="text-gradient">Co-Pilot</span></h1>
-            <p className="text-slate-400 text-lg max-w-xl">Real-time transcription with meeting app support - capture both sides of the conversation</p>
+            <p className="text-silver text-lg max-w-xl">Real-time transcription with meeting app support - capture both sides of the conversation</p>
           </div>
 
           {/* Live Status */}
@@ -308,8 +308,8 @@ export default function CoPilotTab() {
               {isTranscribing && <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 animate-pulse" />}
             </div>
             <div className="text-left">
-              <p className={`font-bold ${isTranscribing ? 'text-red-400' : 'text-slate-400'}`}>{isTranscribing ? 'LIVE' : 'STANDBY'}</p>
-              <p className="text-xs text-slate-500">{hasQuestions ? `${completedCount}/${currentCandidate.questions.length} done` : 'No questions'}</p>
+              <p className={`font-bold ${isTranscribing ? 'text-red-400' : 'text-silver'}`}>{isTranscribing ? 'LIVE' : 'STANDBY'}</p>
+              <p className="text-xs text-silver">{hasQuestions ? `${completedCount}/${currentCandidate.questions.length} done` : 'No questions'}</p>
             </div>
           </motion.div>
         </div>
@@ -323,7 +323,7 @@ export default function CoPilotTab() {
           <span className="text-2xl">⚠️</span>
           <div>
             <h3 className="font-semibold text-yellow-400">Browser Not Supported</h3>
-            <p className="text-sm text-slate-400">Use Google Chrome for speech recognition.</p>
+            <p className="text-sm text-silver">Use Google Chrome for speech recognition.</p>
           </div>
         </motion.div>
       )}
@@ -331,11 +331,11 @@ export default function CoPilotTab() {
       {/* No Questions Warning */}
       {!hasQuestions && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          className="p-8 rounded-2xl bg-gradient-to-br from-slate-900/80 to-cyan-900/10 border border-cyan-500/20 text-center"
+          className="p-8 rounded-2xl bg-[#0A0A0A] to-cyan-900/10 border border-cyan-500/20 text-center"
         >
           <span className="text-6xl mb-4 block">💡</span>
           <h3 className="text-xl font-bold text-white mb-2">No Questions Available</h3>
-          <p className="text-slate-400 mb-4">Generate questions in the <span className="text-cyan-400 font-semibold">Detective</span> tab first.</p>
+          <p className="text-silver mb-4">Generate questions in the <span className="text-cyan-400 font-semibold">Detective</span> tab first.</p>
         </motion.div>
       )}
 
@@ -343,12 +343,12 @@ export default function CoPilotTab() {
         <>
           {/* Capture Mode Selector */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-            className="p-6 rounded-2xl bg-gradient-to-br from-slate-900/80 to-cyan-900/10 border border-cyan-500/20"
+            className="p-6 rounded-2xl bg-[#0A0A0A] to-cyan-900/10 border border-cyan-500/20"
           >
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-lg font-bold text-white mb-1">Audio Capture Mode</h3>
-                <p className="text-sm text-slate-400">Select based on your interview setup</p>
+                <p className="text-sm text-silver">Select based on your interview setup</p>
               </div>
               <button onClick={() => setShowCaptureGuide(!showCaptureGuide)}
                 className="text-sm text-cyan-400 hover:text-cyan-300"
@@ -368,7 +368,7 @@ export default function CoPilotTab() {
                   <span className="text-2xl">🎤</span>
                   <span className="font-bold text-white">Microphone Only</span>
                 </div>
-                <p className="text-xs text-slate-400">In-person interviews or when you're the only speaker</p>
+                <p className="text-xs text-silver">In-person interviews or when you're the only speaker</p>
               </button>
 
               <button onClick={() => setCaptureMode('meeting')} disabled={isTranscribing}
@@ -383,7 +383,7 @@ export default function CoPilotTab() {
                   <span className="font-bold text-white">Meeting Mode</span>
                   <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 text-xs">NEW</span>
                 </div>
-                <p className="text-xs text-slate-400">Zoom, Meet, Teams, Webex - captures both speakers</p>
+                <p className="text-xs text-silver">Zoom, Meet, Teams, Webex - captures both speakers</p>
               </button>
             </div>
 
@@ -392,12 +392,12 @@ export default function CoPilotTab() {
               <div className="flex items-center gap-4 p-3 rounded-xl bg-black/30">
                 <div className="flex items-center gap-2">
                   <div className={`w-3 h-3 rounded-full ${micActive ? 'bg-green-500 animate-pulse' : 'bg-slate-600'}`} />
-                  <span className="text-sm text-slate-300">Your Mic</span>
+                  <span className="text-sm text-silver">Your Mic</span>
                 </div>
                 {captureMode === 'meeting' && (
                   <div className="flex items-center gap-2">
                     <div className={`w-3 h-3 rounded-full ${systemAudioActive ? 'bg-cyan-500 animate-pulse' : 'bg-slate-600'}`} />
-                    <span className="text-sm text-slate-300">Meeting Audio</span>
+                    <span className="text-sm text-silver">Meeting Audio</span>
                   </div>
                 )}
               </div>
@@ -410,7 +410,7 @@ export default function CoPilotTab() {
                   className="mt-4 p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/20"
                 >
                   <h4 className="font-bold text-cyan-400 mb-3">📺 Meeting Mode Guide</h4>
-                  <ol className="space-y-2 text-sm text-slate-300">
+                  <ol className="space-y-2 text-sm text-silver">
                     <li className="flex items-start gap-2">
                       <span className="w-5 h-5 rounded-full bg-cyan-500/20 flex items-center justify-center text-xs">1</span>
                       Click "Start" - a screen share dialog will appear
@@ -434,10 +434,10 @@ export default function CoPilotTab() {
                     </p>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <span className="px-3 py-1 rounded-full bg-white/10 text-xs text-slate-300">✅ Google Meet</span>
-                    <span className="px-3 py-1 rounded-full bg-white/10 text-xs text-slate-300">✅ Zoom Web</span>
-                    <span className="px-3 py-1 rounded-full bg-white/10 text-xs text-slate-300">✅ Microsoft Teams</span>
-                    <span className="px-3 py-1 rounded-full bg-white/10 text-xs text-slate-300">✅ Webex</span>
+                    <span className="px-3 py-1 rounded-full bg-white/10 text-xs text-silver">✅ Google Meet</span>
+                    <span className="px-3 py-1 rounded-full bg-white/10 text-xs text-silver">✅ Zoom Web</span>
+                    <span className="px-3 py-1 rounded-full bg-white/10 text-xs text-silver">✅ Microsoft Teams</span>
+                    <span className="px-3 py-1 rounded-full bg-white/10 text-xs text-silver">✅ Webex</span>
                   </div>
                 </motion.div>
               )}
@@ -450,7 +450,7 @@ export default function CoPilotTab() {
           >
             <div className="flex items-center justify-between mb-3">
               <span className="font-semibold text-white">Interview Progress</span>
-              <span className="text-sm text-slate-400">{completedCount} / {currentCandidate.questions.length}</span>
+              <span className="text-sm text-silver">{completedCount} / {currentCandidate.questions.length}</span>
             </div>
             <div className="relative h-3 bg-white/5 rounded-full overflow-hidden">
               <motion.div initial={{ width: 0 }} animate={{ width: `${progressPercent}%` }}
@@ -461,7 +461,7 @@ export default function CoPilotTab() {
 
           {/* Transcription Control */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-            className="p-6 rounded-2xl bg-gradient-to-br from-slate-900/80 to-slate-800/50 border border-white/10"
+            className="p-6 rounded-2xl bg-[#0A0A0A] border border-white/10"
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-4">
@@ -472,7 +472,7 @@ export default function CoPilotTab() {
                   <h3 className="text-xl font-bold text-white">
                     {captureMode === 'meeting' ? 'Meeting Capture' : 'Transcription'}
                   </h3>
-                  <p className="text-sm text-slate-400">
+                  <p className="text-sm text-silver">
                     {isTranscribing 
                       ? activeQuestionIndex !== null 
                         ? `Recording → Q${activeQuestionIndex + 1}` 
@@ -503,7 +503,7 @@ export default function CoPilotTab() {
                   className="mt-4 p-4 rounded-xl bg-black/30 border border-white/10"
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-slate-500 flex items-center gap-2">
+                    <span className="text-xs text-silver flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                       Live Transcript
                       {captureMode === 'meeting' && systemAudioActive && (
@@ -512,9 +512,9 @@ export default function CoPilotTab() {
                     </span>
                     {activeQuestionIndex !== null && <span className="text-xs text-cyan-400">→ Q{activeQuestionIndex + 1}</span>}
                   </div>
-                  <div className="text-sm text-slate-300 max-h-32 overflow-y-auto font-mono">
-                    {currentTranscript || interimTranscript || <span className="text-slate-500 italic">Listening...</span>}
-                    {interimTranscript && <span className="text-slate-500 italic"> {interimTranscript}</span>}
+                  <div className="text-sm text-silver max-h-32 overflow-y-auto font-mono">
+                    {currentTranscript || interimTranscript || <span className="text-silver italic">Listening...</span>}
+                    {interimTranscript && <span className="text-silver italic"> {interimTranscript}</span>}
                   </div>
                 </motion.div>
               )}
@@ -543,13 +543,13 @@ export default function CoPilotTab() {
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg ${
                       qData.status === 'completed' ? 'bg-green-500/20 text-green-400'
                       : qData.status === 'in-progress' ? 'bg-yellow-500/20 text-yellow-400'
-                      : 'bg-slate-800 text-slate-400'
+                      : 'bg-slate-800 text-silver'
                     }`}>
                       {qData.status === 'completed' ? '✓' : idx + 1}
                     </div>
                     <div className="flex-1">
                       <h4 className="text-white font-semibold mb-1">{q.question}</h4>
-                      <p className="text-sm text-slate-400"><span className="text-cyan-400">Purpose:</span> {q.purpose}</p>
+                      <p className="text-sm text-silver"><span className="text-cyan-400">Purpose:</span> {q.purpose}</p>
                     </div>
                     <button onClick={() => selectQuestion(idx)}
                       className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
@@ -588,14 +588,14 @@ export default function CoPilotTab() {
                     <div className="space-y-3 pt-4 border-t border-white/10">
                       {qData.transcript && (
                         <div className="p-3 rounded-xl bg-black/30">
-                          <span className="text-xs font-semibold text-slate-500 mb-1 block">TRANSCRIPT</span>
-                          <p className="text-sm text-slate-300 max-h-20 overflow-y-auto">{qData.transcript}</p>
+                          <span className="text-xs font-semibold text-silver mb-1 block">TRANSCRIPT</span>
+                          <p className="text-sm text-silver max-h-20 overflow-y-auto">{qData.transcript}</p>
                         </div>
                       )}
                       {qData.aiNudge && (
                         <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
                           <span className="text-xs font-semibold text-blue-400 mb-1 block">AI FOLLOW-UPS</span>
-                          <p className="text-sm text-slate-300 whitespace-pre-wrap">{qData.aiNudge}</p>
+                          <p className="text-sm text-silver whitespace-pre-wrap">{qData.aiNudge}</p>
                         </div>
                       )}
                       {qData.audioUrl && (
@@ -603,7 +603,7 @@ export default function CoPilotTab() {
                           <span className="text-xl">🎵</span>
                           <div className="flex-1">
                             <p className="text-sm text-white">Audio recorded {qData.captureMode === 'meeting' && <span className="text-cyan-400">(Meeting Mode)</span>}</p>
-                            {qData.timestamp && <p className="text-xs text-slate-500">{new Date(qData.timestamp).toLocaleString()}</p>}
+                            {qData.timestamp && <p className="text-xs text-silver">{new Date(qData.timestamp).toLocaleString()}</p>}
                           </div>
                           <button onClick={() => playAudio(qData.audioUrl!)} className="px-3 py-1.5 rounded-lg bg-white/10 text-sm text-white hover:bg-white/20 transition-colors">▶ Play</button>
                         </div>

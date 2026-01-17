@@ -20,8 +20,7 @@ export default function Home() {
     authHelpers.getSession().then(({ session }) => {
       if (session) {
         setUser(session.user);
-        // Redirect to hub (suite selector) if already authenticated
-        router.push('/hub');
+        // Don't redirect - let user view landing page, they can use "Open Dashboard" button
       }
       setLoading(false);
     });
@@ -72,7 +71,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen">
-      <HeroSection 
+      <HeroSection
         onGetStarted={handleGetStarted}
         onShowLogin={handleShowLogin}
         onShowSignup={handleShowSignup}

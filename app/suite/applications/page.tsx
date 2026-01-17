@@ -7,7 +7,7 @@ import { getJobApplications, updateApplicationStatus, deleteJobApplication, type
 import { showToast } from '@/components/Toast';
 
 const STATUS_CONFIG = {
-    not_applied: { bg: 'bg-slate-500/20', border: 'border-slate-500/30', text: 'text-slate-300', label: 'Not Applied', icon: '📝', gradient: 'from-slate-500 to-slate-600' },
+    not_applied: { bg: 'bg-slate-500/20', border: 'border-slate-500/30', text: 'text-silver', label: 'Not Applied', icon: '📝', gradient: 'from-slate-500 to-slate-600' },
     applied: { bg: 'bg-blue-500/20', border: 'border-blue-500/30', text: 'text-blue-300', label: 'Applied', icon: '🚀', gradient: 'from-blue-500 to-cyan-500' },
     screening: { bg: 'bg-cyan-500/20', border: 'border-cyan-500/30', text: 'text-cyan-300', label: 'Screening', icon: '👀', gradient: 'from-cyan-500 to-teal-500' },
     interview_scheduled: { bg: 'bg-cyan-500/20', border: 'border-cyan-500/30', text: 'text-cyan-300', label: 'Interview Scheduled', icon: '📅', gradient: 'from-cyan-500 to-indigo-500' },
@@ -18,7 +18,7 @@ const STATUS_CONFIG = {
     withdrawn: { bg: 'bg-orange-500/20', border: 'border-orange-500/30', text: 'text-orange-300', label: 'Withdrawn', icon: '🔙', gradient: 'from-orange-500 to-amber-500' },
 };
 
-type ViewMode = 'grid' | 'kanban' | 'list';
+type ViewMode = 'grid' | 'list';
 
 export default function ApplicationsPage() {
     const { user } = useStore();
@@ -123,7 +123,7 @@ export default function ApplicationsPage() {
                 <div className="glass-card p-12 text-center max-w-md">
                     <span className="text-6xl mb-4 block">🔒</span>
                     <h2 className="text-2xl font-bold text-white mb-3">Sign In Required</h2>
-                    <p className="text-slate-400">Please sign in to access your application tracker</p>
+                    <p className="text-silver">Please sign in to access your application tracker</p>
                 </div>
             </div>
         );
@@ -135,7 +135,7 @@ export default function ApplicationsPage() {
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900/90 via-slate-800/50 to-cyan-900/20 border border-white/10 p-8 mb-8"
+                className="relative overflow-hidden rounded-3xl bg-[#0A0A0A] to-cyan-900/20 border border-white/10 p-8 mb-8"
             >
                 <div className="absolute inset-0 opacity-20">
                     <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/30 rounded-full blur-3xl" />
@@ -152,7 +152,7 @@ export default function ApplicationsPage() {
                                     Application Tracker
                                 </span>
                             </h1>
-                            <p className="text-slate-400">Track and manage your job applications</p>
+                            <p className="text-silver">Track and manage your job applications</p>
                         </div>
                     </div>
                 </div>
@@ -171,7 +171,7 @@ export default function ApplicationsPage() {
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: i * 0.1 }}
-                        className="p-6 rounded-2xl bg-gradient-to-br from-slate-900/80 to-slate-800/50 border border-white/10 hover:border-white/20 transition-all"
+                        className="p-6 rounded-2xl bg-[#0A0A0A] border border-white/10 hover:border-white/20 transition-all"
                     >
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-2xl">{stat.icon}</span>
@@ -179,7 +179,7 @@ export default function ApplicationsPage() {
                                 {stat.value}
                             </span>
                         </div>
-                        <p className="text-sm text-slate-400">{stat.label}</p>
+                        <p className="text-sm text-silver">{stat.label}</p>
                     </motion.div>
                 ))}
             </div>
@@ -192,12 +192,12 @@ export default function ApplicationsPage() {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="🔍 Search companies or positions..."
-                        className="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20"
+                        className="flex-1 px-4 py-3 rounded-xl bg-[#111111] border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20"
                     />
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
-                        className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-cyan-500/50"
+                        className="px-4 py-3 rounded-xl bg-[#111111] border border-white/10 text-white focus:outline-none focus:border-cyan-500/50"
                     >
                         <option value="all">All Statuses</option>
                         {Object.entries(STATUS_CONFIG).map(([key, value]) => (
@@ -207,18 +207,17 @@ export default function ApplicationsPage() {
                 </div>
 
                 {/* View Mode Toggle */}
-                <div className="flex gap-1 p-1 rounded-xl bg-white/5 border border-white/10">
+                <div className="flex gap-1 p-1 rounded-xl bg-[#111111] border border-white/10">
                     {[
                         { mode: 'grid' as ViewMode, icon: '⊞', label: 'Grid' },
-                        { mode: 'kanban' as ViewMode, icon: '☰', label: 'Kanban' },
                         { mode: 'list' as ViewMode, icon: '≡', label: 'List' },
                     ].map((v) => (
                         <button
                             key={v.mode}
                             onClick={() => setViewMode(v.mode)}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === v.mode
-                                    ? 'bg-gradient-to-r from-cyan-500 to-cyan-500 text-white'
-                                    : 'text-slate-400 hover:text-white'
+                                ? 'bg-gradient-to-r from-cyan-500 to-cyan-500 text-white'
+                                : 'text-silver hover:text-white'
                                 }`}
                         >
                             {v.icon} {v.label}
@@ -231,7 +230,7 @@ export default function ApplicationsPage() {
             {isLoading ? (
                 <div className="text-center py-12">
                     <div className="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin mx-auto mb-4" />
-                    <p className="text-slate-400">Loading applications...</p>
+                    <p className="text-silver">Loading applications...</p>
                 </div>
             ) : filteredApplications.length === 0 ? (
                 <motion.div
@@ -243,7 +242,7 @@ export default function ApplicationsPage() {
                         <span className="text-5xl">📭</span>
                     </div>
                     <h3 className="text-2xl font-bold text-white mb-3">No Applications Yet</h3>
-                    <p className="text-slate-400 mb-6 max-w-md mx-auto">
+                    <p className="text-silver mb-6 max-w-md mx-auto">
                         Start by morphing a resume for a specific job. Your applications will appear here for tracking.
                     </p>
                     <a
@@ -267,79 +266,25 @@ export default function ApplicationsPage() {
                         />
                     ))}
                 </div>
-            ) : viewMode === 'kanban' ? (
-                /* Kanban View */
-                <div className="overflow-x-auto pb-4">
-                    <div className="flex gap-4 min-w-max">
-                        {kanbanColumns.slice(0, 6).map((status) => (
-                            <div key={status} className="w-72 flex-shrink-0">
-                                <div className={`p-3 rounded-t-xl ${STATUS_CONFIG[status].bg} ${STATUS_CONFIG[status].border} border-b-0`}>
-                                    <div className="flex items-center gap-2">
-                                        <span>{STATUS_CONFIG[status].icon}</span>
-                                        <span className={`font-medium ${STATUS_CONFIG[status].text}`}>
-                                            {STATUS_CONFIG[status].label}
-                                        </span>
-                                        <span className="ml-auto px-2 py-0.5 rounded-full bg-white/10 text-xs text-white">
-                                            {groupedApplications[status]?.length || 0}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="p-2 rounded-b-xl bg-white/5 border border-white/10 border-t-0 min-h-[400px] space-y-2">
-                                    {groupedApplications[status]?.map((app) => (
-                                        <motion.div
-                                            key={app.id}
-                                            layout
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            onClick={() => openDetailModal(app)}
-                                            className="p-3 rounded-xl bg-slate-800/50 border border-white/10 cursor-pointer hover:border-cyan-500/30 transition-all"
-                                        >
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center text-sm font-bold text-white">
-                                                    {app.company_name[0]}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="font-medium text-white text-sm truncate">{app.company_name}</p>
-                                                    <p className="text-xs text-slate-400 truncate">{app.job_title}</p>
-                                                </div>
-                                            </div>
-                                            {app.talent_density_score && (
-                                                <div className="flex items-center gap-2">
-                                                    <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                                                        <div
-                                                            className={`h-full ${app.talent_density_score >= 80 ? 'bg-green-500' : app.talent_density_score >= 60 ? 'bg-cyan-500' : 'bg-yellow-500'}`}
-                                                            style={{ width: `${app.talent_density_score}%` }}
-                                                        />
-                                                    </div>
-                                                    <span className="text-xs text-slate-400">{app.talent_density_score}%</span>
-                                                </div>
-                                            )}
-                                        </motion.div>
-                                    ))}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
             ) : (
                 /* List View */
-                <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
+                <div className="rounded-2xl bg-[#111111] border border-white/10 overflow-hidden">
                     <table className="w-full">
                         <thead>
                             <tr className="border-b border-white/10">
-                                <th className="text-left p-4 text-slate-400 font-medium">Company</th>
-                                <th className="text-left p-4 text-slate-400 font-medium">Position</th>
-                                <th className="text-left p-4 text-slate-400 font-medium">Status</th>
-                                <th className="text-left p-4 text-slate-400 font-medium">Match</th>
-                                <th className="text-left p-4 text-slate-400 font-medium">Date</th>
-                                <th className="text-right p-4 text-slate-400 font-medium">Actions</th>
+                                <th className="text-left p-4 text-silver font-medium">Company</th>
+                                <th className="text-left p-4 text-silver font-medium">Position</th>
+                                <th className="text-left p-4 text-silver font-medium">Status</th>
+                                <th className="text-left p-4 text-silver font-medium">Match</th>
+                                <th className="text-left p-4 text-silver font-medium">Date</th>
+                                <th className="text-right p-4 text-silver font-medium">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {filteredApplications.map((app) => (
                                 <tr
                                     key={app.id}
-                                    className="border-b border-white/5 hover:bg-white/5 cursor-pointer transition-colors"
+                                    className="border-b border-white/5 hover:bg-[#111111] cursor-pointer transition-colors"
                                     onClick={() => openDetailModal(app)}
                                 >
                                     <td className="p-4">
@@ -350,7 +295,7 @@ export default function ApplicationsPage() {
                                             <span className="font-medium text-white">{app.company_name}</span>
                                         </div>
                                     </td>
-                                    <td className="p-4 text-slate-300">{app.job_title || '-'}</td>
+                                    <td className="p-4 text-silver">{app.job_title || '-'}</td>
                                     <td className="p-4">
                                         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium ${STATUS_CONFIG[app.status].bg} ${STATUS_CONFIG[app.status].border} border ${STATUS_CONFIG[app.status].text}`}>
                                             {STATUS_CONFIG[app.status].icon} {STATUS_CONFIG[app.status].label}
@@ -363,7 +308,7 @@ export default function ApplicationsPage() {
                                             </span>
                                         ) : '-'}
                                     </td>
-                                    <td className="p-4 text-slate-400 text-sm">
+                                    <td className="p-4 text-silver text-sm">
                                         {new Date(app.created_at).toLocaleDateString()}
                                     </td>
                                     <td className="p-4 text-right">
@@ -381,7 +326,7 @@ export default function ApplicationsPage() {
                 </div>
             )}
 
-            {/* Detail Modal */}
+            {/* Detail Modal - Compact Redesign */}
             <AnimatePresence>
                 {showDetailModal && selectedApp && (
                     <>
@@ -392,123 +337,105 @@ export default function ApplicationsPage() {
                             onClick={() => setShowDetailModal(false)}
                             className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50"
                         />
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                                className="relative w-full max-w-2xl rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-white/10 overflow-hidden my-8"
+                                className="relative w-full max-w-lg rounded-2xl bg-[#0a0a0a] border border-white/10 overflow-hidden shadow-2xl"
                             >
-                                {/* Header */}
-                                <div className="relative p-6 border-b border-white/10">
-                                    <div className={`absolute inset-0 bg-gradient-to-r ${STATUS_CONFIG[selectedApp.status].gradient} opacity-10`} />
-                                    <div className="relative flex items-start gap-4">
-                                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center text-3xl font-bold text-white">
-                                            {selectedApp.company_name[0]}
-                                        </div>
-                                        <div className="flex-1">
-                                            <h2 className="text-2xl font-bold text-white">{selectedApp.company_name}</h2>
-                                            <p className="text-slate-400">{selectedApp.job_title || 'Position not specified'}</p>
-                                            {selectedApp.talent_density_score && (
-                                                <div className="flex items-center gap-2 mt-2">
-                                                    <span className="text-sm text-slate-400">Match Score:</span>
-                                                    <span className={`font-bold ${selectedApp.talent_density_score >= 80 ? 'text-green-400' : selectedApp.talent_density_score >= 60 ? 'text-cyan-400' : 'text-yellow-400'}`}>
-                                                        {selectedApp.talent_density_score}%
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <button
-                                            onClick={() => setShowDetailModal(false)}
-                                            className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
-                                        >
-                                            ✕
-                                        </button>
+                                {/* Compact Header */}
+                                <div className="p-5 border-b border-white/10 flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center text-xl font-bold text-white">
+                                        {selectedApp.company_name[0]}
                                     </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h2 className="text-lg font-bold text-white truncate">{selectedApp.company_name}</h2>
+                                        <p className="text-sm text-silver truncate">{selectedApp.job_title || 'Position not specified'}</p>
+                                    </div>
+                                    {selectedApp.talent_density_score && (
+                                        <div className={`px-3 py-1.5 rounded-lg text-sm font-bold ${selectedApp.talent_density_score >= 80 ? 'bg-green-500/20 text-green-400' : selectedApp.talent_density_score >= 60 ? 'bg-cyan-500/20 text-cyan-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                                            {selectedApp.talent_density_score}%
+                                        </div>
+                                    )}
+                                    <button
+                                        onClick={() => setShowDetailModal(false)}
+                                        className="p-1.5 rounded-lg hover:bg-white/10 text-silver hover:text-white transition-colors"
+                                    >
+                                        ✕
+                                    </button>
                                 </div>
 
-                                {/* Status Selection */}
-                                <div className="p-6 border-b border-white/10">
-                                    <h3 className="text-sm font-medium text-slate-400 mb-3">Update Status</h3>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {Object.entries(STATUS_CONFIG).map(([key, config]) => (
+                                {/* Compact Status Grid - 5 columns */}
+                                <div className="p-4 border-b border-white/10">
+                                    <div className="grid grid-cols-5 gap-1.5">
+                                        {Object.entries(STATUS_CONFIG).slice(0, 5).map(([key, config]) => (
                                             <button
                                                 key={key}
                                                 onClick={() => handleStatusUpdate(selectedApp, key as JobApplication['status'])}
-                                                className={`p-3 rounded-xl text-sm font-medium transition-all ${selectedApp.status === key
-                                                        ? `bg-gradient-to-r ${config.gradient} text-white shadow-lg`
-                                                        : `${config.bg} ${config.border} border ${config.text} hover:scale-105`
+                                                className={`p-2 rounded-lg text-center transition-all ${selectedApp.status === key
+                                                    ? `bg-gradient-to-r ${config.gradient} text-white shadow-md`
+                                                    : 'bg-white/5 hover:bg-white/10 text-silver'
                                                     }`}
                                             >
-                                                <span className="text-lg block mb-1">{config.icon}</span>
-                                                <span className="text-xs">{config.label}</span>
+                                                <span className="text-base block">{config.icon}</span>
+                                                <span className="text-[10px] leading-tight block mt-0.5">{config.label.split(' ')[0]}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className="grid grid-cols-4 gap-1.5 mt-1.5">
+                                        {Object.entries(STATUS_CONFIG).slice(5).map(([key, config]) => (
+                                            <button
+                                                key={key}
+                                                onClick={() => handleStatusUpdate(selectedApp, key as JobApplication['status'])}
+                                                className={`p-2 rounded-lg text-center transition-all ${selectedApp.status === key
+                                                    ? `bg-gradient-to-r ${config.gradient} text-white shadow-md`
+                                                    : 'bg-white/5 hover:bg-white/10 text-silver'
+                                                    }`}
+                                            >
+                                                <span className="text-base block">{config.icon}</span>
+                                                <span className="text-[10px] leading-tight block mt-0.5">{config.label.split(' ')[0]}</span>
                                             </button>
                                         ))}
                                     </div>
                                 </div>
 
-                                {/* Notes Section */}
-                                <div className="p-6 border-b border-white/10">
-                                    <h3 className="text-sm font-medium text-slate-400 mb-3">📝 Notes</h3>
+                                {/* Compact Notes */}
+                                <div className="p-4 border-b border-white/10">
                                     <textarea
                                         value={editingNotes}
                                         onChange={(e) => setEditingNotes(e.target.value)}
-                                        placeholder="Add notes about this application, interview feedback, follow-up reminders..."
-                                        rows={4}
-                                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 resize-none"
+                                        placeholder="Add notes..."
+                                        rows={2}
+                                        className="w-full px-3 py-2 rounded-lg bg-[#111111] border border-white/10 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 resize-none"
                                     />
-                                    <button
-                                        onClick={handleNotesUpdate}
-                                        disabled={editingNotes === (selectedApp.notes || '')}
-                                        className="mt-3 px-4 py-2 rounded-lg bg-cyan-500/20 text-cyan-400 text-sm font-medium hover:bg-cyan-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        💾 Save Notes
-                                    </button>
+                                    {editingNotes !== (selectedApp.notes || '') && (
+                                        <button
+                                            onClick={handleNotesUpdate}
+                                            className="mt-2 px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-400 text-xs font-medium hover:bg-cyan-500/30 transition-colors"
+                                        >
+                                            💾 Save
+                                        </button>
+                                    )}
                                 </div>
 
-                                {/* Timeline */}
-                                <div className="p-6">
-                                    <h3 className="text-sm font-medium text-slate-400 mb-3">📅 Timeline</h3>
-                                    <div className="space-y-3">
-                                        <div className="flex items-center gap-3 text-sm">
-                                            <div className="w-8 h-8 rounded-lg bg-slate-500/20 flex items-center justify-center">📝</div>
-                                            <div>
-                                                <p className="text-white">Resume Morphed</p>
-                                                <p className="text-slate-500">{new Date(selectedApp.created_at).toLocaleDateString()}</p>
-                                            </div>
-                                        </div>
-                                        {selectedApp.applied_at && (
-                                            <div className="flex items-center gap-3 text-sm">
-                                                <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">🚀</div>
-                                                <div>
-                                                    <p className="text-white">Applied</p>
-                                                    <p className="text-slate-500">{new Date(selectedApp.applied_at).toLocaleDateString()}</p>
-                                                </div>
-                                            </div>
-                                        )}
-                                        {selectedApp.interview_date && (
-                                            <div className="flex items-center gap-3 text-sm">
-                                                <div className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center">🎤</div>
-                                                <div>
-                                                    <p className="text-white">Interview</p>
-                                                    <p className="text-slate-500">{new Date(selectedApp.interview_date).toLocaleDateString()}</p>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
+                                {/* Compact Timeline */}
+                                <div className="p-4 flex items-center gap-4 text-xs text-silver">
+                                    <span>📝 Created {new Date(selectedApp.created_at).toLocaleDateString()}</span>
+                                    {selectedApp.applied_at && <span>🚀 Applied {new Date(selectedApp.applied_at).toLocaleDateString()}</span>}
                                 </div>
 
-                                {/* Actions */}
-                                <div className="p-6 pt-0 flex gap-3">
+                                {/* Footer Actions */}
+                                <div className="p-4 pt-0 flex gap-2">
                                     <button
                                         onClick={() => handleDelete(selectedApp.id)}
-                                        className="px-4 py-2 rounded-lg bg-red-500/20 text-red-400 text-sm font-medium hover:bg-red-500/30 transition-colors"
+                                        className="px-3 py-2 rounded-lg bg-red-500/10 text-red-400 text-xs font-medium hover:bg-red-500/20 transition-colors"
                                     >
-                                        🗑️ Delete Application
+                                        🗑️ Delete
                                     </button>
                                     <button
                                         onClick={() => setShowDetailModal(false)}
-                                        className="ml-auto px-6 py-2 rounded-lg bg-white/5 text-white text-sm font-medium hover:bg-white/10 transition-colors"
+                                        className="ml-auto px-4 py-2 rounded-lg bg-white/10 text-white text-sm font-medium hover:bg-white/20 transition-colors"
                                     >
                                         Close
                                     </button>
@@ -543,7 +470,7 @@ function ApplicationCard({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
-            className={`relative group rounded-2xl bg-gradient-to-br from-slate-900/80 to-slate-800/50 border border-white/10 hover:border-cyan-500/30 transition-all ${showQuickStatus ? 'z-50' : 'z-0'}`}
+            className={`relative group rounded-2xl bg-[#0A0A0A] border border-white/10 hover:border-cyan-500/30 transition-all ${showQuickStatus ? 'z-50' : 'z-0'}`}
         >
             {/* Glow effect */}
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-cyan-500/5 to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -557,12 +484,12 @@ function ApplicationCard({
                         </div>
                         <div>
                             <h3 className="font-bold text-white text-lg hover:text-cyan-400 transition-colors">{app.company_name}</h3>
-                            {app.job_title && <p className="text-sm text-slate-400">{app.job_title}</p>}
+                            {app.job_title && <p className="text-sm text-silver">{app.job_title}</p>}
                         </div>
                     </div>
                     <button
                         onClick={() => onDelete(app.id)}
-                        className="p-2 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/20 transition-all opacity-0 group-hover:opacity-100"
+                        className="p-2 rounded-lg text-silver hover:text-red-400 hover:bg-red-500/20 transition-all opacity-0 group-hover:opacity-100"
                     >
                         🗑️
                     </button>
@@ -572,12 +499,12 @@ function ApplicationCard({
                 {app.talent_density_score && (
                     <div className="mb-4">
                         <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs text-slate-500">Match Score</span>
+                            <span className="text-xs text-silver">Match Score</span>
                             <span className={`text-sm font-bold ${app.talent_density_score >= 80 ? 'text-green-400' : app.talent_density_score >= 60 ? 'text-cyan-400' : 'text-yellow-400'}`}>
                                 {app.talent_density_score}%
                             </span>
                         </div>
-                        <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+                        <div className="w-full h-2 bg-[#111111] rounded-full overflow-hidden">
                             <motion.div
                                 initial={{ width: 0 }}
                                 animate={{ width: `${app.talent_density_score}%` }}
@@ -605,7 +532,7 @@ function ApplicationCard({
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
-                                className="absolute top-full left-0 mt-2 p-2 rounded-xl bg-slate-800 border border-white/10 shadow-xl z-10 min-w-[200px]"
+                                className="absolute top-full left-0 mt-2 p-2 rounded-xl bg-[#111111] border border-white/10 shadow-xl z-10 min-w-[200px]"
                             >
                                 {Object.entries(STATUS_CONFIG).map(([key, config]) => (
                                     <button
@@ -614,7 +541,7 @@ function ApplicationCard({
                                             onStatusUpdate(app, key as JobApplication['status']);
                                             setShowQuickStatus(false);
                                         }}
-                                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition-colors ${app.status === key ? 'bg-white/10' : 'hover:bg-white/5'
+                                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition-colors ${app.status === key ? 'bg-white/10' : 'hover:bg-[#111111]'
                                             } ${config.text}`}
                                     >
                                         {config.icon} {config.label}
@@ -627,13 +554,13 @@ function ApplicationCard({
 
                 {/* Notes Preview */}
                 {app.notes && (
-                    <div className="mb-4 p-3 rounded-lg bg-white/5 border border-white/10">
-                        <p className="text-xs text-slate-400 line-clamp-2">{app.notes}</p>
+                    <div className="mb-4 p-3 rounded-lg bg-[#111111] border border-white/10">
+                        <p className="text-xs text-silver line-clamp-2">{app.notes}</p>
                     </div>
                 )}
 
                 {/* Dates */}
-                <div className="flex items-center gap-4 text-xs text-slate-500">
+                <div className="flex items-center gap-4 text-xs text-silver">
                     <span>📅 {new Date(app.created_at).toLocaleDateString()}</span>
                     {app.applied_at && <span>🚀 Applied {new Date(app.applied_at).toLocaleDateString()}</span>}
                 </div>
@@ -641,7 +568,7 @@ function ApplicationCard({
                 {/* View Details Button */}
                 <button
                     onClick={() => onOpenDetail(app)}
-                    className="w-full mt-4 px-4 py-2 rounded-xl bg-white/5 text-slate-300 text-sm font-medium hover:bg-white/10 transition-colors"
+                    className="w-full mt-4 px-4 py-2 rounded-xl bg-[#111111] text-silver text-sm font-medium hover:bg-white/10 transition-colors"
                 >
                     View Details →
                 </button>

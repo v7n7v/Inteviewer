@@ -30,6 +30,7 @@ const talentSuiteItems: NavigationItem[] = [
   { id: 'shadow', label: 'Practice', icon: '🎭', description: 'Shadow Interview', path: '/suite/shadow-interview' },
   { id: 'oracle', label: 'Market Oracle', icon: '🔮', description: 'Career Intelligence', path: '/suite/market-oracle' },
   { id: 'job-search', label: 'Job Search', icon: '🔍', description: 'Find Jobs', path: '/suite/job-search', badge: 'Soon' },
+  { id: 'avatar', label: 'Video Interview', icon: '🎥', description: 'AI Mock Interview', path: '/suite/avatar-interview', badge: 'Soon' },
 ];
 
 const suiteConfig = {
@@ -37,9 +38,9 @@ const suiteConfig = {
     name: 'Interview Suite',
     tagline: 'For Hiring Teams',
     icon: '🎯',
-    gradient: 'from-cyan-500 to-blue-500',
-    accentColor: 'cyan',
-    bgGlow: 'bg-cyan-500/20',
+    gradient: 'from-[#22C55E] to-[#22C55E]/60',
+    accentColor: 'green',
+    bgGlow: 'bg-[#22C55E]/10',
     items: interviewSuiteItems,
     otherSuite: { name: 'Talent Suite', icon: '✨', path: '/suite/resume' },
   },
@@ -47,9 +48,9 @@ const suiteConfig = {
     name: 'Talent Suite',
     tagline: 'For Job Seekers',
     icon: '✨',
-    gradient: 'from-emerald-500 to-blue-500',
-    accentColor: 'emerald',
-    bgGlow: 'bg-emerald-500/20',
+    gradient: 'from-[#0070F3] to-[#0070F3]/60',
+    accentColor: 'blue',
+    bgGlow: 'bg-[#0070F3]/10',
     items: talentSuiteItems,
     otherSuite: { name: 'Interview Suite', icon: '🎯', path: '/dashboard/detective' },
   },
@@ -162,16 +163,16 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         className={`fixed left-0 top-0 h-screen z-50 flex flex-col overflow-hidden ${isMobile ? '' : ''}`}
         style={{
-          background: 'linear-gradient(180deg, rgba(15, 23, 42, 0.98) 0%, rgba(15, 23, 42, 0.95) 100%)',
-          backdropFilter: 'blur(40px)',
-          WebkitBackdropFilter: 'blur(40px)',
+          background: 'rgba(0, 0, 0, 0.85)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
         }}
       >
-        {/* Accent glow */}
-        <div className={`absolute top-0 left-0 w-full h-32 ${suite.bgGlow} blur-3xl opacity-30`} />
+        {/* Subtle top glow */}
+        <div className={`absolute top-0 left-0 w-full h-24 ${suite.bgGlow} blur-3xl opacity-20`} />
 
         {/* Border */}
-        <div className={`absolute right-0 top-0 bottom-0 w-px bg-gradient-to-b ${suite.gradient} opacity-20`} />
+        <div className="absolute right-0 top-0 bottom-0 w-px bg-white/10" />
 
         <LayoutGroup>
           {/* Header */}
@@ -231,7 +232,7 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
               onClick={switchToOtherSuite}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className={`w-full p-3 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-all ${isCollapsed ? 'flex justify-center' : ''}`}
+              className={`w-full p-3 rounded-xl bg-[#111111] border border-white/10 hover:bg-[#1A1A1A] hover:border-white/20 transition-all ${isCollapsed ? 'flex justify-center' : ''}`}
             >
               <AnimatePresence mode="wait">
                 {!isCollapsed ? (
@@ -244,11 +245,11 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
                     <div className="flex items-center gap-3">
                       <span className="text-lg">{suite.otherSuite.icon}</span>
                       <div className="text-left">
-                        <p className="text-xs text-slate-500">Switch to</p>
+                        <p className="text-xs text-silver">Switch to</p>
                         <p className="text-sm font-medium text-white">{suite.otherSuite.name}</p>
                       </div>
                     </div>
-                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-silver" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                     </svg>
                   </motion.div>
@@ -263,6 +264,22 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
                   </motion.span>
                 )}
               </AnimatePresence>
+            </motion.button>
+          </div>
+
+          {/* Quick Navigation - Back to Hub */}
+          <div className="px-3 pb-2">
+            <motion.button
+              onClick={() => router.push('/hub')}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-[#0A0A0A] border border-white/10 hover:bg-[#1A1A1A] hover:border-white/20 transition-all ${isCollapsed ? 'justify-center' : ''}`}
+              title="Back to Hub"
+            >
+              <svg className="w-4 h-4 text-silver" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+              </svg>
+              {!isCollapsed && <span className="text-xs text-silver">Back to Hub</span>}
             </motion.button>
           </div>
 

@@ -165,7 +165,17 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-black relative overflow-hidden">
+      {/* Black background with dots */}
+      <div className="fixed inset-0 pointer-events-none">
+        {/* Subtle radial glow at top */}
+        <div
+          className="absolute inset-0"
+          style={{ background: 'radial-gradient(ellipse 80% 50% at 50% 0%, #0A0A0A, #000000)' }}
+        />
+        {/* Dot grid overlay */}
+        <div className="mesh-gradient" />
+      </div>
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-white/5">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -250,45 +260,118 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
               </div>
             </div>
 
-            {/* Right: Interactive Demo */}
+            {/* Right: Interactive Demo - Enhanced Animated Card */}
             <div className="slide-in lg:pl-8">
-              <div className="glass-card p-8 pulse-glow">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h3 className="text-lg font-semibold text-white">Interview Co-Pilot</h3>
-                    <p className="text-sm text-slate-400 mt-1">AI vs Human Assessment</p>
-                  </div>
-                  <div className="badge badge-success">
-                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                    Live
-                  </div>
-                </div>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className="relative"
+              >
+                {/* Outer glow effect */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-[#22C55E]/20 via-transparent to-[#00F5FF]/20 rounded-3xl blur-xl opacity-50" />
 
-                {/* Radar Chart */}
-                <div className="relative h-[350px] mb-6">
-                  <Radar data={radarData} options={radarOptions} />
-                </div>
+                {/* Floating particles */}
+                <motion.div
+                  animate={{
+                    y: [-5, 5, -5],
+                    x: [-3, 3, -3],
+                  }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                  className="absolute -top-4 -right-4 w-8 h-8 rounded-full bg-[#22C55E]/30 blur-lg"
+                />
+                <motion.div
+                  animate={{
+                    y: [5, -5, 5],
+                    x: [3, -3, 3],
+                  }}
+                  transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                  className="absolute -bottom-4 -left-4 w-12 h-12 rounded-full bg-[#00F5FF]/20 blur-lg"
+                />
 
-                {/* Talent Density Score */}
-                <div className="glass-card p-4 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border-cyan-500/30">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-slate-400 mb-1">Talent Density Score</p>
-                      <p className="text-3xl font-bold text-gradient">8.2/10</p>
-                    </div>
-                    <div className="w-16 h-16 rounded-full border-4 border-cyber-cyan flex items-center justify-center">
-                      <svg className="w-8 h-8 text-cyber-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
+                {/* Main Card */}
+                <div className="relative rounded-2xl bg-[#0A0A0A] border border-white/10 p-8 overflow-hidden">
+                  {/* Top border glow */}
+                  <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#22C55E]/50 to-transparent" />
+
+                  {/* Header */}
+                  <div className="flex items-center justify-between mb-6">
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      <h3 className="text-lg font-semibold text-white">Interview Co-Pilot</h3>
+                      <p className="text-sm text-silver mt-1">AI vs Human Assessment</p>
+                    </motion.div>
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.4 }}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#22C55E]/10 border border-[#22C55E]/30"
+                    >
+                      <motion.div
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                        className="w-2 h-2 rounded-full bg-[#22C55E]"
+                      />
+                      <span className="text-sm font-medium text-[#22C55E]">Live</span>
+                    </motion.div>
                   </div>
-                  <div className="mt-3 flex items-center gap-2 text-sm">
-                    <span className="text-green-400">↑ 15% above average</span>
-                    <span className="text-slate-500">•</span>
-                    <span className="text-slate-400">Top 25% candidate</span>
-                  </div>
+
+                  {/* Radar Chart */}
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.5, duration: 0.6 }}
+                    className="relative h-[350px] mb-6"
+                  >
+                    <Radar data={radarData} options={radarOptions} />
+                  </motion.div>
+
+                  {/* Talent Density Score Card */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.7 }}
+                    className="rounded-xl bg-[#111111] border border-white/10 p-4"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-silver mb-1">Talent Density Score</p>
+                        <motion.p
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 1 }}
+                          className="text-3xl font-bold text-white"
+                        >
+                          8.2<span className="text-silver">/10</span>
+                        </motion.p>
+                      </div>
+                      <motion.div
+                        initial={{ scale: 0, rotate: -180 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={{ delay: 1.2, type: "spring", stiffness: 200 }}
+                        className="w-16 h-16 rounded-full border-2 border-[#00F5FF] flex items-center justify-center"
+                      >
+                        <svg className="w-8 h-8 text-[#00F5FF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </motion.div>
+                    </div>
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 1.3 }}
+                      className="mt-3 flex items-center gap-2 text-sm"
+                    >
+                      <span className="text-[#22C55E]">↑ 15% above average</span>
+                      <span className="text-silver/50">•</span>
+                      <span className="text-silver">Top 25% candidate</span>
+                    </motion.div>
+                  </motion.div>
                 </div>
-              </div>
+              </motion.div>
             </div>
           </div>
         </div>

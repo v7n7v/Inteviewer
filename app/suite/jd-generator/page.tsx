@@ -282,7 +282,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
       <div className="glass-card p-12 text-center max-w-md">
         <span className="text-6xl mb-4 block">🔒</span>
         <h2 className="text-2xl font-bold text-white mb-3">Sign In Required</h2>
-        <p className="text-slate-400">Please sign in to access the JD Generator</p>
+        <p className="text-silver">Please sign in to access the JD Generator</p>
       </div>
     </div>
   );
@@ -291,7 +291,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
     <div className="min-h-screen p-6 lg:p-8">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900/90 via-slate-800/50 to-cyan-900/20 border border-white/10 p-8 mb-8"
+        className="relative overflow-hidden rounded-3xl bg-[#0A0A0A] to-cyan-900/20 border border-white/10 p-8 mb-8"
       >
         <div className="absolute inset-0 opacity-20">
           <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/30 rounded-full blur-3xl" />
@@ -308,7 +308,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
                 Mission Blueprint Generator
               </span>
             </h1>
-            <p className="text-slate-400 text-lg max-w-2xl">
+            <p className="text-silver text-lg max-w-2xl">
               Create compelling job descriptions that attract exceptional talent with AI-powered bias detection
             </p>
           </div>
@@ -329,13 +329,13 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
             <div className="grid lg:grid-cols-3 gap-6">
               {/* Main Form */}
               <div className="lg:col-span-2 space-y-6">
-                <div className="rounded-2xl bg-gradient-to-br from-slate-900/80 to-cyan-900/10 border border-cyan-500/20 overflow-hidden">
+                <div className="rounded-2xl bg-[#0A0A0A] to-cyan-900/10 border border-cyan-500/20 overflow-hidden">
                   <div className="p-6 border-b border-white/10">
                     <h3 className="text-xl font-bold text-white">Role Details</h3>
                   </div>
                   <div className="p-6 space-y-4">
                     <div>
-                      <label className="text-sm text-slate-400 block mb-2">Role Title *</label>
+                      <label className="text-sm text-silver block mb-2">Role Title *</label>
                       <input type="text" value={roleTitle} onChange={(e) => setRoleTitle(e.target.value)}
                         className="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white text-lg focus:border-cyan-500/50 focus:outline-none"
                         placeholder="e.g., Software Engineer, Product Manager"
@@ -343,7 +343,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
                     </div>
                     <div className="grid md:grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm text-slate-400 block mb-2">Department</label>
+                        <label className="text-sm text-silver block mb-2">Department</label>
                         <select value={department} onChange={(e) => setDepartment(e.target.value)}
                           className="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:border-cyan-500/50 focus:outline-none"
                         >
@@ -351,7 +351,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
                         </select>
                       </div>
                       <div>
-                        <label className="text-sm text-slate-400 block mb-2">Seniority Level</label>
+                        <label className="text-sm text-silver block mb-2">Seniority Level</label>
                         <select value={seniority} onChange={(e) => setSeniority(e.target.value)}
                           className="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:border-cyan-500/50 focus:outline-none"
                         >
@@ -360,16 +360,16 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
                       </div>
                     </div>
                     <div>
-                      <label className="text-sm text-slate-400 block mb-2">Team Context</label>
+                      <label className="text-sm text-silver block mb-2">Team Context</label>
                       <textarea rows={3} value={teamContext} onChange={(e) => setTeamContext(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-slate-300 focus:border-cyan-500/50 focus:outline-none resize-none"
+                        className="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-silver focus:border-cyan-500/50 focus:outline-none resize-none"
                         placeholder="Describe the team, projects, and what makes it special..."
                       />
                     </div>
                     <div>
-                      <label className="text-sm text-slate-400 block mb-2">Company Info (optional)</label>
+                      <label className="text-sm text-silver block mb-2">Company Info (optional)</label>
                       <textarea rows={2} value={companyInfo} onChange={(e) => setCompanyInfo(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-slate-300 focus:border-cyan-500/50 focus:outline-none resize-none"
+                        className="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-silver focus:border-cyan-500/50 focus:outline-none resize-none"
                         placeholder="Brief company description, mission, stage..."
                       />
                     </div>
@@ -378,7 +378,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
                         <input type="checkbox" checked={includeCompensation} onChange={(e) => setIncludeCompensation(e.target.checked)}
                           className="w-5 h-5 rounded bg-black/30 border border-white/20 checked:bg-cyan-500"
                         />
-                        <span className="text-sm text-slate-300">Include compensation</span>
+                        <span className="text-sm text-silver">Include compensation</span>
                       </label>
                       {includeCompensation && (
                         <input type="text" value={salaryRange} onChange={(e) => setSalaryRange(e.target.value)}
@@ -391,7 +391,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
                 </div>
 
                 {/* JD Style */}
-                <div className="rounded-2xl bg-white/5 border border-white/10 p-6">
+                <div className="rounded-2xl bg-[#111111] border border-white/10 p-6">
                   <h3 className="font-bold text-white mb-4">JD Style</h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {JD_STYLES.map((style) => (
@@ -402,7 +402,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
                       >
                         <span className="text-2xl block mb-2">{style.icon}</span>
                         <p className="font-semibold text-white text-sm">{style.name}</p>
-                        <p className="text-xs text-slate-400">{style.description}</p>
+                        <p className="text-xs text-silver">{style.description}</p>
                       </button>
                     ))}
                   </div>
@@ -419,7 +419,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
               {/* Sidebar */}
               <div className="space-y-4">
                 {/* What You Get */}
-                <div className="rounded-2xl bg-white/5 border border-white/10 p-6">
+                <div className="rounded-2xl bg-[#111111] border border-white/10 p-6">
                   <h3 className="font-bold text-white mb-4">✨ What You'll Get</h3>
                   <ul className="space-y-3">
                     {[
@@ -431,7 +431,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
                       { icon: '🚀', text: 'Growth Path' },
                       { icon: '⚖️', text: 'Bias-Free Language' },
                     ].map((item, i) => (
-                      <li key={i} className="flex items-center gap-3 text-sm text-slate-300">
+                      <li key={i} className="flex items-center gap-3 text-sm text-silver">
                         <span>{item.icon}</span>{item.text}
                       </li>
                     ))}
@@ -440,7 +440,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
 
                 {/* Saved Templates */}
                 {savedTemplates.length > 0 && (
-                  <div className="rounded-2xl bg-white/5 border border-white/10 p-6">
+                  <div className="rounded-2xl bg-[#111111] border border-white/10 p-6">
                     <h3 className="font-bold text-white mb-3">📁 Saved Templates</h3>
                     <div className="space-y-2 max-h-48 overflow-y-auto">
                       {savedTemplates.slice(0, 5).map((t) => (
@@ -450,10 +450,10 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
                           setBiasFlags([]);
                           setStep('result');
                         }}
-                          className="w-full p-3 rounded-xl bg-white/5 hover:bg-white/10 text-left transition-colors"
+                          className="w-full p-3 rounded-xl bg-[#111111] hover:bg-white/10 text-left transition-colors"
                         >
                           <p className="text-sm font-medium text-white truncate">{t.title}</p>
-                          <p className="text-xs text-slate-500">{new Date(t.created_at).toLocaleDateString()}</p>
+                          <p className="text-xs text-silver">{new Date(t.created_at).toLocaleDateString()}</p>
                         </button>
                       ))}
                     </div>
@@ -477,7 +477,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
               </div>
             </div>
             <h2 className="text-2xl font-bold text-white mb-4">Crafting Your Mission Blueprint</h2>
-            <p className="text-slate-400 mb-8">AI is creating a compelling job description optimized for top talent...</p>
+            <p className="text-silver mb-8">AI is creating a compelling job description optimized for top talent...</p>
             <div className="flex justify-center gap-2">
               {['Mission', 'Requirements', 'Culture', 'Growth'].map((item, i) => (
                 <motion.span key={item}
@@ -504,14 +504,14 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <h3 className="font-bold text-white">Talent Density Score</h3>
-                      <p className="text-sm text-slate-400">How rare is this candidate?</p>
+                      <p className="text-sm text-silver">How rare is this candidate?</p>
                     </div>
                     <div className="text-right">
                       <span className={`text-3xl font-bold ${
                         talentDensityScore < 40 ? 'text-green-400' :
                         talentDensityScore < 70 ? 'text-yellow-400' : 'text-red-400'
                       }`}>{talentDensityScore}</span>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-silver">
                         {talentDensityScore < 40 ? 'Common' : talentDensityScore < 70 ? 'Competitive' : 'Unicorn'}
                       </p>
                     </div>
@@ -528,7 +528,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
                       }`}
                     />
                   </div>
-                  <div className="flex justify-between mt-2 text-xs text-slate-500">
+                  <div className="flex justify-between mt-2 text-xs text-silver">
                     <span>🟢 Common</span>
                     <span>🟡 Competitive</span>
                     <span>🔴 Unicorn</span>
@@ -536,7 +536,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
                 </div>
 
                 {/* Editable JD */}
-                <div className="rounded-2xl bg-gradient-to-br from-slate-900/80 to-slate-800/50 border border-white/10 overflow-hidden">
+                <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 overflow-hidden">
                   <div className="p-6 border-b border-white/10 flex items-center justify-between">
                     <h3 className="text-xl font-bold text-white">Generated Job Description</h3>
                     <div className="flex gap-2">
@@ -550,7 +550,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
                       value={editableJD}
                       onChange={(e) => setEditableJD(e.target.value)}
                       rows={25}
-                      className="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-slate-300 focus:border-cyan-500/50 focus:outline-none resize-none font-mono text-sm leading-relaxed"
+                      className="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-silver focus:border-cyan-500/50 focus:outline-none resize-none font-mono text-sm leading-relaxed"
                     />
                   </div>
                 </div>
@@ -578,7 +578,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
                       </div>
                       <div>
                         <h3 className="font-bold text-white">Bias Detector</h3>
-                        <p className="text-xs text-slate-400">{biasFlags.length} issues found</p>
+                        <p className="text-xs text-silver">{biasFlags.length} issues found</p>
                       </div>
                     </div>
                     {biasFlags.length > 0 && (
@@ -593,13 +593,13 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
                     ) : (
                       <div className="space-y-2">
                         {biasFlags.map((flag, i) => (
-                          <div key={i} className="p-3 rounded-xl bg-white/5 border border-white/10">
+                          <div key={i} className="p-3 rounded-xl bg-[#111111] border border-white/10">
                             <div className="flex items-start justify-between gap-2">
                               <div>
                                 <p className="text-sm">
                                   <span className="text-orange-400 font-semibold">"{flag.text}"</span>
                                 </p>
-                                <p className="text-xs text-slate-400">{flag.issue}</p>
+                                <p className="text-xs text-silver">{flag.issue}</p>
                                 <p className="text-xs text-green-400">→ Use: "{flag.suggestion}"</p>
                               </div>
                               <button onClick={() => fixBias(flag)}
@@ -614,7 +614,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
                 </div>
 
                 {/* Quick Actions */}
-                <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+                <div className="rounded-2xl bg-[#111111] border border-white/10 p-5">
                   <h3 className="font-bold text-white mb-4">Quick Actions</h3>
                   <div className="space-y-2">
                     <button onClick={copyToClipboard}
@@ -627,15 +627,15 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
                       className="w-full py-3 rounded-xl font-semibold bg-white/10 text-white hover:bg-white/20 transition-all"
                     >💾 Save to Library</button>
                     <button onClick={() => setStep('input')}
-                      className="w-full py-3 rounded-xl font-semibold bg-white/5 text-slate-300 hover:bg-white/10 transition-all"
+                      className="w-full py-3 rounded-xl font-semibold bg-[#111111] text-silver hover:bg-white/10 transition-all"
                     >✨ Generate New JD</button>
                   </div>
                 </div>
 
                 {/* Tips */}
-                <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+                <div className="rounded-2xl bg-[#111111] border border-white/10 p-5">
                   <h3 className="font-bold text-white mb-3">💡 Pro Tips</h3>
-                  <ul className="space-y-2 text-sm text-slate-400">
+                  <ul className="space-y-2 text-sm text-silver">
                     <li>• Keep requirements focused (5-7 core items)</li>
                     <li>• Use inclusive, bias-free language</li>
                     <li>• Be specific about the First 90 Days</li>

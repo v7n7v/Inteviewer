@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/lib/store';
 import { groqJSONCompletion } from '@/lib/ai/groq-client';
@@ -32,6 +33,37 @@ export default function DetectiveTab() {
     expectedAnswer: '',
     isCustom: true,
   });
+
+  const searchParams = useSearchParams();
+  const candidateId = searchParams.get('candidateId');
+
+  useEffect(() => {
+    const loadCandidate = async () => {
+      if (candidateId) {
+        setLoading(true);
+        try {
+          const data: any = await database.getCandidate(candidateId);
+          if (data) {
+            setCurrentCandidate({
+              ...data,
+              cvText: data.cv_text || data.cvText,
+              jdText: data.jd_text || data.jdText,
+              riskFactors: data.risk_factors || data.riskFactors || [],
+              questions: data.questions || [],
+              trapQuestions: data.trap_questions || data.trapQuestions || [],
+            });
+            showToast('Candidate data loaded', '✅');
+          }
+        } catch (e) {
+          console.error(e);
+          showToast('Failed to load candidate', '❌');
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    loadCandidate();
+  }, [candidateId, setCurrentCandidate]);
 
   // Calculate progress
   const progress = {
@@ -300,11 +332,11 @@ Requirements:
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900/90 via-slate-800/50 to-cyan-900/30 border border-white/10 p-8"
+        className="relative overflow-hidden rounded-3xl bg-[#0A0A0A] to-cyan-900/30 border border-white/10 p-8"
       >
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-30">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-cyber-cyan/20 rounded-full blur-3xl" />
+          <div className="absolute top-0 right-0 w-96 h-96 bg-white/20 rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl" />
         </div>
 
@@ -315,16 +347,16 @@ Requirements:
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 }}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyber-cyan/10 border border-cyber-cyan/30 mb-4"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/30 mb-4"
               >
-                <div className="w-2 h-2 rounded-full bg-cyber-cyan animate-pulse" />
-                <span className="text-xs font-medium text-cyber-cyan">Phase 1 • Pre-Interview Intelligence</span>
+                <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                <span className="text-xs font-medium text-white">Phase 1 • Pre-Interview Intelligence</span>
               </motion.div>
 
               <h1 className="text-4xl lg:text-5xl font-bold mb-3">
                 <span className="text-gradient">Detective</span>
               </h1>
-              <p className="text-slate-400 text-lg max-w-xl">
+              <p className="text-silver text-lg max-w-xl">
                 AI-powered CV analysis generating personalized battle plans with strategic questions
               </p>
             </div>
@@ -367,15 +399,15 @@ Requirements:
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <div className={`w-3 h-3 rounded-full ${progress.cv ? 'bg-green-400' : 'bg-white/20'}`} />
-                  <span className="text-sm text-slate-400">CV Uploaded</span>
+                  <span className="text-sm text-silver">CV Uploaded</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className={`w-3 h-3 rounded-full ${progress.jd ? 'bg-green-400' : 'bg-white/20'}`} />
-                  <span className="text-sm text-slate-400">Job Description</span>
+                  <span className="text-sm text-silver">Job Description</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className={`w-3 h-3 rounded-full ${progress.name ? 'bg-green-400' : 'bg-white/20'}`} />
-                  <span className="text-sm text-slate-400">Candidate Name</span>
+                  <span className="text-sm text-silver">Candidate Name</span>
                 </div>
               </div>
             </motion.div>
@@ -390,7 +422,7 @@ Requirements:
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900/80 to-slate-800/50 border border-white/10 hover:border-cyan-500/30 transition-all duration-500"
+          className="group relative overflow-hidden rounded-2xl bg-[#0A0A0A] border border-white/10 hover:border-cyan-500/30 transition-all duration-500"
         >
           <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
@@ -410,7 +442,7 @@ Requirements:
               </div>
               <div>
                 <h3 className="text-xl font-bold text-white">CV Intelligence</h3>
-                <p className="text-sm text-slate-400">Upload resume for AI analysis</p>
+                <p className="text-sm text-silver">Upload resume for AI analysis</p>
               </div>
             </div>
 
@@ -436,7 +468,7 @@ Requirements:
                   </div>
                   <div>
                     <p className="text-lg font-medium text-white">Analyzing CV...</p>
-                    <p className="text-sm text-slate-400">Extracting skills and experience</p>
+                    <p className="text-sm text-silver">Extracting skills and experience</p>
                   </div>
                 </div>
               ) : (
@@ -445,7 +477,7 @@ Requirements:
                     animate={{ y: dragActive ? -5 : 0 }}
                     className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center"
                   >
-                    <svg className={`w-8 h-8 ${dragActive ? 'text-cyan-400' : 'text-cyber-cyan'} transition-colors`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className={`w-8 h-8 ${dragActive ? 'text-cyan-400' : 'text-white'} transition-colors`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                     </svg>
                   </motion.div>
@@ -453,9 +485,9 @@ Requirements:
                     <p className="text-lg font-medium text-white">
                       {dragActive ? 'Drop file here' : 'Drag & drop CV'}
                     </p>
-                    <p className="text-sm text-slate-400">or click to browse files</p>
+                    <p className="text-sm text-silver">or click to browse files</p>
                   </div>
-                  <div className="flex items-center justify-center gap-4 text-xs text-slate-500">
+                  <div className="flex items-center justify-center gap-4 text-xs text-silver">
                     <span>📄 PDF</span>
                     <span>📘 Word</span>
                     <span>📝 TXT</span>
@@ -485,7 +517,7 @@ Requirements:
                         <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
                           ✓ Extracted
                         </span>
-                        <span className="text-xs text-slate-500">{cvPreview.length.toLocaleString()} chars</span>
+                        <span className="text-xs text-silver">{cvPreview.length.toLocaleString()} chars</span>
                       </div>
                       <button
                         onClick={(e) => { e.stopPropagation(); setCvPreview(''); setCurrentCandidate({ cvText: '' }); }}
@@ -494,7 +526,7 @@ Requirements:
                         Clear
                       </button>
                     </div>
-                    <div className="font-mono text-xs text-slate-400 max-h-32 overflow-y-auto scrollbar-thin">
+                    <div className="font-mono text-xs text-silver max-h-32 overflow-y-auto scrollbar-thin">
                       {cvPreview.substring(0, 500)}...
                     </div>
                   </div>
@@ -509,7 +541,7 @@ Requirements:
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900/80 to-slate-800/50 border border-white/10 hover:border-blue-500/30 transition-all duration-500"
+          className="group relative overflow-hidden rounded-2xl bg-[#0A0A0A] border border-white/10 hover:border-blue-500/30 transition-all duration-500"
         >
           <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
@@ -529,7 +561,7 @@ Requirements:
               </div>
               <div>
                 <h3 className="text-xl font-bold text-white">Job Requirements</h3>
-                <p className="text-sm text-slate-400">Define the role specifications</p>
+                <p className="text-sm text-silver">Define the role specifications</p>
               </div>
             </div>
 
@@ -546,7 +578,7 @@ Example: Senior Software Engineer with 5+ years of Python, machine learning, and
             <div className="relative">
               <input
                 type="text"
-                className="w-full rounded-xl pl-12 pr-4 py-3.5 text-sm bg-black/30 border border-white/10 text-white placeholder-slate-500 focus:border-blue-400/50 focus:outline-none transition-colors"
+                className="w-full rounded-xl !pl-[70px] pr-4 py-3.5 text-sm bg-black/30 border border-white/10 text-white placeholder-slate-500 focus:border-blue-400/50 focus:outline-none transition-colors"
                 placeholder="Candidate Name"
                 value={currentCandidate.name}
                 onChange={(e) => setCurrentCandidate({ name: e.target.value })}
@@ -611,7 +643,7 @@ Example: Senior Software Engineer with 5+ years of Python, machine learning, and
                 <span className="text-2xl">✅</span>
                 <div>
                   <p className="font-semibold text-white">Battle Plan Ready</p>
-                  <p className="text-sm text-slate-400">
+                  <p className="text-sm text-silver">
                     {currentCandidate.questions.length} questions • {currentCandidate.riskFactors.length} risks • {currentCandidate.trapQuestions.length} traps
                   </p>
                 </div>
@@ -629,7 +661,7 @@ Example: Senior Software Engineer with 5+ years of Python, machine learning, and
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="rounded-2xl bg-gradient-to-br from-slate-900/80 to-orange-900/10 border border-orange-500/20 overflow-hidden"
+              className="rounded-2xl bg-[#0A0A0A] to-orange-900/10 border border-orange-500/20 overflow-hidden"
             >
               <div className="p-6 border-b border-white/5">
                 <div className="flex items-center gap-4">
@@ -638,7 +670,7 @@ Example: Senior Software Engineer with 5+ years of Python, machine learning, and
                   </div>
                   <div>
                     <h3 className="text-2xl font-bold text-white">Gap Analysis</h3>
-                    <p className="text-sm text-slate-400">{currentCandidate.riskFactors.length} risk factors identified</p>
+                    <p className="text-sm text-silver">{currentCandidate.riskFactors.length} risk factors identified</p>
                   </div>
                 </div>
               </div>
@@ -650,10 +682,10 @@ Example: Senior Software Engineer with 5+ years of Python, machine learning, and
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.1 }}
                     className={`p-4 rounded-xl border transition-colors ${rf.level === 'high'
-                        ? 'bg-red-500/5 border-red-500/20 hover:bg-red-500/10'
-                        : rf.level === 'medium'
-                          ? 'bg-yellow-500/5 border-yellow-500/20 hover:bg-yellow-500/10'
-                          : 'bg-green-500/5 border-green-500/20 hover:bg-green-500/10'
+                      ? 'bg-red-500/5 border-red-500/20 hover:bg-red-500/10'
+                      : rf.level === 'medium'
+                        ? 'bg-yellow-500/5 border-yellow-500/20 hover:bg-yellow-500/10'
+                        : 'bg-green-500/5 border-green-500/20 hover:bg-green-500/10'
                       }`}
                   >
                     <div className="flex items-start gap-4">
@@ -662,12 +694,12 @@ Example: Senior Software Engineer with 5+ years of Python, machine learning, and
                       </span>
                       <div>
                         <span className={`text-xs font-bold px-2 py-1 rounded-full ${rf.level === 'high' ? 'bg-red-500/20 text-red-400'
-                            : rf.level === 'medium' ? 'bg-yellow-500/20 text-yellow-400'
-                              : 'bg-green-500/20 text-green-400'
+                          : rf.level === 'medium' ? 'bg-yellow-500/20 text-yellow-400'
+                            : 'bg-green-500/20 text-green-400'
                           }`}>
                           {rf.level.toUpperCase()}
                         </span>
-                        <p className="text-slate-300 mt-2">{rf.description}</p>
+                        <p className="text-silver mt-2">{rf.description}</p>
                       </div>
                     </div>
                   </motion.div>
@@ -680,7 +712,7 @@ Example: Senior Software Engineer with 5+ years of Python, machine learning, and
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="rounded-2xl bg-gradient-to-br from-slate-900/80 to-cyan-900/10 border border-cyan-500/20 overflow-hidden"
+              className="rounded-2xl bg-[#0A0A0A] to-cyan-900/10 border border-cyan-500/20 overflow-hidden"
             >
               <div className="p-6 border-b border-white/5 flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -689,7 +721,7 @@ Example: Senior Software Engineer with 5+ years of Python, machine learning, and
                   </div>
                   <div>
                     <h3 className="text-2xl font-bold text-white">Core Questions</h3>
-                    <p className="text-sm text-slate-400">{currentCandidate.questions.length} strategic questions</p>
+                    <p className="text-sm text-silver">{currentCandidate.questions.length} strategic questions</p>
                   </div>
                 </div>
                 <button
@@ -745,11 +777,11 @@ Example: Senior Software Engineer with 5+ years of Python, machine learning, and
                         </div>
                         <div className="flex-1">
                           <p className="text-white font-medium mb-2">{q.question}</p>
-                          <p className="text-sm text-slate-400">
+                          <p className="text-sm text-silver">
                             <span className="text-cyan-400 font-medium">Purpose:</span> {q.purpose}
                           </p>
                           {q.expectedAnswer && (
-                            <p className="text-sm text-slate-500 mt-1">
+                            <p className="text-sm text-silver mt-1">
                               <span className="text-cyan-400 font-medium">Look for:</span> {q.expectedAnswer}
                             </p>
                           )}
@@ -758,10 +790,10 @@ Example: Senior Software Engineer with 5+ years of Python, machine learning, and
                           )}
                         </div>
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                          <button onClick={() => startEditing(i)} className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+                          <button onClick={() => startEditing(i)} className="p-2 rounded-lg hover:bg-white/10 text-silver hover:text-white transition-colors">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                           </button>
-                          <button onClick={() => deleteQuestion(i)} className="p-2 rounded-lg hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors">
+                          <button onClick={() => deleteQuestion(i)} className="p-2 rounded-lg hover:bg-red-500/20 text-silver hover:text-red-400 transition-colors">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                           </button>
                         </div>
@@ -778,7 +810,7 @@ Example: Senior Software Engineer with 5+ years of Python, machine learning, and
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="rounded-2xl bg-gradient-to-br from-slate-900/80 to-cyan-900/10 border border-cyan-500/20 overflow-hidden"
+                className="rounded-2xl bg-[#0A0A0A] to-cyan-900/10 border border-cyan-500/20 overflow-hidden"
               >
                 <div className="p-6 border-b border-white/5">
                   <div className="flex items-center gap-4">
@@ -787,7 +819,7 @@ Example: Senior Software Engineer with 5+ years of Python, machine learning, and
                     </div>
                     <div>
                       <h3 className="text-2xl font-bold text-white">Expert Validation</h3>
-                      <p className="text-sm text-slate-400">Trap questions to validate expertise</p>
+                      <p className="text-sm text-silver">Trap questions to validate expertise</p>
                     </div>
                   </div>
                 </div>
@@ -805,10 +837,10 @@ Example: Senior Software Engineer with 5+ years of Python, machine learning, and
                         <div>
                           <p className="text-white font-medium mb-3">{q.question}</p>
                           <div className="space-y-2 text-sm">
-                            <p className="text-slate-400">
+                            <p className="text-silver">
                               <span className="text-cyan-400 font-medium">Trap:</span> {q.trap}
                             </p>
-                            <p className="text-slate-500">
+                            <p className="text-silver">
                               <span className="text-green-400 font-medium">Good answer:</span> {q.goodAnswer}
                             </p>
                           </div>
@@ -838,7 +870,7 @@ Example: Senior Software Engineer with 5+ years of Python, machine learning, and
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-2xl rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 border border-white/10 overflow-hidden"
+              className="w-full max-w-2xl rounded-2xl bg-[#0A0A0A] border border-white/10 overflow-hidden"
             >
               <div className="p-6 border-b border-white/10 flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -851,14 +883,14 @@ Example: Senior Software Engineer with 5+ years of Python, machine learning, and
                   onClick={() => setShowAddQuestion(false)}
                   className="p-2 rounded-lg hover:bg-white/10 transition-colors"
                 >
-                  <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-silver" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
               <div className="p-6 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-2">Question *</label>
+                  <label className="block text-sm font-medium text-silver mb-2">Question *</label>
                   <textarea
                     rows={3}
                     className="w-full rounded-xl p-4 text-sm bg-black/30 border border-white/10 text-white placeholder-slate-500 focus:border-cyan-400/50 focus:outline-none"
@@ -868,7 +900,7 @@ Example: Senior Software Engineer with 5+ years of Python, machine learning, and
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-2">Purpose *</label>
+                  <label className="block text-sm font-medium text-silver mb-2">Purpose *</label>
                   <textarea
                     rows={2}
                     className="w-full rounded-xl p-4 text-sm bg-black/30 border border-white/10 text-white placeholder-slate-500 focus:border-cyan-400/50 focus:outline-none"
@@ -878,7 +910,7 @@ Example: Senior Software Engineer with 5+ years of Python, machine learning, and
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-2">Expected Answer (Optional)</label>
+                  <label className="block text-sm font-medium text-silver mb-2">Expected Answer (Optional)</label>
                   <textarea
                     rows={2}
                     className="w-full rounded-xl p-4 text-sm bg-black/30 border border-white/10 text-white placeholder-slate-500 focus:border-cyan-400/50 focus:outline-none"
