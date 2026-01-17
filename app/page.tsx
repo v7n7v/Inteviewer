@@ -25,11 +25,12 @@ export default function Home() {
       setLoading(false);
     });
 
-    // Listen for auth changes
+    // Listen for auth changes - only redirect on actual sign in, not on page load
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
         setUser(session?.user ?? null);
-        if (session) {
+        // Only redirect to hub on actual sign in, not when page loads with existing session
+        if (event === 'SIGNED_IN' && session) {
           router.push('/hub');
         }
       }
