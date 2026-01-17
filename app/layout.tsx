@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import ClientProviders from '@/components/ClientProviders';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -38,7 +39,7 @@ export default function RootLayout({
 
         {/* Content */}
         <div className="relative z-10">
-          {children}
+          <ClientProviders>{children}</ClientProviders>
         </div>
       </body>
     </html>

@@ -9,6 +9,7 @@ import { showToast } from '@/components/Toast';
 import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
 import type { Question } from '@/types';
+import { celebrateSuccess } from '@/components/Confetti';
 
 // Set up PDF.js worker
 if (typeof window !== 'undefined') {
@@ -77,14 +78,14 @@ export default function DetectiveTab() {
   const processFile = async (file: File) => {
     const fileName = file.name.toLowerCase();
     const fileType = file.type;
-    
+
     // Check supported file types
     const isPDF = fileType === 'application/pdf' || fileName.endsWith('.pdf');
-    const isWord = fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
-                   fileType === 'application/msword' ||
-                   fileName.endsWith('.docx') || fileName.endsWith('.doc');
+    const isWord = fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+      fileType === 'application/msword' ||
+      fileName.endsWith('.docx') || fileName.endsWith('.doc');
     const isText = fileType === 'text/plain' || fileName.endsWith('.txt');
-    
+
     if (!isPDF && !isWord && !isText) {
       showToast('Please upload PDF, Word (.docx), or TXT file', '❌');
       return;
@@ -98,7 +99,7 @@ export default function DetectiveTab() {
         showToast('Scanning PDF...', '📄');
         const arrayBuffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        
+
         for (let i = 1; i <= pdf.numPages; i++) {
           const page = await pdf.getPage(i);
           const content = await page.getTextContent();
@@ -208,17 +209,18 @@ Requirements:
           trapQuestions: data.trapQuestions || [],
         });
         showToast('Battle plan generated successfully!', '🎯');
+        celebrateSuccess();
       } else {
         throw new Error('Invalid response format from AI');
       }
     } catch (error: any) {
       console.error('Battle plan generation error:', error);
       showToast(
-        error.message?.includes('403') 
+        error.message?.includes('403')
           ? 'Model access denied. Please enable GPT-OSS 120B in Groq console.'
           : error.message?.includes('401')
-          ? 'Invalid API key. Please check your configuration.'
-          : 'Error generating battle plan. Please try again.',
+            ? 'Invalid API key. Please check your configuration.'
+            : 'Error generating battle plan. Please try again.',
         '❌'
       );
     } finally {
@@ -295,7 +297,7 @@ Requirements:
   return (
     <div className="space-y-8">
       {/* Hero Header with Progress */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900/90 via-slate-800/50 to-cyan-900/30 border border-white/10 p-8"
@@ -305,7 +307,7 @@ Requirements:
           <div className="absolute top-0 right-0 w-96 h-96 bg-cyber-cyan/20 rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl" />
         </div>
-        
+
         <div className="relative z-10">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div>
@@ -318,7 +320,7 @@ Requirements:
                 <div className="w-2 h-2 rounded-full bg-cyber-cyan animate-pulse" />
                 <span className="text-xs font-medium text-cyber-cyan">Phase 1 • Pre-Interview Intelligence</span>
               </motion.div>
-              
+
               <h1 className="text-4xl lg:text-5xl font-bold mb-3">
                 <span className="text-gradient">Detective</span>
               </h1>
@@ -328,7 +330,7 @@ Requirements:
             </div>
 
             {/* Progress Ring */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.2 }}
@@ -391,7 +393,7 @@ Requirements:
           className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900/80 to-slate-800/50 border border-white/10 hover:border-cyan-500/30 transition-all duration-500"
         >
           <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          
+
           <div className="relative p-6">
             <div className="flex items-center gap-4 mb-6">
               <div className="relative">
@@ -401,7 +403,7 @@ Requirements:
                 {progress.cv > 0 && (
                   <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
                     <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
                 )}
@@ -420,8 +422,8 @@ Requirements:
               className={`
                 relative rounded-xl border-2 border-dashed p-8 text-center cursor-pointer
                 transition-all duration-300
-                ${dragActive 
-                  ? 'border-cyan-400 bg-cyan-500/10' 
+                ${dragActive
+                  ? 'border-cyan-400 bg-cyan-500/10'
                   : 'border-white/10 hover:border-white/30 hover:bg-white/5'
                 }
               `}
@@ -444,7 +446,7 @@ Requirements:
                     className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center"
                   >
                     <svg className={`w-8 h-8 ${dragActive ? 'text-cyan-400' : 'text-cyber-cyan'} transition-colors`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                     </svg>
                   </motion.div>
                   <div>
@@ -510,7 +512,7 @@ Requirements:
           className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900/80 to-slate-800/50 border border-white/10 hover:border-blue-500/30 transition-all duration-500"
         >
           <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          
+
           <div className="relative p-6">
             <div className="flex items-center gap-4 mb-6">
               <div className="relative">
@@ -520,7 +522,7 @@ Requirements:
                 {progress.jd > 0 && (
                   <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
                     <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
                 )}
@@ -555,7 +557,7 @@ Example: Senior Software Engineer with 5+ years of Python, machine learning, and
               {progress.name > 0 && (
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
                   <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
               )}
@@ -565,7 +567,7 @@ Example: Senior Software Engineer with 5+ years of Python, machine learning, and
       </div>
 
       {/* Generate Button */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
@@ -647,24 +649,22 @@ Example: Senior Software Engineer with 5+ years of Python, machine learning, and
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.1 }}
-                    className={`p-4 rounded-xl border transition-colors ${
-                      rf.level === 'high' 
+                    className={`p-4 rounded-xl border transition-colors ${rf.level === 'high'
                         ? 'bg-red-500/5 border-red-500/20 hover:bg-red-500/10'
                         : rf.level === 'medium'
-                        ? 'bg-yellow-500/5 border-yellow-500/20 hover:bg-yellow-500/10'
-                        : 'bg-green-500/5 border-green-500/20 hover:bg-green-500/10'
-                    }`}
+                          ? 'bg-yellow-500/5 border-yellow-500/20 hover:bg-yellow-500/10'
+                          : 'bg-green-500/5 border-green-500/20 hover:bg-green-500/10'
+                      }`}
                   >
                     <div className="flex items-start gap-4">
                       <span className="text-2xl">
                         {rf.level === 'high' ? '🔴' : rf.level === 'medium' ? '🟡' : '🟢'}
                       </span>
                       <div>
-                        <span className={`text-xs font-bold px-2 py-1 rounded-full ${
-                          rf.level === 'high' ? 'bg-red-500/20 text-red-400'
-                          : rf.level === 'medium' ? 'bg-yellow-500/20 text-yellow-400'
-                          : 'bg-green-500/20 text-green-400'
-                        }`}>
+                        <span className={`text-xs font-bold px-2 py-1 rounded-full ${rf.level === 'high' ? 'bg-red-500/20 text-red-400'
+                            : rf.level === 'medium' ? 'bg-yellow-500/20 text-yellow-400'
+                              : 'bg-green-500/20 text-green-400'
+                          }`}>
                           {rf.level.toUpperCase()}
                         </span>
                         <p className="text-slate-300 mt-2">{rf.description}</p>
@@ -759,10 +759,10 @@ Example: Senior Software Engineer with 5+ years of Python, machine learning, and
                         </div>
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
                           <button onClick={() => startEditing(i)} className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                           </button>
                           <button onClick={() => deleteQuestion(i)} className="p-2 rounded-lg hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                           </button>
                         </div>
                       </div>
@@ -852,7 +852,7 @@ Example: Senior Software Engineer with 5+ years of Python, machine learning, and
                   className="p-2 rounded-lg hover:bg-white/10 transition-colors"
                 >
                   <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
