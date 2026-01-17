@@ -179,7 +179,7 @@ export default function CompanyInfoModal({ isOpen, onSubmit, onCancel, jobDescri
 
                             {/* Helper text */}
                             <p className="text-xs text-slate-500 mt-4 text-center">
-                                💡 Your resume will be auto-saved as "Resume_{companyName}_{jobTitle}_{year}"
+                                💡 Your resume will be auto-saved as "Resume_{companyName}_{jobTitle}_{new Date().getFullYear()}"
                             </p>
                         </motion.div>
                     </div>
