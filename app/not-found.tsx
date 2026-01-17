@@ -37,7 +37,7 @@ export default function NotFound() {
                         y: mousePosition.y * -1.5,
                     }}
                     transition={{ type: 'spring', stiffness: 50, damping: 30 }}
-                    className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-purple-500/20 rounded-full blur-[100px]"
+                    className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-cyan-500/20 rounded-full blur-[100px]"
                 />
 
                 {/* Stars */}

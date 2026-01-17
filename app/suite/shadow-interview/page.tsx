@@ -19,7 +19,7 @@ const PERSONAS = [
     id: 'ceo',
     name: 'The Visionary CEO',
     icon: '👔',
-    color: 'from-purple-500 to-pink-500',
+    color: 'from-cyan-500 to-blue-500',
     bgColor: 'purple',
     description: 'Culture, strategy, leadership vision',
     focus: 'long-term strategy, cultural fit, leadership potential, and soft skills',
@@ -442,19 +442,19 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
             <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900/90 via-slate-800/50 to-purple-900/30 border border-white/10 p-8 mb-8"
+              className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900/90 via-slate-800/50 to-cyan-900/30 border border-white/10 p-8 mb-8"
             >
               <div className="absolute inset-0 opacity-30">
-                <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/30 rounded-full blur-3xl" />
+                <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/30 rounded-full blur-3xl" />
                 <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/30 rounded-full blur-3xl" />
               </div>
               <div className="relative z-10">
-                <motion.div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/30 mb-4">
-                  <div className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
-                  <span className="text-xs font-medium text-purple-400">Polymath Shadow™ Interview Simulator</span>
+                <motion.div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 mb-4">
+                  <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                  <span className="text-xs font-medium text-cyan-400">Polymath Shadow™ Interview Simulator</span>
                 </motion.div>
                 <h1 className="text-4xl lg:text-5xl font-bold mb-3">
-                  <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
+                  <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent">
                     Shadow Interview
                   </span>
                 </h1>
@@ -469,7 +469,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="rounded-2xl bg-gradient-to-br from-slate-900/80 to-purple-900/10 border border-purple-500/20 p-6"
+                className="rounded-2xl bg-gradient-to-br from-slate-900/80 to-cyan-900/10 border border-cyan-500/20 p-6"
               >
                 <h3 className="text-xl font-bold text-white mb-4">Choose Your Interviewer</h3>
                 <div className="grid md:grid-cols-3 gap-4">
@@ -523,7 +523,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                       onDrop={(e) => { e.preventDefault(); setDragActive(false); e.dataTransfer.files[0] && processFile(e.dataTransfer.files[0]); }}
                       onClick={() => fileInputRef.current?.click()}
                       className={`rounded-xl border-2 border-dashed p-8 text-center cursor-pointer transition-all ${
-                        dragActive ? 'border-purple-400 bg-purple-500/10' : 'border-white/20 hover:border-white/40'
+                        dragActive ? 'border-cyan-400 bg-cyan-500/10' : 'border-white/20 hover:border-white/40'
                       }`}
                     >
                       <span className="text-4xl block mb-3">📤</span>
@@ -701,7 +701,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                         <motion.div
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: 'auto' }}
-                          className="mt-3 p-4 rounded-xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20"
+                          className="mt-3 p-4 rounded-xl bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/20"
                         >
                           <div className="flex items-center gap-4 mb-3">
                             <div className="text-center">
@@ -715,7 +715,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                               <p className="text-xs text-slate-500 mt-1">Score</p>
                             </div>
                             <div className="flex-1">
-                              <p className="text-xs font-semibold text-purple-400 uppercase mb-1">Shadow Insight</p>
+                              <p className="text-xs font-semibold text-cyan-400 uppercase mb-1">Shadow Insight</p>
                               <p className="text-sm text-slate-300">{msg.feedback.trap}</p>
                             </div>
                           </div>
@@ -741,8 +741,8 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                     <div className="p-5 rounded-2xl bg-slate-800/50 border border-white/10">
                       <div className="flex items-center gap-3">
                         <div className="flex gap-1">
-                          <div className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                          <div className="w-2 h-2 rounded-full bg-pink-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <div className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                          <div className="w-2 h-2 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '150ms' }} />
                           <div className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce" style={{ animationDelay: '300ms' }} />
                         </div>
                         <span className="text-sm text-slate-400">
@@ -775,7 +775,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                       sphereState === 'listening' ? 'bg-gradient-to-br from-green-500 to-emerald-500' :
                       sphereState === 'thinking' ? 'bg-gradient-to-br from-cyan-500 to-blue-500' :
                       sphereState === 'stress' ? 'bg-gradient-to-br from-red-500 to-orange-500' :
-                      'bg-gradient-to-br from-purple-500 to-pink-500'
+                      'bg-gradient-to-br from-cyan-500 to-blue-500'
                     }`}
                   />
                   <p className="text-xs text-slate-400 mt-4">
@@ -797,7 +797,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                     onChange={(e) => setCurrentInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendResponse(); } }}
                     rows={2}
-                    className="w-full px-5 py-4 pr-24 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:border-purple-500/50 focus:outline-none resize-none"
+                    className="w-full px-5 py-4 pr-24 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none resize-none"
                     placeholder="Type your response... (Shift+Enter for new line, /tips for help)"
                     disabled={isThinking}
                   />
@@ -841,7 +841,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="rounded-3xl bg-gradient-to-br from-slate-900/90 via-slate-800/50 to-purple-900/30 border border-white/10 p-8 text-center"
+                className="rounded-3xl bg-gradient-to-br from-slate-900/90 via-slate-800/50 to-cyan-900/30 border border-white/10 p-8 text-center"
               >
                 <span className="text-6xl block mb-6">🎉</span>
                 <h1 className="text-4xl font-bold text-white mb-4">Interview Complete!</h1>
@@ -859,7 +859,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                     <p className="text-sm text-slate-400">Avg Score</p>
                   </div>
                   <div className="p-4 rounded-xl bg-white/5">
-                    <p className="text-3xl font-bold text-purple-400">{selectedPersona.icon}</p>
+                    <p className="text-3xl font-bold text-cyan-400">{selectedPersona.icon}</p>
                     <p className="text-sm text-slate-400">{selectedPersona.name.split(' ').pop()}</p>
                   </div>
                 </div>
@@ -867,7 +867,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                 <div className="flex justify-center gap-4">
                   <button
                     onClick={() => { setStep('setup'); setMessages([]); setQuestionCount(0); setTotalScore(0); }}
-                    className="px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-purple-500 to-pink-500 text-white"
+                    className="px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 text-white"
                   >
                     Practice Again
                   </button>
@@ -934,7 +934,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                 {tips.length === 0 && !loadingTips && (
                   <button
                     onClick={generateTips}
-                    className="w-full p-4 rounded-xl border-2 border-dashed border-white/20 text-slate-400 hover:border-purple-500/50 hover:text-purple-400 transition-colors"
+                    className="w-full p-4 rounded-xl border-2 border-dashed border-white/20 text-slate-400 hover:border-cyan-500/50 hover:text-cyan-400 transition-colors"
                   >
                     Click to generate personalized tips
                   </button>
@@ -942,7 +942,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
 
                 {loadingTips && (
                   <div className="flex items-center justify-center py-12">
-                    <div className="w-12 h-12 rounded-full border-4 border-purple-500/20 border-t-purple-400 animate-spin" />
+                    <div className="w-12 h-12 rounded-full border-4 border-cyan-500/20 border-t-cyan-400 animate-spin" />
                   </div>
                 )}
 
@@ -957,7 +957,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                     >
                       <div className="flex items-center gap-2 mb-2">
                         <span className={`text-xs px-2 py-0.5 rounded-full ${
-                          tip.category === 'behavioral' ? 'bg-purple-500/20 text-purple-400' :
+                          tip.category === 'behavioral' ? 'bg-cyan-500/20 text-cyan-400' :
                           tip.category === 'technical' ? 'bg-cyan-500/20 text-cyan-400' :
                           tip.category === 'negotiation' ? 'bg-green-500/20 text-green-400' :
                           'bg-slate-500/20 text-slate-400'

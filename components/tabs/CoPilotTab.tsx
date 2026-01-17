@@ -343,7 +343,7 @@ export default function CoPilotTab() {
         <>
           {/* Capture Mode Selector */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-            className="p-6 rounded-2xl bg-gradient-to-br from-slate-900/80 to-purple-900/10 border border-purple-500/20"
+            className="p-6 rounded-2xl bg-gradient-to-br from-slate-900/80 to-cyan-900/10 border border-cyan-500/20"
           >
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -351,7 +351,7 @@ export default function CoPilotTab() {
                 <p className="text-sm text-slate-400">Select based on your interview setup</p>
               </div>
               <button onClick={() => setShowCaptureGuide(!showCaptureGuide)}
-                className="text-sm text-purple-400 hover:text-purple-300"
+                className="text-sm text-cyan-400 hover:text-cyan-300"
               >{showCaptureGuide ? 'Hide Guide' : '❓ How it works'}</button>
             </div>
 
@@ -374,14 +374,14 @@ export default function CoPilotTab() {
               <button onClick={() => setCaptureMode('meeting')} disabled={isTranscribing}
                 className={`p-4 rounded-xl border-2 transition-all text-left ${
                   captureMode === 'meeting' 
-                    ? 'border-purple-500 bg-purple-500/10' 
+                    ? 'border-cyan-500 bg-cyan-500/10' 
                     : 'border-white/10 hover:border-white/30 bg-white/5'
                 } ${isTranscribing ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <div className="flex items-center gap-3 mb-2">
                   <span className="text-2xl">📺</span>
                   <span className="font-bold text-white">Meeting Mode</span>
-                  <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400 text-xs">NEW</span>
+                  <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 text-xs">NEW</span>
                 </div>
                 <p className="text-xs text-slate-400">Zoom, Meet, Teams, Webex - captures both speakers</p>
               </button>
@@ -396,7 +396,7 @@ export default function CoPilotTab() {
                 </div>
                 {captureMode === 'meeting' && (
                   <div className="flex items-center gap-2">
-                    <div className={`w-3 h-3 rounded-full ${systemAudioActive ? 'bg-purple-500 animate-pulse' : 'bg-slate-600'}`} />
+                    <div className={`w-3 h-3 rounded-full ${systemAudioActive ? 'bg-cyan-500 animate-pulse' : 'bg-slate-600'}`} />
                     <span className="text-sm text-slate-300">Meeting Audio</span>
                   </div>
                 )}
@@ -407,24 +407,24 @@ export default function CoPilotTab() {
             <AnimatePresence>
               {showCaptureGuide && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-                  className="mt-4 p-4 rounded-xl bg-purple-500/10 border border-purple-500/20"
+                  className="mt-4 p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/20"
                 >
-                  <h4 className="font-bold text-purple-400 mb-3">📺 Meeting Mode Guide</h4>
+                  <h4 className="font-bold text-cyan-400 mb-3">📺 Meeting Mode Guide</h4>
                   <ol className="space-y-2 text-sm text-slate-300">
                     <li className="flex items-start gap-2">
-                      <span className="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center text-xs">1</span>
+                      <span className="w-5 h-5 rounded-full bg-cyan-500/20 flex items-center justify-center text-xs">1</span>
                       Click "Start" - a screen share dialog will appear
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center text-xs">2</span>
-                      Select the <span className="text-purple-400 font-semibold">Chrome Tab</span> with your meeting (Zoom, Meet, etc.)
+                      <span className="w-5 h-5 rounded-full bg-cyan-500/20 flex items-center justify-center text-xs">2</span>
+                      Select the <span className="text-cyan-400 font-semibold">Chrome Tab</span> with your meeting (Zoom, Meet, etc.)
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center text-xs">3</span>
+                      <span className="w-5 h-5 rounded-full bg-cyan-500/20 flex items-center justify-center text-xs">3</span>
                       <span className="text-yellow-400 font-semibold">IMPORTANT:</span> Check the <span className="text-yellow-400">"Share audio"</span> checkbox at the bottom!
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center text-xs">4</span>
+                      <span className="w-5 h-5 rounded-full bg-cyan-500/20 flex items-center justify-center text-xs">4</span>
                       Click "Share" - both your mic AND the meeting audio will be captured
                     </li>
                   </ol>
@@ -465,7 +465,7 @@ export default function CoPilotTab() {
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-4">
-                <div className={`w-14 h-14 rounded-2xl ${isTranscribing ? 'bg-red-500/20' : captureMode === 'meeting' ? 'bg-purple-500/20' : 'bg-green-500/20'} flex items-center justify-center`}>
+                <div className={`w-14 h-14 rounded-2xl ${isTranscribing ? 'bg-red-500/20' : captureMode === 'meeting' ? 'bg-cyan-500/20' : 'bg-green-500/20'} flex items-center justify-center`}>
                   <span className="text-3xl">{isTranscribing ? '🔴' : captureMode === 'meeting' ? '📺' : '🎙️'}</span>
                 </div>
                 <div>
@@ -489,7 +489,7 @@ export default function CoPilotTab() {
                   isTranscribing 
                     ? 'bg-red-500 hover:bg-red-600 text-white' 
                     : captureMode === 'meeting'
-                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:shadow-lg hover:shadow-purple-500/25'
+                      ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:shadow-lg hover:shadow-cyan-500/25'
                       : 'bg-gradient-to-r from-green-500 to-cyan-500 text-white hover:shadow-lg'
                 } disabled:opacity-50`}
               >
@@ -507,7 +507,7 @@ export default function CoPilotTab() {
                       <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                       Live Transcript
                       {captureMode === 'meeting' && systemAudioActive && (
-                        <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400 text-[10px]">+ Meeting Audio</span>
+                        <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 text-[10px]">+ Meeting Audio</span>
                       )}
                     </span>
                     {activeQuestionIndex !== null && <span className="text-xs text-cyan-400">→ Q{activeQuestionIndex + 1}</span>}
@@ -602,7 +602,7 @@ export default function CoPilotTab() {
                         <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5">
                           <span className="text-xl">🎵</span>
                           <div className="flex-1">
-                            <p className="text-sm text-white">Audio recorded {qData.captureMode === 'meeting' && <span className="text-purple-400">(Meeting Mode)</span>}</p>
+                            <p className="text-sm text-white">Audio recorded {qData.captureMode === 'meeting' && <span className="text-cyan-400">(Meeting Mode)</span>}</p>
                             {qData.timestamp && <p className="text-xs text-slate-500">{new Date(qData.timestamp).toLocaleString()}</p>}
                           </div>
                           <button onClick={() => playAudio(qData.audioUrl!)} className="px-3 py-1.5 rounded-lg bg-white/10 text-sm text-white hover:bg-white/20 transition-colors">▶ Play</button>

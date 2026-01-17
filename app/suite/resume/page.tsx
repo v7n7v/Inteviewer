@@ -521,11 +521,11 @@ Return a JSON object with categorized skills:
                 onClick={() => { setMode('create'); setStep('build'); setBuildStep(0); }}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="group relative p-8 rounded-3xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-2 border-purple-500/30 hover:border-purple-400 text-left transition-all overflow-hidden"
+                className="group relative p-8 rounded-3xl bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border-2 border-cyan-500/30 hover:border-cyan-400 text-left transition-all overflow-hidden"
               >
-                <div className="absolute top-0 right-0 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl group-hover:bg-purple-500/20 transition-colors" />
+                <div className="absolute top-0 right-0 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl group-hover:bg-cyan-500/20 transition-colors" />
                 <div className="relative">
-                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mb-6 shadow-lg shadow-purple-500/25">
+                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center mb-6 shadow-lg shadow-cyan-500/25">
                     <span className="text-4xl">✨</span>
                   </div>
                   <h2 className="text-2xl font-bold text-white mb-2">Build From Scratch</h2>
@@ -756,7 +756,7 @@ Return a JSON object with categorized skills:
                   {['Personal', 'Experience', 'Education', 'Skills', 'Summary'].map((label, i) => (
                     <button key={i} onClick={() => setBuildStep(i)}
                       className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                        buildStep === i ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' : 
+                        buildStep === i ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white' : 
                         buildStep > i ? 'bg-white/10 text-white' : 'text-slate-500'
                       }`}
                     >
@@ -774,7 +774,7 @@ Return a JSON object with categorized skills:
                     <div className="grid lg:grid-cols-3 gap-6">
                       {/* Builder Form */}
                       <div className="lg:col-span-2">
-                        <div className="rounded-2xl bg-gradient-to-br from-slate-900/80 to-purple-900/10 border border-purple-500/20 overflow-hidden">
+                        <div className="rounded-2xl bg-gradient-to-br from-slate-900/80 to-cyan-900/10 border border-cyan-500/20 overflow-hidden">
                           <div className="p-6 border-b border-white/10">
                             <h3 className="text-xl font-bold text-white">
                               {['👤 Personal Info', '💼 Experience', '🎓 Education', '⚡ Skills', '✍️ Summary'][buildStep]}
@@ -787,35 +787,35 @@ Return a JSON object with categorized skills:
                                 <div className="grid md:grid-cols-2 gap-4">
                                   <input type="text" placeholder="Full Name *" value={buildResume.name}
                                     onChange={(e) => setBuildResume({ ...buildResume, name: e.target.value })}
-                                    className="px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:border-purple-500/50 focus:outline-none"
+                                    className="px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:border-cyan-500/50 focus:outline-none"
                                   />
                                   <input type="text" placeholder="Target Job Title *" value={buildResume.title}
                                     onChange={(e) => setBuildResume({ ...buildResume, title: e.target.value })}
-                                    className="px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:border-purple-500/50 focus:outline-none"
+                                    className="px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:border-cyan-500/50 focus:outline-none"
                                   />
                                 </div>
                                 <div className="grid md:grid-cols-2 gap-4">
                                   <input type="email" placeholder="Email *" value={buildResume.email}
                                     onChange={(e) => setBuildResume({ ...buildResume, email: e.target.value })}
-                                    className="px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:border-purple-500/50 focus:outline-none"
+                                    className="px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:border-cyan-500/50 focus:outline-none"
                                   />
                                   <input type="tel" placeholder="Phone *" value={buildResume.phone}
                                     onChange={(e) => setBuildResume({ ...buildResume, phone: e.target.value })}
-                                    className="px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:border-purple-500/50 focus:outline-none"
+                                    className="px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:border-cyan-500/50 focus:outline-none"
                                   />
                                 </div>
                                 <input type="text" placeholder="Location (City, State)" value={buildResume.location}
                                   onChange={(e) => setBuildResume({ ...buildResume, location: e.target.value })}
-                                  className="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:border-purple-500/50 focus:outline-none"
+                                  className="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:border-cyan-500/50 focus:outline-none"
                                 />
                                 <div className="grid md:grid-cols-2 gap-4">
                                   <input type="url" placeholder="LinkedIn URL (optional)" value={buildResume.linkedin || ''}
                                     onChange={(e) => setBuildResume({ ...buildResume, linkedin: e.target.value })}
-                                    className="px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:border-purple-500/50 focus:outline-none"
+                                    className="px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:border-cyan-500/50 focus:outline-none"
                                   />
                                   <input type="url" placeholder="Website (optional)" value={buildResume.website || ''}
                                     onChange={(e) => setBuildResume({ ...buildResume, website: e.target.value })}
-                                    className="px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:border-purple-500/50 focus:outline-none"
+                                    className="px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:border-cyan-500/50 focus:outline-none"
                                   />
                                 </div>
                               </div>
@@ -827,7 +827,7 @@ Return a JSON object with categorized skills:
                                 {buildResume.experience.map((exp, i) => (
                                   <div key={i} className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-3">
                                     <div className="flex justify-between items-start">
-                                      <span className="text-xs font-semibold text-purple-400">Experience {i + 1}</span>
+                                      <span className="text-xs font-semibold text-cyan-400">Experience {i + 1}</span>
                                       <button onClick={() => {
                                         const newExp = buildResume.experience.filter((_, idx) => idx !== i);
                                         setBuildResume({ ...buildResume, experience: newExp });
@@ -851,7 +851,7 @@ Return a JSON object with categorized skills:
                                       <div className="flex justify-between items-center mb-2">
                                         <span className="text-xs text-slate-400">Achievements</span>
                                         <button onClick={() => generateAchievements(i)} disabled={aiSuggesting}
-                                          className="text-xs px-2 py-1 rounded bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 disabled:opacity-50"
+                                          className="text-xs px-2 py-1 rounded bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 disabled:opacity-50"
                                         >{aiSuggesting ? '...' : '✨ AI Generate'}</button>
                                       </div>
                                       {exp.achievements.map((ach, j) => (
@@ -872,12 +872,12 @@ Return a JSON object with categorized skills:
                                         const newExp = [...buildResume.experience];
                                         newExp[i].achievements.push('');
                                         setBuildResume({ ...buildResume, experience: newExp });
-                                      }} className="text-xs text-purple-400 hover:text-purple-300">+ Add Achievement</button>
+                                      }} className="text-xs text-cyan-400 hover:text-cyan-300">+ Add Achievement</button>
                                     </div>
                                   </div>
                                 ))}
                                 <button onClick={() => setBuildResume({ ...buildResume, experience: [...buildResume.experience, { role: '', company: '', duration: '', achievements: [''] }] })}
-                                  className="w-full p-4 rounded-xl border-2 border-dashed border-white/20 text-slate-400 hover:border-purple-500/50 hover:text-purple-400 transition-colors"
+                                  className="w-full p-4 rounded-xl border-2 border-dashed border-white/20 text-slate-400 hover:border-cyan-500/50 hover:text-cyan-400 transition-colors"
                                 >+ Add Experience</button>
                               </div>
                             )}
@@ -888,7 +888,7 @@ Return a JSON object with categorized skills:
                                 {buildResume.education.map((edu, i) => (
                                   <div key={i} className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-3">
                                     <div className="flex justify-between items-start">
-                                      <span className="text-xs font-semibold text-purple-400">Education {i + 1}</span>
+                                      <span className="text-xs font-semibold text-cyan-400">Education {i + 1}</span>
                                       <button onClick={() => {
                                         const newEdu = buildResume.education.filter((_, idx) => idx !== i);
                                         setBuildResume({ ...buildResume, education: newEdu });
@@ -915,7 +915,7 @@ Return a JSON object with categorized skills:
                                   </div>
                                 ))}
                                 <button onClick={() => setBuildResume({ ...buildResume, education: [...buildResume.education, { degree: '', institution: '', year: '', details: '' }] })}
-                                  className="w-full p-4 rounded-xl border-2 border-dashed border-white/20 text-slate-400 hover:border-purple-500/50 hover:text-purple-400 transition-colors"
+                                  className="w-full p-4 rounded-xl border-2 border-dashed border-white/20 text-slate-400 hover:border-cyan-500/50 hover:text-cyan-400 transition-colors"
                                 >+ Add Education</button>
                               </div>
                             )}
@@ -926,7 +926,7 @@ Return a JSON object with categorized skills:
                                 <div className="flex justify-between items-center mb-2">
                                   <span className="text-sm text-slate-400">Add skills by category</span>
                                   <button onClick={suggestSkills} disabled={aiSuggesting}
-                                    className="px-3 py-1.5 rounded-lg bg-purple-500/20 text-purple-400 text-sm hover:bg-purple-500/30 disabled:opacity-50"
+                                    className="px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-400 text-sm hover:bg-cyan-500/30 disabled:opacity-50"
                                   >{aiSuggesting ? 'Suggesting...' : '✨ AI Suggest Skills'}</button>
                                 </div>
                                 {buildResume.skills.map((cat, i) => (
@@ -946,13 +946,13 @@ Return a JSON object with categorized skills:
                                     </div>
                                     <div className="flex flex-wrap gap-2">
                                       {cat.items.map((skill, j) => (
-                                        <span key={j} className="px-3 py-1.5 rounded-full bg-purple-500/20 text-purple-300 text-sm flex items-center gap-2">
+                                        <span key={j} className="px-3 py-1.5 rounded-full bg-cyan-500/20 text-cyan-300 text-sm flex items-center gap-2">
                                           {skill}
                                           <button onClick={() => {
                                             const newSkills = [...buildResume.skills];
                                             newSkills[i].items = newSkills[i].items.filter((_, idx) => idx !== j);
                                             setBuildResume({ ...buildResume, skills: newSkills });
-                                          }} className="text-purple-400 hover:text-white">✕</button>
+                                          }} className="text-cyan-400 hover:text-white">✕</button>
                                         </span>
                                       ))}
                                       <button onClick={() => {
@@ -962,12 +962,12 @@ Return a JSON object with categorized skills:
                                           newSkills[i].items.push(skill);
                                           setBuildResume({ ...buildResume, skills: newSkills });
                                         }
-                                      }} className="px-3 py-1.5 rounded-full border border-dashed border-white/20 text-slate-400 text-sm hover:border-purple-500/50">+ Add</button>
+                                      }} className="px-3 py-1.5 rounded-full border border-dashed border-white/20 text-slate-400 text-sm hover:border-cyan-500/50">+ Add</button>
                                     </div>
                                   </div>
                                 ))}
                                 <button onClick={() => setBuildResume({ ...buildResume, skills: [...buildResume.skills, { category: 'Technical', items: [] }] })}
-                                  className="w-full p-4 rounded-xl border-2 border-dashed border-white/20 text-slate-400 hover:border-purple-500/50 hover:text-purple-400 transition-colors"
+                                  className="w-full p-4 rounded-xl border-2 border-dashed border-white/20 text-slate-400 hover:border-cyan-500/50 hover:text-cyan-400 transition-colors"
                                 >+ Add Skill Category</button>
                               </div>
                             )}
@@ -978,11 +978,11 @@ Return a JSON object with categorized skills:
                                 <div className="flex justify-between items-center">
                                   <span className="text-sm text-slate-400">Professional summary (2-3 sentences)</span>
                                   <button onClick={generateSummary} disabled={aiSuggesting}
-                                    className="px-3 py-1.5 rounded-lg bg-purple-500/20 text-purple-400 text-sm hover:bg-purple-500/30 disabled:opacity-50"
+                                    className="px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-400 text-sm hover:bg-cyan-500/30 disabled:opacity-50"
                                   >{aiSuggesting ? 'Generating...' : '✨ AI Generate'}</button>
                                 </div>
                                 <textarea rows={5} value={buildResume.summary} onChange={(e) => setBuildResume({ ...buildResume, summary: e.target.value })}
-                                  className="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:border-purple-500/50 focus:outline-none resize-none"
+                                  className="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:border-cyan-500/50 focus:outline-none resize-none"
                                   placeholder="Write a compelling summary that highlights your value proposition..."
                                 />
                               </div>
@@ -995,7 +995,7 @@ Return a JSON object with categorized skills:
                               >← Previous</button>
                               {buildStep < 4 ? (
                                 <button onClick={() => setBuildStep(buildStep + 1)}
-                                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold"
+                                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold"
                                 >Next →</button>
                               ) : (
                                 <button onClick={() => setStep('template')} disabled={!buildResume.name}
@@ -1285,7 +1285,7 @@ function TemplateAndPreview({
           </div>
           {!matchScore && (
             <div className="mt-6 flex justify-end">
-              <button onClick={() => setStep('preview')} className="px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+              <button onClick={() => setStep('preview')} className="px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 text-white">
                 Preview & Download →
               </button>
             </div>

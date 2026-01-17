@@ -10,7 +10,7 @@ const STATUS_CONFIG = {
     not_applied: { bg: 'bg-slate-500/20', border: 'border-slate-500/30', text: 'text-slate-300', label: 'Not Applied', icon: '📝', gradient: 'from-slate-500 to-slate-600' },
     applied: { bg: 'bg-blue-500/20', border: 'border-blue-500/30', text: 'text-blue-300', label: 'Applied', icon: '🚀', gradient: 'from-blue-500 to-cyan-500' },
     screening: { bg: 'bg-cyan-500/20', border: 'border-cyan-500/30', text: 'text-cyan-300', label: 'Screening', icon: '👀', gradient: 'from-cyan-500 to-teal-500' },
-    interview_scheduled: { bg: 'bg-purple-500/20', border: 'border-purple-500/30', text: 'text-purple-300', label: 'Interview Scheduled', icon: '📅', gradient: 'from-purple-500 to-indigo-500' },
+    interview_scheduled: { bg: 'bg-cyan-500/20', border: 'border-cyan-500/30', text: 'text-cyan-300', label: 'Interview Scheduled', icon: '📅', gradient: 'from-cyan-500 to-indigo-500' },
     interviewed: { bg: 'bg-indigo-500/20', border: 'border-indigo-500/30', text: 'text-indigo-300', label: 'Interviewed', icon: '🎤', gradient: 'from-indigo-500 to-violet-500' },
     offer: { bg: 'bg-green-500/20', border: 'border-green-500/30', text: 'text-green-300', label: 'Offer Received', icon: '🎉', gradient: 'from-green-500 to-emerald-500' },
     rejected: { bg: 'bg-red-500/20', border: 'border-red-500/30', text: 'text-red-300', label: 'Rejected', icon: '❌', gradient: 'from-red-500 to-rose-500' },
@@ -135,20 +135,20 @@ export default function ApplicationsPage() {
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900/90 via-slate-800/50 to-purple-900/20 border border-white/10 p-8 mb-8"
+                className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900/90 via-slate-800/50 to-cyan-900/20 border border-white/10 p-8 mb-8"
             >
                 <div className="absolute inset-0 opacity-20">
-                    <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/30 rounded-full blur-3xl" />
+                    <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/30 rounded-full blur-3xl" />
                     <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/30 rounded-full blur-3xl" />
                 </div>
                 <div className="relative z-10">
                     <div className="flex items-center gap-4 mb-4">
-                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-purple-500/25">
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-cyan-500/25">
                             <span className="text-3xl">📊</span>
                         </div>
                         <div>
                             <h1 className="text-4xl font-bold">
-                                <span className="bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                                <span className="bg-gradient-to-r from-cyan-400 to-cyan-400 bg-clip-text text-transparent">
                                     Application Tracker
                                 </span>
                             </h1>
@@ -163,7 +163,7 @@ export default function ApplicationsPage() {
                 {[
                     { label: 'Total Applications', value: stats.total, icon: '📝', color: 'from-slate-500 to-slate-600' },
                     { label: 'Active', value: stats.active, icon: '🚀', color: 'from-blue-500 to-cyan-500' },
-                    { label: 'Interviews', value: stats.interviews, icon: '🎤', color: 'from-purple-500 to-indigo-500' },
+                    { label: 'Interviews', value: stats.interviews, icon: '🎤', color: 'from-cyan-500 to-indigo-500' },
                     { label: 'Offers', value: stats.offers, icon: '🎉', color: 'from-green-500 to-emerald-500' },
                 ].map((stat, i) => (
                     <motion.div
@@ -217,7 +217,7 @@ export default function ApplicationsPage() {
                             key={v.mode}
                             onClick={() => setViewMode(v.mode)}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === v.mode
-                                    ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-white'
+                                    ? 'bg-gradient-to-r from-cyan-500 to-cyan-500 text-white'
                                     : 'text-slate-400 hover:text-white'
                                 }`}
                         >
@@ -239,7 +239,7 @@ export default function ApplicationsPage() {
                     animate={{ opacity: 1, y: 0 }}
                     className="text-center py-16"
                 >
-                    <div className="w-24 h-24 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-purple-500/20 to-cyan-500/20 flex items-center justify-center">
+                    <div className="w-24 h-24 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-cyan-500/20 flex items-center justify-center">
                         <span className="text-5xl">📭</span>
                     </div>
                     <h3 className="text-2xl font-bold text-white mb-3">No Applications Yet</h3>
@@ -248,7 +248,7 @@ export default function ApplicationsPage() {
                     </p>
                     <a
                         href="/suite/resume"
-                        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-cyan-500 text-white font-bold hover:shadow-lg hover:shadow-purple-500/25 transition-all"
+                        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-500 text-white font-bold hover:shadow-lg hover:shadow-cyan-500/25 transition-all"
                     >
                         🔄 Morph a Resume
                     </a>
@@ -488,7 +488,7 @@ export default function ApplicationsPage() {
                                         )}
                                         {selectedApp.interview_date && (
                                             <div className="flex items-center gap-3 text-sm">
-                                                <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">🎤</div>
+                                                <div className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center">🎤</div>
                                                 <div>
                                                     <p className="text-white">Interview</p>
                                                     <p className="text-slate-500">{new Date(selectedApp.interview_date).toLocaleDateString()}</p>
@@ -546,7 +546,7 @@ function ApplicationCard({
             className={`relative group rounded-2xl bg-gradient-to-br from-slate-900/80 to-slate-800/50 border border-white/10 hover:border-cyan-500/30 transition-all ${showQuickStatus ? 'z-50' : 'z-0'}`}
         >
             {/* Glow effect */}
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-cyan-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-cyan-500/5 to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
 
             <div className="relative p-6">
                 {/* Header */}

@@ -516,7 +516,7 @@ Requirements:
           <div className="relative p-6">
             <div className="flex items-center gap-4 mb-6">
               <div className="relative">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center">
                   <span className="text-3xl">💼</span>
                 </div>
                 {progress.jd > 0 && (
@@ -750,7 +750,7 @@ Example: Senior Software Engineer with 5+ years of Python, machine learning, and
                           </p>
                           {q.expectedAnswer && (
                             <p className="text-sm text-slate-500 mt-1">
-                              <span className="text-purple-400 font-medium">Look for:</span> {q.expectedAnswer}
+                              <span className="text-cyan-400 font-medium">Look for:</span> {q.expectedAnswer}
                             </p>
                           )}
                           {q.isCustom && (
@@ -778,11 +778,11 @@ Example: Senior Software Engineer with 5+ years of Python, machine learning, and
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="rounded-2xl bg-gradient-to-br from-slate-900/80 to-purple-900/10 border border-purple-500/20 overflow-hidden"
+                className="rounded-2xl bg-gradient-to-br from-slate-900/80 to-cyan-900/10 border border-cyan-500/20 overflow-hidden"
               >
                 <div className="p-6 border-b border-white/5">
                   <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center">
                       <span className="text-3xl">🪤</span>
                     </div>
                     <div>
@@ -798,7 +798,7 @@ Example: Senior Software Engineer with 5+ years of Python, machine learning, and
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.1 }}
-                      className="p-5 rounded-xl bg-purple-500/5 border border-purple-500/20 hover:bg-purple-500/10 transition-colors"
+                      className="p-5 rounded-xl bg-cyan-500/5 border border-cyan-500/20 hover:bg-cyan-500/10 transition-colors"
                     >
                       <div className="flex gap-4">
                         <span className="text-2xl">🪤</span>
@@ -806,7 +806,7 @@ Example: Senior Software Engineer with 5+ years of Python, machine learning, and
                           <p className="text-white font-medium mb-3">{q.question}</p>
                           <div className="space-y-2 text-sm">
                             <p className="text-slate-400">
-                              <span className="text-purple-400 font-medium">Trap:</span> {q.trap}
+                              <span className="text-cyan-400 font-medium">Trap:</span> {q.trap}
                             </p>
                             <p className="text-slate-500">
                               <span className="text-green-400 font-medium">Good answer:</span> {q.goodAnswer}

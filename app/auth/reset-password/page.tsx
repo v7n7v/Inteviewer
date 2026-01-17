@@ -82,7 +82,7 @@ export default function ResetPasswordPage() {
         <div className="min-h-screen flex items-center justify-center p-8">
             <div className="relative max-w-md w-full">
                 {/* Background glow */}
-                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 via-blue-500/10 to-purple-500/20 rounded-3xl blur-3xl" />
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 via-blue-500/10 to-cyan-500/20 rounded-3xl blur-3xl" />
 
                 <div className="relative glass-card p-8">
                     <div className="text-center mb-8">

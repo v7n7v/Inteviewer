@@ -630,13 +630,13 @@ export default function LiquidResumePage() {
           {/* AI Suggestions */}
           {suggestions.length > 0 && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-              className="rounded-2xl bg-gradient-to-br from-slate-900/80 to-purple-900/10 border border-purple-500/20 p-5"
+              className="rounded-2xl bg-gradient-to-br from-slate-900/80 to-cyan-900/10 border border-cyan-500/20 p-5"
             >
               <h3 className="font-bold text-white mb-4">💡 AI Suggestions</h3>
               <ul className="space-y-2">
                 {suggestions.map((s, i) => (
                   <li key={i} className="text-sm text-slate-300 flex items-start gap-2">
-                    <span className="text-purple-400">•</span>
+                    <span className="text-cyan-400">•</span>
                     {s}
                   </li>
                 ))}

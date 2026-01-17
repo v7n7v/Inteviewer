@@ -10,7 +10,7 @@ const STATUS_COLORS = {
     not_applied: { bg: 'bg-slate-500/20', border: 'border-slate-500/30', text: 'text-slate-300', label: 'Not Applied' },
     applied: { bg: 'bg-blue-500/20', border: 'border-blue-500/30', text: 'text-blue-300', label: 'Applied' },
     screening: { bg: 'bg-cyan-500/20', border: 'border-cyan-500/30', text: 'text-cyan-300', label: 'Screening' },
-    interview_scheduled: { bg: 'bg-purple-500/20', border: 'border-purple-500/30', text: 'text-purple-300', label: 'Interview Scheduled' },
+    interview_scheduled: { bg: 'bg-cyan-500/20', border: 'border-cyan-500/30', text: 'text-cyan-300', label: 'Interview Scheduled' },
     interviewed: { bg: 'bg-indigo-500/20', border: 'border-indigo-500/30', text: 'text-indigo-300', label: 'Interviewed' },
     offer: { bg: 'bg-green-500/20', border: 'border-green-500/30', text: 'text-green-300', label: 'Offer Received' },
     rejected: { bg: 'bg-red-500/20', border: 'border-red-500/30', text: 'text-red-300', label: 'Rejected' },
@@ -117,7 +117,7 @@ export default function ApplicationsPage() {
                 {[
                     { label: 'Total Applications', value: stats.total, icon: '📝', color: 'from-slate-500 to-slate-600' },
                     { label: 'In Process', value: stats.applied, icon: '🚀', color: 'from-blue-500 to-cyan-500' },
-                    { label: 'Interviews', value: stats.interviews, icon: '🎤', color: 'from-purple-500 to-indigo-500' },
+                    { label: 'Interviews', value: stats.interviews, icon: '🎤', color: 'from-cyan-500 to-indigo-500' },
                     { label: 'Offers', value: stats.offers, icon: '🎉', color: 'from-green-500 to-emerald-500' },
                 ].map((stat, i) => (
                     <motion.div

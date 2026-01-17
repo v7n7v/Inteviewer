@@ -248,7 +248,7 @@ export default function MarketOraclePage() {
             <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900/90 via-indigo-900/30 to-purple-900/30 border border-white/10 p-8 mb-8"
+              className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900/90 via-indigo-900/30 to-cyan-900/30 border border-white/10 p-8 mb-8"
             >
               <div className="absolute inset-0">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl" />
@@ -282,7 +282,7 @@ export default function MarketOraclePage() {
                   <span className="text-xs font-medium text-indigo-400">Career Intelligence Engine</span>
                 </motion.div>
                 <h1 className="text-4xl lg:text-5xl font-bold mb-3">
-                  <span className="bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                  <span className="bg-gradient-to-r from-cyan-400 via-indigo-400 to-cyan-400 bg-clip-text text-transparent">
                     Market Oracle
                   </span>
                 </h1>
@@ -377,7 +377,7 @@ export default function MarketOraclePage() {
                   disabled={!resumeText.trim()}
                   className="group relative px-12 py-5 rounded-2xl font-bold text-xl overflow-hidden disabled:opacity-50"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 via-indigo-500 to-purple-500 opacity-80 group-hover:opacity-100 transition-opacity" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 via-indigo-500 to-cyan-500 opacity-80 group-hover:opacity-100 transition-opacity" />
                   <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
                   <span className="relative flex items-center gap-3 text-white">
                     <span className="text-2xl">🔮</span>
@@ -425,8 +425,8 @@ export default function MarketOraclePage() {
                 className="w-32 h-32 mx-auto mb-8 relative"
               >
                 <div className="absolute inset-0 rounded-full border-4 border-indigo-500/20" />
-                <div className="absolute inset-0 rounded-full border-4 border-t-cyan-400 border-r-indigo-400 border-b-purple-400 border-l-transparent animate-spin" />
-                <div className="absolute inset-4 rounded-full bg-gradient-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center">
+                <div className="absolute inset-0 rounded-full border-4 border-t-cyan-400 border-r-indigo-400 border-b-cyan-400 border-l-transparent animate-spin" />
+                <div className="absolute inset-4 rounded-full bg-gradient-to-br from-cyan-500/20 to-cyan-500/20 flex items-center justify-center">
                   <span className="text-4xl">🔮</span>
                 </div>
               </motion.div>
@@ -504,7 +504,7 @@ export default function MarketOraclePage() {
                   initial={{ y: -50, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.1 }}
-                  className="glass-card p-4 rounded-2xl border border-purple-500/30 bg-slate-900/80 backdrop-blur-xl"
+                  className="glass-card p-4 rounded-2xl border border-cyan-500/30 bg-slate-900/80 backdrop-blur-xl"
                 >
                   <p className="text-xs text-slate-400 uppercase tracking-wider mb-2 text-center">🌉 Bridge Skills</p>
                   <div className="flex gap-2">
@@ -513,7 +513,7 @@ export default function MarketOraclePage() {
                         key={skill.skill}
                         onClick={() => toggleBridgeSkill(skill)}
                         className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${activeBridgeSkill?.skill === skill.skill
-                          ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/25'
+                          ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/25'
                           : 'bg-white/10 text-white hover:bg-white/20'
                           }`}
                       >
@@ -614,7 +614,7 @@ export default function MarketOraclePage() {
                   <p className="text-xs text-slate-400">
                     🖱️ Drag to rotate • Scroll to zoom • Click stars for details
                   </p>
-                  <p className="text-xs text-purple-400 mt-1">
+                  <p className="text-xs text-cyan-400 mt-1">
                     ⭐ Bright stars = 80%+ match • Lines = constellation paths
                   </p>
                 </motion.div>
@@ -661,7 +661,7 @@ export default function MarketOraclePage() {
                         </div>
                         <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full"
+                            className="h-full bg-gradient-to-r from-cyan-500 to-cyan-500 rounded-full"
                             style={{ width: `${selectedJob.fitScore * 100}%` }}
                           />
                         </div>
@@ -684,8 +684,8 @@ export default function MarketOraclePage() {
                         </div>
                       </div>
 
-                      <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/30">
-                        <p className="text-xs text-purple-400 uppercase tracking-wider mb-1">💡 Why You'll Win</p>
+                      <div className="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/30">
+                        <p className="text-xs text-cyan-400 uppercase tracking-wider mb-1">💡 Why You'll Win</p>
                         <p className="text-sm text-slate-300">
                           {selectedJob.fitScore > 0.8
                             ? "Your skills are a near-perfect match. You're a top candidate for this role."
@@ -709,9 +709,9 @@ export default function MarketOraclePage() {
                   exit={{ opacity: 0, x: 50 }}
                   className="absolute right-4 top-1/2 -translate-y-1/2 z-10"
                 >
-                  <div className="glass-card p-6 rounded-2xl border border-purple-500/30 bg-slate-900/95 backdrop-blur-xl w-80">
+                  <div className="glass-card p-6 rounded-2xl border border-cyan-500/30 bg-slate-900/95 backdrop-blur-xl w-80">
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center">
                         <span className="text-2xl">🌉</span>
                       </div>
                       <div>
@@ -729,9 +729,9 @@ export default function MarketOraclePage() {
                         <span className="text-sm text-slate-400">New Fit Score</span>
                         <span className="text-lg font-bold text-cyan-400">{Math.round(activeBridgeSkill.newFitScore * 100)}%</span>
                       </div>
-                      <div className="flex items-center justify-between p-3 rounded-xl bg-purple-500/10">
+                      <div className="flex items-center justify-between p-3 rounded-xl bg-cyan-500/10">
                         <span className="text-sm text-slate-400">Impact Rating</span>
-                        <span className="text-lg font-bold text-purple-400">{activeBridgeSkill.impact}/10</span>
+                        <span className="text-lg font-bold text-cyan-400">{activeBridgeSkill.impact}/10</span>
                       </div>
                     </div>
 

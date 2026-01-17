@@ -12,7 +12,7 @@ export default function JobSearchPage() {
                 className="relative max-w-2xl w-full"
             >
                 {/* Background glow */}
-                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 via-blue-500/10 to-purple-500/20 rounded-3xl blur-3xl" />
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 via-blue-500/10 to-cyan-500/20 rounded-3xl blur-3xl" />
 
                 {/* Card */}
                 <div className="relative rounded-3xl bg-gradient-to-br from-slate-900/90 via-slate-800/90 to-slate-900/90 border border-white/10 p-12 text-center backdrop-blur-xl">
@@ -45,7 +45,7 @@ export default function JobSearchPage() {
 
                     {/* Title */}
                     <h1 className="text-4xl lg:text-5xl font-bold mb-4">
-                        <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
+                        <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent">
                             Job Search
                         </span>
                     </h1>

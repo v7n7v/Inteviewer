@@ -133,19 +133,19 @@ Return JSON: { "grades": { "communication": X, "technical": X, "problemSolving":
     <div className="space-y-6">
       {/* Hero Header */}
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900/90 via-slate-800/50 to-purple-900/20 border border-white/10 p-8"
+        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900/90 via-slate-800/50 to-cyan-900/20 border border-white/10 p-8"
       >
         <div className="absolute inset-0 opacity-30">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl" />
+          <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/20 rounded-full blur-3xl" />
         </div>
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div>
             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/30 mb-4"
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 mb-4"
             >
-              <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
-              <span className="text-xs font-medium text-purple-400">Phase 3 • Hybrid Assessment</span>
+              <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
+              <span className="text-xs font-medium text-cyan-400">Phase 3 • Hybrid Assessment</span>
             </motion.div>
             <h1 className="text-4xl lg:text-5xl font-bold mb-3"><span className="text-gradient">Calibration</span></h1>
             <p className="text-slate-400 text-lg max-w-xl">Human intuition meets AI logic — compare assessments side by side</p>
@@ -275,10 +275,10 @@ Return JSON: { "grades": { "communication": X, "technical": X, "problemSolving":
 
       {/* Radar Chart */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-        className="rounded-2xl bg-gradient-to-br from-slate-900/80 to-purple-900/10 border border-purple-500/20 overflow-hidden"
+        className="rounded-2xl bg-gradient-to-br from-slate-900/80 to-cyan-900/10 border border-cyan-500/20 overflow-hidden"
       >
         <div className="p-6 border-b border-white/5 flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-purple-500/20 flex items-center justify-center">
+          <div className="w-14 h-14 rounded-2xl bg-cyan-500/20 flex items-center justify-center">
             <span className="text-3xl">📊</span>
           </div>
           <div>
