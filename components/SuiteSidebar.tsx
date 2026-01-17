@@ -176,7 +176,7 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
         <LayoutGroup>
           {/* Header */}
           <div className="relative p-4 border-b border-white/5">
-            <div className="flex items-center gap-3 overflow-hidden">
+            <div className={`flex items-center gap-3 overflow-hidden transition-all duration-300 ${isCollapsed ? 'flex-col !gap-2' : ''}`}>
               {/* Suite Icon - always visible */}
               <motion.div
                 layout
@@ -186,11 +186,13 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
                 <span className="text-xl">{suite.icon}</span>
               </motion.div>
 
-              {/* Suite Text - animated opacity and width */}
+              {/* Suite Text - animated opacity, width and height */}
               <motion.div
                 animate={{
                   opacity: isCollapsed ? 0 : 1,
                   width: isCollapsed ? 0 : 'auto',
+                  height: isCollapsed ? 0 : 'auto',
+                  marginBottom: isCollapsed ? 0 : 0,
                 }}
                 transition={{ duration: 0.2, ease: 'easeOut' }}
                 className="overflow-hidden whitespace-nowrap flex-1"
