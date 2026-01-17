@@ -121,7 +121,7 @@ Return JSON: { "grades": { "communication": X, "technical": X, "problemSolving":
         ticks: { stepSize: 2, color: 'rgba(255,255,255,0.4)', backdropColor: 'transparent' },
         grid: { color: 'rgba(0,245,255,0.1)' },
         angleLines: { color: 'rgba(0,245,255,0.1)' },
-        pointLabels: { color: 'rgba(255,255,255,0.8)', font: { size: 12, weight: '600' as const } },
+        pointLabels: { color: 'rgba(255,255,255,0.8)', font: { size: 12, weight: 'bold' as const } },
       },
     },
     plugins: {
@@ -150,7 +150,7 @@ Return JSON: { "grades": { "communication": X, "technical": X, "problemSolving":
             <h1 className="text-4xl lg:text-5xl font-bold mb-3"><span className="text-gradient">Calibration</span></h1>
             <p className="text-silver text-lg max-w-xl">Human intuition meets AI logic — compare assessments side by side</p>
           </div>
-          
+
           {/* Score Comparison */}
           <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}
             className="flex items-center gap-6"
