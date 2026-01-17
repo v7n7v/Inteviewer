@@ -17,6 +17,7 @@ export interface ResumeVersion {
   skill_graph: any;
   mode: 'technical' | 'leadership';
   is_active: boolean;
+  matchScore?: number;
   created_at: string;
   updated_at: string;
 }
