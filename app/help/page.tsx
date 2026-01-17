@@ -50,6 +50,16 @@ const docs: DocSection[] = [
                     'Analyze current market trends for your role.',
                     'View salary data, demand heatmaps, and skill gaps.'
                 ]
+            },
+            {
+                title: 'Shadow Practice',
+                steps: [
+                    'Go to **Talent Suite > Practice**.',
+                    'Start an AI-simulated interview session.',
+                    'Practice answering behavioral and technical questions.',
+                    'Get real-time feedback on your tone, pace, and content.'
+                ],
+                tips: ['Treat this like a real interview; the AI adapts to your responses.']
             }
         ]
     },
@@ -86,6 +96,23 @@ const docs: DocSection[] = [
                     'Select the candidate and the role.',
                     'Rate the candidate on defined competencies.',
                     'The AI helps normalize scores across different interviewers to reduce bias.'
+                ]
+            },
+            {
+                title: 'JD Generator',
+                steps: [
+                    'Navigate to **Interview Suite > JD Generator**.',
+                    'Enter the role title and key requirements.',
+                    'The AI generates a comprehensive, unbiased Job Description.',
+                    'Export or save the JD for use in your ATS.'
+                ]
+            },
+            {
+                title: 'Analytics',
+                steps: [
+                    'Go to **Interview Suite > Analytics**.',
+                    'View dashboard metrics on time-to-hire, candidate quality, and interview pass rates.',
+                    'Identify bottlenecks in your hiring pipeline.'
                 ]
             }
         ]

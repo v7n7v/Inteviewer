@@ -322,6 +322,28 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
             })}
           </div>
 
+          {/* Help & Support - Pinned to bottom */}
+          <div className="px-3 pb-1">
+            <motion.button
+              onClick={() => handleNavigation('/help')}
+              className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 text-slate-400 hover:bg-white/5 hover:text-white ${isCollapsed ? 'justify-center' : ''}`}
+            >
+              <span className="text-xl">💡</span>
+              <AnimatePresence mode="wait">
+                {!isCollapsed && (
+                  <motion.div
+                    initial={{ opacity: 0, width: 0 }}
+                    animate={{ opacity: 1, width: 'auto' }}
+                    exit={{ opacity: 0, width: 0 }}
+                    className="flex-1 text-left overflow-hidden"
+                  >
+                    <span className="font-medium text-sm">Help & Support</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.button>
+          </div>
+
           {/* User Section */}
           <div className="p-3 border-t border-white/5">
             <div className="relative">
@@ -380,15 +402,7 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
                       </svg>
                       <span className="text-sm">Settings</span>
                     </button>
-                    <button
-                      onClick={() => { router.push('/help'); setShowUserMenu(false); }}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 text-slate-300 hover:text-white text-left"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span className="text-sm">Help & Documentation</span>
-                    </button>
+
                     <div className="my-1 border-t border-white/10" />
                     <button
                       onClick={handleLogoutClick}
