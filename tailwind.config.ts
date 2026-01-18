@@ -14,6 +14,7 @@ const config: Config = {
         'silver': '#A1A1AA',
         'vercel-blue': '#0070F3',
         'hairline': 'rgba(255,255,255,0.1)',
+        'cyber-cyan': '#00F5FF',
       },
       fontFamily: {
         sans: ['var(--font-inter)', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],

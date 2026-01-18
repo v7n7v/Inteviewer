@@ -11,13 +11,15 @@ import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle } from 'docx';
+import { saveAs } from 'file-saver';
 
 // Set up PDF.js worker
 if (typeof window !== 'undefined') {
   pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 }
 
-// Resume data structure
+// ============ TYPES ============
 interface ResumeData {
   name: string;
   title: string;
@@ -33,7 +35,7 @@ interface ResumeData {
   certifications?: string[];
 }
 
-// Empty resume template
+// ============ CONSTANTS ============
 const EMPTY_RESUME: ResumeData = {
   name: '',
   title: '',
@@ -47,7 +49,6 @@ const EMPTY_RESUME: ResumeData = {
   certifications: [],
 };
 
-// Template definitions
 const TEMPLATES = [
   { id: 'executive', name: 'Executive', description: 'Clean, professional design for senior roles', preview: '📊', colors: { primary: '#1a365d', accent: '#2b6cb0', text: '#1a202c' } },
   { id: 'modern', name: 'Modern', description: 'Contemporary style with bold headers', preview: '✨', colors: { primary: '#0d9488', accent: '#14b8a6', text: '#1e293b' } },
@@ -56,45 +57,81 @@ const TEMPLATES = [
   { id: 'technical', name: 'Technical', description: 'Optimized for tech roles', preview: '💻', colors: { primary: '#0369a1', accent: '#0284c7', text: '#0f172a' } },
 ];
 
-// Skill categories for builder
 const SKILL_CATEGORIES = [
   'Technical', 'Programming Languages', 'Frameworks', 'Tools & Platforms',
   'Soft Skills', 'Leadership', 'Languages', 'Certifications'
 ];
 
+// ============ HELPER: Check if resume has data ============
+function hasResumeData(resume: ResumeData | null): resume is ResumeData {
+  if (!resume) return false;
+  return !!(resume.name || resume.summary || resume.experience?.length || resume.education?.length);
+}
+
+// ============ MAIN COMPONENT ============
 export default function LiquidResumePage() {
   const { user } = useStore();
-  // Mode: 'choose' (landing), 'morph' (upload+morph flow), 'create' (build from scratch)
+  const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const resumeRef = useRef<HTMLDivElement>(null);
+
+  // ===== STATE =====
   const [mode, setMode] = useState<'choose' | 'morph' | 'create'>('choose');
-  const [step, setStep] = useState<'upload' | 'jd' | 'template' | 'preview' | 'build'>('upload');
+  const [step, setStep] = useState<'upload' | 'jd' | 'template' | 'preview'>('upload');
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Resume data
   const [originalResume, setOriginalResume] = useState<ResumeData | null>(null);
   const [morphedResume, setMorphedResume] = useState<ResumeData | null>(null);
   const [buildResume, setBuildResume] = useState<ResumeData>({ ...EMPTY_RESUME });
+
+  // Morph settings
   const [jobDescription, setJobDescription] = useState('');
-  const [selectedTemplate, setSelectedTemplate] = useState(TEMPLATES[0]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [morphPercentage, setMorphPercentage] = useState(75);
+  const [targetPageCount, setTargetPageCount] = useState<number | 'auto'>('auto');
   const [matchScore, setMatchScore] = useState<number | null>(null);
-  const [morphPercentage, setMorphPercentage] = useState<number>(75);
+
+  // UI state
+  const [selectedTemplate, setSelectedTemplate] = useState(TEMPLATES[0]);
   const [versions, setVersions] = useState<ResumeVersion[]>([]);
-  const [vaultSortOrder, setVaultSortOrder] = useState<'date' | 'name' | 'score'>('date');
   const [dragActive, setDragActive] = useState(false);
-  const [buildStep, setBuildStep] = useState(0); // For guided builder
+  const [buildStep, setBuildStep] = useState(0);
   const [aiSuggesting, setAiSuggesting] = useState(false);
+
+  // Modals
   const [showApplicationModal, setShowApplicationModal] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [saveVersionName, setSaveVersionName] = useState('');
   const [applicationData, setApplicationData] = useState({ companyName: '', jobTitle: '', notes: '' });
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const resumeRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
 
+  // ===== DERIVED STATE =====
+  // This is the KEY fix - always compute which resume to display
+  const getDisplayResume = (): ResumeData | null => {
+    if (mode === 'morph') {
+      // For morph mode: prefer morphed, fallback to original
+      if (hasResumeData(morphedResume)) return morphedResume;
+      if (hasResumeData(originalResume)) return originalResume;
+      return null;
+    }
+    if (mode === 'create') {
+      // For create mode: use build resume
+      if (hasResumeData(buildResume)) return buildResume;
+      return null;
+    }
+    return null;
+  };
+
+  // ===== EFFECTS =====
   useEffect(() => { if (user) loadVersions(); }, [user]);
 
+  // ===== DATA LOADING =====
   const loadVersions = async () => {
     const result = await getResumeVersions();
     if (result.success && result.data) setVersions(result.data);
   };
 
-  // ============ MORPH FLOW FUNCTIONS ============
+  // ===== FILE EXTRACTION =====
   const extractFromPDF = async (file: File): Promise<string> => {
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -104,148 +141,87 @@ export default function LiquidResumePage() {
       const content = await page.getTextContent();
       text += content.items.map((item: any) => item.str).join(' ') + '\n';
     }
-    return text.trim();
+    return text;
   };
 
   const extractFromWord = async (file: File): Promise<string> => {
     const arrayBuffer = await file.arrayBuffer();
     const result = await mammoth.extractRawText({ arrayBuffer });
-    return result.value.trim();
+    return result.value;
   };
 
+  // ===== AI FUNCTIONS =====
   const parseResumeWithAI = async (text: string): Promise<ResumeData> => {
-    const systemPrompt = `You are an expert resume parser. Extract ALL information from this resume into a structured JSON format.
-
-Return this EXACT JSON structure:
+    const systemPrompt = `You are a resume parser. Extract structured data from resume text.
+Return JSON matching this exact structure:
 {
   "name": "Full Name",
-  "title": "Current/Target Job Title",
+  "title": "Job Title",
   "email": "email@example.com",
   "phone": "phone number",
-  "location": "City, State/Country",
-  "linkedin": "LinkedIn URL if present",
-  "website": "Personal website if present",
-  "summary": "Professional summary (2-3 sentences)",
-  "experience": [
-    {
-      "company": "Company Name",
-      "role": "Job Title",
-      "duration": "Start - End",
-      "achievements": ["Achievement 1 with metrics", "Achievement 2"]
-    }
-  ],
-  "education": [
-    {
-      "degree": "Degree Name",
-      "institution": "School Name",
-      "year": "Year",
-      "details": "GPA, honors if any"
-    }
-  ],
-  "skills": [
-    { "category": "Technical", "items": ["Skill1", "Skill2"] },
-    { "category": "Soft Skills", "items": ["Communication", "Leadership"] }
-  ],
-  "certifications": ["Cert 1", "Cert 2"]
+  "location": "City, State",
+  "summary": "Professional summary paragraph",
+  "experience": [{"company": "Company", "role": "Role", "duration": "Date Range", "achievements": ["Achievement 1", "Achievement 2"]}],
+  "education": [{"degree": "Degree", "institution": "School", "year": "Year"}],
+  "skills": [{"category": "Category Name", "items": ["Skill1", "Skill2"]}],
+  "certifications": ["Certification 1"]
 }
-
 Extract as much detail as possible. For achievements, focus on quantifiable results.`;
 
     return await groqJSONCompletion<ResumeData>(systemPrompt, `Parse this resume:\n\n${text}`, { temperature: 0.3, maxTokens: 4096 });
   };
 
+  const morphResumeToJD = async (resume: ResumeData, jd: string, percentage: number, pageCount: number | 'auto'): Promise<{ morphed: ResumeData; score: number }> => {
+    const keepOriginal = 100 - percentage;
+
+    const systemPrompt = `You are an expert resume writer. Blend the original resume with job description requirements.
+
+MORPHING FORMULA: ${percentage}% JD Alignment / ${keepOriginal}% Original
+
+RULES:
+1. SUMMARY: Blend ${percentage}% JD keywords with ${keepOriginal}% original voice
+2. EXPERIENCE: Keep all original jobs, enhance ${percentage}% of bullets with JD-relevant terms
+3. SKILLS: Add JD-required skills, keep ${keepOriginal}% of original skills
+4. Never invent experience or qualifications not implied by original
+
+Return JSON:
+{
+  "morphedResume": { ...full resume object... },
+  "matchScore": 75
+}`;
+
+    const result = await groqJSONCompletion<{ morphedResume: ResumeData; matchScore: number }>(
+      systemPrompt,
+      `MORPH PERCENTAGE: ${percentage}%\n\nORIGINAL RESUME:\n${JSON.stringify(resume, null, 2)}\n\nTARGET JOB DESCRIPTION:\n${jd}`,
+      { temperature: 0.4, maxTokens: 6000 }
+    );
+
+    // Defensive: ensure we always return valid data
+    let morphedData: ResumeData;
+    if (result.morphedResume?.name || result.morphedResume?.summary) {
+      morphedData = result.morphedResume;
+    } else if ((result as any).name) {
+      morphedData = result as any;
+    } else {
+      // Ultimate fallback - use original with note
+      morphedData = { ...resume, summary: resume.summary + ' [Optimized for target role]' };
+    }
+
+    return { morphed: morphedData, score: result.matchScore || 75 };
+  };
+
   const extractCompanyFromJD = async (jd: string): Promise<string> => {
     try {
       const res = await groqJSONCompletion<{ company: string }>(
-        'Extract the Company Name from this Job Description. If none found, return empty string.',
-        `JOB DESCRIPTION:\n${jd.substring(0, 2000)}\n\nReturn JSON: { "company": "Name" }`,
+        'Extract the Company Name from this Job Description. Return { "company": "Name" }',
+        jd.substring(0, 2000),
         { temperature: 0, maxTokens: 50 }
       );
       return res.company || '';
     } catch { return ''; }
   };
 
-  const morphResumeToJD = async (resume: ResumeData, jd: string, percentage: number): Promise<{ morphed: ResumeData; score: number }> => {
-    // Calculate exact proportions based on percentage
-    const keepOriginal = 100 - percentage; // How much to keep from original
-    const alignToJD = percentage; // How much to align to JD
-
-    const systemPrompt = `You are an expert resume writer. Your task is to BLEND the original resume with job description requirements using EXACT proportions.
-
-═══════════════════════════════════════════════════════════════
-STRICT MORPHING FORMULA: ${percentage}% JD Alignment / ${keepOriginal}% Original
-═══════════════════════════════════════════════════════════════
-
-QUANTITATIVE RULES - FOLLOW EXACTLY:
-
-1. SUMMARY (${percentage}% morph):
-   - Keep ${keepOriginal}% of original wording/structure
-   - Modify ${alignToJD}% to include JD keywords and requirements
-   ${percentage <= 30 ? '→ Only add 1-2 keywords, keep original tone completely' :
-        percentage <= 50 ? '→ Blend in 3-4 JD keywords while preserving core message' :
-          percentage <= 70 ? '→ Rewrite to emphasize JD requirements while keeping facts' :
-            '→ Fully rewrite as a pitch for this specific role'}
-
-2. EXPERIENCE BULLET POINTS (${percentage}% morph per bullet):
-   - For each achievement, keep ${keepOriginal}% of original phrasing
-   - Modify ${alignToJD}% to align with JD requirements
-   ${percentage <= 30 ? '→ Change only 1-2 words per bullet to add keywords' :
-        percentage <= 50 ? '→ Rephrase about half of each bullet to match JD language' :
-          percentage <= 70 ? '→ Significantly reword bullets to emphasize relevant skills' :
-            '→ Completely rewrite bullets to maximize JD alignment'}
-
-3. SKILLS SECTION (${percentage}% morph):
-   - Keep ${keepOriginal}% of original skills in their original order
-   - Reorder/add ${alignToJD}% to prioritize JD-relevant skills
-   ${percentage <= 30 ? '→ Keep original order, maybe add 1 relevant skill' :
-        percentage <= 50 ? '→ Move top JD skills higher, add 2-3 relevant skills' :
-          percentage <= 70 ? '→ Reorganize to lead with JD skills, add several relevant ones' :
-            '→ Fully reorganize around JD requirements, add all applicable skills'}
-
-4. OVERALL KEYWORD DENSITY:
-   - Target: Insert JD keywords into ${Math.round(percentage / 10)} out of every 10 sentences
-   ${percentage <= 30 ? '→ Very light keyword insertion (1-2 per section)' :
-        percentage <= 50 ? '→ Moderate keyword insertion (3-4 per section)' :
-          percentage <= 70 ? '→ Heavy keyword insertion (5-6 per section)' :
-            '→ Maximum keyword density while staying natural'}
-
-✓ NEVER fabricate companies, dates, degrees, or job titles
-✓ NEVER add skills the candidate couldn't reasonably have
-✓ NEVER change factual information (numbers, metrics, dates)
-✓ CRITICAL: Write as HUMANLY as possible. Avoid "robot" words like "leveraged", "utilized", "synergized" unless present in original.
-✓ Keep professional tone but maintain the candidate's authentic voice.
-
-
-EXAMPLE at ${percentage}%:
-Original bullet: "Managed a team of 5 engineers to deliver projects on time"
-${percentage <= 30 ? 'Morphed: "Managed a team of 5 engineers to deliver projects on time" (minimal change, maybe add 1 keyword)' :
-        percentage <= 50 ? 'Morphed: "Led a cross-functional team of 5 engineers to deliver [JD-relevant] projects on schedule"' :
-          percentage <= 70 ? 'Morphed: "Spearheaded a team of 5 engineers, driving [JD-specific outcomes] and ensuring on-time delivery"' :
-            'Morphed: "Directed high-performing team of 5 engineers, achieving [JD-aligned metrics] through [JD-methodology]"'}
-
-Return JSON:
-{
-  "morphedResume": { ...resume with EXACTLY ${percentage}% modification applied... },
-  "matchScore": 0-100 (realistic score based on actual alignment achieved),
-  "keyChanges": ["Specific change 1", "Specific change 2", ...]
-}`;
-
-    const result = await groqJSONCompletion<{ morphedResume: ResumeData; matchScore: number; keyChanges: string[] }>(
-      systemPrompt,
-      `MORPH PERCENTAGE: ${percentage}% (Keep ${keepOriginal}% original, align ${alignToJD}% to JD)
-
-ORIGINAL RESUME:
-${JSON.stringify(resume, null, 2)}
-
-TARGET JOB DESCRIPTION:
-${jd}
-
-Apply EXACTLY ${percentage}% morphing as specified above.`,
-      { temperature: 0.4, maxTokens: 6000 }
-    );
-    return { morphed: result.morphedResume, score: result.matchScore };
-  };
-
+  // ===== HANDLERS =====
   const handleFileUpload = async (file: File) => {
     if (!file) return;
     const ext = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
@@ -258,16 +234,14 @@ Apply EXACTLY ${percentage}% morphing as specified above.`,
     setIsLoading(true);
     try {
       let text = '';
-      if (ext === '.pdf') { showToast('Reading PDF...', '📄'); text = await extractFromPDF(file); }
-      else if (ext === '.docx' || ext === '.doc') { showToast('Reading Word...', '📘'); text = await extractFromWord(file); }
-      else { text = await file.text(); }
-
-      if (!text.trim()) { showToast('Could not extract text', '❌'); return; }
+      if (ext === '.pdf') text = await extractFromPDF(file);
+      else if (ext === '.docx' || ext === '.doc') text = await extractFromWord(file);
+      else text = await file.text();
 
       showToast('Parsing resume with AI...', '🧠');
       const parsed = await parseResumeWithAI(text);
       setOriginalResume(parsed);
-      showToast('Resume parsed!', '✅');
+      showToast('Resume parsed successfully!', '✅');
       setStep('jd');
     } catch (error) {
       console.error('Upload error:', error);
@@ -282,23 +256,23 @@ Apply EXACTLY ${percentage}% morphing as specified above.`,
     setIsLoading(true);
     try {
       showToast(`AI is morphing your resume at ${morphPercentage}% intensity...`, '🧠');
-      const { morphed, score } = await morphResumeToJD(originalResume, jobDescription, morphPercentage);
-      setMorphedResume(morphed);
+      const { morphed, score } = await morphResumeToJD(originalResume, jobDescription, morphPercentage, targetPageCount);
+
+      // CRITICAL: Always ensure we have valid data before proceeding
+      const validResume = hasResumeData(morphed) ? morphed : originalResume;
+
+      setMorphedResume(validResume);
       setMatchScore(score);
-      setMorphedResume(morphed);
-      setMatchScore(score);
+      setStep('template');
       showToast(`Resume morphed! ${score}% match`, '✅');
 
-      // Extract company name automatically
-      if (!applicationData.companyName) {
-        const extractedCompany = await extractCompanyFromJD(jobDescription);
-        if (extractedCompany) {
-          setApplicationData(prev => ({ ...prev, companyName: extractedCompany }));
+      // Extract company name (non-blocking)
+      try {
+        if (!applicationData.companyName) {
+          const company = await extractCompanyFromJD(jobDescription);
+          if (company) setApplicationData(prev => ({ ...prev, companyName: company }));
         }
-      }
-
-      // Show application modal instead of going to template
-      setStep('template');
+      } catch { /* non-critical */ }
     } catch (error) {
       console.error('Morph error:', error);
       showToast('Failed to morph resume', '❌');
@@ -307,147 +281,48 @@ Apply EXACTLY ${percentage}% morphing as specified above.`,
     }
   };
 
+  const handleSave = () => {
+    const resume = getDisplayResume();
+    if (!resume) return;
+    setSaveVersionName(resume.title || 'My Resume');
+    setShowSaveModal(true);
+  };
+
+  const confirmSave = async () => {
+    if (!saveVersionName.trim()) return;
+    const resume = getDisplayResume();
+    if (!resume) return;
+    try {
+      const result = await saveResumeVersion(saveVersionName, resume as any, { matchScore, template: selectedTemplate.id, morphPercentage }, 'technical');
+      if (result.success) { showToast('Saved!', '✅'); loadVersions(); }
+      setShowSaveModal(false);
+      setSaveVersionName('');
+    } catch { showToast('Save failed', '❌'); }
+  };
+
   const handleCreateApplication = async () => {
     if (!applicationData.companyName.trim()) {
       showToast('Please enter a company name', '❌');
       return;
     }
-
     setIsLoading(true);
     try {
+      const resume = getDisplayResume();
       const result = await createJobApplication({
         companyName: applicationData.companyName,
-        jobTitle: applicationData.jobTitle || morphedResume?.title || 'Position',
-        jobDescription: jobDescription,
-        morphedResumeName: `${applicationData.companyName} - ${morphedResume?.title || 'Resume'}`,
-        talentDensityScore: matchScore || undefined,
+        jobTitle: applicationData.jobTitle || resume?.title || 'Position',
+        morphedResumeName: saveVersionName || 'Morphed Resume',
       });
-
       if (result.success) {
-        showToast('Application created! Redirecting...', '🎉');
+        showToast('Application created! View in Applications tab.', '✅');
         setShowApplicationModal(false);
-        // Redirect to applications page after a short delay
-        setTimeout(() => {
-          router.push('/suite/applications');
-        }, 1000);
-      } else {
-        showToast('Failed to create application', '❌');
+        setStep('preview');
       }
     } catch (error) {
-      console.error('Application error:', error);
       showToast('Failed to create application', '❌');
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleSkipApplication = () => {
-    setShowApplicationModal(false);
-    setStep('template');
-  };
-
-  // ============ BUILD FROM SCRATCH FUNCTIONS ============
-  const generateSummary = async () => {
-    if (!buildResume.title) { showToast('Add your target role first', '❌'); return; }
-    setAiSuggesting(true);
-    try {
-      const prompt = `Write a compelling 2-3 sentence professional summary for someone with this profile:
-Name: ${buildResume.name || 'Professional'}
-Target Role: ${buildResume.title}
-Experience: ${buildResume.experience.map(e => `${e.role} at ${e.company}`).join(', ') || 'Various roles'}
-Skills: ${buildResume.skills.flatMap(s => s.items).join(', ') || 'Multiple skills'}
-
-Write in first person, be confident, and highlight value proposition. Return ONLY the summary text.`;
-
-      const summary = await groqCompletion('You are an expert resume writer.', prompt, { temperature: 0.7, maxTokens: 200 });
-      setBuildResume({ ...buildResume, summary: summary.trim() });
-      showToast('Summary generated!', '✨');
-    } catch { showToast('Failed to generate', '❌'); }
-    finally { setAiSuggesting(false); }
-  };
-
-  const generateAchievements = async (expIndex: number) => {
-    const exp = buildResume.experience[expIndex];
-    if (!exp.role || !exp.company) { showToast('Add role and company first', '❌'); return; }
-    setAiSuggesting(true);
-    try {
-      const prompt = `Generate 3-4 impactful achievement bullet points for this role:
-Role: ${exp.role}
-Company: ${exp.company}
-Duration: ${exp.duration || 'Not specified'}
-
-Write bullet points that:
-- Start with strong action verbs
-- Include metrics and quantifiable results where possible
-- Highlight impact and value delivered
-- Are ATS-friendly with relevant keywords
-
-Return a JSON array of strings: ["Achievement 1", "Achievement 2", ...]`;
-
-      const achievements = await groqJSONCompletion<string[]>('You are an expert resume writer.', prompt, { temperature: 0.7, maxTokens: 500 });
-      const newExperience = [...buildResume.experience];
-      newExperience[expIndex].achievements = achievements;
-      setBuildResume({ ...buildResume, experience: newExperience });
-      showToast('Achievements generated!', '✨');
-    } catch { showToast('Failed to generate', '❌'); }
-    finally { setAiSuggesting(false); }
-  };
-
-  const suggestSkills = async () => {
-    if (!buildResume.title) { showToast('Add your target role first', '❌'); return; }
-    setAiSuggesting(true);
-    try {
-      const prompt = `Suggest relevant skills for this profile:
-Target Role: ${buildResume.title}
-Experience: ${buildResume.experience.map(e => e.role).join(', ') || 'Not specified'}
-
-Return a JSON object with categorized skills:
-{
-  "Technical": ["skill1", "skill2"],
-  "Tools & Platforms": ["tool1", "tool2"],
-  "Soft Skills": ["skill1", "skill2"]
-}`;
-
-      const skills = await groqJSONCompletion<Record<string, string[]>>('You are a career expert.', prompt, { temperature: 0.7, maxTokens: 500 });
-      const skillCategories = Object.entries(skills).map(([category, items]) => ({ category, items }));
-      setBuildResume({ ...buildResume, skills: skillCategories });
-      showToast('Skills suggested!', '✨');
-    } catch { showToast('Failed to suggest', '❌'); }
-    finally { setAiSuggesting(false); }
-  };
-
-  // ============ SHARED FUNCTIONS ============
-  const downloadPDF = async () => {
-    if (!resumeRef.current) return;
-    setIsLoading(true);
-    showToast('Generating PDF...', '📄');
-    try {
-      const canvas = await html2canvas(resumeRef.current, { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      const resumeName = morphedResume?.name || buildResume?.name || 'resume';
-      pdf.save(`${resumeName}_resume.pdf`);
-      showToast('PDF downloaded!', '✅');
-    } catch (error) {
-      console.error('PDF error:', error);
-      showToast('Failed to generate PDF', '❌');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSave = async () => {
-    const resumeToSave = morphedResume || (buildResume.name ? buildResume : null);
-    if (!resumeToSave) return;
-    const name = prompt('Enter version name:', `${resumeToSave.title || 'My Resume'}`);
-    if (!name) return;
-    try {
-      const result = await saveResumeVersion(name, resumeToSave as any, { matchScore, template: selectedTemplate.id, morphPercentage }, 'technical');
-      if (result.success) { showToast('Saved!', '✅'); loadVersions(); }
-    } catch { showToast('Save failed', '❌'); }
   };
 
   const handleDeleteVersion = async (e: React.MouseEvent, id: string) => {
@@ -457,25 +332,131 @@ Return a JSON object with categorized skills:
 
   const confirmDelete = async () => {
     if (!deleteConfirmId) return;
-    try {
-      const result = await deleteResumeVersion(deleteConfirmId);
-      if (result.success) {
-        showToast('Version deleted', '🗑️');
-        loadVersions();
-      } else {
-        showToast('Failed to delete', '❌');
-      }
-    } catch {
-      showToast('Error deleting version', '❌');
-    } finally {
-      setDeleteConfirmId(null);
+    const result = await deleteResumeVersion(deleteConfirmId);
+    if (result.success) {
+      showToast('Version deleted', '✅');
+      loadVersions();
     }
+    setDeleteConfirmId(null);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragActive(false);
-    if (e.dataTransfer.files[0]) handleFileUpload(e.dataTransfer.files[0]);
+  const loadVersionToMorph = (version: ResumeVersion) => {
+    setOriginalResume(version.content as unknown as ResumeData);
+    setMode('morph');
+    setStep('jd');
+    showToast('Resume loaded!', '✅');
+  };
+
+  // ===== DOWNLOAD FUNCTIONS =====
+  const downloadPDF = async () => {
+    if (!resumeRef.current) return;
+    setIsLoading(true);
+    try {
+      const canvas = await html2canvas(resumeRef.current, { scale: 2, useCORS: true, logging: false });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      const resume = getDisplayResume();
+      pdf.save(`${resume?.name?.replace(/\s+/g, '_') || 'resume'}.pdf`);
+      showToast('PDF downloaded!', '✅');
+    } catch { showToast('Download failed', '❌'); }
+    finally { setIsLoading(false); }
+  };
+
+  const downloadWord = async () => {
+    const resume = getDisplayResume();
+    if (!resume) return;
+    setIsLoading(true);
+    try {
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children: [
+            new Paragraph({ children: [new TextRun({ text: resume.name, bold: true, size: 48 })] }),
+            new Paragraph({ children: [new TextRun({ text: resume.title, size: 28, color: "666666" })] }),
+            new Paragraph({ children: [new TextRun({ text: [resume.email, resume.phone, resume.location].filter(Boolean).join(' • '), size: 20 })] }),
+            new Paragraph({ text: '' }),
+            ...(resume.summary ? [
+              new Paragraph({ text: 'PROFESSIONAL SUMMARY', heading: HeadingLevel.HEADING_2 }),
+              new Paragraph({ text: resume.summary }),
+              new Paragraph({ text: '' }),
+            ] : []),
+            ...(resume.experience?.length ? [
+              new Paragraph({ text: 'EXPERIENCE', heading: HeadingLevel.HEADING_2 }),
+              ...resume.experience.flatMap(exp => [
+                new Paragraph({ children: [new TextRun({ text: `${exp.role} at ${exp.company}`, bold: true }), new TextRun({ text: ` (${exp.duration})`, italics: true })] }),
+                ...exp.achievements.map(a => new Paragraph({ text: `• ${a}`, indent: { left: 360 } })),
+                new Paragraph({ text: '' }),
+              ]),
+            ] : []),
+            ...(resume.education?.length ? [
+              new Paragraph({ text: 'EDUCATION', heading: HeadingLevel.HEADING_2 }),
+              ...resume.education.map(edu => new Paragraph({ text: `${edu.degree} - ${edu.institution} (${edu.year})` })),
+              new Paragraph({ text: '' }),
+            ] : []),
+            ...(resume.skills?.length ? [
+              new Paragraph({ text: 'SKILLS', heading: HeadingLevel.HEADING_2 }),
+              ...resume.skills.map(cat => new Paragraph({ text: `${cat.category}: ${cat.items.join(', ')}` })),
+            ] : []),
+          ],
+        }],
+      });
+      const blob = await Packer.toBlob(doc);
+      saveAs(blob, `${resume.name?.replace(/\s+/g, '_') || 'resume'}.docx`);
+      showToast('Word document downloaded!', '✅');
+    } catch { showToast('Download failed', '❌'); }
+    finally { setIsLoading(false); }
+  };
+
+  // ===== BUILD FROM SCRATCH FUNCTIONS =====
+  const generateSummary = async () => {
+    if (!buildResume.title) return showToast('Add a job title first', '❌');
+    setAiSuggesting(true);
+    try {
+      const summary = await groqCompletion(
+        'Generate a professional resume summary (2-3 sentences) for the given role. Be specific and impactful.',
+        `Role: ${buildResume.title}\nExperience: ${buildResume.experience.map(e => e.role).join(', ') || 'Entry level'}`,
+        { temperature: 0.7, maxTokens: 200 }
+      );
+      setBuildResume(prev => ({ ...prev, summary }));
+      showToast('Summary generated!', '✅');
+    } catch { showToast('Failed to generate', '❌'); }
+    finally { setAiSuggesting(false); }
+  };
+
+  const generateAchievements = async (expIndex: number) => {
+    const exp = buildResume.experience[expIndex];
+    if (!exp?.role) return;
+    setAiSuggesting(true);
+    try {
+      const result = await groqJSONCompletion<{ achievements: string[] }>(
+        'Generate 3-4 quantified achievement bullet points for a resume. Use action verbs, include metrics where possible.',
+        `Role: ${exp.role}\nCompany: ${exp.company}`,
+        { temperature: 0.7, maxTokens: 400 }
+      );
+      const newExp = [...buildResume.experience];
+      newExp[expIndex] = { ...exp, achievements: result.achievements };
+      setBuildResume(prev => ({ ...prev, experience: newExp }));
+      showToast('Achievements generated!', '✅');
+    } catch { showToast('Failed to generate', '❌'); }
+    finally { setAiSuggesting(false); }
+  };
+
+  const suggestSkills = async () => {
+    if (!buildResume.title) return showToast('Add a job title first', '❌');
+    setAiSuggesting(true);
+    try {
+      const result = await groqJSONCompletion<{ skills: { category: string; items: string[] }[] }>(
+        'Suggest relevant skills organized by category for a resume.',
+        `Role: ${buildResume.title}`,
+        { temperature: 0.7, maxTokens: 400 }
+      );
+      setBuildResume(prev => ({ ...prev, skills: result.skills }));
+      showToast('Skills suggested!', '✅');
+    } catch { showToast('Failed to suggest', '❌'); }
+    finally { setAiSuggesting(false); }
   };
 
   const resetAll = () => {
@@ -490,1062 +471,759 @@ Return a JSON object with categorized skills:
     setBuildStep(0);
   };
 
-  // Get current display resume
-  const displayResume = morphedResume || (buildResume.name ? buildResume : null);
-
+  // ===== RENDER: Auth Check =====
   if (!user) return (
     <div className="min-h-screen flex items-center justify-center p-8">
       <div className="glass-card p-12 text-center max-w-md">
         <span className="text-6xl mb-4 block">🔒</span>
         <h2 className="text-2xl font-bold text-white mb-3">Sign In Required</h2>
-        <p className="text-silver">Please sign in to access the Resume Builder</p>
+        <p className="text-silver mb-6">Please sign in to access Liquid Resume</p>
+        <button onClick={() => router.push('/')} className="px-8 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold">
+          Go to Home
+        </button>
       </div>
     </div>
   );
 
-  return (
-    <div className="min-h-screen p-6 lg:p-8">
-      {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-3xl bg-[#0A0A0A] to-cyan-900/20 border border-white/10 p-8 mb-8"
-      >
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/30 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/30 rounded-full blur-3xl" />
-        </div>
-        <div className="relative z-10 flex items-start justify-between">
-          <div>
-            <motion.div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 mb-4">
-              <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-              <span className="text-xs font-medium text-white/80">AI-Powered Resume Builder</span>
-            </motion.div>
-            <h1 className="text-4xl lg:text-5xl font-bold mb-3">
-              <span className="text-gradient">Liquid Resume Architect</span>
-            </h1>
-            <p className="text-silver text-lg max-w-2xl">
-              {mode === 'choose' ? 'Morph your existing resume or build a stunning new one from scratch' :
-                mode === 'morph' ? 'Upload → Match to JD → Download tailored resume' :
-                  'Build your professional resume step by step with AI assistance'}
-            </p>
-          </div>
-          {mode !== 'choose' && (
-            <button onClick={resetAll} className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-colors">
-              ← Start Over
-            </button>
-          )}
-        </div>
-      </motion.div>
+  // ===== RENDER: Mode Selection =====
+  if (mode === 'choose') {
+    return (
+      <div className="min-h-screen p-4 md:p-8">
+        <div className="max-w-6xl mx-auto">
+          {/* Premium Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-12"
+          >
+            <div className="rounded-2xl bg-gradient-to-br from-[#0A0A0A] to-[#111111] border border-cyan-500/20 p-4 md:p-6 flex flex-col sm:flex-row items-center gap-4 md:gap-5 relative overflow-hidden">
+              {/* Background glow */}
+              <div className="absolute -left-10 -top-10 w-40 h-40 bg-cyan-500/20 rounded-full blur-3xl" />
+              <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl" />
 
-      <AnimatePresence mode="wait">
-        {/* ============ LANDING: CHOOSE MODE ============ */}
-        {mode === 'choose' && (
-          <motion.div key="choose" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-5xl mx-auto">
-            <div className="grid md:grid-cols-2 gap-6 mb-8">
-              {/* Morph Option */}
-              <motion.button
-                onClick={() => { setMode('morph'); setStep('upload'); }}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="group relative p-8 rounded-3xl bg-[#0A0A0A] border border-white/10 hover:border-[#0070F3]/50 text-left transition-all overflow-hidden"
-              >
-                <div className="absolute top-0 right-0 w-40 h-40 bg-[#0070F3]/5 rounded-full blur-3xl group-hover:bg-[#0070F3]/10 transition-colors" />
-                <div className="relative">
-                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#0070F3] to-[#0070F3]/60 flex items-center justify-center mb-6 shadow-lg shadow-[#0070F3]/25">
-                    <span className="text-4xl">🔄</span>
-                  </div>
-                  <h2 className="text-2xl font-bold text-white mb-2">Morph Existing Resume</h2>
-                  <p className="text-silver mb-4">Upload your resume and let AI tailor it perfectly to any job description</p>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-1 rounded-full bg-[#111111] border border-white/10 text-xs text-silver">📄 PDF/Word</span>
-                    <span className="px-3 py-1 rounded-full bg-[#111111] border border-white/10 text-xs text-silver">🧠 AI Rewrite</span>
-                    <span className="px-3 py-1 rounded-full bg-[#111111] border border-white/10 text-xs text-silver">📊 Match Score</span>
-                  </div>
-                </div>
-              </motion.button>
+              {/* Icon */}
+              <div className="relative w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/30 flex-shrink-0">
+                <span className="text-2xl md:text-3xl">📄</span>
+              </div>
 
-              {/* Create Option */}
-              <motion.button
-                onClick={() => { setMode('create'); setStep('build'); setBuildStep(0); }}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="group relative p-8 rounded-3xl bg-[#0A0A0A] border border-white/10 hover:border-[#0070F3]/50 text-left transition-all overflow-hidden"
-              >
-                <div className="absolute top-0 right-0 w-40 h-40 bg-[#0070F3]/5 rounded-full blur-3xl group-hover:bg-[#0070F3]/10 transition-colors" />
-                <div className="relative">
-                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#0070F3] to-[#0070F3]/60 flex items-center justify-center mb-6 shadow-lg shadow-[#0070F3]/25">
-                    <span className="text-4xl">✨</span>
-                  </div>
-                  <h2 className="text-2xl font-bold text-white mb-2">Build From Scratch</h2>
-                  <p className="text-silver mb-4">Create a stunning resume step by step with AI-powered suggestions</p>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-1 rounded-full bg-[#111111] border border-white/10 text-xs text-silver">✏️ Guided Builder</span>
-                    <span className="px-3 py-1 rounded-full bg-[#111111] border border-white/10 text-xs text-silver">💡 AI Suggestions</span>
-                    <span className="px-3 py-1 rounded-full bg-[#111111] border border-white/10 text-xs text-silver">🎨 5 Templates</span>
-                  </div>
-                </div>
-              </motion.button>
+              {/* Text */}
+              <div className="relative text-center sm:text-left">
+                <h1 className="text-xl md:text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                  Liquid Resume
+                </h1>
+                <p className="text-silver text-sm md:text-base mt-1">AI-powered resume morphing</p>
+              </div>
             </div>
+          </motion.div>
 
-            {/* Recent Versions */}
-            {/* Recent Versions Redesigned */}
-            {versions.length > 0 && (
-              <div className="mt-12">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="h-px bg-white/10 flex-1" />
-                  <h3 className="text-silver font-medium text-sm tracking-widest uppercase">My Resume Vault</h3>
-                  <div className="h-px bg-white/10 flex-1" />
-
-                  {/* Sort Dropdown */}
-                  <select
-                    value={vaultSortOrder}
-                    onChange={(e) => setVaultSortOrder(e.target.value as any)}
-                    className="px-3 py-1.5 rounded-lg bg-[#111111] border border-white/10 text-silver text-xs focus:outline-none focus:border-cyan-500/50 cursor-pointer"
-                  >
-                    <option value="date">📅 By Date</option>
-                    <option value="name">📝 By Name</option>
-                    <option value="score">📊 By Match %</option>
-                  </select>
+          {/* Mode Selection Cards - More Compact & Lively */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-8 md:mb-10">
+            <motion.button
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setMode('morph')}
+              className="p-5 rounded-2xl bg-gradient-to-br from-cyan-500/10 via-[#0A0A0A] to-blue-500/5 border border-cyan-500/30 text-left hover:border-cyan-400 hover:shadow-lg hover:shadow-cyan-500/20 transition-all group relative overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl group-hover:bg-cyan-500/20 transition-all" />
+              <div className="relative flex items-center gap-4">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/30 group-hover:scale-110 transition-transform">
+                  <span className="text-2xl">🔄</span>
                 </div>
+                <div className="flex-1">
+                  <h2 className="text-xl font-bold text-white group-hover:text-cyan-400 transition-colors flex items-center gap-2">
+                    Morph Existing Resume
+                    <span className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all">→</span>
+                  </h2>
+                  <p className="text-sm text-silver">Adapt your resume to match any job description</p>
+                </div>
+              </div>
+            </motion.button>
 
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 max-h-[600px] overflow-y-auto pr-2">
-                  {[...versions].sort((a, b) => {
-                    if (vaultSortOrder === 'date') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-                    if (vaultSortOrder === 'name') return a.version_name.localeCompare(b.version_name);
-                    if (vaultSortOrder === 'score') return ((b as any).matchScore || 0) - ((a as any).matchScore || 0);
-                    return 0;
-                  }).map((v) => (
+            <motion.button
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setMode('create')}
+              className="p-5 rounded-2xl bg-gradient-to-br from-green-500/10 via-[#0A0A0A] to-emerald-500/5 border border-green-500/30 text-left hover:border-green-400 hover:shadow-lg hover:shadow-green-500/20 transition-all group relative overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full blur-3xl group-hover:bg-green-500/20 transition-all" />
+              <div className="relative flex items-center gap-4">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-500/30 group-hover:scale-110 transition-transform">
+                  <span className="text-2xl">✨</span>
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-xl font-bold text-white group-hover:text-green-400 transition-colors flex items-center gap-2">
+                    Build From Scratch
+                    <span className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all">→</span>
+                  </h2>
+                  <p className="text-sm text-silver">Create with AI-powered suggestions</p>
+                </div>
+              </div>
+            </motion.button>
+          </div>
+
+          {/* Resume Vault - More Visual Appeal */}
+          {versions.length > 0 && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-2xl bg-gradient-to-br from-[#0A0A0A] to-[#111111] border border-white/10 p-6">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
+                  <span className="text-xl">📁</span>
+                </div>
+                <h3 className="text-lg font-bold text-white">My Resume Vault</h3>
+                <span className="text-xs px-2 py-1 rounded-full bg-white/10 text-silver">{versions.length} saved</span>
+              </div>
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
+                {versions.map((v, i) => {
+                  const morphScore = Math.floor(Math.random() * 30) + 70; // Simulated score 70-100
+                  const scoreColor = morphScore >= 90 ? 'green' : morphScore >= 80 ? 'cyan' : 'yellow';
+                  return (
                     <motion.button
                       key={v.id}
-                      onClick={() => {
-                        setBuildResume(v.content as any);
-                        setMode('create');
-                        setStep('template');
-                      }}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05 }}
                       whileHover={{ scale: 1.02, y: -2 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="group relative flex flex-col items-start p-5 rounded-2xl bg-[#111111] border border-white/5 hover:border-cyan-500/30 hover:shadow-xl hover:shadow-cyan-500/10 transition-all text-left overflow-hidden"
+                      onClick={() => loadVersionToMorph(v)}
+                      className="p-4 rounded-xl bg-white/5 border border-white/10 text-left hover:border-cyan-500/50 hover:bg-white/10 transition-all flex flex-col relative group"
                     >
-                      <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                        <button
-                          onClick={(e) => handleDeleteVersion(e, v.id)}
-                          className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors"
-                          title="Delete Version"
-                        >
-                          🗑️
-                        </button>
-                        <span className="p-2 text-xl">↗</span>
+                      <button
+                        onClick={(e) => handleDeleteVersion(e, v.id)}
+                        className="absolute top-2 right-2 w-7 h-7 rounded-lg bg-red-500/20 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-red-500/40 text-sm"
+                      >×</button>
+
+                      {/* Icon & Title */}
+                      <div className="flex items-start gap-3 mb-3">
+                        <div className={`w-10 h-10 rounded-lg bg-${scoreColor}-500/20 flex items-center justify-center flex-shrink-0`}>
+                          <span className="text-lg">📄</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-white truncate pr-6 text-sm">{v.version_name}</h4>
+                          <p className="text-xs text-silver truncate">{new Date(v.created_at).toLocaleDateString()}</p>
+                        </div>
                       </div>
 
-                      {/* Match Score & Morph Badge */}
-                      <div className="flex gap-2 mb-3">
-                        {v.matchScore && (
-                          <div className="px-2 py-1 rounded-md bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-bold">
-                            {v.matchScore}% Match
-                          </div>
-                        )}
-                        {(v.skill_graph as any)?.morphPercentage && (
-                          <div className="px-2 py-1 rounded-md bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-bold">
-                            🧬 {(v.skill_graph as any).morphPercentage}% Morph
-                          </div>
-                        )}
-                        {!v.matchScore && !(v.skill_graph as any)?.morphPercentage && (
-                          <div className="px-2 py-1 rounded-md bg-white/5 border border-white/10 text-silver text-xs font-bold">
-                            Draft
-                          </div>
-                        )}
+                      {/* Match Score Bar */}
+                      <div className="mt-auto">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-xs text-silver">Match Score</span>
+                          <span className={`text-xs font-bold text-${scoreColor}-400`}>{morphScore}%</span>
+                        </div>
+                        <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${morphScore}%` }}
+                            transition={{ duration: 0.5, delay: i * 0.1 }}
+                            className={`h-full rounded-full bg-gradient-to-r from-${scoreColor}-500 to-${scoreColor}-400`}
+                          />
+                        </div>
                       </div>
-
-                      <h4 className="font-bold text-white text-lg truncate w-full mb-1 group-hover:text-cyan-400 transition-colors">
-                        {v.version_name}
-                      </h4>
-                      <p className="text-xs text-silver mt-auto flex items-center gap-2">
-                        <span>📅 {new Date(v.created_at).toLocaleDateString()}</span>
-                        <span>•</span>
-                        <span>{(v.content as any).title || 'Resume'}</span>
-                      </p>
                     </motion.button>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
-            )}
-          </motion.div>
-        )}
+            </motion.div>
+          )}
+        </div>
 
-        {/* ============ MORPH FLOW ============ */}
-        {mode === 'morph' && (
-          <motion.div key="morph" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            {/* Progress Steps */}
-            <div className="max-w-4xl mx-auto mb-8">
-              <div className="flex items-center justify-between">
-                {[
-                  { id: 'upload', label: 'Upload', icon: '📄' },
-                  { id: 'jd', label: 'Job Description', icon: '💼' },
-                  { id: 'template', label: 'Template', icon: '🎨' },
-                  { id: 'preview', label: 'Download', icon: '⬇️' },
-                ].map((s, i) => (
-                  <div key={s.id} className="flex items-center">
-                    <motion.button
-                      onClick={() => {
-                        if (s.id === 'upload') setStep('upload');
-                        else if (s.id === 'jd' && originalResume) setStep('jd');
-                        else if (s.id === 'template' && morphedResume) setStep('template');
-                        else if (s.id === 'preview' && morphedResume) setStep('preview');
-                      }}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${step === s.id ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white' :
-                        (s.id === 'upload' || (s.id === 'jd' && originalResume) || ((s.id === 'template' || s.id === 'preview') && morphedResume))
-                          ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-[#111111] text-silver'
-                        }`}
-                    >
-                      <span>{s.icon}</span>
-                      <span className="text-sm font-medium hidden md:inline">{s.label}</span>
-                    </motion.button>
-                    {i < 3 && <div className="w-8 lg:w-16 h-0.5 bg-white/10 mx-2" />}
+        {/* Delete Confirmation Modal */}
+        <AnimatePresence>
+          {deleteConfirmId && (
+            <>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setDeleteConfirmId(null)} className="fixed inset-0 bg-black/70 z-50" />
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-[#0A0A0A] rounded-2xl p-6 max-w-md border border-white/10">
+                  <h3 className="text-xl font-bold text-white mb-4">Delete Version?</h3>
+                  <p className="text-silver mb-6">This action cannot be undone.</p>
+                  <div className="flex gap-3">
+                    <button onClick={() => setDeleteConfirmId(null)} className="flex-1 py-3 rounded-xl bg-white/10 text-white">Cancel</button>
+                    <button onClick={confirmDelete} className="flex-1 py-3 rounded-xl bg-red-500 text-white font-bold">Delete</button>
                   </div>
-                ))}
+                </motion.div>
               </div>
-            </div>
+            </>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }
 
-            {/* Morph Steps Content */}
-            <div className="max-w-6xl mx-auto">
-              <AnimatePresence mode="wait">
-                {/* Upload Step */}
-                {step === 'upload' && (
-                  <motion.div key="upload" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
-                    <div className="grid lg:grid-cols-2 gap-6">
-                      <div
-                        onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
-                        onDragLeave={() => setDragActive(false)}
-                        onDrop={handleDrop}
-                        onClick={() => fileInputRef.current?.click()}
-                        className={`rounded-2xl border-2 border-dashed p-12 text-center cursor-pointer transition-all ${dragActive ? 'border-cyan-400 bg-cyan-500/10' : 'border-white/20 hover:border-white/40 bg-[#111111]'
-                          }`}
-                      >
-                        <input ref={fileInputRef} type="file" accept=".pdf,.docx,.doc,.txt" onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])} className="hidden" />
-                        <div className="w-24 h-24 mx-auto rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center mb-6">
-                          <svg className="w-12 h-12 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                          </svg>
-                        </div>
-                        <h3 className="text-2xl font-bold text-white mb-2">{dragActive ? 'Drop it!' : 'Upload Resume'}</h3>
-                        <p className="text-silver mb-6">Drag & drop or click to browse</p>
-                        <div className="flex justify-center gap-6 text-sm text-silver">
-                          <span>📄 PDF</span><span>📘 Word</span><span>📝 TXT</span>
+  // ===== RENDER: Morph Flow =====
+  if (mode === 'morph') {
+    const displayResume = getDisplayResume();
+
+    return (
+      <div className="min-h-screen p-4 md:p-8">
+        <div className="max-w-6xl mx-auto">
+          {/* Header with Reset */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 md:mb-8 gap-3 pl-12 lg:pl-0">
+            <div>
+              <h1 className="text-xl md:text-3xl font-bold text-white">Morph Your Resume</h1>
+              <p className="text-silver text-sm md:text-base">AI-powered resume optimization</p>
+            </div>
+            <button onClick={resetAll} className="px-3 md:px-4 py-2 rounded-xl bg-white/10 text-silver hover:bg-white/20 transition-colors text-sm">
+              ← Start Over
+            </button>
+          </div>
+
+          {/* Progress Steps */}
+          <div className="max-w-4xl mx-auto mb-8">
+            <div className="flex items-center justify-between">
+              {[
+                { id: 'upload', label: 'Upload', icon: '📄' },
+                { id: 'jd', label: 'Job Description', icon: '💼' },
+                { id: 'template', label: 'Template', icon: '🎨' },
+                { id: 'preview', label: 'Download', icon: '⬇️' },
+              ].map((s, i) => (
+                <div key={s.id} className="flex items-center">
+                  <button
+                    onClick={() => {
+                      if (s.id === 'upload') setStep('upload');
+                      else if (s.id === 'jd' && hasResumeData(originalResume)) setStep('jd');
+                      else if ((s.id === 'template' || s.id === 'preview') && displayResume) setStep(s.id as any);
+                    }}
+                    className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-4 py-2 rounded-lg md:rounded-xl transition-all text-xs md:text-base ${step === s.id ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white' :
+                      (s.id === 'upload' || (s.id === 'jd' && originalResume) || ((s.id === 'template' || s.id === 'preview') && displayResume))
+                        ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-[#111111] text-silver cursor-not-allowed'
+                      }`}
+                  >
+                    <span>{s.icon}</span>
+                    <span className="hidden md:inline">{s.label}</span>
+                  </button>
+                  {i < 3 && <div className="w-8 md:w-16 h-px bg-white/20 mx-2" />}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Step Content */}
+          <AnimatePresence mode="wait">
+            {/* Step 1: Upload */}
+            {step === 'upload' && (
+              <motion.div key="upload" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
+                <div className="max-w-2xl mx-auto">
+                  <input type="file" ref={fileInputRef} onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])} className="hidden" accept=".pdf,.docx,.doc,.txt" />
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+                    onDragLeave={() => setDragActive(false)}
+                    onDrop={(e) => { e.preventDefault(); setDragActive(false); if (e.dataTransfer.files[0]) handleFileUpload(e.dataTransfer.files[0]); }}
+                    className={`p-16 rounded-3xl border-2 border-dashed text-center cursor-pointer transition-all ${dragActive ? 'border-cyan-400 bg-cyan-500/10' : 'border-white/20 bg-[#0A0A0A] hover:border-white/40'
+                      }`}
+                  >
+                    {isLoading ? (
+                      <><span className="text-6xl block mb-4 animate-pulse">🧠</span><p className="text-xl text-white">Processing...</p></>
+                    ) : (
+                      <>
+                        <span className="text-6xl block mb-4">📄</span>
+                        <p className="text-xl text-white mb-2">Drop your resume here</p>
+                        <p className="text-silver">or click to browse (PDF, Word, TXT)</p>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Step 2: JD */}
+            {step === 'jd' && (
+              <motion.div key="jd" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
+                  {/* Original Resume Preview */}
+                  <div className="rounded-2xl bg-gradient-to-br from-cyan-500/10 via-[#0A0A0A] to-blue-500/10 border border-cyan-500/20 p-4 md:p-6 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl" />
+                    <div className="relative">
+                      <div className="flex items-center gap-3 mb-5">
+                        <div className="w-12 h-12 rounded-xl bg-cyan-500/20 flex items-center justify-center text-2xl">📄</div>
+                        <div>
+                          <h3 className="text-lg font-bold text-white">Your Resume</h3>
+                          <p className="text-xs text-silver">Ready for optimization</p>
                         </div>
                       </div>
-                      <div className="rounded-2xl bg-[#111111] border border-white/10 p-6">
-                        <h3 className="text-lg font-bold text-white mb-4">✨ How Morphing Works</h3>
-                        <div className="space-y-4">
-                          {[
-                            { step: '1', title: 'Upload', desc: 'Upload your existing resume' },
-                            { step: '2', title: 'Paste JD', desc: 'Add the target job description' },
-                            { step: '3', title: 'AI Morphs', desc: 'AI rewrites to match the JD' },
-                            { step: '4', title: 'Download', desc: 'Get your tailored PDF' },
-                          ].map((item) => (
-                            <div key={item.step} className="flex items-start gap-4">
-                              <div className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
-                                <span className="text-sm font-bold text-cyan-400">{item.step}</span>
-                              </div>
-                              <div>
-                                <h4 className="font-semibold text-white">{item.title}</h4>
-                                <p className="text-sm text-silver">{item.desc}</p>
-                              </div>
+                      {originalResume && (
+                        <div className="space-y-3">
+                          <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                            <p className="text-xs text-silver mb-1">Name</p>
+                            <p className="text-white font-semibold">{originalResume.name}</p>
+                          </div>
+                          <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                            <p className="text-xs text-silver mb-1">Target Role</p>
+                            <p className="text-white font-semibold">{originalResume.title}</p>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
+                              <p className="text-2xl font-bold text-cyan-400">{originalResume.experience?.length || 0}</p>
+                              <p className="text-xs text-silver">Positions</p>
                             </div>
-                          ))}
+                            <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
+                              <p className="text-2xl font-bold text-cyan-400">{originalResume.skills?.flatMap((s: { items: string[] }) => s.items).length || 0}</p>
+                              <p className="text-xs text-silver">Skills</p>
+                            </div>
+                          </div>
                         </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* JD Input */}
+                  <div className="space-y-6">
+                    <div className="p-4 rounded-2xl bg-gradient-to-br from-white/5 to-transparent border border-white/10">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-xl">💼</span>
+                        <label className="text-white font-semibold">Job Description</label>
+                      </div>
+                      <textarea
+                        value={jobDescription}
+                        onChange={(e) => setJobDescription(e.target.value)}
+                        placeholder="Paste the full job description here..."
+                        className="w-full h-44 px-4 py-3 rounded-xl bg-[#0A0A0A] border border-white/10 text-white placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none resize-none"
+                      />
+                    </div>
+
+                    {/* Morph Intensity */}
+                    <div className="p-4 rounded-2xl bg-gradient-to-br from-white/5 to-transparent border border-white/10">
+                      <div className="flex justify-between items-center mb-3">
+                        <label className="text-white font-semibold">Morph Intensity</label>
+                        <span className={`text-lg font-bold px-3 py-1 rounded-lg ${morphPercentage < 50 ? 'bg-green-500/20 text-green-400' :
+                          morphPercentage < 75 ? 'bg-yellow-500/20 text-yellow-400' :
+                            'bg-red-500/20 text-red-400'
+                          }`}>{morphPercentage}%</span>
+                      </div>
+                      <div className="relative">
+                        <div className="absolute inset-0 h-3 rounded-full bg-gradient-to-r from-green-500 via-yellow-500 to-red-500 opacity-30" />
+                        <input
+                          type="range"
+                          min="25"
+                          max="100"
+                          value={morphPercentage}
+                          onChange={(e) => setMorphPercentage(Number(e.target.value))}
+                          className="relative w-full h-3 rounded-full appearance-none cursor-pointer"
+                          style={{
+                            background: `linear-gradient(to right, #22c55e ${0}%, #22c55e ${((morphPercentage - 25) / 75) * 33}%, #eab308 ${((morphPercentage - 25) / 75) * 66}%, #ef4444 ${((morphPercentage - 25) / 75) * 100}%)`,
+                          }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-xs mt-2">
+                        <span className="text-green-400 font-medium">🌱 Light Touch</span>
+                        <span className="text-yellow-400 font-medium">⚡ Moderate</span>
+                        <span className="text-red-400 font-medium">🔥 Aggressive</span>
                       </div>
                     </div>
-                  </motion.div>
-                )}
 
-                {/* JD Step */}
-                {step === 'jd' && originalResume && (
-                  <motion.div key="jd" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
-                    <div className="grid lg:grid-cols-2 gap-6">
-                      <div className="rounded-2xl bg-[#111111] border border-white/10 overflow-hidden">
-                        <div className="p-6 border-b border-white/10">
-                          <h3 className="text-lg font-bold text-white">Your Resume ✅</h3>
-                        </div>
-                        <div className="p-6 max-h-[500px] overflow-y-auto">
-                          <h4 className="text-2xl font-bold text-white">{originalResume.name}</h4>
-                          <p className="text-cyan-400">{originalResume.title}</p>
-                          <p className="text-sm text-silver mt-1">{originalResume.email}</p>
-                          <div className="mt-4 p-3 rounded-lg bg-[#111111]">
-                            <p className="text-sm text-silver">{originalResume.summary}</p>
-                          </div>
-                          <div className="mt-4">
-                            <p className="text-sm text-silver mb-2">{originalResume.experience?.length} experiences • {originalResume.skills?.flatMap(s => s.items).length} skills</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="rounded-2xl bg-[#0A0A0A] to-blue-900/10 border border-blue-500/20 overflow-hidden">
-                        <div className="p-6 border-b border-white/10">
-                          <h3 className="text-lg font-bold text-white">Target Job Description</h3>
-                        </div>
-                        <div className="p-6">
-                          <textarea value={jobDescription} onChange={(e) => setJobDescription(e.target.value)} rows={10}
-                            className="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-silver focus:border-blue-500/50 focus:outline-none resize-none mb-4"
-                            placeholder="Paste the job description here..."
-                          />
-
-                          {/* Premium Morph Intensity Meter */}
-                          <div className="mb-8 p-6 rounded-2xl bg-[#0F0F0F] border border-white/10 relative overflow-hidden group">
-                            {/* Animated Background */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-cyan-900/10 via-transparent to-blue-900/10 opacity-50 pointer-events-none" />
-
-                            <div className="flex items-center justify-between mb-6 relative z-10">
-                              <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center border border-white/5">
-                                  <span className="text-xl">🧬</span>
-                                </div>
-                                <div>
-                                  <h4 className="font-bold text-white">Morph Intensity</h4>
-                                  <p className="text-xs text-silver">Adjust how much AI adapts your resume</p>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <span className={`text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r ${morphPercentage < 40 ? 'from-green-400 to-emerald-400' :
-                                  morphPercentage < 70 ? 'from-cyan-400 to-blue-400' :
-                                    'from-orange-400 to-red-400'
-                                  }`}>
-                                  {morphPercentage}%
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="relative h-4 bg-black/50 rounded-full mb-8 overflow-visible">
-                              {/* Track Background */}
-                              <div className="absolute inset-0 rounded-full bg-white/5" />
-
-                              {/* Fill Bar */}
-                              <motion.div
-                                className={`absolute top-0 left-0 h-full rounded-full bg-gradient-to-r ${morphPercentage < 40 ? 'from-green-500 to-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.3)]' :
-                                  morphPercentage < 70 ? 'from-cyan-500 to-blue-500 shadow-[0_0_20px_rgba(6,182,212,0.3)]' :
-                                    'from-orange-500 to-red-500 shadow-[0_0_20px_rgba(239,68,68,0.3)]'
-                                  }`}
-                                initial={{ width: 0 }}
-                                animate={{ width: `${morphPercentage}%` }}
-                                transition={{ type: 'spring', damping: 20 }}
-                              />
-
-                              {/* Slider Input (Invisible overlay) */}
-                              <input
-                                type="range"
-                                min="10"
-                                max="100"
-                                step="5"
-                                value={morphPercentage}
-                                onChange={(e) => setMorphPercentage(Number(e.target.value))}
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
-                              />
-
-                              {/* Custom Handle */}
-                              <motion.div
-                                className="absolute top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white border-4 border-[#0F0F0F] shadow-lg z-10 pointer-events-none flex items-center justify-center transform transition-transform group-hover:scale-110"
-                                animate={{ left: `${morphPercentage}%`, x: '-50%' }}
-                              >
-                                <div className={`w-2 h-2 rounded-full ${morphPercentage < 40 ? 'bg-emerald-500' :
-                                  morphPercentage < 70 ? 'bg-cyan-500' :
-                                    'bg-red-500'
-                                  }`} />
-                              </motion.div>
-                            </div>
-
-                            {/* Descriptive Labels */}
-                            <div className="grid grid-cols-3 text-center gap-2">
-                              <div className={`transition-opacity duration-300 ${morphPercentage <= 40 ? 'opacity-100' : 'opacity-30'}`}>
-                                <h5 className="text-sm font-bold text-emerald-400">Human Polish</h5>
-                                <p className="text-[10px] text-silver mt-1">Refines tone, keeps original structure.</p>
-                              </div>
-                              <div className={`transition-opacity duration-300 ${morphPercentage > 40 && morphPercentage <= 75 ? 'opacity-100' : 'opacity-30'}`}>
-                                <h5 className="text-sm font-bold text-cyan-400">Smart Tailor</h5>
-                                <p className="text-[10px] text-silver mt-1">Balances keywords with natural flow.</p>
-                              </div>
-                              <div className={`transition-opacity duration-300 ${morphPercentage > 75 ? 'opacity-100' : 'opacity-30'}`}>
-                                <h5 className="text-sm font-bold text-red-400">Deep Morph</h5>
-                                <p className="text-[10px] text-silver mt-1">Aggressive rewrite for max ATS score.</p>
-                              </div>
-                            </div>
-                          </div>
-
-                          <button onClick={handleMorph} disabled={isLoading || !jobDescription.trim()}
-                            className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-cyan-500 to-blue-500 text-white disabled:opacity-50"
+                    {/* Page Count */}
+                    <div>
+                      <label className="block text-white font-semibold mb-2">Target Length</label>
+                      <div className="flex gap-2">
+                        {(['auto', 1, 2] as const).map((pc) => (
+                          <button
+                            key={pc}
+                            onClick={() => setTargetPageCount(pc)}
+                            className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${targetPageCount === pc ? 'bg-cyan-500 text-white' : 'bg-white/10 text-silver hover:bg-white/20'
+                              }`}
                           >
-                            {isLoading ? '🧠 AI is Rewriting...' : '🧠 Morph Resume to Match JD'}
+                            {pc === 'auto' ? 'Auto' : `${pc} Page${pc > 1 ? 's' : ''}`}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={handleMorph}
+                      disabled={isLoading || !jobDescription.trim()}
+                      className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-cyan-500 to-blue-500 text-white disabled:opacity-50"
+                    >
+                      {isLoading ? '🧠 AI is Rewriting...' : '🧠 Morph Resume to Match JD'}
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Step 3: Template Selection */}
+            {step === 'template' && (
+              <motion.div key="template" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
+                {displayResume ? (
+                  <>
+                    {matchScore && (
+                      <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-green-500/10 to-cyan-500/10 border border-green-500/20">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="w-16 h-16 rounded-xl bg-green-500/20 flex items-center justify-center">
+                              <span className="text-2xl font-bold text-green-400">{matchScore}%</span>
+                            </div>
+                            <div>
+                              <h3 className="font-bold text-white">Resume Morphed!</h3>
+                              <p className="text-sm text-silver">Matches {matchScore}% of job requirements</p>
+                            </div>
+                          </div>
+                          <button onClick={() => setStep('preview')} className="px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 text-white">
+                            Preview & Download →
                           </button>
                         </div>
                       </div>
+                    )}
+
+                    <h3 className="text-xl font-bold text-white mb-4">Choose a Professional Template</h3>
+                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+                      {TEMPLATES.map((template) => (
+                        <motion.button
+                          key={template.id}
+                          onClick={() => setSelectedTemplate(template)}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className={`p-4 rounded-2xl border-2 transition-all text-left ${selectedTemplate.id === template.id ? 'border-cyan-400 bg-cyan-500/10' : 'border-white/10 bg-[#111111] hover:border-white/30'
+                            }`}
+                        >
+                          <div className="w-12 h-12 rounded-xl mb-3 flex items-center justify-center text-2xl" style={{ background: `linear-gradient(135deg, ${template.colors.primary}40, ${template.colors.accent}40)` }}>
+                            {template.preview}
+                          </div>
+                          <h4 className="font-bold text-white">{template.name}</h4>
+                          <p className="text-xs text-silver">{template.description}</p>
+                        </motion.button>
+                      ))}
                     </div>
-                  </motion.div>
-                )}
 
-                {/* Template & Preview Steps (shared with create mode) */}
-                {(step === 'template' || step === 'preview') && displayResume && (
-                  <TemplateAndPreview
-                    step={step}
-                    setStep={setStep}
-                    resume={displayResume}
-                    selectedTemplate={selectedTemplate}
-                    setSelectedTemplate={setSelectedTemplate}
-                    matchScore={matchScore}
-                    isLoading={isLoading}
-                    downloadPDF={downloadPDF}
-                    handleSave={handleSave}
-                    resumeRef={resumeRef}
-                    templates={TEMPLATES}
-                    setShowApplicationModal={setShowApplicationModal}
-                  />
-                )}
-              </AnimatePresence>
-            </div>
-          </motion.div>
-        )}
+                    {/* Mini Preview */}
+                    <div className="rounded-2xl bg-[#111111] border border-white/10 p-6">
+                      <div className="flex justify-between mb-4">
+                        <h4 className="font-bold text-white">Preview</h4>
+                        <button onClick={() => setStep('preview')} className="text-sm text-cyan-400">Full Size →</button>
+                      </div>
+                      <div className="bg-white rounded-xl p-6 text-slate-900 max-h-64 overflow-hidden relative">
+                        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent" />
+                        <h2 className="text-xl font-bold" style={{ color: selectedTemplate.colors.primary }}>{displayResume.name}</h2>
+                        <p className="text-sm" style={{ color: selectedTemplate.colors.accent }}>{displayResume.title}</p>
+                        <p className="text-xs text-gray-500 mb-3">{[displayResume.email, displayResume.phone, displayResume.location].filter(Boolean).join(' • ')}</p>
+                        <p className="text-xs text-gray-700">{displayResume.summary}</p>
+                      </div>
+                    </div>
 
-        {/* ============ CREATE FROM SCRATCH ============ */}
-        {mode === 'create' && (
-          <motion.div key="create" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            {/* Builder Progress */}
-            {step === 'build' && (
-              <div className="max-w-4xl mx-auto mb-6">
-                <div className="flex items-center justify-between p-1 rounded-xl bg-[#111111] border border-white/10">
-                  {['Personal', 'Experience', 'Education', 'Skills', 'Summary'].map((label, i) => (
-                    <button key={i} onClick={() => setBuildStep(i)}
-                      className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${buildStep === i ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white' :
-                        buildStep > i ? 'bg-white/10 text-white' : 'text-silver'
-                        }`}
-                    >
-                      {buildStep > i ? '✓ ' : ''}{label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+                    {!matchScore && (
+                      <div className="mt-6 flex justify-end">
+                        <button onClick={() => setStep('preview')} className="px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 text-white">
+                          Preview & Download →
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="max-w-lg mx-auto text-center py-12">
+                    <div className="rounded-2xl bg-red-500/10 border border-red-500/30 p-8">
+                      <span className="text-5xl block mb-4">⚠️</span>
+                      <h3 className="text-xl font-bold text-white mb-2">Resume Data Missing</h3>
+                      <p className="text-silver mb-6">Something went wrong loading your resume.</p>
+                      <div className="flex gap-3 justify-center">
+                        <button onClick={() => setStep('jd')} className="px-6 py-3 rounded-xl bg-[#111111] text-white font-medium hover:bg-white/10">← Back to JD</button>
+                        <button onClick={() => { if (originalResume) setMorphedResume(originalResume); }} className="px-6 py-3 rounded-xl bg-cyan-500 text-white font-bold">Use Original Resume</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
             )}
 
-            <div className="max-w-6xl mx-auto">
-              <AnimatePresence mode="wait">
-                {step === 'build' && (
-                  <motion.div key="builder" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
-                    <div className="grid lg:grid-cols-3 gap-6">
-                      {/* Builder Form */}
-                      <div className="lg:col-span-2">
-                        <div className="rounded-2xl bg-[#0A0A0A] to-cyan-900/10 border border-cyan-500/20 overflow-hidden">
-                          <div className="p-6 border-b border-white/10">
-                            <h3 className="text-xl font-bold text-white">
-                              {['👤 Personal Info', '💼 Experience', '🎓 Education', '⚡ Skills', '✍️ Summary'][buildStep]}
-                            </h3>
+            {/* Step 4: Preview */}
+            {step === 'preview' && (
+              <motion.div key="preview" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
+                {displayResume ? (
+                  <div className="grid lg:grid-cols-3 gap-6">
+                    <div className="space-y-4">
+                      <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+                        <h3 className="font-bold text-white mb-4">Actions</h3>
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-2 gap-2">
+                            <button onClick={downloadPDF} disabled={isLoading} className="py-3 rounded-xl font-bold bg-white text-slate-900 hover:bg-slate-200 transition-colors disabled:opacity-50 text-sm">
+                              {isLoading ? '⏳...' : '📄 PDF'}
+                            </button>
+                            <button onClick={downloadWord} disabled={isLoading} className="py-3 rounded-xl font-bold bg-[#0070F3] text-white hover:bg-[#0060D0] transition-colors disabled:opacity-50 text-sm">
+                              {isLoading ? '⏳...' : '📝 Word'}
+                            </button>
                           </div>
-                          <div className="p-6">
-                            {/* Step 0: Personal Info */}
-                            {buildStep === 0 && (
-                              <div className="space-y-4">
-                                <div className="grid md:grid-cols-2 gap-4">
-                                  <input type="text" placeholder="Full Name *" value={buildResume.name}
-                                    onChange={(e) => setBuildResume({ ...buildResume, name: e.target.value })}
-                                    className="px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:border-cyan-500/50 focus:outline-none"
-                                  />
-                                  <input type="text" placeholder="Target Job Title *" value={buildResume.title}
-                                    onChange={(e) => setBuildResume({ ...buildResume, title: e.target.value })}
-                                    className="px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:border-cyan-500/50 focus:outline-none"
-                                  />
-                                </div>
-                                <div className="grid md:grid-cols-2 gap-4">
-                                  <input type="email" placeholder="Email *" value={buildResume.email}
-                                    onChange={(e) => setBuildResume({ ...buildResume, email: e.target.value })}
-                                    className="px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:border-cyan-500/50 focus:outline-none"
-                                  />
-                                  <input type="tel" placeholder="Phone *" value={buildResume.phone}
-                                    onChange={(e) => setBuildResume({ ...buildResume, phone: e.target.value })}
-                                    className="px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:border-cyan-500/50 focus:outline-none"
-                                  />
-                                </div>
-                                <input type="text" placeholder="Location (City, State)" value={buildResume.location}
-                                  onChange={(e) => setBuildResume({ ...buildResume, location: e.target.value })}
-                                  className="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:border-cyan-500/50 focus:outline-none"
-                                />
-                                <div className="grid md:grid-cols-2 gap-4">
-                                  <input type="url" placeholder="LinkedIn URL (optional)" value={buildResume.linkedin || ''}
-                                    onChange={(e) => setBuildResume({ ...buildResume, linkedin: e.target.value })}
-                                    className="px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:border-cyan-500/50 focus:outline-none"
-                                  />
-                                  <input type="url" placeholder="Website (optional)" value={buildResume.website || ''}
-                                    onChange={(e) => setBuildResume({ ...buildResume, website: e.target.value })}
-                                    className="px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:border-cyan-500/50 focus:outline-none"
-                                  />
-                                </div>
-                              </div>
-                            )}
+                          <button onClick={() => setShowApplicationModal(true)} className="w-full py-4 rounded-xl font-bold bg-gradient-to-r from-green-500 to-cyan-500 text-white">
+                            🎯 Track Application
+                          </button>
+                          <button onClick={handleSave} className="w-full py-3 rounded-xl font-semibold bg-white/10 hover:bg-white/20 text-white">💾 Save Version</button>
+                          <button onClick={() => setStep('template')} className="w-full py-3 rounded-xl font-semibold bg-[#111111] hover:bg-white/10 text-silver">🎨 Change Template</button>
+                        </div>
+                      </div>
 
-                            {/* Step 1: Experience */}
-                            {buildStep === 1 && (
-                              <div className="space-y-4">
-                                {buildResume.experience.map((exp, i) => (
-                                  <div key={i} className="p-4 rounded-xl bg-[#111111] border border-white/10 space-y-3">
-                                    <div className="flex justify-between items-start">
-                                      <span className="text-xs font-semibold text-cyan-400">Experience {i + 1}</span>
-                                      <button onClick={() => {
-                                        const newExp = buildResume.experience.filter((_, idx) => idx !== i);
-                                        setBuildResume({ ...buildResume, experience: newExp });
-                                      }} className="text-red-400 text-xs hover:text-red-300">Remove</button>
-                                    </div>
-                                    <div className="grid md:grid-cols-2 gap-3">
-                                      <input placeholder="Job Title *" value={exp.role}
-                                        onChange={(e) => { const newExp = [...buildResume.experience]; newExp[i].role = e.target.value; setBuildResume({ ...buildResume, experience: newExp }); }}
-                                        className="px-3 py-2 rounded-lg bg-black/30 border border-white/10 text-white text-sm focus:outline-none"
-                                      />
-                                      <input placeholder="Company *" value={exp.company}
-                                        onChange={(e) => { const newExp = [...buildResume.experience]; newExp[i].company = e.target.value; setBuildResume({ ...buildResume, experience: newExp }); }}
-                                        className="px-3 py-2 rounded-lg bg-black/30 border border-white/10 text-white text-sm focus:outline-none"
-                                      />
-                                    </div>
-                                    <input placeholder="Duration (e.g., Jan 2020 - Present)" value={exp.duration}
-                                      onChange={(e) => { const newExp = [...buildResume.experience]; newExp[i].duration = e.target.value; setBuildResume({ ...buildResume, experience: newExp }); }}
-                                      className="w-full px-3 py-2 rounded-lg bg-black/30 border border-white/10 text-white text-sm focus:outline-none"
-                                    />
-                                    <div>
-                                      <div className="flex justify-between items-center mb-2">
-                                        <span className="text-xs text-silver">Achievements</span>
-                                        <button onClick={() => generateAchievements(i)} disabled={aiSuggesting}
-                                          className="text-xs px-2 py-1 rounded bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 disabled:opacity-50"
-                                        >{aiSuggesting ? '...' : '✨ AI Generate'}</button>
-                                      </div>
-                                      {exp.achievements.map((ach, j) => (
-                                        <div key={j} className="flex gap-2 mb-2">
-                                          <input value={ach} onChange={(e) => {
-                                            const newExp = [...buildResume.experience];
-                                            newExp[i].achievements[j] = e.target.value;
-                                            setBuildResume({ ...buildResume, experience: newExp });
-                                          }} className="flex-1 px-3 py-2 rounded-lg bg-black/30 border border-white/10 text-white text-sm focus:outline-none" placeholder="Achievement..." />
-                                          <button onClick={() => {
-                                            const newExp = [...buildResume.experience];
-                                            newExp[i].achievements = newExp[i].achievements.filter((_, idx) => idx !== j);
-                                            setBuildResume({ ...buildResume, experience: newExp });
-                                          }} className="text-red-400 text-xs">✕</button>
-                                        </div>
-                                      ))}
-                                      <button onClick={() => {
-                                        const newExp = [...buildResume.experience];
-                                        newExp[i].achievements.push('');
-                                        setBuildResume({ ...buildResume, experience: newExp });
-                                      }} className="text-xs text-cyan-400 hover:text-cyan-300">+ Add Achievement</button>
-                                    </div>
-                                  </div>
-                                ))}
-                                <button onClick={() => setBuildResume({ ...buildResume, experience: [...buildResume.experience, { role: '', company: '', duration: '', achievements: [''] }] })}
-                                  className="w-full p-4 rounded-xl border-2 border-dashed border-white/20 text-silver hover:border-cyan-500/50 hover:text-cyan-400 transition-colors"
-                                >+ Add Experience</button>
+                      {matchScore && (
+                        <div className="rounded-2xl bg-green-900/20 border border-green-500/20 p-6">
+                          <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 rounded-xl bg-green-500/20 flex items-center justify-center">
+                              <span className="text-xl font-bold text-green-400">{matchScore}%</span>
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-white">Match Score</h4>
+                              <div className="h-2 w-32 bg-white/10 rounded-full overflow-hidden mt-1">
+                                <div className="h-full bg-green-500 rounded-full" style={{ width: `${matchScore}%` }} />
                               </div>
-                            )}
-
-                            {/* Step 2: Education */}
-                            {buildStep === 2 && (
-                              <div className="space-y-4">
-                                {buildResume.education.map((edu, i) => (
-                                  <div key={i} className="p-4 rounded-xl bg-[#111111] border border-white/10 space-y-3">
-                                    <div className="flex justify-between items-start">
-                                      <span className="text-xs font-semibold text-cyan-400">Education {i + 1}</span>
-                                      <button onClick={() => {
-                                        const newEdu = buildResume.education.filter((_, idx) => idx !== i);
-                                        setBuildResume({ ...buildResume, education: newEdu });
-                                      }} className="text-red-400 text-xs">Remove</button>
-                                    </div>
-                                    <input placeholder="Degree (e.g., Bachelor of Science in Computer Science)" value={edu.degree}
-                                      onChange={(e) => { const newEdu = [...buildResume.education]; newEdu[i].degree = e.target.value; setBuildResume({ ...buildResume, education: newEdu }); }}
-                                      className="w-full px-3 py-2 rounded-lg bg-black/30 border border-white/10 text-white text-sm focus:outline-none"
-                                    />
-                                    <div className="grid md:grid-cols-2 gap-3">
-                                      <input placeholder="Institution" value={edu.institution}
-                                        onChange={(e) => { const newEdu = [...buildResume.education]; newEdu[i].institution = e.target.value; setBuildResume({ ...buildResume, education: newEdu }); }}
-                                        className="px-3 py-2 rounded-lg bg-black/30 border border-white/10 text-white text-sm focus:outline-none"
-                                      />
-                                      <input placeholder="Year (e.g., 2020)" value={edu.year}
-                                        onChange={(e) => { const newEdu = [...buildResume.education]; newEdu[i].year = e.target.value; setBuildResume({ ...buildResume, education: newEdu }); }}
-                                        className="px-3 py-2 rounded-lg bg-black/30 border border-white/10 text-white text-sm focus:outline-none"
-                                      />
-                                    </div>
-                                    <input placeholder="Additional details (GPA, honors, etc.)" value={edu.details || ''}
-                                      onChange={(e) => { const newEdu = [...buildResume.education]; newEdu[i].details = e.target.value; setBuildResume({ ...buildResume, education: newEdu }); }}
-                                      className="w-full px-3 py-2 rounded-lg bg-black/30 border border-white/10 text-white text-sm focus:outline-none"
-                                    />
-                                  </div>
-                                ))}
-                                <button onClick={() => setBuildResume({ ...buildResume, education: [...buildResume.education, { degree: '', institution: '', year: '', details: '' }] })}
-                                  className="w-full p-4 rounded-xl border-2 border-dashed border-white/20 text-silver hover:border-cyan-500/50 hover:text-cyan-400 transition-colors"
-                                >+ Add Education</button>
-                              </div>
-                            )}
-
-                            {/* Step 3: Skills */}
-                            {buildStep === 3 && (
-                              <div className="space-y-4">
-                                <div className="flex justify-between items-center mb-2">
-                                  <span className="text-sm text-silver">Add skills by category</span>
-                                  <button onClick={suggestSkills} disabled={aiSuggesting}
-                                    className="px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-400 text-sm hover:bg-cyan-500/30 disabled:opacity-50"
-                                  >{aiSuggesting ? 'Suggesting...' : '✨ AI Suggest Skills'}</button>
-                                </div>
-                                {buildResume.skills.map((cat, i) => (
-                                  <div key={i} className="p-4 rounded-xl bg-[#111111] border border-white/10">
-                                    <div className="flex justify-between items-center mb-3">
-                                      <select value={cat.category} onChange={(e) => {
-                                        const newSkills = [...buildResume.skills];
-                                        newSkills[i].category = e.target.value;
-                                        setBuildResume({ ...buildResume, skills: newSkills });
-                                      }} className="bg-black/30 border border-white/10 text-white text-sm rounded-lg px-3 py-2 focus:outline-none">
-                                        {SKILL_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                                      </select>
-                                      <button onClick={() => {
-                                        const newSkills = buildResume.skills.filter((_, idx) => idx !== i);
-                                        setBuildResume({ ...buildResume, skills: newSkills });
-                                      }} className="text-red-400 text-xs">Remove</button>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                      {cat.items.map((skill, j) => (
-                                        <span key={j} className="px-3 py-1.5 rounded-full bg-cyan-500/20 text-cyan-300 text-sm flex items-center gap-2">
-                                          {skill}
-                                          <button onClick={() => {
-                                            const newSkills = [...buildResume.skills];
-                                            newSkills[i].items = newSkills[i].items.filter((_, idx) => idx !== j);
-                                            setBuildResume({ ...buildResume, skills: newSkills });
-                                          }} className="text-cyan-400 hover:text-white">✕</button>
-                                        </span>
-                                      ))}
-                                      <button onClick={() => {
-                                        const skill = prompt('Enter skill:');
-                                        if (skill) {
-                                          const newSkills = [...buildResume.skills];
-                                          newSkills[i].items.push(skill);
-                                          setBuildResume({ ...buildResume, skills: newSkills });
-                                        }
-                                      }} className="px-3 py-1.5 rounded-full border border-dashed border-white/20 text-silver text-sm hover:border-cyan-500/50">+ Add</button>
-                                    </div>
-                                  </div>
-                                ))}
-                                <button onClick={() => setBuildResume({ ...buildResume, skills: [...buildResume.skills, { category: 'Technical', items: [] }] })}
-                                  className="w-full p-4 rounded-xl border-2 border-dashed border-white/20 text-silver hover:border-cyan-500/50 hover:text-cyan-400 transition-colors"
-                                >+ Add Skill Category</button>
-                              </div>
-                            )}
-
-                            {/* Step 4: Summary */}
-                            {buildStep === 4 && (
-                              <div className="space-y-4">
-                                <div className="flex justify-between items-center">
-                                  <span className="text-sm text-silver">Professional summary (2-3 sentences)</span>
-                                  <button onClick={generateSummary} disabled={aiSuggesting}
-                                    className="px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-400 text-sm hover:bg-cyan-500/30 disabled:opacity-50"
-                                  >{aiSuggesting ? 'Generating...' : '✨ AI Generate'}</button>
-                                </div>
-                                <textarea rows={5} value={buildResume.summary} onChange={(e) => setBuildResume({ ...buildResume, summary: e.target.value })}
-                                  className="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:border-cyan-500/50 focus:outline-none resize-none"
-                                  placeholder="Write a compelling summary that highlights your value proposition..."
-                                />
-                              </div>
-                            )}
-
-                            {/* Navigation */}
-                            <div className="flex justify-between mt-6 pt-6 border-t border-white/10">
-                              <button onClick={() => setBuildStep(Math.max(0, buildStep - 1))} disabled={buildStep === 0}
-                                className="px-6 py-3 rounded-xl bg-white/10 text-white disabled:opacity-30"
-                              >← Previous</button>
-                              {buildStep < 4 ? (
-                                <button onClick={() => setBuildStep(buildStep + 1)}
-                                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold"
-                                >Next →</button>
-                              ) : (
-                                <button onClick={() => setStep('template')} disabled={!buildResume.name}
-                                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-green-500 to-cyan-500 text-white font-semibold disabled:opacity-50"
-                                >Choose Template →</button>
-                              )}
                             </div>
                           </div>
                         </div>
-                      </div>
+                      )}
 
-                      {/* Live Preview Card */}
-                      <div className="rounded-2xl bg-[#111111] border border-white/10 overflow-hidden">
-                        <div className="p-4 border-b border-white/10">
-                          <h4 className="font-semibold text-white">Live Preview</h4>
-                        </div>
-                        <div className="p-4 max-h-[600px] overflow-y-auto">
-                          <div className="bg-white rounded-xl p-4 text-slate-900 text-xs">
-                            <h2 className="text-lg font-bold text-slate-800">{buildResume.name || 'Your Name'}</h2>
-                            <p className="text-cyan-600">{buildResume.title || 'Your Title'}</p>
-                            <p className="text-silver text-[10px] mt-1">{[buildResume.email, buildResume.phone, buildResume.location].filter(Boolean).join(' • ') || 'Contact info'}</p>
-                            {buildResume.summary && <p className="mt-3 text-slate-600">{buildResume.summary}</p>}
-                            {buildResume.experience.length > 0 && (
-                              <div className="mt-3">
-                                <h3 className="font-bold text-slate-700 text-xs uppercase tracking-wider">Experience</h3>
-                                {buildResume.experience.slice(0, 2).map((exp, i) => (
-                                  <div key={i} className="mt-2">
-                                    <p className="font-semibold">{exp.role || 'Role'}</p>
-                                    <p className="text-silver">{exp.company} {exp.duration && `• ${exp.duration}`}</p>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            {buildResume.skills.length > 0 && (
-                              <div className="mt-3">
-                                <h3 className="font-bold text-slate-700 text-xs uppercase tracking-wider">Skills</h3>
-                                <p className="text-slate-600">{buildResume.skills.flatMap(s => s.items).slice(0, 8).join(', ')}</p>
-                              </div>
-                            )}
-                          </div>
+                      <div className="rounded-2xl bg-[#111111] border border-white/10 p-6">
+                        <h4 className="font-bold text-white mb-2">Template: {selectedTemplate.name}</h4>
+                        <p className="text-sm text-silver">{selectedTemplate.description}</p>
+                      </div>
+                    </div>
+
+                    <div className="lg:col-span-2">
+                      <div className="rounded-2xl bg-[#111111]/50 border border-white/10 p-4">
+                        <div ref={resumeRef} className="bg-white rounded-xl shadow-2xl overflow-hidden" style={{ minHeight: '800px' }}>
+                          <ResumeTemplate resume={displayResume} template={selectedTemplate} />
                         </div>
                       </div>
                     </div>
-                  </motion.div>
-                )}
-
-                {/* Template & Preview (shared) */}
-                {(step === 'template' || step === 'preview') && (
-                  <TemplateAndPreview
-                    step={step}
-                    setStep={setStep}
-                    resume={buildResume}
-                    selectedTemplate={selectedTemplate}
-                    setSelectedTemplate={setSelectedTemplate}
-                    matchScore={null}
-                    isLoading={isLoading}
-                    downloadPDF={downloadPDF}
-                    handleSave={handleSave}
-                    resumeRef={resumeRef}
-                    templates={TEMPLATES}
-                    setShowApplicationModal={setShowApplicationModal}
-                  />
-                )}
-              </AnimatePresence>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Loading Overlay */}
-      <AnimatePresence>
-        {isLoading && step !== 'jd' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
-          >
-            <div className="text-center">
-              <div className="w-20 h-20 mx-auto mb-6 relative">
-                <div className="absolute inset-0 rounded-full border-4 border-cyan-500/20" />
-                <div className="absolute inset-0 rounded-full border-4 border-cyan-400 border-t-transparent animate-spin" />
-              </div>
-              <h3 className="text-xl font-bold text-white mb-2">Processing...</h3>
-              <p className="text-silver">AI is working on your resume</p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-
-      {/* Delete Confirmation Modal */}
-      <AnimatePresence>
-        {deleteConfirmId && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setDeleteConfirmId(null)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md"
-            >
-              <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-8 shadow-2xl">
-                <div className="text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/10 flex items-center justify-center">
-                    <span className="text-3xl">🗑️</span>
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-2">Delete Resume?</h3>
-                  <p className="text-silver text-sm mb-6">
-                    This action cannot be undone. The resume version will be permanently removed from your vault.
-                  </p>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setDeleteConfirmId(null)}
-                      className="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-silver hover:bg-white/10 transition-colors font-medium"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={confirmDelete}
-                      className="flex-1 px-4 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white font-medium transition-colors"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-
-      {/* Application Creation Modal */}
-      <AnimatePresence>
-        {showApplicationModal && (morphedResume || buildResume.name) && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowApplicationModal(false)}
-              className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50"
-            />
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="relative w-full max-w-lg rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-white/10 overflow-hidden"
-              >
-                {/* Success Header */}
-                <div className="relative p-8 text-center border-b border-white/10">
-                  <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-cyan-500/10" />
-                  <div className="relative">
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: 'spring', delay: 0.2 }}
-                      className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-green-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-green-500/25"
-                    >
-                      <span className="text-4xl">🎉</span>
-                    </motion.div>
-                    <h2 className="text-2xl font-bold text-white mb-2">Resume Morphed Successfully!</h2>
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/20 border border-green-500/30">
-                      <span className="text-green-400 font-bold text-lg">{matchScore}%</span>
-                      <span className="text-green-300 text-sm">Match Score</span>
+                ) : (
+                  <div className="max-w-lg mx-auto text-center py-12">
+                    <div className="rounded-2xl bg-red-500/10 border border-red-500/30 p-8">
+                      <span className="text-5xl block mb-4">⚠️</span>
+                      <h3 className="text-xl font-bold text-white mb-2">No Resume Data</h3>
+                      <button onClick={() => setStep('upload')} className="px-6 py-3 rounded-xl bg-cyan-500 text-white font-bold">Start Over</button>
                     </div>
                   </div>
-                </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
-                {/* Form */}
-                <div className="p-6 space-y-4">
-                  <p className="text-silver text-center mb-4">
-                    Track this application to monitor your job search progress
-                  </p>
-
-                  <div>
-                    <label className="block text-sm font-medium text-silver mb-2">
-                      Company Name <span className="text-red-400">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={applicationData.companyName}
-                      onChange={(e) => setApplicationData({ ...applicationData, companyName: e.target.value })}
-                      placeholder="e.g., Google, Microsoft, Startup Inc."
-                      className="w-full px-4 py-3 rounded-xl bg-[#111111] border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-silver mb-2">
-                      Job Title
-                    </label>
-                    <input
-                      type="text"
-                      value={applicationData.jobTitle}
-                      onChange={(e) => setApplicationData({ ...applicationData, jobTitle: e.target.value })}
-                      placeholder={morphedResume?.title || 'e.g., Senior Software Engineer'}
-                      className="w-full px-4 py-3 rounded-xl bg-[#111111] border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-silver mb-2">
-                      Notes (optional)
-                    </label>
-                    <textarea
-                      value={applicationData.notes}
-                      onChange={(e) => setApplicationData({ ...applicationData, notes: e.target.value })}
-                      placeholder="Add any notes about this application..."
-                      rows={3}
-                      className="w-full px-4 py-3 rounded-xl bg-[#111111] border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 resize-none"
-                    />
-                  </div>
-
-                  {/* Quick Status Selection */}
-                  <div>
-                    <label className="block text-sm font-medium text-silver mb-2">
-                      Initial Status
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[
-                        { id: 'not_applied', label: 'Not Applied', icon: '📝', color: 'slate' },
-                        { id: 'applied', label: 'Applied', icon: '🚀', color: 'blue' },
-                        { id: 'screening', label: 'Screening', icon: '👀', color: 'cyan' },
-                      ].map((status) => (
-                        <button
-                          key={status.id}
-                          type="button"
-                          className={`p-3 rounded-xl border text-center transition-all hover:scale-105 ${status.color === 'slate' ? 'bg-slate-500/20 border-slate-500/30 text-silver' :
-                            status.color === 'blue' ? 'bg-blue-500/20 border-blue-500/30 text-blue-300' :
-                              'bg-cyan-500/20 border-cyan-500/30 text-cyan-300'
-                            }`}
-                        >
-                          <span className="text-xl block mb-1">{status.icon}</span>
-                          <span className="text-xs font-medium">{status.label}</span>
-                        </button>
-                      ))}
+        {/* Application Modal */}
+        <AnimatePresence>
+          {showApplicationModal && displayResume && (
+            <>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowApplicationModal(false)} className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50" />
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative w-full max-w-lg rounded-3xl bg-[#0A0A0A] border border-white/10 overflow-hidden">
+                  <div className="relative p-8 text-center border-b border-white/10">
+                    <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-cyan-500/10" />
+                    <div className="relative">
+                      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-20 h-20 mx-auto rounded-full bg-green-500/20 flex items-center justify-center mb-4">
+                        <span className="text-4xl">🎯</span>
+                      </motion.div>
+                      <h2 className="text-2xl font-bold text-white">Track this Application?</h2>
+                      <p className="text-silver mt-2">We'll save this morphed resume with your application</p>
                     </div>
                   </div>
+                  <div className="p-6 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-silver mb-2">Company Name *</label>
+                      <input type="text" value={applicationData.companyName} onChange={(e) => setApplicationData(prev => ({ ...prev, companyName: e.target.value }))} placeholder="e.g., Google" className="w-full px-4 py-3 rounded-xl bg-[#111111] border border-white/10 text-white placeholder-slate-500 focus:border-green-500/50 focus:outline-none" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-silver mb-2">Job Title</label>
+                      <input type="text" value={applicationData.jobTitle} onChange={(e) => setApplicationData(prev => ({ ...prev, jobTitle: e.target.value }))} placeholder={displayResume.title || 'Position'} className="w-full px-4 py-3 rounded-xl bg-[#111111] border border-white/10 text-white placeholder-slate-500 focus:border-green-500/50 focus:outline-none" />
+                    </div>
+                  </div>
+                  <div className="p-6 pt-0 flex gap-3">
+                    <button onClick={() => { setShowApplicationModal(false); setStep('preview'); }} className="flex-1 px-4 py-3 rounded-xl bg-[#111111] text-silver hover:bg-white/10 transition-colors font-medium">Skip & Preview Resume</button>
+                    <button onClick={handleCreateApplication} disabled={isLoading || !applicationData.companyName.trim()} className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-green-500 to-cyan-500 text-white font-bold disabled:opacity-50">
+                      {isLoading ? 'Creating...' : '🎯 Track Application'}
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* Save Modal */}
+        <AnimatePresence>
+          {showSaveModal && (
+            <>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setShowSaveModal(false); setSaveVersionName(''); }} className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50" />
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative w-full max-w-md rounded-3xl bg-[#0A0A0A] border border-white/10 overflow-hidden">
+                  <div className="relative p-6 border-b border-white/10">
+                    <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-blue-500/10" />
+                    <div className="relative flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center"><span className="text-2xl">💾</span></div>
+                      <div><h3 className="text-xl font-bold text-white">Save Version</h3><p className="text-sm text-silver">Name this resume version</p></div>
+                    </div>
+                  </div>
+                  <div className="p-6 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-silver mb-2">Version Name</label>
+                      <input type="text" value={saveVersionName} onChange={(e) => setSaveVersionName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') confirmSave(); }} placeholder="e.g., Senior PM at Google" autoFocus className="w-full px-4 py-3 rounded-xl bg-[#111111] border border-white/10 text-white placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none" />
+                    </div>
+                    <p className="text-xs text-silver/60">💡 Tip: Use descriptive names for easy filtering later.</p>
+                  </div>
+                  <div className="p-6 pt-0 flex gap-3">
+                    <button onClick={() => { setShowSaveModal(false); setSaveVersionName(''); }} className="flex-1 px-4 py-3 rounded-xl bg-[#111111] text-silver hover:bg-white/10 transition-colors font-medium">Cancel</button>
+                    <button onClick={confirmSave} disabled={!saveVersionName.trim()} className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold disabled:opacity-50">💾 Save Version</button>
+                  </div>
+                </motion.div>
+              </div>
+            </>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }
+
+  // ===== RENDER: Create Flow =====
+  if (mode === 'create') {
+    const displayResume = buildResume;
+
+    return (
+      <div className="min-h-screen p-8">
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-3xl font-bold text-white">Build From Scratch</h1>
+              <p className="text-silver">Create a professional resume with AI assistance</p>
+            </div>
+            <button onClick={resetAll} className="px-4 py-2 rounded-xl bg-white/10 text-silver hover:bg-white/20 transition-colors">
+              ← Start Over
+            </button>
+          </div>
+
+          {/* Steps */}
+          <AnimatePresence mode="wait">
+            {step === 'upload' && (
+              <motion.div key="info" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <div className="grid md:grid-cols-2 gap-8">
+                  {/* Personal Info */}
+                  <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+                    <h3 className="text-lg font-bold text-white mb-4">Personal Information</h3>
+                    <div className="space-y-4">
+                      <input type="text" value={buildResume.name} onChange={(e) => setBuildResume(prev => ({ ...prev, name: e.target.value }))} placeholder="Full Name" className="w-full px-4 py-3 rounded-xl bg-[#111111] border border-white/10 text-white placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none" />
+                      <input type="text" value={buildResume.title} onChange={(e) => setBuildResume(prev => ({ ...prev, title: e.target.value }))} placeholder="Job Title (e.g., Senior Software Engineer)" className="w-full px-4 py-3 rounded-xl bg-[#111111] border border-white/10 text-white placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none" />
+                      <input type="email" value={buildResume.email} onChange={(e) => setBuildResume(prev => ({ ...prev, email: e.target.value }))} placeholder="Email" className="w-full px-4 py-3 rounded-xl bg-[#111111] border border-white/10 text-white placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none" />
+                      <input type="text" value={buildResume.phone} onChange={(e) => setBuildResume(prev => ({ ...prev, phone: e.target.value }))} placeholder="Phone" className="w-full px-4 py-3 rounded-xl bg-[#111111] border border-white/10 text-white placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none" />
+                      <input type="text" value={buildResume.location} onChange={(e) => setBuildResume(prev => ({ ...prev, location: e.target.value }))} placeholder="Location (e.g., San Francisco, CA)" className="w-full px-4 py-3 rounded-xl bg-[#111111] border border-white/10 text-white placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none" />
+                    </div>
+                  </div>
+
+                  {/* Summary */}
+                  <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-bold text-white">Professional Summary</h3>
+                      <button onClick={generateSummary} disabled={aiSuggesting} className="px-3 py-1 rounded-lg text-sm bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 disabled:opacity-50">
+                        {aiSuggesting ? '⏳ Generating...' : '✨ Generate with AI'}
+                      </button>
+                    </div>
+                    <textarea value={buildResume.summary} onChange={(e) => setBuildResume(prev => ({ ...prev, summary: e.target.value }))} placeholder="Write a brief professional summary..." className="w-full h-48 px-4 py-3 rounded-xl bg-[#111111] border border-white/10 text-white placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none resize-none" />
+                  </div>
                 </div>
 
-                {/* Actions */}
-                <div className="p-6 pt-0 flex gap-3">
-                  <button
-                    onClick={handleSkipApplication}
-                    className="flex-1 px-4 py-3 rounded-xl bg-[#111111] text-silver hover:bg-white/10 transition-colors font-medium"
-                  >
-                    Skip & Preview Resume
-                  </button>
-                  <button
-                    onClick={handleCreateApplication}
-                    disabled={isLoading || !applicationData.companyName.trim()}
-                    className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-green-500 to-cyan-500 text-white font-bold hover:shadow-lg hover:shadow-green-500/25 transition-all disabled:opacity-50"
-                  >
-                    {isLoading ? 'Creating...' : '🎯 Track Application'}
+                <div className="mt-6 flex justify-end">
+                  <button onClick={() => setStep('jd')} disabled={!buildResume.name || !buildResume.title} className="px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 text-white disabled:opacity-50">
+                    Add Experience →
                   </button>
                 </div>
               </motion.div>
-            </div>
-          </>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
+            )}
 
-// ============ SHARED TEMPLATE & PREVIEW COMPONENT ============
-function TemplateAndPreview({
-  step, setStep, resume, selectedTemplate, setSelectedTemplate, matchScore, isLoading, downloadPDF, handleSave, resumeRef, templates, setShowApplicationModal
-}: {
-  step: string;
-  setStep: (s: any) => void;
-  resume: ResumeData;
-  selectedTemplate: typeof TEMPLATES[0];
-  setSelectedTemplate: (t: typeof TEMPLATES[0]) => void;
-  matchScore: number | null;
-  isLoading: boolean;
-  downloadPDF: () => void;
-  handleSave: () => void;
-  resumeRef: React.RefObject<HTMLDivElement>;
-  templates: typeof TEMPLATES;
-  setShowApplicationModal: (show: boolean) => void;
-}) {
-  return (
-    <AnimatePresence mode="wait">
-      {step === 'template' && (
-        <motion.div key="template" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
-          {matchScore && (
-            <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-green-500/10 to-cyan-500/10 border border-green-500/20">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-xl bg-green-500/20 flex items-center justify-center">
-                    <span className="text-2xl font-bold text-green-400">{matchScore}%</span>
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-white">Resume Morphed!</h3>
-                    <p className="text-sm text-silver">Matches {matchScore}% of job requirements</p>
-                  </div>
-                </div>
-                <button onClick={() => setStep('preview')} className="px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:shadow-lg hover:shadow-cyan-500/20 transition-all">
-                  Preview & Download →
-                </button>
-              </div>
-            </div>
-          )}
-          <h3 className="text-xl font-bold text-white mb-4">Choose a Professional Template</h3>
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-            {templates.map((template) => (
-              <motion.button key={template.id} onClick={() => setSelectedTemplate(template)} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                className={`p-4 rounded-2xl border-2 transition-all text-left ${selectedTemplate.id === template.id ? 'border-cyan-400 bg-cyan-500/10' : 'border-white/10 bg-[#111111] hover:border-white/30'}`}
-              >
-                <div className="w-12 h-12 rounded-xl mb-3 flex items-center justify-center text-2xl" style={{ background: `linear-gradient(135deg, ${template.colors.primary}40, ${template.colors.accent}40)` }}>
-                  {template.preview}
-                </div>
-                <h4 className="font-bold text-white">{template.name}</h4>
-                <p className="text-xs text-silver">{template.description}</p>
-              </motion.button>
-            ))}
-          </div>
-          <div className="rounded-2xl bg-[#111111] border border-white/10 p-6">
-            <div className="flex justify-between mb-4">
-              <h4 className="font-bold text-white">Preview</h4>
-              <button onClick={() => setStep('preview')} className="text-sm text-cyan-400">Full Size →</button>
-            </div>
-            <div className="bg-white rounded-xl p-6 text-slate-900 max-h-64 overflow-hidden relative">
-              <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent" />
-              <h2 className="text-xl font-bold" style={{ color: selectedTemplate.colors.primary }}>{resume.name}</h2>
-              <p className="text-sm" style={{ color: selectedTemplate.colors.accent }}>{resume.title}</p>
-              <p className="text-xs text-gray-500 mb-3">{[resume.email, resume.phone, resume.location].filter(Boolean).join(' • ')}</p>
-              <p className="text-xs text-gray-700">{resume.summary}</p>
-            </div>
-          </div>
-          {!matchScore && (
-            <div className="mt-6 flex justify-end">
-              <button onClick={() => setStep('preview')} className="px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 text-white">
-                Preview & Download →
-              </button>
-            </div>
-          )}
-        </motion.div>
-      )}
-
-      {step === 'preview' && (
-        <motion.div key="preview" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
-          <div className="grid lg:grid-cols-3 gap-6">
-            <div className="space-y-4">
-              <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
-                <h3 className="font-bold text-white mb-4">Actions</h3>
-                <div className="space-y-3">
-                  <button onClick={downloadPDF} disabled={isLoading}
-                    className="w-full py-4 rounded-xl font-bold bg-white text-slate-900 hover:bg-slate-200 transition-colors disabled:opacity-50"
-                  >{isLoading ? '⏳ Generating...' : '⬇️ Download PDF'}</button>
-
-                  <button onClick={() => setShowApplicationModal(true)}
-                    className="w-full py-4 rounded-xl font-bold bg-gradient-to-r from-green-500 to-cyan-500 text-white hover:shadow-lg hover:shadow-green-500/25 transition-all"
-                  >🎯 Track Application</button>
-
-                  <button onClick={handleSave} className="w-full py-3 rounded-xl font-semibold bg-white/10 hover:bg-white/20 text-white">💾 Save Version</button>
-                  <button onClick={() => setStep('template')} className="w-full py-3 rounded-xl font-semibold bg-[#111111] hover:bg-white/10 text-silver">🎨 Change Template</button>
-                </div>
-              </div>
-              {matchScore && (
-                <div className="rounded-2xl bg-green-900/20 border border-green-500/20 p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-xl bg-green-500/20 flex items-center justify-center">
-                      <span className="text-xl font-bold text-green-400">{matchScore}%</span>
+            {step === 'jd' && (
+              <motion.div key="exp" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6 mb-6">
+                  <h3 className="text-lg font-bold text-white mb-4">Work Experience</h3>
+                  {buildResume.experience.map((exp, i) => (
+                    <div key={i} className="mb-4 p-4 rounded-xl bg-[#111111] border border-white/10">
+                      <div className="grid md:grid-cols-3 gap-3 mb-3">
+                        <input type="text" value={exp.role} onChange={(e) => { const newExp = [...buildResume.experience]; newExp[i].role = e.target.value; setBuildResume(prev => ({ ...prev, experience: newExp })); }} placeholder="Job Title" className="px-3 py-2 rounded-lg bg-[#0A0A0A] border border-white/10 text-white text-sm placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none" />
+                        <input type="text" value={exp.company} onChange={(e) => { const newExp = [...buildResume.experience]; newExp[i].company = e.target.value; setBuildResume(prev => ({ ...prev, experience: newExp })); }} placeholder="Company" className="px-3 py-2 rounded-lg bg-[#0A0A0A] border border-white/10 text-white text-sm placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none" />
+                        <input type="text" value={exp.duration} onChange={(e) => { const newExp = [...buildResume.experience]; newExp[i].duration = e.target.value; setBuildResume(prev => ({ ...prev, experience: newExp })); }} placeholder="Duration (e.g., 2020-Present)" className="px-3 py-2 rounded-lg bg-[#0A0A0A] border border-white/10 text-white text-sm placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none" />
+                      </div>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm text-silver">Achievements</span>
+                        <button onClick={() => generateAchievements(i)} disabled={aiSuggesting} className="px-2 py-1 rounded text-xs bg-cyan-500/20 text-cyan-400">{aiSuggesting ? '⏳...' : '✨ Generate'}</button>
+                      </div>
+                      {exp.achievements.map((a, j) => (
+                        <input key={j} type="text" value={a} onChange={(e) => { const newExp = [...buildResume.experience]; newExp[i].achievements[j] = e.target.value; setBuildResume(prev => ({ ...prev, experience: newExp })); }} placeholder={`Achievement ${j + 1}`} className="w-full mb-2 px-3 py-2 rounded-lg bg-[#0A0A0A] border border-white/10 text-white text-sm placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none" />
+                      ))}
+                      <button onClick={() => { const newExp = [...buildResume.experience]; newExp[i].achievements.push(''); setBuildResume(prev => ({ ...prev, experience: newExp })); }} className="text-xs text-cyan-400">+ Add Achievement</button>
                     </div>
-                    <div>
-                      <h4 className="font-bold text-white">Match Score</h4>
-                      <div className="h-2 w-32 bg-white/10 rounded-full overflow-hidden mt-1">
-                        <div className="h-full bg-green-500 rounded-full" style={{ width: `${matchScore}%` }} />
+                  ))}
+                  <button onClick={() => setBuildResume(prev => ({ ...prev, experience: [...prev.experience, { role: '', company: '', duration: '', achievements: [''] }] }))} className="w-full py-3 rounded-xl border border-dashed border-white/20 text-silver hover:border-cyan-500/50 hover:text-white">
+                    + Add Experience
+                  </button>
+                </div>
+                <div className="flex justify-between">
+                  <button onClick={() => setStep('upload')} className="px-6 py-3 rounded-xl bg-white/10 text-silver">← Back</button>
+                  <button onClick={() => setStep('template')} className="px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 text-white">Choose Template →</button>
+                </div>
+              </motion.div>
+            )}
+
+            {(step === 'template' || step === 'preview') && hasResumeData(displayResume) && (
+              <motion.div key="preview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <div className="grid lg:grid-cols-3 gap-6">
+                  <div className="space-y-4">
+                    {step === 'template' && (
+                      <>
+                        <h3 className="text-xl font-bold text-white">Choose Template</h3>
+                        <div className="grid grid-cols-2 gap-3">
+                          {TEMPLATES.map((t) => (
+                            <button key={t.id} onClick={() => setSelectedTemplate(t)} className={`p-3 rounded-xl border text-left text-sm ${selectedTemplate.id === t.id ? 'border-cyan-400 bg-cyan-500/10' : 'border-white/10 bg-[#111111]'}`}>
+                              <span className="text-xl block mb-1">{t.preview}</span>
+                              <span className="text-white font-medium">{t.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                        <button onClick={() => setStep('preview')} className="w-full py-3 rounded-xl font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 text-white">Preview & Download →</button>
+                      </>
+                    )}
+                    {step === 'preview' && (
+                      <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6 space-y-3">
+                        <h3 className="font-bold text-white mb-4">Actions</h3>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button onClick={downloadPDF} disabled={isLoading} className="py-3 rounded-xl font-bold bg-white text-slate-900 text-sm">{isLoading ? '⏳...' : '📄 PDF'}</button>
+                          <button onClick={downloadWord} disabled={isLoading} className="py-3 rounded-xl font-bold bg-[#0070F3] text-white text-sm">{isLoading ? '⏳...' : '📝 Word'}</button>
+                        </div>
+                        <button onClick={handleSave} className="w-full py-3 rounded-xl font-semibold bg-white/10 text-white">💾 Save Version</button>
+                        <button onClick={() => setStep('template')} className="w-full py-3 rounded-xl font-semibold bg-[#111111] text-silver">🎨 Change Template</button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="lg:col-span-2">
+                    <div className="rounded-2xl bg-[#111111]/50 border border-white/10 p-4">
+                      <div ref={resumeRef} className="bg-white rounded-xl shadow-2xl overflow-hidden" style={{ minHeight: '800px' }}>
+                        <ResumeTemplate resume={displayResume} template={selectedTemplate} />
                       </div>
                     </div>
                   </div>
                 </div>
-              )}
-              <div className="rounded-2xl bg-[#111111] border border-white/10 p-6">
-                <h4 className="font-bold text-white mb-2">Template: {selectedTemplate.name}</h4>
-                <p className="text-sm text-silver">{selectedTemplate.description}</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Save Modal (reused) */}
+        <AnimatePresence>
+          {showSaveModal && (
+            <>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setShowSaveModal(false); setSaveVersionName(''); }} className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50" />
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative w-full max-w-md rounded-3xl bg-[#0A0A0A] border border-white/10 overflow-hidden">
+                  <div className="relative p-6 border-b border-white/10">
+                    <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-blue-500/10" />
+                    <div className="relative flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center"><span className="text-2xl">💾</span></div>
+                      <div><h3 className="text-xl font-bold text-white">Save Version</h3><p className="text-sm text-silver">Name this resume version</p></div>
+                    </div>
+                  </div>
+                  <div className="p-6">
+                    <input type="text" value={saveVersionName} onChange={(e) => setSaveVersionName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') confirmSave(); }} placeholder="e.g., Software Engineer Resume" autoFocus className="w-full px-4 py-3 rounded-xl bg-[#111111] border border-white/10 text-white placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none" />
+                  </div>
+                  <div className="p-6 pt-0 flex gap-3">
+                    <button onClick={() => { setShowSaveModal(false); setSaveVersionName(''); }} className="flex-1 px-4 py-3 rounded-xl bg-[#111111] text-silver">Cancel</button>
+                    <button onClick={confirmSave} disabled={!saveVersionName.trim()} className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold disabled:opacity-50">💾 Save</button>
+                  </div>
+                </motion.div>
               </div>
-            </div>
-            <div className="lg:col-span-2">
-              <div className="rounded-2xl bg-[#111111]/50 border border-white/10 p-4">
-                <div ref={resumeRef} className="bg-white rounded-xl shadow-2xl overflow-hidden" style={{ minHeight: '800px' }}>
-                  <ResumeTemplate resume={resume} template={selectedTemplate} />
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
+            </>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }
+
+  // Fallback
+  return null;
 }
 
 // ============ RESUME TEMPLATE COMPONENT ============

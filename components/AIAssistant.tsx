@@ -17,14 +17,26 @@ export default function AIAssistant() {
     {
       id: '1',
       role: 'assistant',
-      content: "Hi! I'm your AI assistant powered by Groq GPT-OSS 120B ⚡. I can help you with interview prep, resume writing, job descriptions, and more. How can I assist you today?",
+      content: "Hi! I'm Sona, your AI career companion ✨. I can help you with interview prep, resume writing, job descriptions, and more. How can I assist you today?",
       timestamp: new Date(),
     },
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showHint, setShowHint] = useState(false);
+  const [hintIndex, setHintIndex] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Creative hint messages that rotate
+  const hintMessages = [
+    { text: "Ask Sona anything ✨", emoji: "💬" },
+    { text: "Need interview tips?", emoji: "🎯" },
+    { text: "Let's optimize your resume", emoji: "📝" },
+    { text: "Stuck on a question? Ask me!", emoji: "🤔" },
+    { text: "Career advice? I'm here!", emoji: "🚀" },
+    { text: "Want to practice interviews?", emoji: "🎤" },
+  ];
 
   // Check if API key is available
   useEffect(() => {
@@ -48,6 +60,26 @@ export default function AIAssistant() {
     }
   }, [isOpen]);
 
+  // Popup hint every 2 minutes (only when chat is closed)
+  useEffect(() => {
+    if (isOpen) return; // Don't show hints when chat is open
+
+    const showHintPopup = () => {
+      setShowHint(true);
+      setHintIndex(prev => (prev + 1) % hintMessages.length);
+      setTimeout(() => setShowHint(false), 3000); // Hide after 3 seconds
+    };
+
+    // Show first hint after 30 seconds, then every 2 minutes
+    const initialTimer = setTimeout(showHintPopup, 30000);
+    const interval = setInterval(showHintPopup, 120000);
+
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(interval);
+    };
+  }, [isOpen, hintMessages.length]);
+
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
@@ -63,7 +95,7 @@ export default function AIAssistant() {
     setIsLoading(true);
 
     try {
-      const systemPrompt = `You are TalentConsulting.io Assistant, an expert AI career advisor powered by Groq GPT-OSS 120B. You help users with:
+      const systemPrompt = `You are Sona, TalentConsulting.io's friendly AI career advisor. You help users with:
 - Interview preparation and practice answers
 - Resume writing and optimization
 - Job description analysis
@@ -71,7 +103,7 @@ export default function AIAssistant() {
 - Technical interview questions
 - Behavioral interview strategies
 
-Be concise, helpful, and professional. Provide actionable advice. Keep responses under 150 words unless more detail is specifically requested.`;
+Be concise, helpful, and warm. Provide actionable advice. Keep responses under 150 words unless more detail is specifically requested. Your tone should be encouraging and supportive.`;
 
       const conversationContext = messages
         .slice(-6) // Last 6 messages for context
@@ -124,6 +156,38 @@ Be concise, helpful, and professional. Provide actionable advice. Keep responses
   return (
     <div className="fixed bottom-0 right-0 z-[9999] pointer-events-none">
       <div className="relative">
+        {/* Hint Popup */}
+        <AnimatePresence>
+          {showHint && !isOpen && (
+            <motion.div
+              initial={{ opacity: 0, x: 20, scale: 0.9 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 10, scale: 0.95 }}
+              transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+              className="absolute bottom-20 right-6 pointer-events-auto"
+            >
+              <div
+                onClick={() => { setShowHint(false); setIsOpen(true); }}
+                className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 border border-cyan-500/30 shadow-2xl cursor-pointer hover:border-cyan-400/50 transition-all group"
+                style={{ boxShadow: '0 0 30px rgba(0, 245, 255, 0.15)' }}
+              >
+                <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-cyan-500/50 flex-shrink-0">
+                  <img src="/sona-avatar.png" alt="Sona" className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <p className="text-white font-medium text-sm group-hover:text-cyan-400 transition-colors">
+                    {hintMessages[hintIndex].text}
+                  </p>
+                  <p className="text-xs text-slate-400">Click to chat with Sona</p>
+                </div>
+                <span className="text-xl ml-1">{hintMessages[hintIndex].emoji}</span>
+              </div>
+              {/* Speech bubble tail */}
+              <div className="absolute -bottom-2 right-10 w-4 h-4 bg-slate-800 border-r border-b border-cyan-500/30 rotate-45" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Chat Window */}
         <AnimatePresence>
           {isOpen && (
@@ -142,14 +206,12 @@ Be concise, helpful, and professional. Provide actionable advice. Keep responses
                 {/* Header */}
                 <div className="flex items-center justify-between p-3 border-b border-white/10 bg-black/40">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center">
-                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                      </svg>
+                    <div className="w-8 h-8 rounded-full overflow-hidden border border-cyan-500/30">
+                      <img src="/sona-avatar.png" alt="Sona" className="w-full h-full object-cover" />
                     </div>
                     <div>
-                      <h3 className="text-xs font-semibold text-white">AI Assistant</h3>
-                      <p className="text-[10px] text-slate-400">Powered by Groq ⚡</p>
+                      <h3 className="text-xs font-semibold text-white">Sona</h3>
+                      <p className="text-[10px] text-slate-400">Your Career Companion</p>
                     </div>
                   </div>
                   <button
@@ -171,8 +233,8 @@ Be concise, helpful, and professional. Provide actionable advice. Keep responses
                     >
                       <div
                         className={`max-w-[85%] rounded-xl px-3 py-2 ${message.role === 'user'
-                            ? 'bg-gradient-to-br from-cyan-500 to-blue-500 text-white'
-                            : 'bg-white/10 text-slate-200'
+                          ? 'bg-gradient-to-br from-cyan-500 to-blue-500 text-white'
+                          : 'bg-white/10 text-slate-200'
                           }`}
                       >
                         <p className="text-xs whitespace-pre-wrap">{message.content}</p>
@@ -255,40 +317,37 @@ Be concise, helpful, and professional. Provide actionable advice. Keep responses
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setIsOpen(!isOpen)}
-          className="absolute bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 shadow-lg hover:shadow-2xl transition-all flex items-center justify-center pointer-events-auto"
+          className="absolute bottom-6 right-6 w-14 h-14 rounded-full overflow-hidden shadow-lg hover:shadow-2xl transition-all flex items-center justify-center pointer-events-auto border-2 border-cyan-500/50"
           style={{
             boxShadow: '0 0 40px rgba(0, 245, 255, 0.3)',
           }}
         >
           <AnimatePresence mode="wait">
             {isOpen ? (
-              <motion.svg
+              <motion.div
                 key="close"
                 initial={{ rotate: -90, opacity: 0 }}
                 animate={{ rotate: 0, opacity: 1 }}
                 exit={{ rotate: 90, opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="w-6 h-6 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+                className="w-full h-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </motion.svg>
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </motion.div>
             ) : (
               <motion.div
                 key="open"
-                initial={{ rotate: 90, opacity: 0 }}
-                animate={{ rotate: 0, opacity: 1 }}
-                exit={{ rotate: -90, opacity: 0 }}
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="relative"
+                className="relative w-full h-full"
               >
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                </svg>
+                <img src="/sona-avatar.png" alt="Chat with Sona" className="w-full h-full object-cover" />
                 {/* Notification dot */}
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-blue-500 animate-pulse" />
+                <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-green-400 rounded-full border-2 border-white animate-pulse" />
               </motion.div>
             )}
           </AnimatePresence>

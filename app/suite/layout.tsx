@@ -18,14 +18,21 @@ export default function SuiteLayout({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    authHelpers.getSession().then(({ session }) => {
-      if (!session) {
+    authHelpers.getSession()
+      .then(({ session }) => {
+        if (!session) {
+          router.push('/');
+        } else {
+          setUser(session.user);
+        }
+      })
+      .catch((error) => {
+        console.error('Session check failed:', error);
         router.push('/');
-      } else {
-        setUser(session.user);
-      }
-      setLoading(false);
-    });
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [router, setUser]);
 
   if (loading) {

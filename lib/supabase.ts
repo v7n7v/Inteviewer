@@ -21,11 +21,11 @@ export const authHelpers = {
     return { data, error };
   },
 
-  async verifyOTP(email: string, token: string) {
+  async verifyOTP(email: string, token: string, type: 'signup' | 'email' = 'signup') {
     const { data, error } = await supabase.auth.verifyOtp({
       email,
       token,
-      type: 'signup', // Changed from 'email' to 'signup' for signup confirmation
+      type,
     });
     return { data, error };
   },
@@ -42,6 +42,16 @@ export const authHelpers = {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
+    });
+    return { data, error };
+  },
+
+  async signInWithOtp(email: string) {
+    const { data, error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: false, // Only allow login for existing users
+      },
     });
     return { data, error };
   },

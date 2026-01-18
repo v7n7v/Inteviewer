@@ -17,20 +17,40 @@ export default function Home() {
 
   useEffect(() => {
     // Check for existing session
-    authHelpers.getSession().then(({ session }) => {
-      if (session) {
-        setUser(session.user);
-        // Don't redirect - let user view landing page, they can use "Open Dashboard" button
-      }
-      setLoading(false);
-    });
+    authHelpers.getSession()
+      .then(({ session }) => {
+        if (session) {
+          setUser(session.user);
+          // Don't redirect - let user view landing page, they can use "Open Dashboard" button
+        }
+      })
+      .catch((error) => {
+        console.error('Session check failed:', error);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
 
     // Listen for auth changes - only redirect on actual sign in, not on page load
+    // Also check pending2FA to avoid redirecting during 2FA flow
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        setUser(session?.user ?? null);
-        // Only redirect to hub on actual sign in, not when page loads with existing session
-        if (event === 'SIGNED_IN' && session) {
+        // Get current pending2FA state directly from store
+        const isPending2FA = useStore.getState().pending2FA;
+
+        // Always clear user on sign out - this is critical for security
+        if (event === 'SIGNED_OUT') {
+          setUser(null);
+          return;
+        }
+
+        // Don't update user state during 2FA flow
+        if (!isPending2FA) {
+          setUser(session?.user ?? null);
+        }
+
+        // Only redirect to hub on actual sign in, not during 2FA
+        if (event === 'SIGNED_IN' && session && !isPending2FA) {
           router.push('/hub');
         }
       }

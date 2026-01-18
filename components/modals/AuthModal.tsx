@@ -12,11 +12,12 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProps) {
-  const { setUser } = useStore();
+  const { setUser, setPending2FA } = useStore();
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
   const [error, setError] = useState('');
   const [showOTPVerification, setShowOTPVerification] = useState(false);
+  const [verificationType, setVerificationType] = useState<'signup' | 'login'>('signup');
   const [otpCode, setOtpCode] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
@@ -24,6 +25,7 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
     name: '',
     email: '',
     password: '',
+    confirmPassword: '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,8 +40,13 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
           setLoading(false);
           return;
         }
-        if (formData.password.length < 6) {
-          setError('Password must be at least 6 characters');
+        if (formData.password.length < 10) {
+          setError('Password must be at least 10 characters');
+          setLoading(false);
+          return;
+        }
+        if (formData.password !== formData.confirmPassword) {
+          setError('Passwords do not match');
           setLoading(false);
           return;
         }
@@ -53,6 +60,7 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
         if (error) throw error;
 
         // Show OTP verification screen
+        setVerificationType('signup');
         setShowOTPVerification(true);
         showToast('Verification code sent to your email!', '📧');
       } else {
@@ -62,6 +70,10 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
           return;
         }
 
+        // Phase 1: Set 2FA pending state to prevent auto-redirect
+        setPending2FA(true);
+
+        // Phase 2: Verify Password first
         const { data, error } = await authHelpers.signIn(
           formData.email,
           formData.password
@@ -77,13 +89,22 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
           }
         }
 
-        setUser(data.user);
-        showToast('Welcome back!', '👋');
-        onClose();
+        // Phase 2: Sign out immediately to enforce OTP step
+        await authHelpers.signOut();
+
+        // Phase 3: Send OTP for 2FA
+        const { error: otpError } = await authHelpers.signInWithOtp(formData.email);
+
+        if (otpError) throw otpError;
+
+        setVerificationType('login');
+        setShowOTPVerification(true);
+        showToast('Password verified. Please check your email for the login code.', '🛡️');
       }
     } catch (err: any) {
       console.error('Auth error:', err);
       setError(err.message || 'Authentication failed');
+      setPending2FA(false); // Clear 2FA state on error
     } finally {
       setLoading(false);
     }
@@ -100,12 +121,15 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
     setError('');
 
     try {
-      const { data, error } = await authHelpers.verifyOTP(formData.email, otpCode);
+      // Use 'email' type for login verification (magiclink/otp), 'signup' for new registrations
+      const type = verificationType === 'login' ? 'email' : 'signup';
+      const { data, error } = await authHelpers.verifyOTP(formData.email, otpCode, type);
       if (error) throw error;
 
       if (data.user) {
+        setPending2FA(false); // Clear 2FA state on success
         setUser(data.user);
-        showToast('Email verified! Welcome!', '✅');
+        showToast(verificationType === 'login' ? 'Login successful!' : 'Email verified! Welcome!', '✅');
         onClose();
       }
     } catch (err: any) {
@@ -176,7 +200,9 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
             <div className="w-20 h-20 rounded-full bg-cyan-500/20 flex items-center justify-center mx-auto mb-4">
               <span className="text-4xl">📧</span>
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Verify Your Email</h2>
+            <h2 className="text-2xl font-bold text-white mb-2">
+              {verificationType === 'login' ? 'Verify Login' : 'Verify Your Email'}
+            </h2>
             <p className="text-slate-400">
               We sent a verification code to <strong className="text-cyan-400">{formData.email}</strong>
             </p>
@@ -383,10 +409,24 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               className="w-full rounded-lg px-4 py-3 bg-white/5 border border-white/10 text-white"
-              placeholder={mode === 'signup' ? 'Min 6 characters' : 'Enter password'}
+              placeholder={mode === 'signup' ? 'Min 10 characters' : 'Enter password'}
               disabled={loading}
             />
           </div>
+
+          {mode === 'signup' && (
+            <div>
+              <label className="block text-sm text-slate-400 mb-2">Confirm Password</label>
+              <input
+                type="password"
+                value={formData.confirmPassword}
+                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                className="w-full rounded-lg px-4 py-3 bg-white/5 border border-white/10 text-white"
+                placeholder="Re-enter your password"
+                disabled={loading}
+              />
+            </div>
+          )}
 
           {mode === 'login' && (
             <button
