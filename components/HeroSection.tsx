@@ -215,24 +215,50 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
         <div className="max-w-7xl mx-auto px-6 py-12 w-full">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             {/* Left: Content */}
-            <div className="fade-in">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyber-cyan/10 border border-cyber-cyan/30 mb-6">
-                <div className="w-2 h-2 rounded-full bg-cyber-cyan animate-pulse"></div>
-                <span className="text-sm font-medium text-cyber-cyan">AI powered Talent Consulting</span>
-              </div>
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="relative z-10"
+            >
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/30 mb-6"
+              >
+                <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></div>
+                <span className="text-sm font-medium text-cyan-400">AI powered Talent Consulting</span>
+              </motion.div>
 
-              <h1 className="premium-headline text-gradient mb-6">
-                Talent Density,<br />Decoded
-              </h1>
+              <motion.h1
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.8 }}
+                className="premium-headline mb-6"
+              >
+                <span className="text-white">Talent Density,</span><br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Decoded</span>
+              </motion.h1>
 
-              <p className="sub-headline mb-8 max-w-xl">
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="sub-headline mb-8 max-w-xl text-lg text-slate-300 leading-relaxed"
+              >
                 The world's first end-to-end AI Talent Intelligence Platform. From interview co-pilot to career intelligence, make data-driven decisions with unprecedented confidence.
-              </p>
+              </motion.p>
 
-              <div className="flex flex-col sm:flex-row gap-4 mb-12">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                className="flex flex-col sm:flex-row gap-4 mb-12"
+              >
                 <button
                   onClick={onGetStarted}
-                  className="glass-button text-lg px-8 py-4"
+                  className="glass-button text-lg px-8 py-4 bg-white/5 hover:bg-white/10"
                 >
                   <span className="flex items-center gap-2">
                     Get Started Free
@@ -241,24 +267,29 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
                     </svg>
                   </span>
                 </button>
-              </div>
+              </motion.div>
 
               {/* Stats */}
-              <div className="grid grid-cols-3 gap-6">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.8 }}
+                className="grid grid-cols-3 gap-8 border-t border-white/10 pt-8"
+              >
                 <div>
-                  <div className="text-3xl font-bold text-gradient mb-1">10x</div>
-                  <div className="text-sm text-slate-500">Faster AI</div>
+                  <div className="text-3xl font-bold text-white mb-1">10x</div>
+                  <div className="text-sm text-cyan-400 font-medium">Faster AI</div>
                 </div>
                 <div>
-                  <div className="text-3xl font-bold text-gradient mb-1">95%</div>
-                  <div className="text-sm text-slate-500">Accuracy</div>
+                  <div className="text-3xl font-bold text-white mb-1">95%</div>
+                  <div className="text-sm text-cyan-400 font-medium">Accuracy</div>
                 </div>
                 <div>
-                  <div className="text-3xl font-bold text-gradient mb-1">8+</div>
-                  <div className="text-sm text-slate-500">AI Tools</div>
+                  <div className="text-3xl font-bold text-white mb-1">8+</div>
+                  <div className="text-sm text-cyan-400 font-medium">AI Tools</div>
                 </div>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
 
             {/* Right: Interactive Demo - Enhanced Animated Card */}
             <div className="slide-in lg:pl-8">

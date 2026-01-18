@@ -54,6 +54,8 @@ export default function SuiteSelector({ fullPage = false, showBrandHeader = true
         { icon: '📄', name: 'Resume Builder', desc: 'Liquid Resume' },
         { icon: '💼', name: 'JD Generator', desc: 'Mission Blueprint' },
         { icon: '🎭', name: 'Practice', desc: 'Shadow Interview' },
+        { icon: '🎴', name: 'Flash Cards', desc: 'Study (Soon)' },
+
         { icon: '🔮', name: 'Market Oracle', desc: 'Career Intelligence' },
       ],
       stats: { label: 'Careers Launched', value: '890+' },
@@ -134,12 +136,12 @@ export default function SuiteSelector({ fullPage = false, showBrandHeader = true
               onClick={() => handleSelect(suite)}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="relative w-full text-left overflow-hidden rounded-3xl border border-white/10 bg-[#0A0A0A] hover:bg-[#1A1A1A] hover:border-white/20 transition-all duration-300"
+              className="relative w-full h-full text-left overflow-hidden rounded-3xl border border-white/10 bg-[#0A0A0A] hover:bg-[#1A1A1A] hover:border-white/20 transition-all duration-300 flex flex-col"
             >
               {/* Subtle top highlight */}
               <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-              <div className="relative p-8">
+              <div className="relative p-8 flex-1 flex flex-col">
                 {/* Header */}
                 <div className="flex items-start justify-between mb-6">
                   <div>
@@ -166,7 +168,7 @@ export default function SuiteSelector({ fullPage = false, showBrandHeader = true
                 <p className="text-slate-400 mb-8">{suite.description}</p>
 
                 {/* Features Grid */}
-                <div className="grid grid-cols-2 gap-3 mb-8">
+                <div className="grid grid-cols-2 gap-3 mb-8 flex-1">
                   {suite.features.map((feature) => (
                     <div
                       key={feature.name}
@@ -182,7 +184,7 @@ export default function SuiteSelector({ fullPage = false, showBrandHeader = true
                 </div>
 
                 {/* Stats */}
-                <div className="flex items-center justify-between pt-6 border-t border-white/10">
+                <div className="flex items-center justify-between pt-6 border-t border-white/10 mt-auto">
                   <div>
                     <p className="text-xs text-silver uppercase tracking-wider">{suite.stats.label}</p>
                     <p className={`text-2xl font-bold ${suite.statColor}`}>

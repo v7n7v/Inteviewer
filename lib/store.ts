@@ -19,6 +19,10 @@ interface AppState {
   user: User | null;
   setUser: (user: User | null) => void;
 
+  // 2FA pending state - prevents auto-redirect during OTP verification
+  pending2FA: boolean;
+  setPending2FA: (pending: boolean) => void;
+
   // Current tab
   currentTab: TabType;
   setCurrentTab: (tab: TabType) => void;
@@ -76,6 +80,10 @@ export const useStore = create<AppState>((set, get) => ({
   // User
   user: null,
   setUser: (user) => set({ user }),
+
+  // 2FA pending state
+  pending2FA: false,
+  setPending2FA: (pending) => set({ pending2FA: pending }),
 
   // Current tab
   currentTab: 'detective',

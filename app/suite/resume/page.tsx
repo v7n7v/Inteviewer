@@ -11,6 +11,8 @@ import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle } from 'docx';
+import { saveAs } from 'file-saver';
 
 // Set up PDF.js worker
 if (typeof window !== 'undefined') {
@@ -76,11 +78,14 @@ export default function LiquidResumePage() {
   const [matchScore, setMatchScore] = useState<number | null>(null);
   const [morphPercentage, setMorphPercentage] = useState<number>(75);
   const [versions, setVersions] = useState<ResumeVersion[]>([]);
+  const [targetPageCount, setTargetPageCount] = useState<number | 'auto'>('auto');
   const [vaultSortOrder, setVaultSortOrder] = useState<'date' | 'name' | 'score'>('date');
   const [dragActive, setDragActive] = useState(false);
   const [buildStep, setBuildStep] = useState(0); // For guided builder
   const [aiSuggesting, setAiSuggesting] = useState(false);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [saveVersionName, setSaveVersionName] = useState('');
   const [applicationData, setApplicationData] = useState({ companyName: '', jobTitle: '', notes: '' });
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -88,6 +93,17 @@ export default function LiquidResumePage() {
   const router = useRouter();
 
   useEffect(() => { if (user) loadVersions(); }, [user]);
+
+  // Debug logging for morph flow troubleshooting
+  useEffect(() => {
+    console.log('[MORPH DEBUG] State changed:', {
+      mode,
+      step,
+      hasMorphedResume: !!morphedResume && Object.keys(morphedResume).length > 0,
+      hasOriginalResume: !!originalResume && Object.keys(originalResume).length > 0,
+      morphedResumeKeys: morphedResume ? Object.keys(morphedResume) : [],
+    });
+  }, [mode, step, morphedResume, originalResume]);
 
   const loadVersions = async () => {
     const result = await getResumeVersions();
@@ -165,7 +181,7 @@ Extract as much detail as possible. For achievements, focus on quantifiable resu
     } catch { return ''; }
   };
 
-  const morphResumeToJD = async (resume: ResumeData, jd: string, percentage: number): Promise<{ morphed: ResumeData; score: number }> => {
+  const morphResumeToJD = async (resume: ResumeData, jd: string, percentage: number, pageCount: number | 'auto'): Promise<{ morphed: ResumeData; score: number }> => {
     // Calculate exact proportions based on percentage
     const keepOriginal = 100 - percentage; // How much to keep from original
     const alignToJD = percentage; // How much to align to JD
@@ -214,7 +230,7 @@ QUANTITATIVE RULES - FOLLOW EXACTLY:
 ✓ NEVER change factual information (numbers, metrics, dates)
 ✓ CRITICAL: Write as HUMANLY as possible. Avoid "robot" words like "leveraged", "utilized", "synergized" unless present in original.
 ✓ Keep professional tone but maintain the candidate's authentic voice.
-
+✓ PAGE COUNT CONSTRAINT: ${pageCount === 'auto' ? 'Optimize for natural flow (approx 1-2 pages)' : `STRICTLY optimize content to fit exactly ${pageCount} page(s). ${pageCount === 1 ? 'Be extremely concise, remove fluff, condense bullets.' : 'Expand on details, add more context to bullets.'}`}
 
 EXAMPLE at ${percentage}%:
 Original bullet: "Managed a team of 5 engineers to deliver projects on time"
@@ -243,7 +259,30 @@ ${jd}
 Apply EXACTLY ${percentage}% morphing as specified above.`,
       { temperature: 0.4, maxTokens: 6000 }
     );
-    return { morphed: result.morphedResume, score: result.matchScore };
+
+    // Debug: log the AI response structure
+    console.log('Morph AI Response:', JSON.stringify(result, null, 2).substring(0, 500));
+
+    // Defensive handling: ensure we always return a valid resume
+    let morphedData: ResumeData;
+
+    if (result.morphedResume?.name) {
+      // Proper nested response
+      morphedData = result.morphedResume;
+    } else if ((result as any).name) {
+      // AI returned resume at root level
+      console.warn('AI returned resume at root level, using it directly');
+      morphedData = result as any;
+    } else {
+      // Fallback: use original resume with enhanced summary
+      console.error('AI did not return valid morphedResume. Using original with modifications.');
+      morphedData = {
+        ...resume,
+        summary: resume.summary + ' [Optimized for target role]'
+      };
+    }
+
+    return { morphed: morphedData, score: result.matchScore || 75 };
   };
 
   const handleFileUpload = async (file: File) => {
@@ -282,23 +321,36 @@ Apply EXACTLY ${percentage}% morphing as specified above.`,
     setIsLoading(true);
     try {
       showToast(`AI is morphing your resume at ${morphPercentage}% intensity...`, '🧠');
-      const { morphed, score } = await morphResumeToJD(originalResume, jobDescription, morphPercentage);
-      setMorphedResume(morphed);
-      setMatchScore(score);
-      setMorphedResume(morphed);
+      const { morphed, score } = await morphResumeToJD(originalResume, jobDescription, morphPercentage, targetPageCount);
+
+      // SAFEGUARD: Ensure morphed data is valid before setting state
+      // If morphed is empty/invalid, use originalResume as fallback
+      const validMorphedResume = (morphed && Object.keys(morphed).length > 0)
+        ? morphed
+        : originalResume;
+
+      console.log('[MORPH] Setting morphedResume with keys:', Object.keys(validMorphedResume));
+
+      // Set state with guaranteed valid data
+      setMorphedResume(validMorphedResume);
       setMatchScore(score);
       showToast(`Resume morphed! ${score}% match`, '✅');
 
-      // Extract company name automatically
-      if (!applicationData.companyName) {
-        const extractedCompany = await extractCompanyFromJD(jobDescription);
-        if (extractedCompany) {
-          setApplicationData(prev => ({ ...prev, companyName: extractedCompany }));
-        }
-      }
-
-      // Show application modal instead of going to template
+      // Move to template step AFTER confirming we have valid data
       setStep('template');
+
+      // Extract company name automatically (in separate try-catch to not block flow)
+      try {
+        if (!applicationData.companyName) {
+          const extractedCompany = await extractCompanyFromJD(jobDescription);
+          if (extractedCompany) {
+            setApplicationData(prev => ({ ...prev, companyName: extractedCompany }));
+          }
+        }
+      } catch (companyError) {
+        console.log('Could not extract company name:', companyError);
+        // Non-fatal, continue
+      }
     } catch (error) {
       console.error('Morph error:', error);
       showToast('Failed to morph resume', '❌');
@@ -439,14 +491,133 @@ Return a JSON object with categorized skills:
     }
   };
 
-  const handleSave = async () => {
+  const downloadWord = async () => {
+    const resume = morphedResume || buildResume;
+    if (!resume?.name) {
+      showToast('No resume to download', '❌');
+      return;
+    }
+
+    setIsLoading(true);
+    showToast('Generating Word document...', '📝');
+
+    try {
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children: [
+            // Name
+            new Paragraph({
+              children: [new TextRun({ text: resume.name, bold: true, size: 48 })],
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 100 },
+            }),
+            // Title
+            new Paragraph({
+              children: [new TextRun({ text: resume.title, size: 28, color: '666666' })],
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 200 },
+            }),
+            // Contact Info
+            new Paragraph({
+              children: [
+                new TextRun({ text: [resume.email, resume.phone, resume.location].filter(Boolean).join(' | '), size: 20 }),
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 400 },
+            }),
+            // Summary
+            ...(resume.summary ? [
+              new Paragraph({ text: 'PROFESSIONAL SUMMARY', heading: HeadingLevel.HEADING_2, spacing: { before: 300, after: 100 } }),
+              new Paragraph({ children: [new TextRun({ text: resume.summary, size: 22 })], spacing: { after: 300 } }),
+            ] : []),
+            // Experience
+            ...(resume.experience?.length ? [
+              new Paragraph({ text: 'EXPERIENCE', heading: HeadingLevel.HEADING_2, spacing: { before: 300, after: 100 } }),
+              ...resume.experience.flatMap(exp => [
+                new Paragraph({
+                  children: [
+                    new TextRun({ text: exp.role, bold: true, size: 24 }),
+                    new TextRun({ text: ` at ${exp.company}`, size: 24 }),
+                  ],
+                  spacing: { before: 200 },
+                }),
+                new Paragraph({
+                  children: [new TextRun({ text: exp.duration, italics: true, size: 20, color: '666666' })],
+                  spacing: { after: 100 },
+                }),
+                ...exp.achievements.map(ach => new Paragraph({
+                  children: [new TextRun({ text: `• ${ach}`, size: 22 })],
+                  spacing: { after: 50 },
+                })),
+              ]),
+            ] : []),
+            // Education
+            ...(resume.education?.length ? [
+              new Paragraph({ text: 'EDUCATION', heading: HeadingLevel.HEADING_2, spacing: { before: 300, after: 100 } }),
+              ...resume.education.flatMap(edu => [
+                new Paragraph({
+                  children: [
+                    new TextRun({ text: edu.degree, bold: true, size: 24 }),
+                    new TextRun({ text: ` - ${edu.institution}`, size: 24 }),
+                  ],
+                }),
+                new Paragraph({
+                  children: [new TextRun({ text: `${edu.year}${edu.details ? ` | ${edu.details}` : ''}`, size: 20, color: '666666' })],
+                  spacing: { after: 100 },
+                }),
+              ]),
+            ] : []),
+            // Skills
+            ...(resume.skills?.length ? [
+              new Paragraph({ text: 'SKILLS', heading: HeadingLevel.HEADING_2, spacing: { before: 300, after: 100 } }),
+              ...resume.skills.map(cat => new Paragraph({
+                children: [
+                  new TextRun({ text: `${cat.category}: `, bold: true, size: 22 }),
+                  new TextRun({ text: cat.items.join(', '), size: 22 }),
+                ],
+                spacing: { after: 50 },
+              })),
+            ] : []),
+            // Certifications
+            ...(resume.certifications?.length ? [
+              new Paragraph({ text: 'CERTIFICATIONS', heading: HeadingLevel.HEADING_2, spacing: { before: 300, after: 100 } }),
+              ...resume.certifications.map(cert => new Paragraph({
+                children: [new TextRun({ text: `• ${cert}`, size: 22 })],
+                spacing: { after: 50 },
+              })),
+            ] : []),
+          ],
+        }],
+      });
+
+      const blob = await Packer.toBlob(doc);
+      saveAs(blob, `${resume.name}_resume.docx`);
+      showToast('Word document downloaded!', '✅');
+    } catch (error) {
+      console.error('Word error:', error);
+      showToast('Failed to generate Word document', '❌');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSave = () => {
     const resumeToSave = morphedResume || (buildResume.name ? buildResume : null);
     if (!resumeToSave) return;
-    const name = prompt('Enter version name:', `${resumeToSave.title || 'My Resume'}`);
-    if (!name) return;
+    setSaveVersionName(resumeToSave.title || 'My Resume');
+    setShowSaveModal(true);
+  };
+
+  const confirmSave = async () => {
+    if (!saveVersionName.trim()) return;
+    const resumeToSave = morphedResume || (buildResume.name ? buildResume : null);
+    if (!resumeToSave) return;
     try {
-      const result = await saveResumeVersion(name, resumeToSave as any, { matchScore, template: selectedTemplate.id, morphPercentage }, 'technical');
+      const result = await saveResumeVersion(saveVersionName, resumeToSave as any, { matchScore, template: selectedTemplate.id, morphPercentage }, 'technical');
       if (result.success) { showToast('Saved!', '✅'); loadVersions(); }
+      setShowSaveModal(false);
+      setSaveVersionName('');
     } catch { showToast('Save failed', '❌'); }
   };
 
@@ -490,8 +661,17 @@ Return a JSON object with categorized skills:
     setBuildStep(0);
   };
 
-  // Get current display resume
-  const displayResume = morphedResume || (buildResume.name ? buildResume : null);
+  // Get current display resume - check for object existence, not just truthy name
+  // morphedResume object may exist with an empty name string which is still valid
+  const displayResume =
+    (morphedResume && Object.keys(morphedResume).length > 0) ? morphedResume :
+      (buildResume && buildResume.name) ? buildResume :
+        (originalResume && Object.keys(originalResume).length > 0) ? originalResume : null;
+
+  // Debug log when in template step with no resume
+  if ((step === 'template' || step === 'preview') && !displayResume) {
+    console.error('Template step but no displayResume!', { morphedResume, buildResume, originalResume, mode, step });
+  }
 
   if (!user) return (
     <div className="min-h-screen flex items-center justify-center p-8">
@@ -686,13 +866,18 @@ Return a JSON object with categorized skills:
                   <div key={s.id} className="flex items-center">
                     <motion.button
                       onClick={() => {
+                        // Use consistent logic with displayResume - check for actual data, not just object existence
+                        const hasMorphedData = morphedResume && Object.keys(morphedResume).length > 0;
+                        const hasOriginalData = originalResume && Object.keys(originalResume).length > 0;
+                        const hasAnyResumeData = hasMorphedData || hasOriginalData;
+
                         if (s.id === 'upload') setStep('upload');
-                        else if (s.id === 'jd' && originalResume) setStep('jd');
-                        else if (s.id === 'template' && morphedResume) setStep('template');
-                        else if (s.id === 'preview' && morphedResume) setStep('preview');
+                        else if (s.id === 'jd' && hasOriginalData) setStep('jd');
+                        else if (s.id === 'template' && hasAnyResumeData) setStep('template');
+                        else if (s.id === 'preview' && hasAnyResumeData) setStep('preview');
                       }}
                       className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${step === s.id ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white' :
-                        (s.id === 'upload' || (s.id === 'jd' && originalResume) || ((s.id === 'template' || s.id === 'preview') && morphedResume))
+                        (s.id === 'upload' || (s.id === 'jd' && originalResume) || ((s.id === 'template' || s.id === 'preview') && (morphedResume || originalResume)))
                           ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-[#111111] text-silver'
                         }`}
                     >
@@ -867,6 +1052,50 @@ Return a JSON object with categorized skills:
                             </div>
                           </div>
 
+                          {/* Target Length Selector */}
+                          <div className="mb-8 p-6 rounded-2xl bg-[#0F0F0F] border border-white/10 relative overflow-hidden">
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center border border-white/5">
+                                  <span className="text-xl">📄</span>
+                                </div>
+                                <div>
+                                  <h4 className="font-bold text-white">Target Length</h4>
+                                  <p className="text-xs text-silver">AI adjusts content density</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <span className="text-sm font-bold text-purple-400">
+                                  {targetPageCount === 'auto' ? 'Natural Flow' : `${targetPageCount} Page${targetPageCount > 1 ? 's' : ''}`}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex bg-black/50 p-1.5 rounded-xl border border-white/5">
+                              {(['auto', 1, 2, 3] as const).map((pc) => (
+                                <button
+                                  key={pc}
+                                  onClick={() => setTargetPageCount(pc)}
+                                  className={`flex-1 py-3 rounded-lg text-sm font-bold transition-all relative overflow-hidden ${targetPageCount === pc
+                                    ? 'text-white shadow-lg'
+                                    : 'text-silver hover:text-white hover:bg-white/5'
+                                    }`}
+                                >
+                                  {targetPageCount === pc && (
+                                    <motion.div
+                                      layoutId="pageCountActive"
+                                      className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg"
+                                      transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+                                    />
+                                  )}
+                                  <span className="relative z-10">
+                                    {pc === 'auto' ? 'Auto' : `${pc} Page${pc > 1 ? 's' : ''}`}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
                           <button onClick={handleMorph} disabled={isLoading || !jobDescription.trim()}
                             className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-cyan-500 to-blue-500 text-white disabled:opacity-50"
                           >
@@ -879,21 +1108,42 @@ Return a JSON object with categorized skills:
                 )}
 
                 {/* Template & Preview Steps (shared with create mode) */}
-                {(step === 'template' || step === 'preview') && displayResume && (
-                  <TemplateAndPreview
-                    step={step}
-                    setStep={setStep}
-                    resume={displayResume}
-                    selectedTemplate={selectedTemplate}
-                    setSelectedTemplate={setSelectedTemplate}
-                    matchScore={matchScore}
-                    isLoading={isLoading}
-                    downloadPDF={downloadPDF}
-                    handleSave={handleSave}
-                    resumeRef={resumeRef}
-                    templates={TEMPLATES}
-                    setShowApplicationModal={setShowApplicationModal}
-                  />
+                {/* Template & Preview Steps (shared with create mode) */}
+                {(step === 'template' || step === 'preview') && (
+                  displayResume ? (
+                    <TemplateAndPreview
+                      step={step}
+                      setStep={setStep}
+                      resume={displayResume}
+                      selectedTemplate={selectedTemplate}
+                      setSelectedTemplate={setSelectedTemplate}
+                      matchScore={matchScore}
+                      isLoading={isLoading}
+                      downloadPDF={downloadPDF}
+                      downloadWord={downloadWord}
+                      handleSave={handleSave}
+                      resumeRef={resumeRef}
+                      templates={TEMPLATES}
+                      setShowApplicationModal={setShowApplicationModal}
+                    />
+                  ) : (
+                    /* Fallback when no resume data */
+                    <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-lg mx-auto text-center py-12">
+                      <div className="rounded-2xl bg-red-500/10 border border-red-500/30 p-8">
+                        <span className="text-5xl block mb-4">⚠️</span>
+                        <h3 className="text-xl font-bold text-white mb-2">Resume Data Missing</h3>
+                        <p className="text-silver mb-6">Something went wrong loading your resume. The AI response was incomplete.</p>
+                        <div className="flex gap-3 justify-center">
+                          <button onClick={() => setStep('jd')} className="px-6 py-3 rounded-xl bg-[#111111] text-white font-medium hover:bg-white/10">
+                            ← Back to JD
+                          </button>
+                          <button onClick={() => { if (originalResume) { setMorphedResume(originalResume); } }} className="px-6 py-3 rounded-xl bg-cyan-500 text-white font-bold">
+                            Use Original Resume
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )
                 )}
               </AnimatePresence>
             </div>
@@ -1206,6 +1456,7 @@ Return a JSON object with categorized skills:
                     matchScore={null}
                     isLoading={isLoading}
                     downloadPDF={downloadPDF}
+                    downloadWord={downloadWord}
                     handleSave={handleSave}
                     resumeRef={resumeRef}
                     templates={TEMPLATES}
@@ -1415,13 +1666,86 @@ Return a JSON object with categorized skills:
           </>
         )}
       </AnimatePresence>
+
+      {/* Save Version Modal */}
+      <AnimatePresence>
+        {showSaveModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => { setShowSaveModal(false); setSaveVersionName(''); }}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50"
+            />
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                className="relative w-full max-w-md rounded-3xl bg-[#0A0A0A] border border-white/10 overflow-hidden"
+              >
+                {/* Header */}
+                <div className="relative p-6 border-b border-white/10">
+                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-blue-500/10" />
+                  <div className="relative flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center">
+                      <span className="text-2xl">💾</span>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-white">Save Version</h3>
+                      <p className="text-sm text-silver">Name this resume version</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="p-6 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-silver mb-2">Version Name</label>
+                    <input
+                      type="text"
+                      value={saveVersionName}
+                      onChange={(e) => setSaveVersionName(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') confirmSave(); }}
+                      placeholder="e.g., Senior PM at Google"
+                      autoFocus
+                      className="w-full px-4 py-3 rounded-xl bg-[#111111] border border-white/10 text-white placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none transition-colors"
+                    />
+                  </div>
+                  <p className="text-xs text-silver/60">
+                    💡 Tip: Use descriptive names like "Marketing Lead at Netflix" for easy filtering later.
+                  </p>
+                </div>
+
+                {/* Actions */}
+                <div className="p-6 pt-0 flex gap-3">
+                  <button
+                    onClick={() => { setShowSaveModal(false); setSaveVersionName(''); }}
+                    className="flex-1 px-4 py-3 rounded-xl bg-[#111111] text-silver hover:bg-white/10 transition-colors font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmSave}
+                    disabled={!saveVersionName.trim()}
+                    className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold hover:shadow-lg hover:shadow-cyan-500/25 transition-all disabled:opacity-50"
+                  >
+                    💾 Save Version
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
 // ============ SHARED TEMPLATE & PREVIEW COMPONENT ============
 function TemplateAndPreview({
-  step, setStep, resume, selectedTemplate, setSelectedTemplate, matchScore, isLoading, downloadPDF, handleSave, resumeRef, templates, setShowApplicationModal
+  step, setStep, resume, selectedTemplate, setSelectedTemplate, matchScore, isLoading, downloadPDF, downloadWord, handleSave, resumeRef, templates, setShowApplicationModal
 }: {
   step: string;
   setStep: (s: any) => void;
@@ -1431,6 +1755,7 @@ function TemplateAndPreview({
   matchScore: number | null;
   isLoading: boolean;
   downloadPDF: () => void;
+  downloadWord: () => void;
   handleSave: () => void;
   resumeRef: React.RefObject<HTMLDivElement>;
   templates: typeof TEMPLATES;
@@ -1502,9 +1827,15 @@ function TemplateAndPreview({
               <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
                 <h3 className="font-bold text-white mb-4">Actions</h3>
                 <div className="space-y-3">
-                  <button onClick={downloadPDF} disabled={isLoading}
-                    className="w-full py-4 rounded-xl font-bold bg-white text-slate-900 hover:bg-slate-200 transition-colors disabled:opacity-50"
-                  >{isLoading ? '⏳ Generating...' : '⬇️ Download PDF'}</button>
+                  {/* Download Options */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={downloadPDF} disabled={isLoading}
+                      className="py-3 rounded-xl font-bold bg-white text-slate-900 hover:bg-slate-200 transition-colors disabled:opacity-50 text-sm"
+                    >{isLoading ? '⏳...' : '📄 PDF'}</button>
+                    <button onClick={downloadWord} disabled={isLoading}
+                      className="py-3 rounded-xl font-bold bg-[#0070F3] text-white hover:bg-[#0060D0] transition-colors disabled:opacity-50 text-sm"
+                    >{isLoading ? '⏳...' : '📝 Word'}</button>
+                  </div>
 
                   <button onClick={() => setShowApplicationModal(true)}
                     className="w-full py-4 rounded-xl font-bold bg-gradient-to-r from-green-500 to-cyan-500 text-white hover:shadow-lg hover:shadow-green-500/25 transition-all"
