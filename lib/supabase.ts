@@ -97,10 +97,12 @@ export const authHelpers = {
 
   // OAuth Social Login
   async signInWithGoogle() {
+    // Use NEXT_PUBLIC_SITE_URL for production, fallback to window.location.origin
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '');
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${typeof window !== 'undefined' ? window.location.origin : ''}/auth/callback`,
+        redirectTo: `${siteUrl}/auth/callback`,
       },
     });
     return { data, error };
@@ -108,8 +110,9 @@ export const authHelpers = {
 
   // Password Reset
   async resetPasswordForEmail(email: string) {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '');
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${typeof window !== 'undefined' ? window.location.origin : ''}/auth/reset-password`,
+      redirectTo: `${siteUrl}/auth/reset-password`,
     });
     return { data, error };
   },
