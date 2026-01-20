@@ -85,7 +85,9 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
   }, [pathname]);
 
   // Determine which suite we're in
-  const activeSuiteId = pathname?.startsWith('/suite') ? 'talent' : 'interview';
+  // JD Generator is in Interview Suite even though it's under /suite/ path
+  const isInterviewSuitePage = pathname?.startsWith('/dashboard') || pathname?.startsWith('/suite/jd-generator');
+  const activeSuiteId = isInterviewSuitePage ? 'interview' : 'talent';
   const suite = suiteConfig[activeSuiteId];
 
   const handleNavigation = (path: string) => {
