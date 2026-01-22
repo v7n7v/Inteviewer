@@ -28,8 +28,8 @@ const talentSuiteItems: NavigationItem[] = [
   { id: 'resume', label: 'Liquid Resume', icon: '📄', description: 'Resume Builder', path: '/suite/resume' },
   { id: 'applications', label: 'Applications', icon: '📊', description: 'Track Jobs', path: '/suite/applications' },
   { id: 'shadow', label: 'Practice', icon: '🎭', description: 'Shadow Interview', path: '/suite/shadow-interview' },
+  { id: 'flashcards', label: 'Study Cards', icon: '🎴', description: 'Flash Cards', path: '/suite/flashcards', badge: 'New' },
   { id: 'oracle', label: 'Market Oracle', icon: '🔮', description: 'Career Intelligence', path: '/suite/market-oracle' },
-  { id: 'flashcards', label: 'Study Cards', icon: '🎴', description: 'Flash Cards', path: '/suite/flashcards', badge: 'Soon' },
   { id: 'job-search', label: 'Job Search', icon: '🔍', description: 'Find Jobs', path: '/suite/job-search', badge: 'Soon' },
   { id: 'avatar', label: 'Video Interview', icon: '🎥', description: 'AI Mock Interview', path: '/suite/avatar-interview', badge: 'Soon' },
 ];
