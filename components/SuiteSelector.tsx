@@ -54,7 +54,7 @@ export default function SuiteSelector({ fullPage = false, showBrandHeader = true
         { icon: '📄', name: 'Resume Builder', desc: 'Liquid Resume' },
         { icon: '💼', name: 'JD Generator', desc: 'Mission Blueprint' },
         { icon: '🎭', name: 'Practice', desc: 'Shadow Interview' },
-        { icon: '🎴', name: 'Flash Cards', desc: 'Study (Soon)' },
+        { icon: '🎴', name: 'Flash Cards', desc: 'Study Cards' },
 
         { icon: '🔮', name: 'Market Oracle', desc: 'Career Intelligence' },
       ],

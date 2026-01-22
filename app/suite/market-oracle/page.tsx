@@ -9,6 +9,7 @@ import { useStore } from '@/lib/store';
 import { showToast } from '@/components/Toast';
 import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
+import { calculateFitScore, type RealJob } from '@/lib/job-search-api';
 
 // Set up PDF.js worker
 if (typeof window !== 'undefined') {
@@ -26,6 +27,12 @@ interface JobStar {
   position: [number, number, number];
   color: string;
   isConstellation: boolean;
+  // Real job fields
+  url?: string;
+  location?: string;
+  description?: string;
+  isReal?: boolean;
+  source?: string;
 }
 
 interface BridgeSkill {
@@ -45,6 +52,7 @@ interface MarketAnalysis {
   jobs: JobStar[];
   marketTrends: { skill: string; growth: number }[];
   industryInsights: string[];
+  jobDataSource: string; // Track where job data comes from
 }
 
 // Generate mock job data with positions
@@ -141,6 +149,7 @@ export default function MarketOraclePage() {
     setStep('analyzing');
 
     try {
+      // Step 1: AI Analysis of resume
       const response = await groqJSONCompletion<{
         topSkills: string[];
         missingSkills: string[];
@@ -164,8 +173,60 @@ export default function MarketOraclePage() {
         { temperature: 0.3, maxTokens: 2000 }
       );
 
-      // Generate job stars based on skills
-      const jobs = generateJobStars(response.topSkills, 60);
+      // Step 2: Fetch REAL jobs from API
+      let jobs: JobStar[] = [];
+      let jobDataSource = 'Mock Data (Fallback)';
+
+      try {
+        const searchQuery = targetRole || response.topSkills.slice(0, 3).join(' ');
+        const jobResponse = await fetch(`/api/jobs/search?query=${encodeURIComponent(searchQuery)}&location=${encodeURIComponent(location || '')}`);
+        const jobData = await jobResponse.json();
+
+        if (jobData.success && jobData.jobs && jobData.jobs.length > 0) {
+          jobDataSource = `${jobData.source} (${jobData.jobs.length} real jobs)`;
+
+          // Convert real jobs to JobStar format with calculated fit scores
+          jobs = jobData.jobs.map((job: any, index: number) => {
+            const fitScore = calculateFitScore(response.topSkills, job.skills || []);
+            const salary = job.salary?.max || job.salary?.min || (100000 + Math.random() * 150000);
+
+            // Position: spread jobs in 3D space based on fit score and salary
+            const angle = (index / jobData.jobs.length) * Math.PI * 2;
+            const radius = (1 - fitScore) * 10 + 2; // Higher fit = closer to center
+            const x = Math.cos(angle) * radius + (Math.random() - 0.5) * 3;
+            const y = Math.sin(angle) * radius + (Math.random() - 0.5) * 3;
+            const z = (salary - 100000) / 50000 - 2; // Normalize salary to Z axis
+
+            return {
+              id: job.id || `job-${index}`,
+              title: job.title,
+              company: job.company,
+              salary: Math.round(salary),
+              skills: job.skills || [],
+              fitScore,
+              position: [x, y, z] as [number, number, number],
+              color: fitScore > 0.7 ? '#00f2ff' : fitScore > 0.5 ? '#a855f7' : fitScore > 0.3 ? '#22c55e' : '#6b7280',
+              isConstellation: fitScore > 0.6,
+              // Real job fields
+              url: job.url,
+              location: job.location,
+              description: job.description?.substring(0, 500),
+              isReal: true,
+              source: job.source
+            };
+          });
+
+          showToast(`Found ${jobs.length} real job matches!`, '🎯');
+        }
+      } catch (jobError) {
+        console.error('Job search error, using fallback:', jobError);
+      }
+
+      // Fallback to mock data if no real jobs
+      if (jobs.length === 0) {
+        jobs = generateJobStars(response.topSkills, 60);
+        jobDataSource = 'Simulated Data';
+      }
 
       // Calculate user position (center-ish, based on percentile)
       const userZ = (response.talentDensityPercentile / 100) * 6 - 3;
@@ -191,6 +252,7 @@ export default function MarketOraclePage() {
         jobs,
         marketTrends: response.marketTrends,
         industryInsights: response.industryInsights,
+        jobDataSource,
       });
 
       setStep('oracle');
@@ -524,13 +586,20 @@ export default function MarketOraclePage() {
                   </div>
                 </motion.div>
 
-                {/* Right HUD - Actions */}
+                {/* Right HUD - Actions & Data Source */}
                 <motion.div
                   initial={{ x: 50, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ delay: 0.2 }}
-                  className="flex gap-2"
+                  className="flex flex-col gap-2 items-end"
                 >
+                  {/* Data Source Badge */}
+                  <div className={`px-3 py-1.5 rounded-lg text-xs font-medium ${analysis.jobDataSource.includes('real') || analysis.jobDataSource.includes('API')
+                      ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                      : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                    }`}>
+                    {analysis.jobDataSource.includes('real') || analysis.jobDataSource.includes('API') ? '🌐' : '⚡'} {analysis.jobDataSource}
+                  </div>
                   <button
                     onClick={() => setStep('setup')}
                     className="px-4 py-2 rounded-xl bg-white/10 text-white text-sm font-medium hover:bg-white/20"
@@ -630,11 +699,21 @@ export default function MarketOraclePage() {
                   exit={{ opacity: 0, scale: 0.9 }}
                   className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20"
                 >
-                  <div className="glass-card p-6 rounded-2xl border border-cyan-500/30 bg-[#0A0A0A]/95 backdrop-blur-xl w-96">
+                  <div className="glass-card p-6 rounded-2xl border border-cyan-500/30 bg-[#0A0A0A]/95 backdrop-blur-xl w-[420px] max-h-[80vh] overflow-y-auto">
                     <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <h3 className="text-xl font-bold text-white">{selectedJob.title}</h3>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="text-xl font-bold text-white">{selectedJob.title}</h3>
+                          {selectedJob.isReal && (
+                            <span className="px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 text-[10px] border border-green-500/30">
+                              REAL JOB
+                            </span>
+                          )}
+                        </div>
                         <p className="text-cyan-400">{selectedJob.company}</p>
+                        {selectedJob.location && (
+                          <p className="text-silver text-sm">📍 {selectedJob.location}</p>
+                        )}
                       </div>
                       <button
                         onClick={() => { setShowJobCard(false); setSelectedJob(null); }}
@@ -692,6 +771,29 @@ export default function MarketOraclePage() {
                             : selectedJob.fitScore > 0.6
                               ? "Strong alignment with 2-3 skill gaps that are learnable in 3-6 months."
                               : "Consider upskilling in the missing areas to become competitive."}
+                        </p>
+                      </div>
+
+                      {/* Apply Button for Real Jobs */}
+                      {selectedJob.isReal && selectedJob.url && (
+                        <a
+                          href={selectedJob.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-center font-bold hover:shadow-lg hover:shadow-cyan-500/25 transition-all"
+                        >
+                          Apply Now →
+                        </a>
+                      )}
+
+                      {/* Source indicator */}
+                      <div className="pt-2 border-t border-white/10">
+                        <p className="text-xs text-center text-silver">
+                          {selectedJob.isReal ? (
+                            <>🌐 Source: <span className="text-cyan-400">{selectedJob.source || 'Job Board'}</span></>
+                          ) : (
+                            <>⚡ Simulated job based on market data</>
+                          )}
                         </p>
                       </div>
                     </div>
