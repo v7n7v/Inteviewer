@@ -5,12 +5,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { groqCompletion, groqJSONCompletion } from '@/lib/ai/groq-client';
 import { useStore } from '@/lib/store';
 import { showToast } from '@/components/Toast';
+import { useAudioPlayer } from '@/hooks/useAudioPlayer';
+import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
 
-// Set up PDF.js worker
+// Set up PDF.js worker for v4.x
 if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+  // For pdfjs-dist v4.x, use the legacy build worker
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 }
 
 // Persona definitions
@@ -47,6 +50,13 @@ const PERSONAS = [
   },
 ];
 
+// ElevenLabs Voice Configuration (maps persona to voice)
+const PERSONA_VOICES = {
+  ceo: { id: 'jqcCZkN6Knx8BJ5TBdYR', name: 'Sona' }, // Female: empathetic for CEO
+  'tech-lead': { id: 'DMyrgzQFny3JI1Y1paM5', name: 'Orion' }, // Male: direct for tech
+  recruiter: { id: 'jqcCZkN6Knx8BJ5TBdYR', name: 'Sona' }, // Female: practical for recruiter
+};
+
 // Difficulty levels
 const DIFFICULTY_LEVELS = {
   coaching: { name: 'Coaching', color: 'green', description: 'Supportive and educational' },
@@ -76,15 +86,19 @@ interface Tip {
 
 export default function ShadowInterviewPage() {
   const { user } = useStore();
-  const [step, setStep] = useState<'setup' | 'interview' | 'summary'>('setup');
-  
+  const [step, setStep] = useState<'setup' | 'modality' | 'interview' | 'summary'>('setup');
+
   // Setup state
   const [resumeText, setResumeText] = useState('');
   const [jdText, setJdText] = useState('');
   const [selectedPersona, setSelectedPersona] = useState(PERSONAS[1]); // Tech Lead default
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
+  // Modality Selection State
+  const [modality, setModality] = useState<'text' | 'voice' | null>(null);
+  const [voiceProfile, setVoiceProfile] = useState<'male' | 'female' | null>(null);
+
   // Interview state
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentInput, setCurrentInput] = useState('');
@@ -93,54 +107,142 @@ export default function ShadowInterviewPage() {
   const [questionCount, setQuestionCount] = useState(0);
   const [totalScore, setTotalScore] = useState(0);
   const [sphereState, setSphereState] = useState<'idle' | 'listening' | 'thinking' | 'stress'>('idle');
-  
+
   // Tips state
   const [showTips, setShowTips] = useState(false);
   const [tips, setTips] = useState<Tip[]>([]);
   const [loadingTips, setLoadingTips] = useState(false);
-  
-  // Voice state
-  const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef<any>(null);
+
+  // Voice input state (Deepgram-based)
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [micPermission, setMicPermission] = useState<'prompt' | 'granted' | 'denied'>('prompt');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
-  // Check for speech recognition
-  const hasSpeechRecognition = typeof window !== 'undefined' && 
-    ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window);
+  const { isRecording, startRecording, stopRecording, getVisualizerData } = useAudioRecorder();
 
-  // Initialize speech recognition
+  // Voice output state (TTS)
+  const [voiceOutputEnabled, setVoiceOutputEnabled] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const { playAudio, stopAudio, isPlaying } = useAudioPlayer();
+
+  // Request microphone permission
+  const requestMicPermission = async (): Promise<boolean> => {
+    try {
+      // getUserMedia will block until the user responds to the permission prompt
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      // Permission was granted - update state first
+      setMicPermission('granted');
+      showToast('Microphone access granted!', '✅');
+
+      // Keep the stream briefly to prevent permission dialog issues, then stop
+      setTimeout(() => {
+        stream.getTracks().forEach(track => track.stop());
+      }, 500);
+
+      return true;
+    } catch (error: any) {
+      console.error('Mic permission error:', error);
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        setMicPermission('denied');
+        showToast('Microphone access denied. Please enable in browser settings.', '❌');
+      } else {
+        showToast('Could not access microphone', '❌');
+      }
+      return false;
+    }
+  };
+
+  // Check microphone permission on mount
   useEffect(() => {
-    if (!hasSpeechRecognition) return;
-    
-    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-    const recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = 'en-US';
+    if (typeof navigator !== 'undefined' && navigator.permissions) {
+      navigator.permissions.query({ name: 'microphone' as PermissionName }).then(result => {
+        setMicPermission(result.state as 'prompt' | 'granted' | 'denied');
+        result.onchange = () => {
+          setMicPermission(result.state as 'prompt' | 'granted' | 'denied');
+        };
+      }).catch(() => {
+        // Permissions API not supported
+      });
+    }
+  }, []);
 
-    recognition.onresult = (event: any) => {
-      let finalTranscript = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        if (event.results[i].isFinal) {
-          finalTranscript += event.results[i][0].transcript;
-        }
-      }
-      if (finalTranscript) {
-        setCurrentInput(prev => prev + finalTranscript);
-      }
-    };
+  // Helper: Speak AI response using ElevenLabs
+  const speakResponse = async (text: string, forceSpeak: boolean = false) => {
+    // Use forceSpeak to bypass voiceOutputEnabled check during initial message
+    if (!voiceOutputEnabled && !forceSpeak) {
+      console.log('TTS skipped: voiceOutputEnabled=', voiceOutputEnabled, 'forceSpeak=', forceSpeak);
+      return;
+    }
 
-    recognition.onerror = (event: any) => {
-      if (event.error === 'not-allowed') {
-        showToast('Microphone access denied', '❌');
+    // Use user-selected voice profile
+    const voiceId = voiceProfile === 'male'
+      ? 'DMyrgzQFny3JI1Y1paM5' // Orion
+      : 'jqcCZkN6Knx8BJ5TBdYR'; // Sona (default)
+
+    console.log('TTS: Speaking with voice', voiceId);
+
+    try {
+      setIsSpeaking(true);
+      setSphereState('thinking');
+
+      const res = await fetch('/api/voice/speak', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, voiceId })
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('TTS API error:', res.status, errorText);
+        throw new Error('TTS failed');
       }
-      setIsListening(false);
+
+      const audioBlob = await res.blob();
+      console.log('TTS: Received audio blob, size:', audioBlob.size);
+
+      await playAudio(audioBlob, () => {
+        setIsSpeaking(false);
+        setSphereState('idle');
+      });
+    } catch (error) {
+      console.error('Speech error:', error);
+      showToast('Voice output failed', '❌');
+      setIsSpeaking(false);
       setSphereState('idle');
-    };
+    }
+  };
 
-    recognitionRef.current = recognition;
-    return () => recognitionRef.current?.stop();
-  }, [hasSpeechRecognition]);
+  // Transcribe audio using Deepgram
+  const transcribeAudio = async (audioBlob: Blob): Promise<string> => {
+    setIsTranscribing(true);
+    console.log('STT: Transcribing audio, size:', audioBlob.size, 'type:', audioBlob.type);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', audioBlob, 'recording.webm');
+
+      const res = await fetch('/api/voice/transcribe', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('STT API error:', res.status, errorText);
+        throw new Error('Transcription failed');
+      }
+
+      const data = await res.json();
+      console.log('STT: Transcription result:', data);
+      return data.text || '';
+    } catch (error) {
+      console.error('Transcription error:', error);
+      showToast('Transcription failed', '❌');
+      return '';
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
 
   // Scroll to bottom of messages
   useEffect(() => {
@@ -151,26 +253,33 @@ export default function ShadowInterviewPage() {
   const processFile = async (file: File) => {
     const fileName = file.name.toLowerCase();
     const fileType = file.type;
-    
+
     const isPDF = fileType === 'application/pdf' || fileName.endsWith('.pdf');
     const isWord = fileType.includes('wordprocessingml') || fileName.endsWith('.docx') || fileName.endsWith('.doc');
     const isText = fileType === 'text/plain' || fileName.endsWith('.txt');
-    
+
     if (!isPDF && !isWord && !isText) {
       showToast('Upload PDF, Word, or TXT', '❌');
       return;
     }
 
+    showToast('Processing file...', '⏳');
+
     try {
       let text = '';
       if (isPDF) {
+        console.log('Processing PDF:', fileName, 'Type:', fileType);
         const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+        const pdf = await loadingTask.promise;
+        console.log('PDF loaded, pages:', pdf.numPages);
+
         for (let i = 1; i <= pdf.numPages; i++) {
           const page = await pdf.getPage(i);
           const content = await page.getTextContent();
           text += content.items.map((item: any) => item.str).join(' ') + '\n';
         }
+        console.log('PDF text extracted, length:', text.length);
       } else if (isWord) {
         const arrayBuffer = await file.arrayBuffer();
         const result = await mammoth.extractRawText({ arrayBuffer });
@@ -178,11 +287,16 @@ export default function ShadowInterviewPage() {
       } else {
         text = await file.text();
       }
-      
-      setResumeText(text.trim());
-      showToast('Resume loaded!', '✅');
-    } catch (error) {
-      showToast('Error processing file', '❌');
+
+      if (text.trim()) {
+        setResumeText(text.trim());
+        showToast('Resume loaded!', '✅');
+      } else {
+        showToast('No text found in file', '⚠️');
+      }
+    } catch (error: any) {
+      console.error('File processing error:', error);
+      showToast(`Error: ${error.message || 'Failed to process file'}`, '❌');
     }
   };
 
@@ -227,12 +341,16 @@ SIMULATION RULES:
 START by acknowledging the candidate's background briefly, then ask your FIRST contextual question based on their resume and the job requirements.`;
   }, [selectedPersona, resumeText, jdText, difficulty]);
 
-  // Start interview
-  const startInterview = async () => {
+  // Start interview - accepts voiceMode to avoid async state issues
+  const startInterview = async (enableVoice: boolean = false) => {
     if (!resumeText.trim() || !jdText.trim()) {
       showToast('Please provide both resume and JD', '❌');
       return;
     }
+
+    // Set voice state synchronously via parameter
+    setVoiceOutputEnabled(enableVoice);
+    console.log('Starting interview, voice mode:', enableVoice);
 
     setStep('interview');
     setIsThinking(true);
@@ -246,7 +364,7 @@ START by acknowledging the candidate's background briefly, then ask your FIRST c
       );
 
       const { message, feedback } = parseResponse(response);
-      
+
       setMessages([{
         role: 'assistant',
         content: message,
@@ -255,7 +373,15 @@ START by acknowledging the candidate's background briefly, then ask your FIRST c
         timestamp: new Date(),
       }]);
       setQuestionCount(1);
+
+      // Speak the AI's first message using direct parameter (not state)
+      if (enableVoice) {
+        console.log('Voice mode enabled, speaking first message');
+        // Use forceSpeak=true to bypass state check
+        speakResponse(message, true);
+      }
     } catch (error) {
+      console.error('Interview start error:', error);
       showToast('Error starting interview', '❌');
       setStep('setup');
     } finally {
@@ -347,6 +473,11 @@ START by acknowledging the candidate's background briefly, then ask your FIRST c
         persona: selectedPersona.id,
         timestamp: new Date(),
       }]);
+
+      // Speak the AI's response
+      if (voiceOutputEnabled) {
+        speakResponse(message);
+      }
     } catch (error) {
       showToast('Error processing response', '❌');
     } finally {
@@ -386,17 +517,44 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
     }
   };
 
-  // Toggle voice input
-  const toggleVoice = () => {
-    if (isListening) {
-      recognitionRef.current?.stop();
-      setIsListening(false);
+  // Toggle voice input (Deepgram-based)
+  const toggleVoice = async () => {
+    if (isRecording) {
+      // Stop recording and transcribe
+      setSphereState('thinking');
+      showToast('Processing...', '⏳');
+
+      try {
+        const audioBlob = await stopRecording();
+        console.log('Recording stopped, blob:', audioBlob?.size, audioBlob?.type);
+
+        if (audioBlob && audioBlob.size > 0) {
+          const transcript = await transcribeAudio(audioBlob);
+          if (transcript) {
+            setCurrentInput(prev => prev + (prev ? ' ' : '') + transcript);
+            showToast('Transcribed!', '✅');
+          } else {
+            showToast('No speech detected', '⚠️');
+          }
+        } else {
+          showToast('No audio recorded', '⚠️');
+        }
+      } catch (error) {
+        console.error('Recording/transcription error:', error);
+        showToast('Recording failed', '❌');
+      }
+
       setSphereState('idle');
     } else {
-      recognitionRef.current?.start();
-      setIsListening(true);
-      setSphereState('listening');
-      showToast('Listening...', '🎤');
+      // Start recording
+      try {
+        await startRecording();
+        setSphereState('listening');
+        showToast('Listening... Click again to stop', '🎤');
+      } catch (error) {
+        console.error('Failed to start recording:', error);
+        showToast('Microphone access denied', '❌');
+      }
     }
   };
 
@@ -479,11 +637,10 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                       onClick={() => setSelectedPersona(persona)}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      className={`relative p-5 rounded-2xl border-2 transition-all text-left overflow-hidden ${
-                        selectedPersona.id === persona.id
-                          ? `border-${persona.bgColor}-400 bg-${persona.bgColor}-500/10`
-                          : 'border-white/10 hover:border-white/30 bg-[#111111]'
-                      }`}
+                      className={`relative p-5 rounded-2xl border-2 transition-all text-left overflow-hidden ${selectedPersona.id === persona.id
+                        ? `border-${persona.bgColor}-400 bg-${persona.bgColor}-500/10`
+                        : 'border-white/10 hover:border-white/30 bg-[#111111]'
+                        }`}
                     >
                       <div className={`absolute inset-0 bg-gradient-to-br ${persona.color} opacity-5`} />
                       <div className="relative">
@@ -522,9 +679,8 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                       onDragLeave={() => setDragActive(false)}
                       onDrop={(e) => { e.preventDefault(); setDragActive(false); e.dataTransfer.files[0] && processFile(e.dataTransfer.files[0]); }}
                       onClick={() => fileInputRef.current?.click()}
-                      className={`rounded-xl border-2 border-dashed p-8 text-center cursor-pointer transition-all ${
-                        dragActive ? 'border-cyan-400 bg-cyan-500/10' : 'border-white/20 hover:border-white/40'
-                      }`}
+                      className={`rounded-xl border-2 border-dashed p-8 text-center cursor-pointer transition-all ${dragActive ? 'border-cyan-400 bg-cyan-500/10' : 'border-white/20 hover:border-white/40'
+                        }`}
                     >
                       <span className="text-4xl block mb-3">📤</span>
                       <p className="text-white font-medium">Drop resume or click to upload</p>
@@ -580,7 +736,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                 </motion.div>
               </div>
 
-              {/* Start Button */}
+              {/* Continue to Modality Selection Button */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -588,7 +744,13 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                 className="flex justify-center"
               >
                 <button
-                  onClick={startInterview}
+                  onClick={() => {
+                    if (!resumeText.trim() || !jdText.trim()) {
+                      showToast('Please provide both resume and JD', '❌');
+                      return;
+                    }
+                    setStep('modality');
+                  }}
                   disabled={!resumeText.trim() || !jdText.trim()}
                   className="group relative px-12 py-5 rounded-2xl font-bold text-xl overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -596,7 +758,313 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                   <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
                   <span className="relative flex items-center gap-3 text-white">
                     <span className="text-2xl">{selectedPersona.icon}</span>
-                    Start Interview with {selectedPersona.name.split(' ').pop()}
+                    Continue with {selectedPersona.name.split(' ').pop()}
+                  </span>
+                </button>
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* MODALITY SELECTION STEP */}
+        {step === 'modality' && (
+          <motion.div
+            key="modality"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="p-6 lg:p-8"
+          >
+            {/* Header */}
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="relative overflow-hidden rounded-3xl bg-[#0A0A0A] border border-white/10 p-8 mb-8"
+            >
+              <div className="absolute inset-0 opacity-30">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/30 rounded-full blur-3xl" />
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/30 rounded-full blur-3xl" />
+              </div>
+              <div className="relative z-10 flex items-center justify-between">
+                <div>
+                  <button
+                    onClick={() => { setStep('setup'); setModality(null); setVoiceProfile(null); }}
+                    className="text-silver hover:text-white mb-4 flex items-center gap-2 text-sm"
+                  >
+                    ← Back to Setup
+                  </button>
+                  <h1 className="text-3xl lg:text-4xl font-bold mb-2">
+                    <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                      Choose Your Interview Mode
+                    </span>
+                  </h1>
+                  <p className="text-silver">
+                    How would you like to practice with <span className="text-cyan-400 font-medium">{selectedPersona.name}</span>?
+                  </p>
+                </div>
+                <div className="hidden md:flex items-center gap-3 p-4 rounded-2xl bg-white/5 border border-white/10">
+                  <span className="text-4xl">{selectedPersona.icon}</span>
+                  <div>
+                    <p className="font-bold text-white">{selectedPersona.name}</p>
+                    <p className="text-xs text-silver">{selectedPersona.description}</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            <div className="max-w-4xl mx-auto space-y-8">
+              {/* Modality Options */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="grid md:grid-cols-2 gap-6"
+              >
+                {/* Text Interview Option */}
+                <motion.button
+                  whileHover={{ scale: 1.02, y: -4 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => { setModality('text'); setVoiceProfile(null); }}
+                  className={`group relative p-8 rounded-3xl border-2 text-left transition-all overflow-hidden ${modality === 'text'
+                    ? 'border-cyan-500 bg-cyan-500/10 shadow-lg shadow-cyan-500/10'
+                    : 'border-white/10 bg-[#0A0A0A] hover:border-white/30'
+                    }`}
+                >
+                  <div className={`absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 transition-opacity ${modality === 'text' ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'}`} />
+
+                  <div className="relative">
+                    {/* Icon */}
+                    <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-6 transition-all ${modality === 'text'
+                      ? 'bg-gradient-to-br from-cyan-500 to-blue-500'
+                      : 'bg-white/10 group-hover:bg-white/20'
+                      }`}>
+                      <span className="text-4xl">💬</span>
+                    </div>
+
+                    <h3 className="text-2xl font-bold text-white mb-2">Text Interview</h3>
+                    <p className="text-silver mb-4">
+                      Type your responses in a chat-style interface. Perfect for practicing articulation and reviewing your answers.
+                    </p>
+
+                    <div className="flex flex-wrap gap-2">
+                      {['⌨️ Type Responses', '📝 Review Answers', '📱 Mobile Friendly'].map((tag) => (
+                        <span key={tag} className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-silver">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+
+                    {modality === 'text' && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="absolute top-4 right-4 w-8 h-8 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 flex items-center justify-center"
+                      >
+                        <span className="text-white text-sm">✓</span>
+                      </motion.div>
+                    )}
+                  </div>
+                </motion.button>
+
+                {/* Voice Interview Option */}
+                <motion.button
+                  whileHover={{ scale: 1.02, y: -4 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={async () => {
+                    setModality('voice');
+                    // Request microphone permission when voice mode is selected
+                    if (micPermission !== 'granted') {
+                      await requestMicPermission();
+                    }
+                  }}
+                  className={`group relative p-8 rounded-3xl border-2 text-left transition-all overflow-hidden ${modality === 'voice'
+                    ? 'border-emerald-500 bg-emerald-500/10 shadow-lg shadow-emerald-500/10'
+                    : 'border-white/10 bg-[#0A0A0A] hover:border-white/30'
+                    }`}
+                >
+                  <div className={`absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 transition-opacity ${modality === 'voice' ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'}`} />
+
+                  <div className="relative">
+                    {/* Icon */}
+                    <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-6 transition-all ${modality === 'voice'
+                      ? 'bg-gradient-to-br from-emerald-500 to-teal-500'
+                      : 'bg-white/10 group-hover:bg-white/20'
+                      }`}>
+                      <span className="text-4xl">🎙️</span>
+                    </div>
+
+                    <h3 className="text-2xl font-bold text-white mb-2">Voice Interview</h3>
+                    <p className="text-silver mb-4">
+                      Speak your answers naturally. The AI interviewer responds with voice too — feels like the real thing.
+                    </p>
+
+                    <div className="flex flex-wrap gap-2">
+                      {['🎤 Speak Naturally', '🔊 AI Voice Output', '⚡ Real-time'].map((tag) => (
+                        <span key={tag} className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-silver">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Mic permission status indicator */}
+                    {modality === 'voice' && (
+                      <div className={`mt-4 px-3 py-2 rounded-lg text-xs font-medium ${micPermission === 'granted' ? 'bg-green-500/20 text-green-400' :
+                          micPermission === 'denied' ? 'bg-red-500/20 text-red-400' :
+                            'bg-yellow-500/20 text-yellow-400'
+                        }`}>
+                        <div className="flex items-center justify-between gap-2">
+                          <span>
+                            {micPermission === 'granted' && '✅ Microphone ready'}
+                            {micPermission === 'denied' && '❌ Microphone blocked'}
+                            {micPermission === 'prompt' && '🎤 Click to enable microphone'}
+                          </span>
+                          {micPermission !== 'granted' && (
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                await requestMicPermission();
+                              }}
+                              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${micPermission === 'denied'
+                                  ? 'bg-red-500 hover:bg-red-400 text-white'
+                                  : 'bg-yellow-500 hover:bg-yellow-400 text-black'
+                                }`}
+                            >
+                              {micPermission === 'denied' ? 'Retry' : 'Allow Microphone'}
+                            </button>
+                          )}
+                        </div>
+                        {micPermission === 'denied' && (
+                          <p className="mt-1 text-[10px] opacity-70">
+                            If blocked, click the 🔒 icon in your browser's address bar to allow microphone.
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {modality === 'voice' && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="absolute top-4 right-4 w-8 h-8 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 flex items-center justify-center"
+                      >
+                        <span className="text-white text-sm">✓</span>
+                      </motion.div>
+                    )}
+                  </div>
+                </motion.button>
+              </motion.div>
+
+              {/* Voice Profile Selection (Conditional) */}
+              <AnimatePresence>
+                {modality === 'voice' && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="rounded-2xl bg-[#0A0A0A] border border-emerald-500/30 p-6 overflow-hidden"
+                  >
+                    <h3 className="font-bold text-white mb-4 flex items-center gap-2">
+                      <span className="text-xl">🔊</span> Choose Interview Voice
+                    </h3>
+                    <p className="text-silver text-sm mb-6">
+                      Select the voice profile for your AI interviewer
+                    </p>
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {/* Male Voice */}
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setVoiceProfile('male')}
+                        className={`p-5 rounded-2xl border-2 transition-all text-left ${voiceProfile === 'male'
+                          ? 'border-blue-500 bg-blue-500/10'
+                          : 'border-white/10 bg-[#111111] hover:border-white/30'
+                          }`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${voiceProfile === 'male' ? 'bg-blue-500' : 'bg-white/10'
+                            }`}>
+                            <span className="text-2xl">👨‍💼</span>
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-white">Orion</h4>
+                            <p className="text-sm text-silver">Direct & Analytical</p>
+                          </div>
+                          {voiceProfile === 'male' && (
+                            <motion.div
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              className="ml-auto w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center"
+                            >
+                              <span className="text-white text-xs">✓</span>
+                            </motion.div>
+                          )}
+                        </div>
+                      </motion.button>
+
+                      {/* Female Voice */}
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setVoiceProfile('female')}
+                        className={`p-5 rounded-2xl border-2 transition-all text-left ${voiceProfile === 'female'
+                          ? 'border-cyan-500 bg-cyan-500/10'
+                          : 'border-white/10 bg-[#111111] hover:border-white/30'
+                          }`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${voiceProfile === 'female' ? 'bg-cyan-500' : 'bg-white/10'
+                            }`}>
+                            <span className="text-2xl">👩‍💼</span>
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-white">Sona</h4>
+                            <p className="text-sm text-silver">Professional & Empathetic</p>
+                          </div>
+                          {voiceProfile === 'female' && (
+                            <motion.div
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              className="ml-auto w-6 h-6 rounded-full bg-cyan-500 flex items-center justify-center"
+                            >
+                              <span className="text-white text-xs">✓</span>
+                            </motion.div>
+                          )}
+                        </div>
+                      </motion.button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Start Interview Button */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="flex justify-center pt-4"
+              >
+                <button
+                  onClick={() => {
+                    // Pass voice mode directly to startInterview (avoids async state issues)
+                    startInterview(modality === 'voice');
+                  }}
+                  disabled={!modality || (modality === 'voice' && !voiceProfile)}
+                  className={`group relative px-16 py-6 rounded-2xl font-bold text-xl overflow-hidden transition-all ${modality && (modality === 'text' || voiceProfile)
+                    ? 'cursor-pointer'
+                    : 'opacity-50 cursor-not-allowed'
+                    }`}
+                >
+                  <div className={`absolute inset-0 transition-opacity ${modality === 'voice'
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500'
+                    : 'bg-gradient-to-r from-cyan-500 to-blue-500'
+                    } ${modality ? 'opacity-80 group-hover:opacity-100' : 'opacity-40'}`} />
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                  <span className="relative flex items-center gap-3 text-white">
+                    <span className="text-2xl">{modality === 'voice' ? '🎙️' : '💬'}</span>
+                    {modality
+                      ? `Start ${modality === 'voice' ? 'Voice' : 'Text'} Interview`
+                      : 'Select a Mode to Continue'
+                    }
                   </span>
                 </button>
               </motion.div>
@@ -623,11 +1091,10 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                       <button
                         key={persona.id}
                         onClick={() => switchPersona(persona)}
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                          selectedPersona.id === persona.id
-                            ? `bg-gradient-to-r ${persona.color} shadow-lg`
-                            : 'bg-[#111111] hover:bg-white/10'
-                        }`}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${selectedPersona.id === persona.id
+                          ? `bg-gradient-to-r ${persona.color} shadow-lg`
+                          : 'bg-[#111111] hover:bg-white/10'
+                          }`}
                         title={persona.name}
                       >
                         <span className="text-xl">{persona.icon}</span>
@@ -642,11 +1109,10 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
 
                 <div className="flex items-center gap-6">
                   {/* Difficulty Indicator */}
-                  <div className={`px-4 py-2 rounded-xl border ${
-                    difficulty === 'high-stress' ? 'bg-red-500/10 border-red-500/30 text-red-400' :
+                  <div className={`px-4 py-2 rounded-xl border ${difficulty === 'high-stress' ? 'bg-red-500/10 border-red-500/30 text-red-400' :
                     difficulty === 'coaching' ? 'bg-green-500/10 border-green-500/30 text-green-400' :
-                    'bg-blue-500/10 border-blue-500/30 text-blue-400'
-                  }`}>
+                      'bg-blue-500/10 border-blue-500/30 text-blue-400'
+                    }`}>
                     <p className="text-xs font-semibold uppercase">{DIFFICULTY_LEVELS[difficulty].name}</p>
                   </div>
 
@@ -657,6 +1123,15 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                   </div>
 
                   {/* Actions */}
+                  <button
+                    onClick={() => setVoiceOutputEnabled(!voiceOutputEnabled)}
+                    className={`px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 ${voiceOutputEnabled
+                      ? 'bg-cyan-500/20 border border-cyan-500/50 text-cyan-400'
+                      : 'bg-[#111111] hover:bg-white/10 text-white'
+                      }`}
+                  >
+                    {voiceOutputEnabled ? '🔊' : '🔇'} Voice {voiceOutputEnabled ? 'On' : 'Off'}
+                  </button>
                   <button
                     onClick={() => setShowTips(true)}
                     className="px-4 py-2 rounded-xl bg-[#111111] hover:bg-white/10 text-white text-sm font-medium"
@@ -682,11 +1157,10 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                   >
                     <div className={`max-w-3xl ${msg.role === 'user' ? 'order-2' : ''}`}>
                       {/* Message */}
-                      <div className={`p-5 rounded-2xl ${
-                        msg.role === 'user'
-                          ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-500/30'
-                          : `bg-gradient-to-r from-${selectedPersona.bgColor}-500/10 to-slate-800/50 border border-white/10`
-                      }`}>
+                      <div className={`p-5 rounded-2xl ${msg.role === 'user'
+                        ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-500/30'
+                        : `bg-gradient-to-r from-${selectedPersona.bgColor}-500/10 to-slate-800/50 border border-white/10`
+                        }`}>
                         {msg.role === 'assistant' && (
                           <div className="flex items-center gap-2 mb-3">
                             <span className="text-xl">{selectedPersona.icon}</span>
@@ -705,11 +1179,10 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                         >
                           <div className="flex items-center gap-4 mb-3">
                             <div className="text-center">
-                              <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl font-bold ${
-                                msg.feedback.score >= 8 ? 'bg-green-500/20 text-green-400' :
+                              <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl font-bold ${msg.feedback.score >= 8 ? 'bg-green-500/20 text-green-400' :
                                 msg.feedback.score >= 5 ? 'bg-yellow-500/20 text-yellow-400' :
-                                'bg-red-500/20 text-red-400'
-                              }`}>
+                                  'bg-red-500/20 text-red-400'
+                                }`}>
                                 {msg.feedback.score}
                               </div>
                               <p className="text-xs text-silver mt-1">Score</p>
@@ -762,27 +1235,26 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                   <motion.div
                     animate={{
                       scale: sphereState === 'thinking' ? [1, 1.1, 1] : sphereState === 'stress' ? [1, 1.2, 1] : 1,
-                      boxShadow: sphereState === 'listening' 
-                        ? '0 0 60px rgba(34, 197, 94, 0.5)' 
+                      boxShadow: sphereState === 'listening'
+                        ? '0 0 60px rgba(34, 197, 94, 0.5)'
                         : sphereState === 'thinking'
-                        ? '0 0 60px rgba(6, 182, 212, 0.5)'
-                        : sphereState === 'stress'
-                        ? '0 0 60px rgba(239, 68, 68, 0.5)'
-                        : '0 0 30px rgba(168, 85, 247, 0.3)',
+                          ? '0 0 60px rgba(6, 182, 212, 0.5)'
+                          : sphereState === 'stress'
+                            ? '0 0 60px rgba(239, 68, 68, 0.5)'
+                            : '0 0 30px rgba(168, 85, 247, 0.3)',
                     }}
                     transition={{ duration: 1, repeat: Infinity }}
-                    className={`w-24 h-24 mx-auto rounded-full ${
-                      sphereState === 'listening' ? 'bg-gradient-to-br from-green-500 to-emerald-500' :
+                    className={`w-24 h-24 mx-auto rounded-full ${sphereState === 'listening' ? 'bg-gradient-to-br from-green-500 to-emerald-500' :
                       sphereState === 'thinking' ? 'bg-gradient-to-br from-cyan-500 to-blue-500' :
-                      sphereState === 'stress' ? 'bg-gradient-to-br from-red-500 to-orange-500' :
-                      'bg-gradient-to-br from-cyan-500 to-blue-500'
-                    }`}
+                        sphereState === 'stress' ? 'bg-gradient-to-br from-red-500 to-orange-500' :
+                          'bg-gradient-to-br from-cyan-500 to-blue-500'
+                      }`}
                   />
                   <p className="text-xs text-silver mt-4">
                     {sphereState === 'listening' ? '🎤 Listening' :
-                     sphereState === 'thinking' ? '🧠 Processing' :
-                     sphereState === 'stress' ? '⚡ Stress Test' :
-                     '💭 Ready'}
+                      sphereState === 'thinking' ? '🧠 Processing' :
+                        sphereState === 'stress' ? '⚡ Stress Test' :
+                          '💭 Ready'}
                   </p>
                 </div>
               </div>
@@ -802,18 +1274,25 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                     disabled={isThinking}
                   />
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-2">
-                    {hasSpeechRecognition && (
-                      <button
-                        onClick={toggleVoice}
-                        className={`p-2 rounded-xl transition-all ${
-                          isListening ? 'bg-green-500 text-white' : 'bg-white/10 text-silver hover:text-white'
+                    <button
+                      onClick={toggleVoice}
+                      disabled={isThinking || isSpeaking || isTranscribing}
+                      className={`p-2 rounded-xl transition-all disabled:opacity-50 ${isRecording ? 'bg-red-500 text-white animate-pulse' :
+                        isTranscribing ? 'bg-yellow-500 text-white' :
+                          'bg-white/10 text-silver hover:text-white hover:bg-white/20'
                         }`}
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                      title={isRecording ? 'Click to stop' : 'Click to speak'}
+                    >
+                      {isTranscribing ? (
+                        <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
-                      </button>
-                    )}
+                      ) : (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                        </svg>
+                      )}
+                    </button>
                   </div>
                 </div>
                 <button
@@ -845,17 +1324,16 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
               >
                 <span className="text-6xl block mb-6">🎉</span>
                 <h1 className="text-4xl font-bold text-white mb-4">Interview Complete!</h1>
-                
+
                 <div className="grid grid-cols-3 gap-4 my-8">
                   <div className="p-4 rounded-xl bg-[#111111]">
                     <p className="text-3xl font-bold text-cyan-400">{questionCount}</p>
                     <p className="text-sm text-silver">Questions</p>
                   </div>
                   <div className="p-4 rounded-xl bg-[#111111]">
-                    <p className={`text-3xl font-bold ${
-                      parseFloat(avgScore) >= 7 ? 'text-green-400' :
+                    <p className={`text-3xl font-bold ${parseFloat(avgScore) >= 7 ? 'text-green-400' :
                       parseFloat(avgScore) >= 5 ? 'text-yellow-400' : 'text-red-400'
-                    }`}>{avgScore}</p>
+                      }`}>{avgScore}</p>
                     <p className="text-sm text-silver">Avg Score</p>
                   </div>
                   <div className="p-4 rounded-xl bg-[#111111]">
@@ -887,10 +1365,9 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                   <div key={idx} className="p-4 rounded-xl bg-[#111111] border border-white/10">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm text-silver">Q{idx + 1}</span>
-                      <span className={`text-lg font-bold ${
-                        (msg.feedback?.score || 0) >= 7 ? 'text-green-400' :
+                      <span className={`text-lg font-bold ${(msg.feedback?.score || 0) >= 7 ? 'text-green-400' :
                         (msg.feedback?.score || 0) >= 5 ? 'text-yellow-400' : 'text-red-400'
-                      }`}>{msg.feedback?.score}/10</span>
+                        }`}>{msg.feedback?.score}/10</span>
                     </div>
                     {msg.feedback?.trap && (
                       <p className="text-sm text-silver">{msg.feedback.trap}</p>
@@ -926,7 +1403,7 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                   <h3 className="text-xl font-bold text-white">💡 Unfair Advantage Tips</h3>
                   <button onClick={() => setShowTips(false)} className="p-2 rounded-lg hover:bg-white/10">
                     <svg className="w-5 h-5 text-silver" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
                 </div>
@@ -956,12 +1433,11 @@ Make tips SPECIFIC to this candidate's background - reference their actual proje
                       className="p-4 rounded-xl bg-[#111111] border border-white/10"
                     >
                       <div className="flex items-center gap-2 mb-2">
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${
-                          tip.category === 'behavioral' ? 'bg-cyan-500/20 text-cyan-400' :
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${tip.category === 'behavioral' ? 'bg-cyan-500/20 text-cyan-400' :
                           tip.category === 'technical' ? 'bg-cyan-500/20 text-cyan-400' :
-                          tip.category === 'negotiation' ? 'bg-green-500/20 text-green-400' :
-                          'bg-slate-500/20 text-silver'
-                        }`}>{tip.category}</span>
+                            tip.category === 'negotiation' ? 'bg-green-500/20 text-green-400' :
+                              'bg-slate-500/20 text-silver'
+                          }`}>{tip.category}</span>
                       </div>
                       <h4 className="font-semibold text-white mb-1">{tip.title}</h4>
                       <p className="text-sm text-silver">{tip.content}</p>
