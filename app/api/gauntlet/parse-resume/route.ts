@@ -17,19 +17,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ text, fileName: file.name });
         }
 
-        // Handle PDF files — use pdf-parse (works in Node.js without workers)
-        if (fileName.endsWith('.pdf')) {
-            const arrayBuffer = await file.arrayBuffer();
-            const buffer = Buffer.from(arrayBuffer);
-
-            // Dynamic import to avoid SSR issues
-            const pdfParse = (await import('pdf-parse')).default;
-            const pdfData = await pdfParse(buffer);
-
-            return NextResponse.json({ text: pdfData.text.trim(), fileName: file.name });
-        }
-
-        // Handle DOCX files using mammoth
+        // Handle DOCX/DOC files using mammoth
         if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
             const mammoth = await import('mammoth');
             const arrayBuffer = await file.arrayBuffer();
@@ -38,7 +26,10 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ text: cleanText.substring(0, 10000), fileName: file.name });
         }
 
-        return NextResponse.json({ error: 'Unsupported file type. Please upload a PDF, TXT, or DOCX file.' }, { status: 400 });
+        return NextResponse.json(
+            { error: 'Unsupported file type. Please upload a Word (.docx) or TXT file.' },
+            { status: 400 }
+        );
 
     } catch (error: any) {
         console.error('Resume parsing error:', error);
