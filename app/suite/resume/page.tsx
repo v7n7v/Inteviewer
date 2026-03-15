@@ -12,6 +12,7 @@ import { downloadResumePDF } from '@/lib/pdf-templates';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle } from 'docx';
 import { saveAs } from 'file-saver';
 import { authFetch } from '@/lib/auth-fetch';
+import FileUploadDropzone from '@/components/FileUploadDropzone';
 
 // Set up PDF.js worker
 if (typeof window !== 'undefined') {
@@ -581,39 +582,17 @@ export default function LiquidResumePage() {
   };
 
   // ===== HANDLERS =====
-  const handleFileUpload = async (file: File) => {
-    if (!file) return;
-    const ext = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
-    const validExtensions = ['.pdf', '.docx', '.doc', '.txt'];
-    if (!validExtensions.includes(ext)) {
-      showToast('Please upload PDF, Word, or TXT file', '❌');
-      return;
-    }
-
+  const handleFileExtracted = async (text: string) => {
     setIsLoading(true);
     try {
-      // Use server-side API for reliable PDF/DOCX extraction
-      const formData = new FormData();
-      formData.append('file', file);
-      const res = await authFetch('/api/gauntlet/parse-resume', { method: 'POST', body: formData });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Parse failed' }));
-        throw new Error(err.error || 'Failed to extract text from file');
-      }
-      const { text } = await res.json();
-
-      if (!text || text.trim().length < 20) {
-        throw new Error('Could not extract meaningful text from this file. Try pasting your resume text instead.');
-      }
-
       showToast('Parsing resume with AI...', '🧠');
       const parsed = await parseResumeWithAI(text);
       setOriginalResume(parsed);
       showToast('Resume parsed successfully!', '✅');
       setStep('jd');
     } catch (error: any) {
-      console.error('Upload error:', error);
-      showToast(error.message || 'Failed to process file', '❌');
+      console.error('AI parsing error:', error);
+      showToast(error.message || 'Failed to process resume with AI', '❌');
     } finally {
       setIsLoading(false);
     }
@@ -1153,27 +1132,12 @@ export default function LiquidResumePage() {
             {/* Step 1: Upload */}
             {step === 'upload' && (
               <motion.div key="upload" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
-                <div className="max-w-2xl mx-auto">
-                  <input type="file" ref={fileInputRef} onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])} className="hidden" accept=".pdf,.docx,.doc,.txt" />
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
-                    onDragLeave={() => setDragActive(false)}
-                    onDrop={(e) => { e.preventDefault(); setDragActive(false); if (e.dataTransfer.files[0]) handleFileUpload(e.dataTransfer.files[0]); }}
-                    className={`p-16 rounded-2xl border-2 border-dashed text-center cursor-pointer transition-all ${dragActive ? 'border-cyan-500/30 bg-cyan-500/[0.03]' : 'border-white/[0.08] bg-[#0A0A0A] hover:border-white/[0.15]'
-                      }`}
-                  >
-                    {isLoading ? (
-                      <><span className="text-6xl block mb-4 animate-pulse">🧠</span><p className="text-xl text-white">Processing...</p></>
-                    ) : (
-                      <>
-                        <span className="text-6xl block mb-4">📄</span>
-                        <p className="text-xl text-white mb-2">Drop your resume here</p>
-                        <p className="text-silver">or click to browse (PDF, Word, TXT)</p>
-                      </>
-                    )}
-                  </div>
-                </div>
+                  <FileUploadDropzone 
+                    onUploadSuccess={(text) => handleFileExtracted(text)}
+                    isUploading={isLoading}
+                    setIsUploading={setIsLoading}
+                    variant="large"
+                  />
               </motion.div>
             )}
 

@@ -7,6 +7,7 @@ import { showToast } from '@/components/Toast';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 import { authFetch } from '@/lib/auth-fetch';
+import FileUploadDropzone from '@/components/FileUploadDropzone';
 
 // ============================================
 // TYPES
@@ -148,27 +149,7 @@ export default function GauntletPage() {
         return `${m}:${s.toString().padStart(2, '0')}`;
     };
 
-    // ============================================
-    // RESUME FILE UPLOAD
-    // ============================================
-    const handleResumeUpload = async (file: File) => {
-        setIsUploadingResume(true);
-        try {
-            const formData = new FormData();
-            formData.append('file', file);
-            const res = await authFetch('/api/gauntlet/parse-resume', { method: 'POST', body: formData });
-            if (!res.ok) throw new Error('Failed to parse resume');
-            const { text, fileName } = await res.json();
-            setResumeText(text);
-            setUploadedFileName(fileName);
-            showToast(`Resume loaded: ${fileName}`, '📄');
-        } catch (error) {
-            console.error('Resume upload error:', error);
-            showToast('Failed to parse resume file', '❌');
-        } finally {
-            setIsUploadingResume(false);
-        }
-    };
+
 
     // ============================================
     // FLASHCARD GENERATION
@@ -584,21 +565,21 @@ export default function GauntletPage() {
                                             Your Resume <span className="text-silver text-xs font-normal">(optional — makes cards more targeted)</span>
                                         </label>
                                         <div className="relative">
-                                            <textarea
+                                            <FileUploadDropzone 
+                                                variant="compact"
                                                 value={resumeText}
-                                                onChange={(e) => { setResumeText(e.target.value); setUploadedFileName(''); }}
-                                                placeholder="Paste your resume or upload a PDF..."
+                                                onChange={(val) => { setResumeText(val); setUploadedFileName(''); }}
+                                                placeholder="Paste your resume or drop a PDF..."
                                                 rows={3}
-                                                className="w-full p-4 rounded-xl bg-[#111] border border-white/10 focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 text-white placeholder-silver/50 resize-none transition-all"
+                                                isUploading={isUploadingResume}
+                                                setIsUploading={setIsUploadingResume}
+                                                onUploadSuccess={(text, fileName) => {
+                                                    setResumeText(text);
+                                                    setUploadedFileName(fileName);
+                                                    showToast(`Resume loaded: ${fileName}`, '📄');
+                                                }}
+                                                className="w-full"
                                             />
-                                            <input ref={fileInputRef} type="file" accept=".pdf,.txt,.docx,.doc" onChange={(e) => { if (e.target.files?.[0]) handleResumeUpload(e.target.files[0]); }} className="hidden" />
-                                            <button
-                                                onClick={() => fileInputRef.current?.click()}
-                                                disabled={isUploadingResume}
-                                                className="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-white font-medium transition-all border border-white/10 flex items-center gap-1.5"
-                                            >
-                                                {isUploadingResume ? '⏳ Parsing...' : '📎 Upload File'}
-                                            </button>
                                         </div>
                                         {uploadedFileName && (
                                             <div className="mt-2 flex items-center gap-2 text-xs text-cyan-400">
@@ -625,21 +606,21 @@ export default function GauntletPage() {
                                             Your Resume <span className="text-silver text-xs font-normal">(optional — enables gap analysis)</span>
                                         </label>
                                         <div className="relative">
-                                            <textarea
+                                            <FileUploadDropzone 
+                                                variant="compact"
                                                 value={resumeText}
-                                                onChange={(e) => { setResumeText(e.target.value); setUploadedFileName(''); }}
-                                                placeholder="Paste your resume text or upload a PDF..."
+                                                onChange={(val) => { setResumeText(val); setUploadedFileName(''); }}
+                                                placeholder="Paste your resume text or drop a PDF..."
                                                 rows={4}
-                                                className="w-full p-4 rounded-xl bg-[#111] border border-white/10 focus:border-red-500/50 focus:ring-2 focus:ring-red-500/20 text-white placeholder-silver/50 resize-none transition-all"
+                                                isUploading={isUploadingResume}
+                                                setIsUploading={setIsUploadingResume}
+                                                onUploadSuccess={(text, fileName) => {
+                                                    setResumeText(text);
+                                                    setUploadedFileName(fileName);
+                                                    showToast(`Resume loaded: ${fileName}`, '📄');
+                                                }}
+                                                className="w-full"
                                             />
-                                            <input ref={fileInputRef} type="file" accept=".pdf,.txt,.docx,.doc" onChange={(e) => { if (e.target.files?.[0]) handleResumeUpload(e.target.files[0]); }} className="hidden" />
-                                            <button
-                                                onClick={() => fileInputRef.current?.click()}
-                                                disabled={isUploadingResume}
-                                                className="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-white font-medium transition-all border border-white/10 flex items-center gap-1.5"
-                                            >
-                                                {isUploadingResume ? '⏳ Parsing...' : '📎 Upload File'}
-                                            </button>
                                         </div>
                                         {uploadedFileName && (
                                             <div className="mt-2 flex items-center gap-2 text-xs text-emerald-400">
@@ -709,21 +690,21 @@ export default function GauntletPage() {
                                             Your Resume <span className="text-silver text-xs font-normal">(optional — personalizes questions to your background)</span>
                                         </label>
                                         <div className="relative">
-                                            <textarea
+                                            <FileUploadDropzone 
+                                                variant="compact"
                                                 value={resumeText}
-                                                onChange={(e) => { setResumeText(e.target.value); setUploadedFileName(''); }}
-                                                placeholder="Paste your resume or upload a file..."
+                                                onChange={(val) => { setResumeText(val); setUploadedFileName(''); }}
+                                                placeholder="Paste your resume or drop a file..."
                                                 rows={3}
-                                                className="w-full p-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 outline-none focus:border-amber-500/50 resize-none transition-colors text-sm"
+                                                isUploading={isUploadingResume}
+                                                setIsUploading={setIsUploadingResume}
+                                                onUploadSuccess={(text, fileName) => {
+                                                    setResumeText(text);
+                                                    setUploadedFileName(fileName);
+                                                    showToast(`Resume loaded: ${fileName}`, '📄');
+                                                }}
+                                                className="w-full"
                                             />
-                                            <input ref={fileInputRef} type="file" accept=".pdf,.txt,.docx,.doc" onChange={(e) => { if (e.target.files?.[0]) handleResumeUpload(e.target.files[0]); }} className="hidden" />
-                                            <button
-                                                onClick={() => fileInputRef.current?.click()}
-                                                disabled={isUploadingResume}
-                                                className="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-white font-medium transition-all border border-white/10 flex items-center gap-1.5"
-                                            >
-                                                {isUploadingResume ? '⏳ Parsing...' : '📎 Upload File'}
-                                            </button>
                                         </div>
                                         {uploadedFileName && (
                                             <div className="flex items-center gap-2 mt-2 text-xs text-emerald-400">
