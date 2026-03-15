@@ -569,7 +569,7 @@ export default function GauntletPage() {
                                                 variant="compact"
                                                 value={resumeText}
                                                 onChange={(val) => { setResumeText(val); setUploadedFileName(''); }}
-                                                placeholder="Paste your resume or drop a PDF..."
+                                                placeholder="Paste your resume or drop a Word doc..."
                                                 rows={3}
                                                 isUploading={isUploadingResume}
                                                 setIsUploading={setIsUploadingResume}
@@ -610,7 +610,7 @@ export default function GauntletPage() {
                                                 variant="compact"
                                                 value={resumeText}
                                                 onChange={(val) => { setResumeText(val); setUploadedFileName(''); }}
-                                                placeholder="Paste your resume text or drop a PDF..."
+                                                placeholder="Paste your resume text or drop a Word doc..."
                                                 rows={4}
                                                 isUploading={isUploadingResume}
                                                 setIsUploading={setIsUploadingResume}

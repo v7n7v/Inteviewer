@@ -44,9 +44,9 @@ export default function FileUploadDropzone({
 
     // 2. Check extensions
     const ext = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
-    const validExtensions = ['.pdf', '.docx', '.doc', '.txt'];
+    const validExtensions = ['.docx', '.doc', '.txt'];
     if (!validExtensions.includes(ext)) {
-      showToast('Please upload PDF, Word, or TXT file', '❌');
+      showToast('Please upload a Word or TXT file', '❌');
       return;
     }
 
@@ -116,7 +116,7 @@ export default function FileUploadDropzone({
         <input 
           ref={fileInputRef} 
           type="file" 
-          accept=".pdf,.txt,.docx,.doc" 
+          accept=".txt,.docx,.doc" 
           onChange={(e) => { if (e.target.files?.[0]) handleFileUpload(e.target.files[0]); }} 
           className="hidden" 
         />
@@ -155,7 +155,7 @@ export default function FileUploadDropzone({
         ref={fileInputRef} 
         onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])} 
         className="hidden" 
-        accept=".pdf,.docx,.doc,.txt" 
+        accept=".docx,.doc,.txt" 
       />
       <div
         onClick={() => fileInputRef.current?.click()}
@@ -201,7 +201,7 @@ export default function FileUploadDropzone({
             <p className="text-xl text-white mb-2 font-medium">
               {dragActive ? 'Drop it here!' : 'Drop your file here'}
             </p>
-            <p className="text-silver">or click to browse (PDF, Word, TXT, max 5MB)</p>
+            <p className="text-silver">or click to browse (Word, TXT, max 5MB)</p>
           </motion.div>
         )}
       </div>
