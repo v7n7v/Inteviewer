@@ -1,333 +1,424 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/lib/store';
 import { showToast } from '@/components/Toast';
-import { groqJSONCompletion } from '@/lib/ai/groq-client';
+import { useAudioRecorder } from '@/hooks/useAudioRecorder';
+import { useAudioPlayer } from '@/hooks/useAudioPlayer';
+import { authFetch } from '@/lib/auth-fetch';
 
 // ============================================
-// TYPES & INTERFACES
+// TYPES
 // ============================================
-interface FlashCard {
+interface GauntletQuestion {
     id: string;
-    front: string;
-    back: string;
-    category: string;
-    difficulty: 'easy' | 'medium' | 'hard';
-    nextReview: Date;
-    interval: number; // days until next review
-    easeFactor: number; // SM-2 algorithm factor
-    repetitions: number;
-    lastReviewed?: Date;
+    text: string;
+    type: 'behavioral' | 'technical' | 'system-design' | 'situational' | 'leadership';
+    context: string; // why this question matters for the JD
+    difficulty: 'standard' | 'advanced' | 'killer';
 }
 
-interface Deck {
-    id: string;
-    name: string;
-    description: string;
-    cards: FlashCard[];
-    createdAt: Date;
-    source: 'ai' | 'manual' | 'template';
-    sourceData?: {
-        resumeText?: string;
-        jobDescription?: string;
+interface StarBreakdown {
+    present: boolean;
+    feedback: string;
+}
+
+interface GradingResult {
+    overall_score: number;
+    star_method: {
+        situation: StarBreakdown;
+        task: StarBreakdown;
+        action: StarBreakdown;
+        result: StarBreakdown;
     };
-}
-
-interface StudySession {
-    cardsStudied: number;
-    correctAnswers: number;
-    startTime: Date;
-    streak: number;
-}
-
-type StudyMode = 'interview-prep' | 'learning' | 'resume-gap';
-type ViewMode = 'home' | 'create' | 'study' | 'review';
-
-// ============================================
-// HELPER: SM-2 SPACED REPETITION ALGORITHM
-// ============================================
-function calculateNextReview(card: FlashCard, quality: number): Partial<FlashCard> {
-    // quality: 0 = complete failure, 5 = perfect recall
-    // SM-2 Algorithm implementation
-    let { easeFactor, repetitions, interval } = card;
-
-    if (quality < 3) {
-        // Failed recall - reset
-        repetitions = 0;
-        interval = 1;
-    } else {
-        // Successful recall
-        if (repetitions === 0) {
-            interval = 1;
-        } else if (repetitions === 1) {
-            interval = 6;
-        } else {
-            interval = Math.round(interval * easeFactor);
-        }
-        repetitions += 1;
-    }
-
-    // Update ease factor
-    easeFactor = Math.max(1.3, easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02)));
-
-    const nextReview = new Date();
-    nextReview.setDate(nextReview.getDate() + interval);
-
-    return {
-        easeFactor,
-        repetitions,
-        interval,
-        nextReview,
-        lastReviewed: new Date(),
+    strengths: string[];
+    improvements: string[];
+    filler_analysis: {
+        weak_phrases: string[];
+        feedback: string;
     };
+    follow_up_question: string;
+    coaching_tip: string;
+    rewritten_answer: string;
 }
+
+interface QuestionResult {
+    question: GauntletQuestion;
+    answer: string;
+    grading: GradingResult;
+    timeSpent: number; // seconds
+}
+
+interface Flashcard {
+    question: string;
+    answer: string;
+    category: 'technical' | 'behavioral' | 'domain' | 'company';
+    difficulty: 'basic' | 'intermediate' | 'advanced';
+}
+
+type ViewMode = 'setup' | 'gauntlet' | 'scorecard' | 'debrief' | 'flashcards';
+type InterviewType = 'mock-interview' | 'quick-drill' | 'study-cards';
+type DrillCategory = 'behavioral' | 'technical' | 'system-design' | 'leadership';
+type InterviewStyle = 'friendly' | 'tough';
+
+const QUESTION_TYPE_CONFIG: Record<string, { icon: string; label: string; color: string }> = {
+    behavioral: { icon: '🧠', label: 'Behavioral', color: 'from-blue-500/20 to-cyan-500/20' },
+    technical: { icon: '⚙️', label: 'Technical', color: 'from-emerald-500/20 to-teal-500/20' },
+    'system-design': { icon: '🏗️', label: 'System Design', color: 'from-amber-500/20 to-orange-500/20' },
+    situational: { icon: '🎭', label: 'Situational', color: 'from-violet-500/20 to-purple-500/20' },
+    leadership: { icon: '👑', label: 'Leadership', color: 'from-rose-500/20 to-pink-500/20' },
+};
 
 // ============================================
 // MAIN COMPONENT
 // ============================================
-export default function FlashCardsPage() {
+export default function GauntletPage() {
     const { user } = useStore();
-    const [viewMode, setViewMode] = useState<ViewMode>('home');
-    const [studyMode, setStudyMode] = useState<StudyMode | null>(null);
-    const [decks, setDecks] = useState<Deck[]>([]);
-    const [activeDeck, setActiveDeck] = useState<Deck | null>(null);
-    const [currentCardIndex, setCurrentCardIndex] = useState(0);
+
+    // View state
+    const [viewMode, setViewMode] = useState<ViewMode>('setup');
+
+    // Setup state
+    const [interviewType, setInterviewType] = useState<InterviewType>('mock-interview');
+    const [drillCategory, setDrillCategory] = useState<DrillCategory>('behavioral');
+    const [drillRole, setDrillRole] = useState('');
+    const [jobDescription, setJobDescription] = useState('');
+    const [resumeText, setResumeText] = useState('');
+    const [questionCount, setQuestionCount] = useState(5);
+    const [interviewStyle, setInterviewStyle] = useState<InterviewStyle>('tough');
+
+    // Resume upload state
+    const [uploadedFileName, setUploadedFileName] = useState('');
+    const [isUploadingResume, setIsUploadingResume] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Audio mode state
+    const [voiceEnabled, setVoiceEnabled] = useState(false);
+    const [voiceGender, setVoiceGender] = useState<'male' | 'female'>('female');
+    const [isSpeakingQuestion, setIsSpeakingQuestion] = useState(false);
+    const [isTranscribing, setIsTranscribing] = useState(false);
+    const { isRecording, startRecording, stopRecording, getVisualizerData } = useAudioRecorder();
+    const { isPlaying, playAudio, stopAudio } = useAudioPlayer();
+    const [visualizerData, setVisualizerData] = useState<number[]>([]);
+    const animFrameRef = useRef<number | null>(null);
+
+    // Flashcard state
+    const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
+    const [flashcardIndex, setFlashcardIndex] = useState(0);
     const [isFlipped, setIsFlipped] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [session, setSession] = useState<StudySession>({
-        cardsStudied: 0,
-        correctAnswers: 0,
-        startTime: new Date(),
-        streak: 0,
-    });
+    const [flashcardRatings, setFlashcardRatings] = useState<Record<number, 'got-it' | 'needs-work'>>({});
 
-    // Create deck form state
-    const [createForm, setCreateForm] = useState({
-        resumeText: '',
-        jobDescription: '',
-        topic: '',
-        cardCount: 10,
-    });
+    // Gauntlet state
+    const [questions, setQuestions] = useState<GauntletQuestion[]>([]);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [userAnswer, setUserAnswer] = useState('');
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [isGrading, setIsGrading] = useState(false);
 
-    // Load decks from localStorage
+    // Results state
+    const [currentGrading, setCurrentGrading] = useState<GradingResult | null>(null);
+    const [results, setResults] = useState<QuestionResult[]>([]);
+    const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now());
+    const [sessionStartTime, setSessionStartTime] = useState<number>(Date.now());
+
+    // Timer
+    const [elapsed, setElapsed] = useState(0);
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Answer textarea ref
+    const answerRef = useRef<HTMLTextAreaElement>(null);
+
+    // Timer effect
     useEffect(() => {
-        const saved = localStorage.getItem('flashcard-decks');
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved);
-                setDecks(parsed.map((d: any) => ({
-                    ...d,
-                    createdAt: new Date(d.createdAt),
-                    cards: d.cards.map((c: any) => ({
-                        ...c,
-                        nextReview: new Date(c.nextReview),
-                        lastReviewed: c.lastReviewed ? new Date(c.lastReviewed) : undefined,
-                    })),
-                })));
-            } catch (e) {
-                console.error('Failed to load decks:', e);
-            }
+        if (viewMode === 'gauntlet' && !currentGrading && !isGrading) {
+            timerRef.current = setInterval(() => {
+                setElapsed(Math.floor((Date.now() - questionStartTime) / 1000));
+            }, 1000);
         }
-    }, []);
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+        };
+    }, [viewMode, currentGrading, isGrading, questionStartTime]);
 
-    // Save decks to localStorage
-    useEffect(() => {
-        if (decks.length > 0) {
-            localStorage.setItem('flashcard-decks', JSON.stringify(decks));
-        }
-    }, [decks]);
+    // Format timer
+    const formatTime = (seconds: number) => {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}:${s.toString().padStart(2, '0')}`;
+    };
 
-    // Get cards due for review
-    const getDueCards = useCallback((deck: Deck) => {
-        const now = new Date();
-        return deck.cards.filter(card => new Date(card.nextReview) <= now);
-    }, []);
-
-    // Generate cards with AI
-    const generateCards = async () => {
-        if (!studyMode) return;
-
-        setIsLoading(true);
+    // ============================================
+    // RESUME FILE UPLOAD
+    // ============================================
+    const handleResumeUpload = async (file: File) => {
+        setIsUploadingResume(true);
         try {
-            let prompt = '';
-            let deckName = '';
-            let deckDescription = '';
-
-            if (studyMode === 'resume-gap') {
-                if (!createForm.resumeText || !createForm.jobDescription) {
-                    showToast('Please provide both resume and job description', '❌');
-                    setIsLoading(false);
-                    return;
-                }
-                prompt = `Analyze this resume and job description. Generate ${createForm.cardCount} flashcards that focus on skills and concepts the candidate needs to learn to be better qualified for the job.
-
-RESUME:
-${createForm.resumeText}
-
-JOB DESCRIPTION:
-${createForm.jobDescription}
-
-Generate cards for concepts, technologies, or skills mentioned in the JD but weak/missing in the resume.`;
-                deckName = 'Gap Analysis Cards';
-                deckDescription = 'AI-generated cards based on resume skill gaps';
-
-            } else if (studyMode === 'interview-prep') {
-                if (!createForm.jobDescription) {
-                    showToast('Please provide a job description', '❌');
-                    setIsLoading(false);
-                    return;
-                }
-                prompt = `Generate ${createForm.cardCount} interview preparation flashcards for this job:
-
-JOB DESCRIPTION:
-${createForm.jobDescription}
-
-Create cards covering:
-- Technical concepts mentioned in the JD
-- Behavioral interview questions (STAR format hints)
-- Common interview questions for this role
-- Key terminology and acronyms`;
-                deckName = 'Interview Prep';
-                deckDescription = 'Interview preparation cards for your target role';
-
-            } else if (studyMode === 'learning') {
-                if (!createForm.topic) {
-                    showToast('Please enter a topic to study', '❌');
-                    setIsLoading(false);
-                    return;
-                }
-                prompt = `Generate ${createForm.cardCount} educational flashcards about: "${createForm.topic}"
-
-Create comprehensive cards that cover:
-- Key concepts and definitions
-- Important details and examples
-- Common misconceptions
-- Practical applications`;
-                deckName = createForm.topic;
-                deckDescription = `Study cards for ${createForm.topic}`;
-            }
-
-            const systemPrompt = `You are an expert educator creating flashcards. Generate high-quality flashcards in JSON format.
-
-Each card should have:
-- A clear, concise question on the front
-- A comprehensive but focused answer on the back
-- A relevant category
-- Difficulty rating (easy, medium, hard)
-
-Return a JSON array:
-[
-  {
-    "front": "Question text",
-    "back": "Answer text",
-    "category": "Category name",
-    "difficulty": "easy|medium|hard"
-  }
-]`;
-
-            const cards = await groqJSONCompletion<Array<{
-                front: string;
-                back: string;
-                category: string;
-                difficulty: 'easy' | 'medium' | 'hard';
-            }>>(systemPrompt, prompt, { temperature: 0.7, maxTokens: 4000 });
-
-            // Create new deck
-            const newDeck: Deck = {
-                id: crypto.randomUUID(),
-                name: deckName,
-                description: deckDescription,
-                source: 'ai',
-                createdAt: new Date(),
-                sourceData: {
-                    resumeText: createForm.resumeText,
-                    jobDescription: createForm.jobDescription,
-                },
-                cards: cards.map(c => ({
-                    id: crypto.randomUUID(),
-                    front: c.front,
-                    back: c.back,
-                    category: c.category,
-                    difficulty: c.difficulty,
-                    nextReview: new Date(),
-                    interval: 1,
-                    easeFactor: 2.5,
-                    repetitions: 0,
-                })),
-            };
-
-            setDecks(prev => [...prev, newDeck]);
-            setActiveDeck(newDeck);
-            setViewMode('study');
-            setCurrentCardIndex(0);
-            setSession({
-                cardsStudied: 0,
-                correctAnswers: 0,
-                startTime: new Date(),
-                streak: 0,
-            });
-            showToast(`Created ${cards.length} flashcards!`, '✨');
+            const formData = new FormData();
+            formData.append('file', file);
+            const res = await authFetch('/api/gauntlet/parse-resume', { method: 'POST', body: formData });
+            if (!res.ok) throw new Error('Failed to parse resume');
+            const { text, fileName } = await res.json();
+            setResumeText(text);
+            setUploadedFileName(fileName);
+            showToast(`Resume loaded: ${fileName}`, '📄');
         } catch (error) {
-            console.error('Failed to generate cards:', error);
+            console.error('Resume upload error:', error);
+            showToast('Failed to parse resume file', '❌');
+        } finally {
+            setIsUploadingResume(false);
+        }
+    };
+
+    // ============================================
+    // FLASHCARD GENERATION
+    // ============================================
+    const generateFlashcards = async () => {
+        setIsGenerating(true);
+        try {
+            const res = await authFetch('/api/gauntlet/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    mode: 'flashcards',
+                    jobDescription: jobDescription || undefined,
+                    resumeText: resumeText || undefined,
+                    questionCount,
+                }),
+            });
+            if (!res.ok) throw new Error('Failed to generate flashcards');
+            const data = await res.json();
+            const cards: Flashcard[] = (data.flashcards || []).map((c: any) => ({
+                question: c.question, answer: c.answer,
+                category: c.category || 'technical',
+                difficulty: c.difficulty || 'intermediate',
+            }));
+            if (cards.length === 0) { showToast('No flashcards generated', '❌'); setIsGenerating(false); return; }
+            setFlashcards(cards);
+            setFlashcardIndex(0);
+            setIsFlipped(false);
+            setFlashcardRatings({});
+            setViewMode('flashcards');
+            showToast(`${cards.length} study cards ready`, '📚');
+        } catch (error) {
+            console.error('Flashcard generation error:', error);
             showToast('Failed to generate flashcards', '❌');
         } finally {
-            setIsLoading(false);
+            setIsGenerating(false);
         }
     };
 
-    // Handle card rating (after reveal)
-    const handleRating = (quality: number) => {
-        if (!activeDeck) return;
+    // ============================================
+    // TTS — Speak Question Aloud
+    // ============================================
+    const speakQuestion = async (text: string) => {
+        setIsSpeakingQuestion(true);
+        try {
+            const voiceId = voiceGender === 'male' ? undefined : undefined; // Let server pick from env
+            const res = await authFetch('/api/voice/speak', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text, voiceId: voiceGender === 'male' ? 'DMyrgzQFny3JI1Y1paM5' : 'jqcCZkN6Knx8BJ5TBdYR' }),
+            });
+            if (!res.ok) throw new Error('TTS failed');
+            const audioBlob = await res.blob();
+            await playAudio(audioBlob, () => setIsSpeakingQuestion(false));
+        } catch (error) {
+            console.error('TTS error:', error);
+            setIsSpeakingQuestion(false);
+        }
+    };
 
-        const currentCard = activeDeck.cards[currentCardIndex];
-        const updates = calculateNextReview(currentCard, quality);
-
-        // Update card in deck
-        const updatedCards = [...activeDeck.cards];
-        updatedCards[currentCardIndex] = { ...currentCard, ...updates };
-
-        const updatedDeck = { ...activeDeck, cards: updatedCards };
-        setActiveDeck(updatedDeck);
-        setDecks(prev => prev.map(d => d.id === updatedDeck.id ? updatedDeck : d));
-
-        // Update session
-        setSession(prev => ({
-            ...prev,
-            cardsStudied: prev.cardsStudied + 1,
-            correctAnswers: quality >= 3 ? prev.correctAnswers + 1 : prev.correctAnswers,
-            streak: quality >= 3 ? prev.streak + 1 : 0,
-        }));
-
-        // Move to next card
-        if (currentCardIndex < activeDeck.cards.length - 1) {
-            setCurrentCardIndex(prev => prev + 1);
-            setIsFlipped(false);
+    // ============================================
+    // STT — Record & Transcribe Answer
+    // ============================================
+    const handleVoiceAnswer = async () => {
+        if (isRecording) {
+            const blob = await stopRecording();
+            if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+            if (!blob) return;
+            setIsTranscribing(true);
+            try {
+                const formData = new FormData();
+                formData.append('file', blob, 'answer.webm');
+                const res = await authFetch('/api/voice/transcribe', { method: 'POST', body: formData });
+                if (!res.ok) throw new Error('Transcription failed');
+                const { text } = await res.json();
+                setUserAnswer(prev => prev ? prev + ' ' + text : text);
+                showToast('Answer transcribed', '🎤');
+            } catch (error) {
+                console.error('Transcription error:', error);
+                showToast('Failed to transcribe', '❌');
+            } finally {
+                setIsTranscribing(false);
+            }
         } else {
-            // Deck complete
-            showToast('🎉 Deck complete!', '✅');
-            setViewMode('review');
+            startRecording();
+            // Start visualizer animation
+            const updateVisualizer = () => {
+                setVisualizerData(getVisualizerData());
+                animFrameRef.current = requestAnimationFrame(updateVisualizer);
+            };
+            animFrameRef.current = requestAnimationFrame(updateVisualizer);
         }
     };
 
-    // Delete deck
-    const handleDeleteDeck = (deckId: string) => {
-        setDecks(prev => prev.filter(d => d.id !== deckId));
-        showToast('Deck deleted', '🗑️');
+    // ============================================
+    // GENERATE QUESTIONS
+    // ============================================
+    const startGauntlet = async () => {
+        setIsGenerating(true);
+        try {
+            if (interviewType === 'mock-interview' && !jobDescription.trim()) {
+                showToast('Paste a job description to start', '❌');
+                setIsGenerating(false);
+                return;
+            }
+
+            const res = await authFetch('/api/gauntlet/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    jobDescription: jobDescription || undefined,
+                    resumeText: resumeText || undefined,
+                    interviewStyle,
+                    questionCount,
+                    interviewType,
+                    drillCategory,
+                    drillRole: drillRole || undefined,
+                }),
+            });
+
+            if (!res.ok) throw new Error('Failed to generate questions');
+            const response = await res.json();
+
+            const generated: GauntletQuestion[] = (response.questions || []).map((q: any, i: number) => ({
+                id: `q-${i}-${Date.now()}`,
+                text: q.text,
+                type: (q.type as GauntletQuestion['type']) || 'behavioral',
+                context: q.context,
+                difficulty: (q.difficulty as GauntletQuestion['difficulty']) || 'standard',
+            }));
+
+            if (generated.length === 0) {
+                showToast('Failed to generate questions. Try again.', '❌');
+                setIsGenerating(false);
+                return;
+            }
+
+            setQuestions(generated);
+            setCurrentIndex(0);
+            setResults([]);
+            setCurrentGrading(null);
+            setUserAnswer('');
+            setSessionStartTime(Date.now());
+            setQuestionStartTime(Date.now());
+            setElapsed(0);
+            setViewMode('gauntlet');
+            showToast(`${generated.length} questions locked and loaded`, '⚔️');
+        } catch (error) {
+            console.error('Failed to generate questions:', error);
+            showToast('Failed to generate questions', '❌');
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    // ============================================
+    // GRADE ANSWER
+    // ============================================
+    const submitAnswer = async () => {
+        if (!userAnswer.trim()) {
+            showToast('Type your answer first', '✏️');
+            return;
+        }
+
+        setIsGrading(true);
+        if (timerRef.current) clearInterval(timerRef.current);
+
+        const timeSpent = Math.floor((Date.now() - questionStartTime) / 1000);
+
+        try {
+            const res = await authFetch('/api/gauntlet/grade', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    question: questions[currentIndex].text,
+                    answer: userAnswer,
+                    jobDescription: jobDescription || undefined,
+                    resumeText: resumeText || undefined,
+                    questionType: questions[currentIndex].type,
+                }),
+            });
+
+            if (!res.ok) throw new Error('Grading failed');
+
+            const grading: GradingResult = await res.json();
+            setCurrentGrading(grading);
+
+            setResults(prev => [...prev, {
+                question: questions[currentIndex],
+                answer: userAnswer,
+                grading,
+                timeSpent,
+            }]);
+
+            setViewMode('scorecard');
+        } catch (error) {
+            console.error('Grading error:', error);
+            showToast('Failed to grade answer. Try again.', '❌');
+        } finally {
+            setIsGrading(false);
+        }
+    };
+
+    // ============================================
+    // NEXT QUESTION / FINISH
+    // ============================================
+    const nextQuestion = () => {
+        if (currentIndex < questions.length - 1) {
+            setCurrentIndex(prev => prev + 1);
+            setCurrentGrading(null);
+            setUserAnswer('');
+            setQuestionStartTime(Date.now());
+            setElapsed(0);
+            setViewMode('gauntlet');
+            setTimeout(() => answerRef.current?.focus(), 100);
+        } else {
+            setViewMode('debrief');
+        }
+    };
+
+    // Score color helper
+    const getScoreColor = (score: number) => {
+        if (score >= 90) return 'text-emerald-400';
+        if (score >= 70) return 'text-cyan-400';
+        if (score >= 50) return 'text-amber-400';
+        return 'text-red-400';
+    };
+
+    const getScoreBg = (score: number) => {
+        if (score >= 90) return 'from-emerald-500/20 to-teal-500/20 border-emerald-500/30';
+        if (score >= 70) return 'from-cyan-500/20 to-blue-500/20 border-cyan-500/30';
+        if (score >= 50) return 'from-amber-500/20 to-orange-500/20 border-amber-500/30';
+        return 'from-red-500/20 to-rose-500/20 border-red-500/30';
+    };
+
+    const getScoreLabel = (score: number) => {
+        if (score >= 90) return 'Exceptional';
+        if (score >= 70) return 'Strong';
+        if (score >= 50) return 'Needs Work';
+        if (score >= 30) return 'Weak';
+        return 'Critical';
     };
 
     if (!user) {
         return (
             <div className="min-h-screen flex items-center justify-center p-8">
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="glass-card p-12 text-center max-w-md"
-                >
+                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="glass-card p-12 text-center max-w-md">
                     <span className="text-6xl mb-4 block">🔒</span>
                     <h2 className="text-2xl font-bold text-white mb-3">Sign In Required</h2>
-                    <p className="text-silver">Please sign in to access Study Flash Cards</p>
+                    <p className="text-silver">Please sign in to access The Gauntlet</p>
                 </motion.div>
             </div>
         );
@@ -343,33 +434,16 @@ Return a JSON array:
                 animate={{ opacity: 1, y: 0 }}
                 className="relative overflow-hidden rounded-3xl bg-[#0A0A0A] border border-white/10 p-8 mb-8"
             >
-                {/* Animated Background Orbs */}
                 <div className="absolute inset-0 overflow-hidden">
                     <motion.div
-                        animate={{
-                            x: [0, 50, 0],
-                            y: [0, -30, 0],
-                            scale: [1, 1.2, 1],
-                        }}
+                        animate={{ x: [0, 50, 0], y: [0, -30, 0], scale: [1, 1.2, 1] }}
                         transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
-                        className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl"
+                        className="absolute top-0 right-0 w-96 h-96 bg-red-500/15 rounded-full blur-3xl"
                     />
                     <motion.div
-                        animate={{
-                            x: [0, -30, 0],
-                            y: [0, 50, 0],
-                            scale: [1, 1.1, 1],
-                        }}
+                        animate={{ x: [0, -30, 0], y: [0, 50, 0] }}
                         transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' }}
-                        className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl"
-                    />
-                    <motion.div
-                        animate={{
-                            x: [0, 20, 0],
-                            y: [0, 20, 0],
-                        }}
-                        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-                        className="absolute top-1/2 left-1/2 w-48 h-48 bg-cyan-400/10 rounded-full blur-2xl"
+                        className="absolute bottom-0 left-0 w-64 h-64 bg-orange-500/15 rounded-full blur-3xl"
                     />
                 </div>
 
@@ -379,38 +453,41 @@ Return a JSON array:
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.1 }}
-                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 mb-4"
+                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/30 mb-4"
                         >
-                            <motion.div
-                                animate={{ scale: [1, 1.2, 1] }}
-                                transition={{ duration: 2, repeat: Infinity }}
-                                className="w-2 h-2 rounded-full bg-cyan-400"
-                            />
-                            <span className="text-xs font-medium text-cyan-400">AI-Powered Learning</span>
+                            <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }} className="w-2 h-2 rounded-full bg-red-400" />
+                            <span className="text-xs font-medium text-red-400">AI Interview Simulator</span>
                         </motion.div>
                         <h1 className="text-4xl lg:text-5xl font-bold mb-3">
-                            <span className="text-gradient">Study Flash Cards</span>
+                            <span className="bg-gradient-to-r from-red-400 via-orange-400 to-amber-400 bg-clip-text text-transparent">
+                                The Gauntlet
+                            </span>
                         </h1>
                         <p className="text-silver text-lg max-w-xl">
-                            Master concepts with AI-generated spaced repetition flash cards
+                            {viewMode === 'setup' && 'Train like you fight. AI-powered interview simulation with real-time grading.'}
+                            {viewMode === 'gauntlet' && `Question ${currentIndex + 1} of ${questions.length}`}
+                            {viewMode === 'scorecard' && 'Answer graded. Review your performance.'}
+                            {viewMode === 'debrief' && 'Session complete. Here\'s your performance breakdown.'}
+                            {viewMode === 'flashcards' && `Study Card ${flashcardIndex + 1} of ${flashcards.length}`}
                         </p>
                     </div>
 
-                    {viewMode !== 'home' && (
+                    {viewMode !== 'setup' && (
                         <motion.button
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={() => {
-                                setViewMode('home');
-                                setStudyMode(null);
-                                setActiveDeck(null);
-                                setIsFlipped(false);
+                                setViewMode('setup');
+                                setQuestions([]);
+                                setResults([]);
+                                setCurrentGrading(null);
+                                setUserAnswer('');
                             }}
-                            className="px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium transition-all border border-white/10 hover:border-white/20"
+                            className="px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium transition-all border border-white/10"
                         >
-                            ← Back to Home
+                            ← New Session
                         </motion.button>
                     )}
                 </div>
@@ -418,786 +495,867 @@ Return a JSON array:
 
             <AnimatePresence mode="wait">
                 {/* ============================================ */}
-                {/* HOME VIEW - Mode Selection & Deck List */}
+                {/* SETUP VIEW */}
                 {/* ============================================ */}
-                {viewMode === 'home' && (
-                    <motion.div
-                        key="home"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        className="max-w-6xl mx-auto"
-                    >
-                        {/* Study Mode Selection */}
-                        <div className="mb-12">
-                            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-                                <span className="text-3xl">🎯</span>
-                                Choose Your Study Mode
-                            </h2>
+                {viewMode === 'setup' && (
+                    <motion.div key="setup" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-5xl mx-auto">
+                        {/* Interview Type Selection */}
+                        <div className="grid md:grid-cols-3 gap-6 mb-8">
+                            <motion.button
+                                whileHover={{ scale: 1.02, y: -4 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => setInterviewType('mock-interview')}
+                                className={`group relative p-8 rounded-3xl bg-[#0A0A0A] border text-left transition-all overflow-hidden ${interviewType === 'mock-interview' ? 'border-red-500/50 shadow-lg shadow-red-500/10' : 'border-white/10 hover:border-white/20'}`}
+                            >
+                                <div className={`absolute inset-0 bg-gradient-to-br from-red-500/10 to-orange-500/10 ${interviewType === 'mock-interview' ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'} transition-opacity`} />
+                                <div className="relative">
+                                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center mb-4 border border-white/10">
+                                        <span className="text-3xl">🎯</span>
+                                    </div>
+                                    <h3 className="text-xl font-bold text-white mb-2">Mock Interview</h3>
+                                    <p className="text-silver text-sm">Paste a JD + your resume. AI generates targeted questions that probe your weaknesses against the role's exact requirements.</p>
+                                    {interviewType === 'mock-interview' && (
+                                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute top-4 right-4 w-6 h-6 rounded-full bg-red-500 flex items-center justify-center">
+                                            <span className="text-white text-xs">✓</span>
+                                        </motion.div>
+                                    )}
+                                </div>
+                            </motion.button>
 
-                            <div className="grid md:grid-cols-3 gap-6">
-                                {[
-                                    {
-                                        mode: 'interview-prep' as StudyMode,
-                                        icon: '💼',
-                                        title: 'Interview Prep',
-                                        description: 'Generate cards from job descriptions to ace your interviews',
-                                        gradient: 'from-blue-500/20 to-cyan-500/20',
-                                        borderColor: 'hover:border-blue-500/50',
-                                    },
-                                    {
-                                        mode: 'learning' as StudyMode,
-                                        icon: '📚',
-                                        title: 'Learn Any Topic',
-                                        description: 'Create flashcards for any subject you want to master',
-                                        gradient: 'from-cyan-500/20 to-teal-500/20',
-                                        borderColor: 'hover:border-cyan-500/50',
-                                    },
-                                    {
-                                        mode: 'resume-gap' as StudyMode,
-                                        icon: '🎯',
-                                        title: 'Resume Gap Analysis',
-                                        description: 'Fill your skill gaps by comparing resume to job requirements',
-                                        gradient: 'from-teal-500/20 to-blue-500/20',
-                                        borderColor: 'hover:border-teal-500/50',
-                                    },
-                                ].map((item, index) => (
-                                    <motion.button
-                                        key={item.mode}
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: index * 0.1 }}
-                                        whileHover={{ scale: 1.02, y: -4 }}
-                                        whileTap={{ scale: 0.98 }}
-                                        onClick={() => {
-                                            setStudyMode(item.mode);
-                                            setViewMode('create');
-                                        }}
-                                        className={`group relative p-8 rounded-3xl bg-[#0A0A0A] border border-white/10 ${item.borderColor} text-left transition-all overflow-hidden`}
-                                    >
-                                        <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+                            <motion.button
+                                whileHover={{ scale: 1.02, y: -4 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => setInterviewType('quick-drill')}
+                                className={`group relative p-8 rounded-3xl bg-[#0A0A0A] border text-left transition-all overflow-hidden ${interviewType === 'quick-drill' ? 'border-amber-500/50 shadow-lg shadow-amber-500/10' : 'border-white/10 hover:border-white/20'}`}
+                            >
+                                <div className={`absolute inset-0 bg-gradient-to-br from-amber-500/10 to-yellow-500/10 ${interviewType === 'quick-drill' ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'} transition-opacity`} />
+                                <div className="relative">
+                                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500/20 to-yellow-500/20 flex items-center justify-center mb-4 border border-white/10">
+                                        <span className="text-3xl">⚡</span>
+                                    </div>
+                                    <h3 className="text-xl font-bold text-white mb-2">Quick Drill</h3>
+                                    <p className="text-silver text-sm">Pick a category and practice. Rapid-fire questions to sharpen specific skills without needing a JD.</p>
+                                    {interviewType === 'quick-drill' && (
+                                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute top-4 right-4 w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center">
+                                            <span className="text-white text-xs">✓</span>
+                                        </motion.div>
+                                    )}
+                                </div>
+                            </motion.button>
 
-                                        <div className="relative">
-                                            <motion.div
-                                                whileHover={{ rotate: [0, -10, 10, 0] }}
-                                                transition={{ duration: 0.5 }}
-                                                className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center mb-6 border border-white/10"
-                                            >
-                                                <span className="text-3xl">{item.icon}</span>
-                                            </motion.div>
-
-                                            <h3 className="text-xl font-bold text-white mb-2">{item.title}</h3>
-                                            <p className="text-silver text-sm">{item.description}</p>
-
-                                            <div className="mt-4 flex items-center gap-2 text-cyan-400 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <span>Get Started</span>
-                                                <motion.span
-                                                    animate={{ x: [0, 4, 0] }}
-                                                    transition={{ duration: 1, repeat: Infinity }}
-                                                >
-                                                    →
-                                                </motion.span>
-                                            </div>
-                                        </div>
-                                    </motion.button>
-                                ))}
-                            </div>
+                            <motion.button
+                                whileHover={{ scale: 1.02, y: -4 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => setInterviewType('study-cards')}
+                                className={`group relative p-8 rounded-3xl bg-[#0A0A0A] border text-left transition-all overflow-hidden ${interviewType === 'study-cards' ? 'border-cyan-500/50 shadow-lg shadow-cyan-500/10' : 'border-white/10 hover:border-white/20'}`}
+                            >
+                                <div className={`absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 ${interviewType === 'study-cards' ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'} transition-opacity`} />
+                                <div className="relative">
+                                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center mb-4 border border-white/10">
+                                        <span className="text-3xl">📚</span>
+                                    </div>
+                                    <h3 className="text-xl font-bold text-white mb-2">Study Cards</h3>
+                                    <p className="text-silver text-sm">AI generates flashcards from your JD + resume. Flip cards, rate yourself, and drill key concepts.</p>
+                                    {interviewType === 'study-cards' && (
+                                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute top-4 right-4 w-6 h-6 rounded-full bg-cyan-500 flex items-center justify-center">
+                                            <span className="text-white text-xs">✓</span>
+                                        </motion.div>
+                                    )}
+                                </div>
+                            </motion.button>
                         </div>
 
-                        {/* Existing Decks */}
-                        {decks.length > 0 && (
-                            <div>
-                                <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-                                    <span className="text-3xl">📚</span>
-                                    Your Decks
-                                </h2>
-
-                                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {decks.map((deck, index) => {
-                                        const dueCards = getDueCards(deck);
-                                        const progress = deck.cards.length > 0
-                                            ? Math.round((deck.cards.filter(c => c.repetitions > 0).length / deck.cards.length) * 100)
-                                            : 0;
-
-                                        return (
-                                            <motion.div
-                                                key={deck.id}
-                                                initial={{ opacity: 0, y: 20 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                transition={{ delay: index * 0.05 }}
-                                                whileHover={{ y: -4 }}
-                                                className="group relative p-6 rounded-2xl bg-[#0A0A0A] border border-white/10 hover:border-cyan-500/30 transition-all overflow-hidden"
+                        {/* Configuration Panel */}
+                        <div className="rounded-3xl bg-[#0A0A0A] border border-white/10 p-8">
+                            {interviewType === 'study-cards' ? (
+                                <div className="space-y-6">
+                                    <div>
+                                        <label className="block text-white font-medium mb-2">Job Description <span className="text-cyan-400">*</span></label>
+                                        <textarea
+                                            value={jobDescription}
+                                            onChange={(e) => setJobDescription(e.target.value)}
+                                            placeholder="Paste the JD to generate role-specific study cards..."
+                                            rows={4}
+                                            className="w-full p-4 rounded-xl bg-[#111] border border-white/10 focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 text-white placeholder-silver/50 resize-none transition-all"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="flex items-center gap-2 text-white font-medium mb-2">
+                                            Your Resume <span className="text-silver text-xs font-normal">(optional — makes cards more targeted)</span>
+                                        </label>
+                                        <div className="relative">
+                                            <textarea
+                                                value={resumeText}
+                                                onChange={(e) => { setResumeText(e.target.value); setUploadedFileName(''); }}
+                                                placeholder="Paste your resume or upload a PDF..."
+                                                rows={3}
+                                                className="w-full p-4 rounded-xl bg-[#111] border border-white/10 focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 text-white placeholder-silver/50 resize-none transition-all"
+                                            />
+                                            <input ref={fileInputRef} type="file" accept=".pdf,.txt,.docx,.doc" onChange={(e) => { if (e.target.files?.[0]) handleResumeUpload(e.target.files[0]); }} className="hidden" />
+                                            <button
+                                                onClick={() => fileInputRef.current?.click()}
+                                                disabled={isUploadingResume}
+                                                className="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-white font-medium transition-all border border-white/10 flex items-center gap-1.5"
                                             >
-                                                <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-500/5 rounded-full blur-2xl group-hover:bg-cyan-500/10 transition-colors" />
-
-                                                <div className="relative">
-                                                    <div className="flex items-start justify-between mb-4">
-                                                        <div className="flex-1">
-                                                            <h3 className="text-lg font-bold text-white mb-1 truncate">{deck.name}</h3>
-                                                            <p className="text-silver text-sm truncate">{deck.description}</p>
-                                                        </div>
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleDeleteDeck(deck.id);
-                                                            }}
-                                                            className="p-2 rounded-lg hover:bg-red-500/20 text-silver hover:text-red-400 transition-colors"
-                                                        >
-                                                            🗑️
-                                                        </button>
-                                                    </div>
-
-                                                    {/* Progress bar */}
-                                                    <div className="mb-4">
-                                                        <div className="flex justify-between text-xs text-silver mb-1">
-                                                            <span>{progress}% mastered</span>
-                                                            <span>{deck.cards.length} cards</span>
-                                                        </div>
-                                                        <div className="h-2 rounded-full bg-white/10 overflow-hidden">
-                                                            <motion.div
-                                                                initial={{ width: 0 }}
-                                                                animate={{ width: `${progress}%` }}
-                                                                transition={{ duration: 1, delay: index * 0.1 }}
-                                                                className="h-full bg-gradient-to-r from-cyan-500 to-blue-500"
-                                                            />
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Stats */}
-                                                    <div className="flex items-center gap-4 mb-4 text-sm">
-                                                        {dueCards.length > 0 && (
-                                                            <span className="px-2 py-1 rounded-lg bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
-                                                                {dueCards.length} due
-                                                            </span>
-                                                        )}
-                                                        <span className="text-silver">
-                                                            {deck.source === 'ai' ? '🤖 AI Generated' : '✏️ Manual'}
-                                                        </span>
-                                                    </div>
-
-                                                    {/* Study button */}
-                                                    <motion.button
-                                                        whileHover={{ scale: 1.02 }}
-                                                        whileTap={{ scale: 0.98 }}
-                                                        onClick={() => {
-                                                            setActiveDeck(deck);
-                                                            setCurrentCardIndex(0);
-                                                            setIsFlipped(false);
-                                                            setViewMode('study');
-                                                            setSession({
-                                                                cardsStudied: 0,
-                                                                correctAnswers: 0,
-                                                                startTime: new Date(),
-                                                                streak: 0,
-                                                            });
-                                                        }}
-                                                        className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-medium hover:shadow-lg hover:shadow-cyan-500/25 transition-all"
-                                                    >
-                                                        Study Now
-                                                    </motion.button>
-                                                </div>
-                                            </motion.div>
-                                        );
-                                    })}
+                                                {isUploadingResume ? '⏳ Parsing...' : '📎 Upload File'}
+                                            </button>
+                                        </div>
+                                        {uploadedFileName && (
+                                            <div className="mt-2 flex items-center gap-2 text-xs text-cyan-400">
+                                                <span>📄</span> {uploadedFileName}
+                                                <button onClick={() => { setUploadedFileName(''); setResumeText(''); }} className="text-silver hover:text-red-400 transition-colors">✕</button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
-
-                        {/* Empty state */}
-                        {decks.length === 0 && (
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ delay: 0.3 }}
-                                className="text-center py-16"
-                            >
-                                <motion.div
-                                    animate={{ y: [0, -10, 0] }}
-                                    transition={{ duration: 3, repeat: Infinity }}
-                                    className="text-7xl mb-6"
-                                >
-                                    🎴
-                                </motion.div>
-                                <h3 className="text-xl font-bold text-white mb-2">No decks yet</h3>
-                                <p className="text-silver">Choose a study mode above to create your first flashcard deck!</p>
-                            </motion.div>
-                        )}
-                    </motion.div>
-                )}
-
-                {/* ============================================ */}
-                {/* CREATE VIEW - Generate Cards */}
-                {/* ============================================ */}
-                {viewMode === 'create' && studyMode && (
-                    <motion.div
-                        key="create"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        className="max-w-3xl mx-auto"
-                    >
-                        <div className="p-8 rounded-3xl bg-[#0A0A0A] border border-white/10">
-                            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-                                {studyMode === 'interview-prep' && <><span className="text-3xl">💼</span> Interview Prep Cards</>}
-                                {studyMode === 'learning' && <><span className="text-3xl">📚</span> Learn Any Topic</>}
-                                {studyMode === 'resume-gap' && <><span className="text-3xl">🎯</span> Resume Gap Analysis</>}
-                            </h2>
-
-                            <div className="space-y-6">
-                                {/* Resume input for resume-gap mode */}
-                                {studyMode === 'resume-gap' && (
+                            ) : interviewType === 'mock-interview' ? (
+                                <div className="space-y-6">
                                     <div>
-                                        <label className="block text-white font-medium mb-2">Your Resume Text</label>
+                                        <label className="block text-white font-medium mb-2">Job Description <span className="text-red-400">*</span></label>
                                         <textarea
-                                            value={createForm.resumeText}
-                                            onChange={(e) => setCreateForm(prev => ({ ...prev, resumeText: e.target.value }))}
-                                            placeholder="Paste your resume content here..."
+                                            value={jobDescription}
+                                            onChange={(e) => setJobDescription(e.target.value)}
+                                            placeholder="Paste the full job description here. The more detail, the sharper the questions..."
                                             rows={6}
-                                            className="w-full p-4 rounded-xl bg-[#111111] border border-white/10 focus:border-cyan-500/50 text-white placeholder-silver/50 resize-none transition-colors"
+                                            className="w-full p-4 rounded-xl bg-[#111] border border-white/10 focus:border-red-500/50 focus:ring-2 focus:ring-red-500/20 text-white placeholder-silver/50 resize-none transition-all"
                                         />
                                     </div>
-                                )}
-
-                                {/* Job description for interview-prep and resume-gap */}
-                                {(studyMode === 'interview-prep' || studyMode === 'resume-gap') && (
                                     <div>
-                                        <label className="block text-white font-medium mb-2">Job Description</label>
-                                        <textarea
-                                            value={createForm.jobDescription}
-                                            onChange={(e) => setCreateForm(prev => ({ ...prev, jobDescription: e.target.value }))}
-                                            placeholder="Paste the job description here..."
-                                            rows={6}
-                                            className="w-full p-4 rounded-xl bg-[#111111] border border-white/10 focus:border-cyan-500/50 text-white placeholder-silver/50 resize-none transition-colors"
-                                        />
+                                        <label className="flex items-center gap-2 text-white font-medium mb-2">
+                                            Your Resume <span className="text-silver text-xs font-normal">(optional — enables gap analysis)</span>
+                                        </label>
+                                        <div className="relative">
+                                            <textarea
+                                                value={resumeText}
+                                                onChange={(e) => { setResumeText(e.target.value); setUploadedFileName(''); }}
+                                                placeholder="Paste your resume text or upload a PDF..."
+                                                rows={4}
+                                                className="w-full p-4 rounded-xl bg-[#111] border border-white/10 focus:border-red-500/50 focus:ring-2 focus:ring-red-500/20 text-white placeholder-silver/50 resize-none transition-all"
+                                            />
+                                            <input ref={fileInputRef} type="file" accept=".pdf,.txt,.docx,.doc" onChange={(e) => { if (e.target.files?.[0]) handleResumeUpload(e.target.files[0]); }} className="hidden" />
+                                            <button
+                                                onClick={() => fileInputRef.current?.click()}
+                                                disabled={isUploadingResume}
+                                                className="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-white font-medium transition-all border border-white/10 flex items-center gap-1.5"
+                                            >
+                                                {isUploadingResume ? '⏳ Parsing...' : '📎 Upload File'}
+                                            </button>
+                                        </div>
+                                        {uploadedFileName && (
+                                            <div className="mt-2 flex items-center gap-2 text-xs text-emerald-400">
+                                                <span>📄</span> {uploadedFileName}
+                                                <button onClick={() => { setUploadedFileName(''); setResumeText(''); }} className="text-silver hover:text-red-400 transition-colors">✕</button>
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-
-                                {/* Topic input for learning mode */}
-                                {studyMode === 'learning' && (
+                                </div>
+                            ) : (
+                                <div className="space-y-6">
+                                    {/* Target Role / Field */}
                                     <div>
-                                        <label className="block text-white font-medium mb-2">Topic to Study</label>
+                                        <label className="block text-white font-medium mb-3">Your Target Role / Field *</label>
                                         <input
                                             type="text"
-                                            value={createForm.topic}
-                                            onChange={(e) => setCreateForm(prev => ({ ...prev, topic: e.target.value }))}
-                                            placeholder="e.g., React Hooks, Machine Learning, AWS Services..."
-                                            className="w-full p-4 rounded-xl bg-[#111111] border border-white/10 focus:border-cyan-500/50 text-white placeholder-silver/50 transition-colors"
+                                            value={drillRole}
+                                            onChange={(e) => setDrillRole(e.target.value)}
+                                            placeholder="e.g. Senior Software Engineer, Product Manager, Data Scientist..."
+                                            className="w-full p-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 outline-none focus:border-amber-500/50 transition-colors text-sm"
                                         />
+                                        <div className="flex flex-wrap gap-2 mt-2">
+                                            {['Software Engineer', 'Product Manager', 'Data Scientist', 'DevOps Engineer', 'UX Designer', 'Engineering Manager'].map((role) => (
+                                                <button
+                                                    key={role}
+                                                    onClick={() => setDrillRole(role)}
+                                                    className={`text-xs px-3 py-1.5 rounded-full border transition-all ${
+                                                        drillRole === role
+                                                            ? 'bg-amber-500/20 border-amber-500/50 text-amber-300'
+                                                            : 'bg-white/5 border-white/10 text-silver hover:text-white hover:bg-white/10'
+                                                    }`}
+                                                >
+                                                    {role}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
-                                )}
 
-                                {/* Card count slider */}
+                                    {/* Category Selection */}
+                                    <div>
+                                        <label className="block text-white font-medium mb-3">Choose Category</label>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                            {([
+                                                { id: 'behavioral', icon: '🧠', label: 'Behavioral' },
+                                                { id: 'technical', icon: '⚙️', label: 'Technical' },
+                                                { id: 'system-design', icon: '🏗️', label: 'System Design' },
+                                                { id: 'leadership', icon: '👑', label: 'Leadership' },
+                                            ] as const).map((cat) => (
+                                                <button
+                                                    key={cat.id}
+                                                    onClick={() => setDrillCategory(cat.id)}
+                                                    className={`p-4 rounded-xl border text-center transition-all ${drillCategory === cat.id
+                                                        ? 'bg-amber-500/20 border-amber-500/50 text-white'
+                                                        : 'bg-white/5 border-white/10 text-silver hover:text-white hover:bg-white/10'
+                                                    }`}
+                                                >
+                                                    <span className="text-2xl block mb-2">{cat.icon}</span>
+                                                    <span className="text-sm font-medium">{cat.label}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Resume Upload for Quick Drill */}
+                                    <div>
+                                        <label className="block text-white font-medium mb-3">
+                                            Your Resume <span className="text-silver text-xs font-normal">(optional — personalizes questions to your background)</span>
+                                        </label>
+                                        <div className="relative">
+                                            <textarea
+                                                value={resumeText}
+                                                onChange={(e) => { setResumeText(e.target.value); setUploadedFileName(''); }}
+                                                placeholder="Paste your resume or upload a file..."
+                                                rows={3}
+                                                className="w-full p-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 outline-none focus:border-amber-500/50 resize-none transition-colors text-sm"
+                                            />
+                                            <input ref={fileInputRef} type="file" accept=".pdf,.txt,.docx,.doc" onChange={(e) => { if (e.target.files?.[0]) handleResumeUpload(e.target.files[0]); }} className="hidden" />
+                                            <button
+                                                onClick={() => fileInputRef.current?.click()}
+                                                disabled={isUploadingResume}
+                                                className="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-white font-medium transition-all border border-white/10 flex items-center gap-1.5"
+                                            >
+                                                {isUploadingResume ? '⏳ Parsing...' : '📎 Upload File'}
+                                            </button>
+                                        </div>
+                                        {uploadedFileName && (
+                                            <div className="flex items-center gap-2 mt-2 text-xs text-emerald-400">
+                                                <span>📄 {uploadedFileName}</span>
+                                                <button onClick={() => { setUploadedFileName(''); setResumeText(''); }} className="text-silver hover:text-red-400 transition-colors">✕</button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Settings Row */}
+                            <div className="mt-8 grid md:grid-cols-3 gap-6 p-6 rounded-2xl bg-white/5 border border-white/5">
+                                {/* Question Count */}
                                 <div>
-                                    <label className="block text-white font-medium mb-2">
-                                        Number of Cards: <span className="text-cyan-400">{createForm.cardCount}</span>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                                        Questions: <span className="text-red-400 font-bold">{questionCount}</span>
                                     </label>
                                     <input
-                                        type="range"
-                                        min={5}
-                                        max={25}
-                                        value={createForm.cardCount}
-                                        onChange={(e) => setCreateForm(prev => ({ ...prev, cardCount: parseInt(e.target.value) }))}
-                                        className="w-full slider-enhanced"
+                                        type="range" min={3} max={15} value={questionCount}
+                                        onChange={(e) => setQuestionCount(parseInt(e.target.value))}
+                                        className="w-full accent-red-500"
                                     />
                                     <div className="flex justify-between text-xs text-silver mt-1">
-                                        <span>5 cards</span>
-                                        <span>25 cards</span>
+                                        <span>3 (Quick)</span><span>15 (Full)</span>
                                     </div>
                                 </div>
 
-                                {/* Generate button */}
-                                <motion.button
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={generateCards}
-                                    disabled={isLoading}
-                                    className="w-full py-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold text-lg hover:shadow-lg hover:shadow-cyan-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
-                                >
-                                    {isLoading ? (
-                                        <>
-                                            <motion.div
-                                                animate={{ rotate: 360 }}
-                                                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                                                className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full"
-                                            />
-                                            Generating Cards...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <span className="text-xl">✨</span>
-                                            Generate Flash Cards
-                                        </>
+                                {/* Interview Style */}
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">Interviewer Style</label>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => setInterviewStyle('friendly')}
+                                            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${interviewStyle === 'friendly' ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-400' : 'bg-white/5 border border-white/10 text-silver'}`}
+                                        >
+                                            😊 Friendly
+                                        </button>
+                                        <button
+                                            onClick={() => setInterviewStyle('tough')}
+                                            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${interviewStyle === 'tough' ? 'bg-red-500/20 border border-red-500/50 text-red-400' : 'bg-white/5 border border-white/10 text-silver'}`}
+                                        >
+                                            😤 Tough
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Voice Mode Toggle */}
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">Voice Mode</label>
+                                    <button
+                                        onClick={() => setVoiceEnabled(!voiceEnabled)}
+                                        className={`w-full py-2 rounded-lg text-sm font-medium transition-all mb-2 ${voiceEnabled ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-400' : 'bg-white/5 border border-white/10 text-silver'}`}
+                                    >
+                                        {voiceEnabled ? '🎙️ Voice ON' : '🔇 Voice OFF'}
+                                    </button>
+                                    {voiceEnabled && (
+                                        <div className="flex gap-2">
+                                            <button onClick={() => setVoiceGender('female')} className={`flex-1 py-1.5 rounded-lg text-xs transition-all ${voiceGender === 'female' ? 'bg-pink-500/20 border border-pink-500/50 text-pink-400' : 'bg-white/5 border border-white/10 text-silver'}`}>👩 Female</button>
+                                            <button onClick={() => setVoiceGender('male')} className={`flex-1 py-1.5 rounded-lg text-xs transition-all ${voiceGender === 'male' ? 'bg-blue-500/20 border border-blue-500/50 text-blue-400' : 'bg-white/5 border border-white/10 text-silver'}`}>👨 Male</button>
+                                        </div>
                                     )}
-                                </motion.button>
+                                </div>
                             </div>
+
+                            {/* Launch Button */}
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={interviewType === 'study-cards' ? generateFlashcards : startGauntlet}
+                                disabled={isGenerating}
+                                className={`w-full mt-8 py-5 rounded-2xl text-white font-bold text-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 ${interviewType === 'study-cards' ? 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:shadow-cyan-500/25' : 'bg-gradient-to-r from-red-500 to-orange-500 hover:shadow-red-500/25'}`}
+                            >
+                                {isGenerating ? (
+                                    <>
+                                        <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full" />
+                                        {interviewType === 'study-cards' ? 'Generating Cards...' : 'Generating Questions...'}
+                                    </>
+                                ) : (
+                                    <>{interviewType === 'study-cards' ? '📚 Generate Study Cards' : '⚔️ Enter The Gauntlet'}</>
+                                )}
+                            </motion.button>
                         </div>
                     </motion.div>
                 )}
 
                 {/* ============================================ */}
-                {/* STUDY VIEW - Card Flip Interface */}
+                {/* GAUNTLET VIEW — Answer Questions */}
                 {/* ============================================ */}
-                {viewMode === 'study' && activeDeck && (
-                    <motion.div
-                        key="study"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        className="max-w-4xl mx-auto"
-                    >
-                        {/* Progress Bar */}
-                        <div className="mb-8">
+                {viewMode === 'gauntlet' && questions.length > 0 && (
+                    <motion.div key="gauntlet" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-4xl mx-auto">
+                        {/* Progress */}
+                        <div className="mb-6">
                             <div className="flex items-center justify-between text-sm text-silver mb-2">
-                                <span>Card {currentCardIndex + 1} of {activeDeck.cards.length}</span>
-                                <span className="flex items-center gap-2">
-                                    {session.streak > 0 && (
-                                        <motion.span
-                                            initial={{ scale: 0 }}
-                                            animate={{ scale: 1 }}
-                                            className="px-2 py-1 rounded-lg bg-orange-500/20 text-orange-400 border border-orange-500/30"
-                                        >
-                                            🔥 {session.streak} streak
-                                        </motion.span>
+                                <span>Question {currentIndex + 1} of {questions.length}</span>
+                                <div className="flex items-center gap-3">
+                                    <span className="font-mono text-white">{formatTime(elapsed)}</span>
+                                    {results.length > 0 && (
+                                        <span className="px-2 py-1 rounded-lg bg-white/5 text-xs">
+                                            Avg: {Math.round(results.reduce((s, r) => s + r.grading.overall_score, 0) / results.length)}
+                                        </span>
                                     )}
-                                    <span>{session.correctAnswers}/{session.cardsStudied} correct</span>
-                                </span>
+                                </div>
                             </div>
                             <div className="h-2 rounded-full bg-white/10 overflow-hidden">
                                 <motion.div
                                     initial={{ width: 0 }}
-                                    animate={{ width: `${((currentCardIndex + 1) / activeDeck.cards.length) * 100}%` }}
-                                    className="h-full bg-gradient-to-r from-cyan-500 to-blue-500"
+                                    animate={{ width: `${((currentIndex) / questions.length) * 100}%` }}
+                                    className="h-full bg-gradient-to-r from-red-500 to-orange-500"
                                 />
                             </div>
                         </div>
 
-                        {/* 3D Flip Card */}
-                        <FlipCard
-                            card={activeDeck.cards[currentCardIndex]}
-                            isFlipped={isFlipped}
-                            onFlip={() => setIsFlipped(true)}
-                        />
+                        {/* Question Card */}
+                        <motion.div
+                            key={questions[currentIndex].id}
+                            initial={{ opacity: 0, x: 40 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className="rounded-2xl bg-[#0A0A0A] border border-white/10 overflow-hidden mb-6"
+                        >
+                            {/* Question Type Badge */}
+                            <div className={`px-6 py-3 bg-gradient-to-r ${QUESTION_TYPE_CONFIG[questions[currentIndex].type]?.color || 'from-white/5 to-white/5'} border-b border-white/10 flex items-center justify-between`}>
+                                <div className="flex items-center gap-2">
+                                    <span>{QUESTION_TYPE_CONFIG[questions[currentIndex].type]?.icon || '❓'}</span>
+                                    <span className="text-sm font-medium text-white">{QUESTION_TYPE_CONFIG[questions[currentIndex].type]?.label || questions[currentIndex].type}</span>
+                                    <span className={`text-xs px-2 py-0.5 rounded-full border ${questions[currentIndex].difficulty === 'killer' ? 'bg-red-500/20 border-red-500/30 text-red-400' : questions[currentIndex].difficulty === 'advanced' ? 'bg-amber-500/20 border-amber-500/30 text-amber-400' : 'bg-white/10 border-white/20 text-silver'}`}>
+                                        {questions[currentIndex].difficulty}
+                                    </span>
+                                </div>
+                            </div>
 
-                        {/* Rating buttons (shown after flip) */}
-                        <AnimatePresence>
-                            {isFlipped && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: 20 }}
-                                    className="mt-8"
+                            {/* Question Text */}
+                            <div className="p-8">
+                                <p className="text-xl text-white leading-relaxed font-medium">
+                                    {questions[currentIndex].text}
+                                </p>
+                                <div className="mt-4 flex items-center justify-between">
+                                    <p className="text-xs text-silver/60 italic">
+                                        💭 {questions[currentIndex].context}
+                                    </p>
+                                    {voiceEnabled && (
+                                        <button
+                                            onClick={() => speakQuestion(questions[currentIndex].text)}
+                                            disabled={isSpeakingQuestion || isPlaying}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${isSpeakingQuestion || isPlaying ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-400 animate-pulse' : 'bg-white/10 hover:bg-white/20 border border-white/10 text-white'}`}
+                                        >
+                                            {isSpeakingQuestion || isPlaying ? '🔊 Speaking...' : '🔊 Listen'}
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </motion.div>
+
+                        {/* Answer Area */}
+                        <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+                            <label className="flex items-center justify-between mb-3">
+                                <span className="text-sm font-medium text-white">Your Answer</span>
+                                <span className="text-xs text-silver">{userAnswer.length} characters</span>
+                            </label>
+                            <textarea
+                                ref={answerRef}
+                                value={userAnswer}
+                                onChange={(e) => setUserAnswer(e.target.value)}
+                                placeholder="Type your answer as if you were speaking to the interviewer. Use the STAR method for behavioral questions: Situation → Task → Action → Result..."
+                                rows={8}
+                                className="w-full p-4 rounded-xl bg-[#111] border border-white/10 focus:border-red-500/50 focus:ring-2 focus:ring-red-500/20 text-white placeholder-silver/40 resize-none transition-all text-base leading-relaxed"
+                                autoFocus
+                            />
+
+                            <div className="flex items-center justify-between mt-4">
+                                <div className="flex items-center gap-3">
+                                    <p className="text-xs text-silver">
+                                        💡 Tip: Be specific. Use numbers, metrics, and concrete outcomes.
+                                    </p>
+                                    {voiceEnabled && (
+                                        <button
+                                            onClick={handleVoiceAnswer}
+                                            disabled={isTranscribing}
+                                            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${isRecording ? 'bg-red-500/30 border border-red-500/50 text-red-400 animate-pulse' : isTranscribing ? 'bg-amber-500/20 border border-amber-500/50 text-amber-400' : 'bg-white/10 hover:bg-white/20 border border-white/10 text-white'}`}
+                                        >
+                                            {isRecording ? '⏹ Stop Recording' : isTranscribing ? '⏳ Transcribing...' : '🎙️ Speak Answer'}
+                                        </button>
+                                    )}
+                                </div>
+                                <motion.button
+                                    whileHover={{ scale: 1.03 }}
+                                    whileTap={{ scale: 0.97 }}
+                                    onClick={submitAnswer}
+                                    disabled={isGrading || !userAnswer.trim()}
+                                    className="px-8 py-3 rounded-xl bg-gradient-to-r from-red-500 to-orange-500 text-white font-bold hover:shadow-lg hover:shadow-red-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                 >
-                                    <p className="text-center text-silver mb-4">How well did you know this?</p>
-                                    <div className="flex justify-center gap-4">
-                                        {[
-                                            { quality: 1, label: 'Again', color: 'bg-red-500/20 border-red-500/30 text-red-400 hover:bg-red-500/30' },
-                                            { quality: 3, label: 'Hard', color: 'bg-orange-500/20 border-orange-500/30 text-orange-400 hover:bg-orange-500/30' },
-                                            { quality: 4, label: 'Good', color: 'bg-cyan-500/20 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/30' },
-                                            { quality: 5, label: 'Easy', color: 'bg-green-500/20 border-green-500/30 text-green-400 hover:bg-green-500/30' },
-                                        ].map((btn) => (
-                                            <motion.button
-                                                key={btn.quality}
-                                                whileHover={{ scale: 1.05, y: -2 }}
-                                                whileTap={{ scale: 0.95 }}
-                                                onClick={() => handleRating(btn.quality)}
-                                                className={`px-8 py-3 rounded-xl border font-medium transition-colors ${btn.color}`}
-                                            >
-                                                {btn.label}
-                                            </motion.button>
-                                        ))}
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                                    {isGrading ? (
+                                        <>
+                                            <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full" />
+                                            Grading...
+                                        </>
+                                    ) : (
+                                        <>Submit Answer →</>
+                                    )}
+                                </motion.button>
+                            </div>
+                        </div>
                     </motion.div>
                 )}
 
                 {/* ============================================ */}
-                {/* REVIEW VIEW - Session Summary */}
+                {/* FLASHCARD VIEW */}
                 {/* ============================================ */}
-                {viewMode === 'review' && activeDeck && (
-                    <motion.div
-                        key="review"
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        className="max-w-4xl mx-auto"
-                    >
-                        {/* Celebration Card */}
+                {viewMode === 'flashcards' && flashcards.length > 0 && (
+                    <motion.div key="flashcards" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-3xl mx-auto">
+                        {/* Progress */}
+                        <div className="mb-6">
+                            <div className="flex items-center justify-between text-sm text-silver mb-2">
+                                <span>Card {flashcardIndex + 1} of {flashcards.length}</span>
+                                <span className="text-xs">
+                                    ✅ {Object.values(flashcardRatings).filter(r => r === 'got-it').length} Got It &nbsp;•&nbsp;
+                                    📝 {Object.values(flashcardRatings).filter(r => r === 'needs-work').length} Needs Work
+                                </span>
+                            </div>
+                            <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                                <motion.div initial={{ width: 0 }} animate={{ width: `${((flashcardIndex + 1) / flashcards.length) * 100}%` }} className="h-full bg-gradient-to-r from-cyan-500 to-blue-500" />
+                            </div>
+                        </div>
+
+                        {/* Flashcard */}
                         <motion.div
-                            initial={{ y: 20 }}
-                            animate={{ y: 0 }}
-                            className="p-12 rounded-3xl bg-[#0A0A0A] border border-white/10 relative overflow-hidden mb-8"
+                            key={flashcardIndex}
+                            initial={{ opacity: 0, rotateY: -90 }}
+                            animate={{ opacity: 1, rotateY: 0 }}
+                            transition={{ duration: 0.4 }}
+                            onClick={() => setIsFlipped(!isFlipped)}
+                            className="cursor-pointer"
                         >
-                            {/* Background celebration */}
+                            <div className={`min-h-[320px] rounded-3xl border overflow-hidden transition-all duration-300 ${isFlipped ? 'bg-gradient-to-br from-emerald-900/30 to-teal-900/30 border-emerald-500/30' : 'bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-cyan-500/30'}`}>
+                                <div className="px-6 py-3 border-b border-white/10 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <span className={`text-xs px-2 py-0.5 rounded-full ${flashcards[flashcardIndex].category === 'technical' ? 'bg-emerald-500/20 text-emerald-400' : flashcards[flashcardIndex].category === 'behavioral' ? 'bg-blue-500/20 text-blue-400' : flashcards[flashcardIndex].category === 'domain' ? 'bg-amber-500/20 text-amber-400' : 'bg-pink-500/20 text-pink-400'}`}>
+                                            {flashcards[flashcardIndex].category}
+                                        </span>
+                                        <span className="text-xs text-silver">{flashcards[flashcardIndex].difficulty}</span>
+                                    </div>
+                                    <span className="text-xs text-silver">Click to {isFlipped ? 'see question' : 'reveal answer'}</span>
+                                </div>
+                                <div className="p-10 flex items-center justify-center min-h-[260px]">
+                                    <AnimatePresence mode="wait">
+                                        <motion.div key={isFlipped ? 'answer' : 'question'} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+                                            {!isFlipped ? (
+                                                <div className="text-center">
+                                                    <span className="text-4xl mb-4 block">❓</span>
+                                                    <p className="text-xl text-white font-medium leading-relaxed">
+                                                        {flashcards[flashcardIndex].question}
+                                                    </p>
+                                                </div>
+                                            ) : (
+                                                <div className="text-center">
+                                                    <span className="text-4xl mb-4 block">✅</span>
+                                                    <p className="text-lg text-emerald-200 leading-relaxed">
+                                                        {flashcards[flashcardIndex].answer}
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </motion.div>
+                                    </AnimatePresence>
+                                </div>
+                            </div>
+                        </motion.div>
+
+                        {/* Rating & Navigation */}
+                        <div className="mt-6 flex items-center justify-between">
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => { setFlashcardRatings(prev => ({ ...prev, [flashcardIndex]: 'needs-work' })); if (flashcardIndex < flashcards.length - 1) { setFlashcardIndex(i => i + 1); setIsFlipped(false); } }}
+                                    className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${flashcardRatings[flashcardIndex] === 'needs-work' ? 'bg-amber-500/20 border border-amber-500/50 text-amber-400' : 'bg-white/5 border border-white/10 text-silver hover:text-white'}`}
+                                >
+                                    📝 Needs Work
+                                </button>
+                                <button
+                                    onClick={() => { setFlashcardRatings(prev => ({ ...prev, [flashcardIndex]: 'got-it' })); if (flashcardIndex < flashcards.length - 1) { setFlashcardIndex(i => i + 1); setIsFlipped(false); } }}
+                                    className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${flashcardRatings[flashcardIndex] === 'got-it' ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-400' : 'bg-white/5 border border-white/10 text-silver hover:text-white'}`}
+                                >
+                                    ✅ Got It
+                                </button>
+                            </div>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => { setFlashcardIndex(i => Math.max(0, i - 1)); setIsFlipped(false); }}
+                                    disabled={flashcardIndex === 0}
+                                    className="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-silver text-sm hover:text-white transition-all disabled:opacity-30"
+                                >
+                                    ← Prev
+                                </button>
+                                {flashcardIndex < flashcards.length - 1 ? (
+                                    <button
+                                        onClick={() => { setFlashcardIndex(i => i + 1); setIsFlipped(false); }}
+                                        className="px-4 py-2.5 rounded-xl bg-cyan-500/20 border border-cyan-500/50 text-cyan-400 text-sm font-medium hover:bg-cyan-500/30 transition-all"
+                                    >
+                                        Next →
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => { setViewMode('setup'); setFlashcards([]); }}
+                                        className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-sm font-medium transition-all"
+                                    >
+                                        ✅ Done
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+
+                {/* ============================================ */}
+                {/* SCORECARD VIEW — Grading Results */}
+                {/* ============================================ */}
+                {viewMode === 'scorecard' && currentGrading && (
+                    <motion.div key="scorecard" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-5xl mx-auto space-y-6">
+                        {/* Score Header */}
+                        <div className={`rounded-2xl bg-gradient-to-r ${getScoreBg(currentGrading.overall_score)} border p-8 flex items-center gap-8`}>
+                            <div className="text-center">
+                                <motion.div
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+                                    className={`text-6xl font-black ${getScoreColor(currentGrading.overall_score)}`}
+                                >
+                                    {currentGrading.overall_score}
+                                </motion.div>
+                                <p className="text-sm text-silver mt-1">{getScoreLabel(currentGrading.overall_score)}</p>
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="text-lg font-bold text-white mb-2">Question {currentIndex + 1} Result</h3>
+                                <p className="text-sm text-silver line-clamp-2">{questions[currentIndex].text}</p>
+                            </div>
+                        </div>
+
+                        {/* STAR Method Breakdown */}
+                        <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+                            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">⭐ STAR Method Analysis</h3>
+                            <div className="grid md:grid-cols-2 gap-4">
+                                {(['situation', 'task', 'action', 'result'] as const).map((key) => {
+                                    const item = currentGrading.star_method[key];
+                                    return (
+                                        <motion.div
+                                            key={key}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className={`p-4 rounded-xl border ${item.present ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-red-500/10 border-red-500/20'}`}
+                                        >
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className={`text-lg ${item.present ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                    {item.present ? '✅' : '❌'}
+                                                </span>
+                                                <span className="font-bold text-white capitalize">{key}</span>
+                                            </div>
+                                            <p className="text-sm text-silver">{item.feedback}</p>
+                                        </motion.div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Strengths & Improvements */}
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+                                <h3 className="text-base font-bold text-emerald-400 mb-3 flex items-center gap-2">💪 Strengths</h3>
+                                <ul className="space-y-2">
+                                    {currentGrading.strengths.map((s, i) => (
+                                        <li key={i} className="text-sm text-silver flex items-start gap-2">
+                                            <span className="text-emerald-400 mt-0.5">•</span> {s}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                            <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+                                <h3 className="text-base font-bold text-amber-400 mb-3 flex items-center gap-2">📈 Improvements</h3>
+                                <ul className="space-y-2">
+                                    {currentGrading.improvements.map((s, i) => (
+                                        <li key={i} className="text-sm text-silver flex items-start gap-2">
+                                            <span className="text-amber-400 mt-0.5">•</span> {s}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+
+                        {/* Filler Analysis */}
+                        {currentGrading.filler_analysis?.weak_phrases?.length > 0 && (
+                            <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+                                <h3 className="text-base font-bold text-rose-400 mb-3 flex items-center gap-2">🚫 Weak Phrases Detected</h3>
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                    {currentGrading.filler_analysis.weak_phrases.map((w, i) => (
+                                        <span key={i} className="px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-medium">
+                                            "{w}"
+                                        </span>
+                                    ))}
+                                </div>
+                                <p className="text-sm text-silver">{currentGrading.filler_analysis.feedback}</p>
+                            </div>
+                        )}
+
+                        {/* Coaching Tip */}
+                        <div className="rounded-2xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 p-6">
+                            <h3 className="text-base font-bold text-amber-400 mb-2 flex items-center gap-2">🎯 Coaching Tip</h3>
+                            <p className="text-silver">{currentGrading.coaching_tip}</p>
+                        </div>
+
+                        {/* Model Answer */}
+                        <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+                            <h3 className="text-base font-bold text-cyan-400 mb-3 flex items-center gap-2">✨ Model Answer</h3>
+                            <p className="text-silver leading-relaxed italic">&quot;{currentGrading.rewritten_answer}&quot;</p>
+                        </div>
+
+                        {/* Follow-Up Question */}
+                        <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+                            <h3 className="text-base font-bold text-violet-400 mb-2 flex items-center gap-2">🔄 Follow-Up Question</h3>
+                            <p className="text-white font-medium">&quot;{currentGrading.follow_up_question}&quot;</p>
+                            <p className="text-xs text-silver mt-2">A real interviewer would ask this next. Practice your answer mentally.</p>
+                        </div>
+
+                        {/* Next Button */}
+                        <div className="flex justify-end">
+                            <motion.button
+                                whileHover={{ scale: 1.03 }}
+                                whileTap={{ scale: 0.97 }}
+                                onClick={nextQuestion}
+                                className="px-8 py-4 rounded-xl bg-gradient-to-r from-red-500 to-orange-500 text-white font-bold text-lg hover:shadow-lg hover:shadow-red-500/25 transition-all flex items-center gap-2"
+                            >
+                                {currentIndex < questions.length - 1 ? (
+                                    <>Next Question →</>
+                                ) : (
+                                    <>View Debrief →</>
+                                )}
+                            </motion.button>
+                        </div>
+                    </motion.div>
+                )}
+
+                {/* ============================================ */}
+                {/* DEBRIEF VIEW — Session Summary */}
+                {/* ============================================ */}
+                {viewMode === 'debrief' && results.length > 0 && (
+                    <motion.div key="debrief" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-5xl mx-auto space-y-6">
+                        {/* Summary Stats */}
+                        <div className="rounded-3xl bg-[#0A0A0A] border border-white/10 p-8 relative overflow-hidden">
                             <div className="absolute inset-0 overflow-hidden">
-                                {[...Array(20)].map((_, i) => (
+                                {[...Array(12)].map((_, i) => (
                                     <motion.div
                                         key={i}
-                                        initial={{ y: '100%', x: Math.random() * 100 + '%', opacity: 1 }}
-                                        animate={{
-                                            y: '-100%',
-                                            opacity: [1, 1, 0],
-                                            rotate: Math.random() * 360,
-                                        }}
-                                        transition={{
-                                            duration: 3 + Math.random() * 2,
-                                            delay: Math.random() * 2,
-                                            repeat: Infinity,
-                                        }}
-                                        className="absolute"
+                                        initial={{ y: '100%', x: `${Math.random() * 100}%`, opacity: 1 }}
+                                        animate={{ y: '-100%', opacity: [1, 1, 0], rotate: Math.random() * 360 }}
+                                        transition={{ duration: 3 + Math.random() * 2, delay: Math.random() * 2, repeat: Infinity }}
+                                        className="absolute text-lg"
                                     >
-                                        {['✨', '🎉', '⭐', '🎊'][Math.floor(Math.random() * 4)]}
+                                        {['⚔️', '🏆', '⭐', '🎖️'][Math.floor(Math.random() * 4)]}
                                     </motion.div>
                                 ))}
                             </div>
 
-                            <div className="relative text-center">
-                                <motion.div
-                                    animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
-                                    transition={{ duration: 2, repeat: Infinity }}
-                                    className="text-8xl mb-6"
-                                >
-                                    🎉
-                                </motion.div>
+                            <div className="relative text-center mb-8">
+                                <h2 className="text-3xl font-bold text-white mb-2">Gauntlet Complete</h2>
+                                <p className="text-silver">Here&apos;s how you performed across {results.length} questions</p>
+                            </div>
 
-                                <h2 className="text-3xl font-bold text-white mb-2">Session Complete!</h2>
-                                <p className="text-silver mb-6">Great job studying <span className="text-cyan-400 font-semibold">{activeDeck.name}</span></p>
-
-                                <div className="grid grid-cols-3 gap-6 mb-8 max-w-lg mx-auto">
-                                    <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                                        <div className="text-3xl font-bold text-cyan-400">{session.cardsStudied}</div>
-                                        <div className="text-silver text-sm">Cards Studied</div>
-                                    </div>
-                                    <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                                        <div className="text-3xl font-bold text-green-400">
-                                            {session.cardsStudied > 0
-                                                ? Math.round((session.correctAnswers / session.cardsStudied) * 100)
-                                                : 0}%
+                            <div className="relative grid grid-cols-2 md:grid-cols-4 gap-4">
+                                {[
+                                    {
+                                        label: 'Avg Score',
+                                        value: Math.round(results.reduce((s, r) => s + r.grading.overall_score, 0) / results.length),
+                                        suffix: '',
+                                        color: getScoreColor(Math.round(results.reduce((s, r) => s + r.grading.overall_score, 0) / results.length)),
+                                    },
+                                    {
+                                        label: 'Best Score',
+                                        value: Math.max(...results.map(r => r.grading.overall_score)),
+                                        suffix: '',
+                                        color: 'text-emerald-400',
+                                    },
+                                    {
+                                        label: 'Questions',
+                                        value: results.length,
+                                        suffix: '',
+                                        color: 'text-white',
+                                    },
+                                    {
+                                        label: 'Total Time',
+                                        value: formatTime(Math.floor((Date.now() - sessionStartTime) / 1000)),
+                                        suffix: '',
+                                        color: 'text-cyan-400',
+                                        isString: true,
+                                    },
+                                ].map((stat, i) => (
+                                    <motion.div
+                                        key={i}
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: i * 0.1 }}
+                                        className="p-5 rounded-2xl bg-white/5 border border-white/10 text-center"
+                                    >
+                                        <div className={`text-3xl font-black ${stat.color}`}>
+                                            {stat.isString ? stat.value : stat.value}{stat.suffix}
                                         </div>
-                                        <div className="text-silver text-sm">Accuracy</div>
-                                    </div>
-                                    <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                                        <div className="text-3xl font-bold text-orange-400">{session.streak}</div>
-                                        <div className="text-silver text-sm">Best Streak</div>
+                                        <div className="text-silver text-sm mt-1">{stat.label}</div>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Per-Question Breakdown */}
+                        <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+                            <h3 className="text-lg font-bold text-white mb-4">📋 Question Breakdown</h3>
+                            <div className="space-y-3">
+                                {results.map((r, i) => (
+                                    <motion.div
+                                        key={i}
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: i * 0.05 }}
+                                        className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/5"
+                                    >
+                                        <div className={`text-2xl font-black w-12 text-center ${getScoreColor(r.grading.overall_score)}`}>
+                                            {r.grading.overall_score}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="text-xs">{QUESTION_TYPE_CONFIG[r.question.type]?.icon}</span>
+                                                <span className="text-xs text-silver">{QUESTION_TYPE_CONFIG[r.question.type]?.label}</span>
+                                                <span className={`text-xs px-1.5 py-0.5 rounded ${r.question.difficulty === 'killer' ? 'bg-red-500/20 text-red-400' : r.question.difficulty === 'advanced' ? 'bg-amber-500/20 text-amber-400' : 'bg-white/10 text-silver'}`}>
+                                                    {r.question.difficulty}
+                                                </span>
+                                            </div>
+                                            <p className="text-sm text-white truncate">{r.question.text}</p>
+                                        </div>
+                                        <div className="flex items-center gap-3 text-xs text-silver">
+                                            <span className="font-mono">{formatTime(r.timeSpent)}</span>
+                                            <div className="flex gap-1">
+                                                {(['situation', 'task', 'action', 'result'] as const).map((k) => (
+                                                    <span key={k} className={`w-2 h-2 rounded-full ${r.grading.star_method[k].present ? 'bg-emerald-400' : 'bg-red-400/40'}`} title={`${k}: ${r.grading.star_method[k].present ? 'Present' : 'Missing'}`} />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Weak Areas */}
+                        {(() => {
+                            const weakResults = results.filter(r => r.grading.overall_score < 60);
+                            if (weakResults.length === 0) return null;
+                            return (
+                                <div className="rounded-2xl bg-red-500/5 border border-red-500/20 p-6">
+                                    <h3 className="text-lg font-bold text-red-400 mb-3">⚠️ Areas Needing Work</h3>
+                                    <div className="space-y-3">
+                                        {weakResults.map((r, i) => (
+                                            <div key={i} className="p-3 rounded-xl bg-red-500/5 text-sm">
+                                                <p className="text-white font-medium mb-1">Q{results.indexOf(r) + 1}: {r.question.text.substring(0, 80)}...</p>
+                                                <p className="text-silver text-xs">{r.grading.coaching_tip}</p>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
-                            </div>
-                        </motion.div>
+                            );
+                        })()}
 
-                        {/* Action Cards Grid */}
-                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                            {/* Study Again */}
+                        {/* Action Buttons */}
+                        <div className="grid md:grid-cols-3 gap-4">
                             <motion.button
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.1 }}
                                 whileHover={{ scale: 1.02, y: -2 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => {
-                                    setCurrentCardIndex(0);
-                                    setIsFlipped(false);
-                                    setViewMode('study');
-                                    setSession({
-                                        cardsStudied: 0,
-                                        correctAnswers: 0,
-                                        startTime: new Date(),
-                                        streak: 0,
-                                    });
+                                    setViewMode('setup');
+                                    setQuestions([]);
+                                    setResults([]);
+                                    setCurrentGrading(null);
+                                    setUserAnswer('');
                                 }}
-                                className="p-6 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 hover:border-cyan-500/50 text-left transition-all group"
+                                className="p-6 rounded-2xl bg-gradient-to-br from-red-500/20 to-orange-500/20 border border-red-500/30 text-left transition-all"
                             >
-                                <span className="text-3xl mb-3 block">🔄</span>
-                                <h3 className="text-lg font-bold text-white mb-1">Study Again</h3>
-                                <p className="text-silver text-sm">Review all {activeDeck.cards.length} cards from the beginning</p>
+                                <span className="text-3xl mb-2 block">🔄</span>
+                                <h4 className="text-lg font-bold text-white">New Session</h4>
+                                <p className="text-silver text-sm">Start a fresh gauntlet with different questions</p>
                             </motion.button>
 
-                            {/* Review Missed Cards */}
-                            {session.cardsStudied - session.correctAnswers > 0 && (
+                            {results.some(r => r.grading.overall_score < 60) && (
                                 <motion.button
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.15 }}
                                     whileHover={{ scale: 1.02, y: -2 }}
                                     whileTap={{ scale: 0.98 }}
                                     onClick={() => {
-                                        // Filter cards that were marked as hard/failed (low repetitions or recent failures)
-                                        const missedCards = activeDeck.cards.filter(c => c.interval <= 1);
-                                        if (missedCards.length > 0) {
-                                            const reviewDeck = { ...activeDeck, cards: missedCards };
-                                            setActiveDeck(reviewDeck);
-                                            setCurrentCardIndex(0);
-                                            setIsFlipped(false);
-                                            setViewMode('study');
-                                            setSession({
-                                                cardsStudied: 0,
-                                                correctAnswers: 0,
-                                                startTime: new Date(),
-                                                streak: 0,
-                                            });
-                                            showToast(`Reviewing ${missedCards.length} cards you missed`, '📚');
-                                        }
+                                        const weakQuestions = results.filter(r => r.grading.overall_score < 60).map(r => r.question);
+                                        setQuestions(weakQuestions);
+                                        setCurrentIndex(0);
+                                        setResults([]);
+                                        setCurrentGrading(null);
+                                        setUserAnswer('');
+                                        setSessionStartTime(Date.now());
+                                        setQuestionStartTime(Date.now());
+                                        setElapsed(0);
+                                        setViewMode('gauntlet');
+                                        showToast(`Retrying ${weakQuestions.length} weak questions`, '⚔️');
                                     }}
-                                    className="p-6 rounded-2xl bg-gradient-to-br from-orange-500/20 to-red-500/20 border border-orange-500/30 hover:border-orange-500/50 text-left transition-all group"
+                                    className="p-6 rounded-2xl bg-gradient-to-br from-amber-500/20 to-red-500/20 border border-amber-500/30 text-left transition-all"
                                 >
-                                    <span className="text-3xl mb-3 block">🎯</span>
-                                    <h3 className="text-lg font-bold text-white mb-1">Review Missed</h3>
-                                    <p className="text-silver text-sm">Focus on {session.cardsStudied - session.correctAnswers} cards you struggled with</p>
+                                    <span className="text-3xl mb-2 block">🎯</span>
+                                    <h4 className="text-lg font-bold text-white">Retry Weak Areas</h4>
+                                    <p className="text-silver text-sm">Redo questions you scored &lt;60 on</p>
                                 </motion.button>
                             )}
 
-                            {/* Generate New Deck */}
                             <motion.button
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.2 }}
                                 whileHover={{ scale: 1.02, y: -2 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => {
-                                    setViewMode('home');
-                                    setActiveDeck(null);
-                                    setStudyMode(null);
+                                    setCurrentIndex(0);
+                                    setResults([]);
+                                    setCurrentGrading(null);
+                                    setUserAnswer('');
+                                    setSessionStartTime(Date.now());
+                                    setQuestionStartTime(Date.now());
+                                    setElapsed(0);
+                                    setViewMode('gauntlet');
+                                    showToast('Same questions, fresh start', '🔄');
                                 }}
-                                className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-white/20 text-left transition-all group"
+                                className="p-6 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 text-left transition-all"
                             >
-                                <span className="text-3xl mb-3 block">✨</span>
-                                <h3 className="text-lg font-bold text-white mb-1">Create New Deck</h3>
-                                <p className="text-silver text-sm">Generate a fresh set of flashcards</p>
-                            </motion.button>
-
-                            {/* Add More Cards */}
-                            <motion.button
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.25 }}
-                                whileHover={{ scale: 1.02, y: -2 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={async () => {
-                                    if (!activeDeck.sourceData?.jobDescription && !activeDeck.name) {
-                                        showToast('Cannot add cards - no source data', '❌');
-                                        return;
-                                    }
-                                    setIsLoading(true);
-                                    try {
-                                        const prompt = activeDeck.sourceData?.jobDescription
-                                            ? `Generate 5 MORE unique flashcards for this job (avoid repeating these topics: ${activeDeck.cards.map(c => c.front.substring(0, 50)).join(', ')})\n\nJOB DESCRIPTION:\n${activeDeck.sourceData.jobDescription}`
-                                            : `Generate 5 MORE unique flashcards about "${activeDeck.name}" (avoid repeating these topics: ${activeDeck.cards.map(c => c.front.substring(0, 50)).join(', ')})`;
-
-                                        const systemPrompt = `You are an expert educator. Generate 5 NEW unique flashcards that don't overlap with existing ones. Return JSON: [{ "front": "question", "back": "answer", "category": "cat", "difficulty": "easy|medium|hard" }]`;
-
-                                        const newCards = await groqJSONCompletion<Array<{
-                                            front: string;
-                                            back: string;
-                                            category: string;
-                                            difficulty: 'easy' | 'medium' | 'hard';
-                                        }>>(systemPrompt, prompt, { temperature: 0.8, maxTokens: 2000 });
-
-                                        const formattedCards: FlashCard[] = newCards.map(c => ({
-                                            id: crypto.randomUUID(),
-                                            front: c.front,
-                                            back: c.back,
-                                            category: c.category,
-                                            difficulty: c.difficulty,
-                                            nextReview: new Date(),
-                                            interval: 1,
-                                            easeFactor: 2.5,
-                                            repetitions: 0,
-                                        }));
-
-                                        const updatedDeck = { ...activeDeck, cards: [...activeDeck.cards, ...formattedCards] };
-                                        setActiveDeck(updatedDeck);
-                                        setDecks(prev => prev.map(d => d.id === updatedDeck.id ? updatedDeck : d));
-                                        showToast(`Added ${newCards.length} new cards!`, '✨');
-                                    } catch (e) {
-                                        showToast('Failed to generate more cards', '❌');
-                                    } finally {
-                                        setIsLoading(false);
-                                    }
-                                }}
-                                disabled={isLoading}
-                                className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-white/20 text-left transition-all group disabled:opacity-50"
-                            >
-                                <span className="text-3xl mb-3 block">{isLoading ? '⏳' : '➕'}</span>
-                                <h3 className="text-lg font-bold text-white mb-1">Add More Cards</h3>
-                                <p className="text-silver text-sm">Generate 5 additional cards for this deck</p>
-                            </motion.button>
-
-                            {/* Export Deck */}
-                            <motion.button
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.3 }}
-                                whileHover={{ scale: 1.02, y: -2 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={() => {
-                                    const exportData = {
-                                        name: activeDeck.name,
-                                        description: activeDeck.description,
-                                        cards: activeDeck.cards.map(c => ({
-                                            front: c.front,
-                                            back: c.back,
-                                            category: c.category,
-                                            difficulty: c.difficulty,
-                                        })),
-                                        exportedAt: new Date().toISOString(),
-                                    };
-                                    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-                                    const url = URL.createObjectURL(blob);
-                                    const a = document.createElement('a');
-                                    a.href = url;
-                                    a.download = `${activeDeck.name.replace(/\s+/g, '_')}_flashcards.json`;
-                                    a.click();
-                                    URL.revokeObjectURL(url);
-                                    showToast('Deck exported!', '📥');
-                                }}
-                                className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-white/20 text-left transition-all group"
-                            >
-                                <span className="text-3xl mb-3 block">📥</span>
-                                <h3 className="text-lg font-bold text-white mb-1">Export Deck</h3>
-                                <p className="text-silver text-sm">Download as JSON file</p>
-                            </motion.button>
-
-                            {/* Back to All Decks */}
-                            <motion.button
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.35 }}
-                                whileHover={{ scale: 1.02, y: -2 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={() => {
-                                    setViewMode('home');
-                                    setActiveDeck(null);
-                                }}
-                                className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-white/20 text-left transition-all group"
-                            >
-                                <span className="text-3xl mb-3 block">📚</span>
-                                <h3 className="text-lg font-bold text-white mb-1">All Decks</h3>
-                                <p className="text-silver text-sm">Return to your deck library</p>
+                                <span className="text-3xl mb-2 block">🔁</span>
+                                <h4 className="text-lg font-bold text-white">Redo Same Questions</h4>
+                                <p className="text-silver text-sm">Practice the exact same questions again</p>
                             </motion.button>
                         </div>
-
-                        {/* Deck Info Card */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.4 }}
-                            className="p-6 rounded-2xl bg-[#0A0A0A] border border-white/10"
-                        >
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-bold text-white">Deck Details</h3>
-                                <span className="px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-400 text-xs border border-cyan-500/30">
-                                    {activeDeck.cards.length} cards
-                                </span>
-                            </div>
-                            <div className="grid md:grid-cols-3 gap-4 text-sm">
-                                <div>
-                                    <span className="text-silver">Created</span>
-                                    <p className="text-white font-medium">{new Date(activeDeck.createdAt).toLocaleDateString()}</p>
-                                </div>
-                                <div>
-                                    <span className="text-silver">Source</span>
-                                    <p className="text-white font-medium capitalize">{activeDeck.source === 'ai' ? '🤖 AI Generated' : '✏️ Manual'}</p>
-                                </div>
-                                <div>
-                                    <span className="text-silver">Mastery</span>
-                                    <p className="text-white font-medium">
-                                        {Math.round((activeDeck.cards.filter(c => c.repetitions > 0).length / activeDeck.cards.length) * 100)}%
-                                    </p>
-                                </div>
-                            </div>
-                        </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
         </div>
     );
 }
-
-// ============================================
-// FLIP CARD COMPONENT (Clean Flip Animation)
-// ============================================
-function FlipCard({
-    card,
-    isFlipped,
-    onFlip,
-}: {
-    card: FlashCard;
-    isFlipped: boolean;
-    onFlip: () => void;
-}) {
-    return (
-        <div
-            className="cursor-pointer"
-            style={{ perspective: '1000px' }}
-            onClick={() => !isFlipped && onFlip()}
-        >
-            <motion.div
-                style={{ transformStyle: 'preserve-3d' }}
-                animate={{ rotateY: isFlipped ? 180 : 0 }}
-                transition={{ duration: 0.6, type: 'spring', stiffness: 100, damping: 20 }}
-                className="relative w-full aspect-[4/3] md:aspect-[16/9]"
-            >
-                {/* Front of card */}
-                <motion.div
-                    className="absolute inset-0 rounded-3xl p-8 md:p-12 flex flex-col items-center justify-center bg-gradient-to-br from-[#0A0A0A] to-[#111111] border border-white/10 shadow-2xl"
-                    style={{ backfaceVisibility: 'hidden' }}
-                    whileHover={{ scale: 1.01, boxShadow: '0 25px 50px rgba(0,0,0,0.5)' }}
-                    transition={{ duration: 0.2 }}
-                >
-                    {/* Decorative elements */}
-                    <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 text-xs font-medium">
-                        {card.category}
-                    </div>
-                    <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-white/10 border border-white/10 text-silver text-xs">
-                        {card.difficulty}
-                    </div>
-
-                    {/* Glow effect */}
-                    <div className="absolute inset-0 rounded-3xl opacity-0 hover:opacity-100 transition-opacity bg-gradient-to-br from-cyan-500/5 to-blue-500/5" />
-
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-2xl md:text-3xl font-bold text-white text-center max-w-2xl"
-                    >
-                        {card.front}
-                    </motion.div>
-
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.3 }}
-                        className="absolute bottom-6 text-silver text-sm flex items-center gap-2"
-                    >
-                        <span>Tap to reveal</span>
-                        <motion.span
-                            animate={{ scale: [1, 1.2, 1] }}
-                            transition={{ duration: 1.5, repeat: Infinity }}
-                        >
-                            👆
-                        </motion.span>
-                    </motion.div>
-                </motion.div>
-
-                {/* Back of card */}
-                <motion.div
-                    className="absolute inset-0 rounded-3xl p-8 md:p-12 flex flex-col items-center justify-center bg-gradient-to-br from-[#111111] to-[#0A0A0A] border border-cyan-500/20 shadow-2xl"
-                    style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
-                >
-                    {/* Decorative glow */}
-                    <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-cyan-500/5 to-blue-500/5" />
-
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: isFlipped ? 1 : 0, y: isFlipped ? 0 : 10 }}
-                        transition={{ delay: 0.3 }}
-                        className="text-xl md:text-2xl text-white text-center max-w-2xl leading-relaxed"
-                    >
-                        {card.back}
-                    </motion.div>
-                </motion.div>
-            </motion.div>
-        </div>
-    );
-}
-

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { authHelpers } from '@/lib/supabase';
+import { authHelpers } from '@/lib/firebase';
 import { useStore } from '@/lib/store';
 import SuiteSidebar from '@/components/SuiteSidebar';
 import AIAssistant from '@/components/AIAssistant';
@@ -18,21 +18,16 @@ export default function SuiteLayout({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    authHelpers.getSession()
-      .then(({ session }) => {
-        if (!session) {
-          router.push('/');
-        } else {
-          setUser(session.user);
-        }
-      })
-      .catch((error) => {
-        console.error('Session check failed:', error);
+    const unsubscribe = authHelpers.onAuthStateChanged((firebaseUser) => {
+      if (firebaseUser) {
+        setUser(firebaseUser);
+      } else {
+        setUser(null);
         router.push('/');
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+      }
+      setLoading(false);
+    });
+    return () => unsubscribe();
   }, [router, setUser]);
 
   if (loading) {

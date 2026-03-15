@@ -16,22 +16,17 @@ interface Command {
 }
 
 const commands: Command[] = [
-  // Interview Suite
-  { id: 'detective', label: 'Detective', icon: '🔍', description: 'CV Intelligence & Analysis', path: '/dashboard/detective', category: 'navigation', keywords: ['cv', 'resume', 'scan', 'analyze'] },
-  { id: 'copilot', label: 'Co-Pilot', icon: '🎙️', description: 'Live Interview Assistant', path: '/dashboard/copilot', category: 'navigation', keywords: ['live', 'interview', 'record', 'transcribe'] },
-  { id: 'calibration', label: 'Calibration', icon: '⚖️', description: 'Hybrid Grading System', path: '/dashboard/calibration', category: 'navigation', keywords: ['grade', 'score', 'evaluate', 'rate'] },
-  { id: 'analytics', label: 'Analytics', icon: '📊', description: 'Insights & Reports', path: '/dashboard/analytics', category: 'navigation', keywords: ['stats', 'data', 'reports', 'insights'] },
-
   // Talent Suite
   { id: 'resume', label: 'Resume Builder', icon: '📄', description: 'Liquid Resume Architect', path: '/suite/resume', category: 'navigation', keywords: ['build', 'create', 'cv', 'morph'] },
   { id: 'jd-generator', label: 'JD Generator', icon: '💼', description: 'Mission Blueprint Creator', path: '/suite/jd-generator', category: 'navigation', keywords: ['job', 'description', 'posting', 'write'] },
-  { id: 'practice', label: 'Shadow Interview', icon: '🎭', description: 'AI Interview Practice', path: '/suite/shadow-interview', category: 'navigation', keywords: ['practice', 'mock', 'train', 'prepare'] },
+  { id: 'flashcards', label: 'Study Cards', icon: '🎴', description: 'Flash Cards', path: '/suite/flashcards', category: 'navigation', keywords: ['study', 'flash', 'cards', 'learn'] },
   { id: 'oracle', label: 'Market Oracle', icon: '🔮', description: '3D Career Intelligence', path: '/suite/market-oracle', category: 'navigation', keywords: ['market', 'career', 'salary', 'trends'] },
+  { id: 'applications', label: 'Applications', icon: '📊', description: 'Track Your Jobs', path: '/suite/applications', category: 'navigation', keywords: ['track', 'apply', 'jobs', 'status'] },
+  { id: 'job-search', label: 'Job Search', icon: '🔍', description: 'Find Opportunities', path: '/suite/job-search', category: 'navigation', keywords: ['search', 'find', 'jobs', 'openings'] },
 
-  // Suites
-  { id: 'interview-suite', label: 'Interview Suite', icon: '🎯', description: 'For Hiring Teams', path: '/dashboard/detective', category: 'suite', keywords: ['hiring', 'recruit', 'interview'] },
-  { id: 'talent-suite', label: 'Talent Suite', icon: '✨', description: 'For Job Seekers', path: '/suite/resume', category: 'suite', keywords: ['job', 'seeker', 'candidate'] },
-  { id: 'hub', label: 'Suite Selector', icon: '🏠', description: 'Return to Hub', path: '/hub', category: 'suite', keywords: ['home', 'main', 'switch'] },
+  // Quick Links
+  { id: 'talent-suite', label: 'Talent Suite', icon: '✨', description: 'AI Career Intelligence', path: '/suite/resume', category: 'suite', keywords: ['job', 'seeker', 'candidate'] },
+  { id: 'dashboard', label: 'Dashboard', icon: '🏠', description: 'Return to Dashboard', path: '/suite', category: 'suite', keywords: ['home', 'main', 'dashboard'] },
 ];
 
 export default function CommandPalette() {

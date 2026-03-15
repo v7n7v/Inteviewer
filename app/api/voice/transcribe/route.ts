@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { guardApiRoute } from '@/lib/api-auth';
 
 export async function POST(req: NextRequest) {
     try {
+        // Auth + rate limit check
+        const guard = await guardApiRoute(req, { rateLimit: 5, rateLimitWindow: 60_000 });
+        if (guard.error) return guard.error;
+
         const formData = await req.formData();
         const file = formData.get('file') as Blob;
 

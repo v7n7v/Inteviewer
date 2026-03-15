@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
-import { authHelpers } from '@/lib/supabase';
+import { authHelpers } from '@/lib/firebase';
 import { useStore } from '@/lib/store';
 import LogoutModal from './modals/LogoutModal';
 
@@ -16,45 +16,23 @@ interface NavigationItem {
   badge?: string;
 }
 
-const interviewSuiteItems: NavigationItem[] = [
-  { id: 'detective', label: 'Detective', icon: '🔍', description: 'CV Intelligence', path: '/dashboard/detective' },
-  { id: 'copilot', label: 'Co-Pilot', icon: '🎙️', description: 'Live Interview', path: '/dashboard/copilot' },
-  { id: 'calibration', label: 'Calibration', icon: '⚖️', description: 'Hybrid Grading', path: '/dashboard/calibration' },
-  { id: 'jd-generator', label: 'JD Generator', icon: '💼', description: 'Job Descriptions', path: '/suite/jd-generator' },
-  { id: 'analytics', label: 'Analytics', icon: '📊', description: 'Insights Hub', path: '/dashboard/analytics' },
-];
-
 const talentSuiteItems: NavigationItem[] = [
   { id: 'resume', label: 'Liquid Resume', icon: '📄', description: 'Resume Builder', path: '/suite/resume' },
   { id: 'applications', label: 'Applications', icon: '📊', description: 'Track Jobs', path: '/suite/applications' },
-  { id: 'shadow', label: 'Practice', icon: '🎭', description: 'Shadow Interview', path: '/suite/shadow-interview' },
-  { id: 'flashcards', label: 'Study Cards', icon: '🎴', description: 'Flash Cards', path: '/suite/flashcards', badge: 'New' },
+  { id: 'jd-generator', label: 'JD Generator', icon: '💼', description: 'Job Descriptions', path: '/suite/jd-generator' },
+  { id: 'flashcards', label: 'The Gauntlet', icon: '⚔️', description: 'Interview Simulator', path: '/suite/flashcards' },
   { id: 'oracle', label: 'Market Oracle', icon: '🔮', description: 'Career Intelligence', path: '/suite/market-oracle' },
   { id: 'job-search', label: 'Job Search', icon: '🔍', description: 'Find Jobs', path: '/suite/job-search', badge: 'Soon' },
-  { id: 'avatar', label: 'Video Interview', icon: '🎥', description: 'AI Mock Interview', path: '/suite/avatar-interview', badge: 'Soon' },
 ];
 
 const suiteConfig = {
-  interview: {
-    name: 'Interview Suite',
-    tagline: 'For Hiring Teams',
-    icon: '🎯',
-    gradient: 'from-[#22C55E] to-[#22C55E]/60',
-    accentColor: 'green',
-    bgGlow: 'bg-[#22C55E]/10',
-    items: interviewSuiteItems,
-    otherSuite: { name: 'Talent Suite', icon: '✨', path: '/suite/resume' },
-  },
-  talent: {
-    name: 'Talent Suite',
-    tagline: 'For Job Seekers',
-    icon: '✨',
-    gradient: 'from-[#0070F3] to-[#0070F3]/60',
-    accentColor: 'blue',
-    bgGlow: 'bg-[#0070F3]/10',
-    items: talentSuiteItems,
-    otherSuite: { name: 'Interview Suite', icon: '🎯', path: '/dashboard/detective' },
-  },
+  name: 'Talent Suite',
+  tagline: 'AI Career Intelligence',
+  icon: '✨',
+  gradient: 'from-[#0070F3] to-[#0070F3]/60',
+  accentColor: 'blue',
+  bgGlow: 'bg-[#0070F3]/10',
+  items: talentSuiteItems,
 };
 
 interface SuiteSidebarProps {
@@ -71,7 +49,6 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
   const [isMobile, setIsMobile] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  // Check for mobile
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 1024);
     checkMobile();
@@ -79,16 +56,11 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Close mobile menu on navigation
   useEffect(() => {
     setIsMobileOpen(false);
   }, [pathname]);
 
-  // Determine which suite we're in
-  // JD Generator is in Interview Suite even though it's under /suite/ path
-  const isInterviewSuitePage = pathname?.startsWith('/dashboard') || pathname?.startsWith('/suite/jd-generator');
-  const activeSuiteId = isInterviewSuitePage ? 'interview' : 'talent';
-  const suite = suiteConfig[activeSuiteId];
+  const suite = suiteConfig;
 
   const handleNavigation = (path: string) => {
     router.push(path);
@@ -108,12 +80,7 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
   };
 
   const isActive = (path: string) => {
-    if (path === '/dashboard/detective' && (pathname === '/dashboard' || pathname === '/')) return true;
     return pathname?.startsWith(path);
-  };
-
-  const switchToOtherSuite = () => {
-    router.push(suite.otherSuite.path);
   };
 
   return (
@@ -164,7 +131,7 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
           x: isMobile ? (isMobileOpen ? 0 : -300) : 0
         }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className={`fixed left-0 top-0 h-screen z-50 flex flex-col overflow-hidden ${isMobile ? '' : ''}`}
+        className={`fixed left-0 top-0 h-screen z-50 flex flex-col overflow-hidden`}
         style={{
           background: 'rgba(0, 0, 0, 0.85)',
           backdropFilter: 'blur(12px)',
@@ -181,7 +148,6 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
           {/* Header */}
           <div className="relative p-4 border-b border-white/5">
             <div className={`flex items-center gap-3 overflow-hidden transition-all duration-300 w-full ${isCollapsed ? 'flex-col !gap-4' : ''}`}>
-              {/* Suite Icon - always visible */}
               <motion.div
                 layout
                 whileHover={{ scale: 1.05, rotate: 5 }}
@@ -190,13 +156,11 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
                 <span className="text-xl">{suite.icon}</span>
               </motion.div>
 
-              {/* Suite Text - animated opacity, width and height */}
               <motion.div
                 animate={{
                   opacity: isCollapsed ? 0 : 1,
                   width: isCollapsed ? 0 : 'auto',
                   height: isCollapsed ? 0 : 'auto',
-                  marginBottom: isCollapsed ? 0 : 0,
                 }}
                 transition={{ duration: 0.2, ease: 'easeOut' }}
                 className={`overflow-hidden whitespace-nowrap ${isCollapsed ? '' : 'flex-1'}`}
@@ -207,7 +171,6 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
                 </p>
               </motion.div>
 
-              {/* Collapse/Expand Button */}
               <motion.button
                 layout
                 onClick={() => setIsCollapsed(!isCollapsed)}
@@ -229,60 +192,19 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
             </div>
           </div>
 
-          {/* Suite Switcher */}
+          {/* Quick Navigation - Back to Dashboard */}
           <div className="p-3">
             <motion.button
-              onClick={switchToOtherSuite}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className={`w-full p-3 rounded-xl bg-[#111111] border border-white/10 hover:bg-[#1A1A1A] hover:border-white/20 transition-all ${isCollapsed ? 'flex justify-center' : ''}`}
-            >
-              <AnimatePresence mode="wait">
-                {!isCollapsed ? (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg">{suite.otherSuite.icon}</span>
-                      <div className="text-left">
-                        <p className="text-xs text-silver">Switch to</p>
-                        <p className="text-sm font-medium text-white">{suite.otherSuite.name}</p>
-                      </div>
-                    </div>
-                    <svg className="w-4 h-4 text-silver" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                    </svg>
-                  </motion.div>
-                ) : (
-                  <motion.span
-                    initial={{ scale: 0.8 }}
-                    animate={{ scale: 1 }}
-                    className="text-lg"
-                    title={`Switch to ${suite.otherSuite.name}`}
-                  >
-                    {suite.otherSuite.icon}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </motion.button>
-          </div>
-
-          {/* Quick Navigation - Back to Hub */}
-          <div className="px-3 pb-2">
-            <motion.button
-              onClick={() => router.push('/hub')}
+              onClick={() => router.push('/suite')}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-[#0A0A0A] border border-white/10 hover:bg-[#1A1A1A] hover:border-white/20 transition-all ${isCollapsed ? 'justify-center' : ''}`}
-              title="Back to Hub"
+              title="Back to Dashboard"
             >
               <svg className="w-4 h-4 text-silver" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17l-5-5m0 0l5-5m-5 5h12" />
               </svg>
-              {!isCollapsed && <span className="text-xs text-silver">Back to Hub</span>}
+              {!isCollapsed && <span className="text-xs text-silver">Dashboard</span>}
             </motion.button>
           </div>
 
@@ -307,7 +229,7 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
                 `}
                   title={isCollapsed ? item.label : ''}
                 >
-                  <span className={`text-xl ${active ? '' : ''}`}>{item.icon}</span>
+                  <span className={`text-xl`}>{item.icon}</span>
                   <AnimatePresence mode="wait">
                     {!isCollapsed && (
                       <motion.div
@@ -342,10 +264,10 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
             })}
           </div>
 
-          {/* Help & Support - Pinned to bottom */}
+          {/* Help & Support */}
           <div className="px-3 pb-1">
             <motion.button
-              onClick={() => handleNavigation('/help')}
+              onClick={() => handleNavigation('/suite/help')}
               className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 text-slate-400 hover:bg-white/5 hover:text-white ${isCollapsed ? 'justify-center' : ''}`}
             >
               <span className="text-xl">💡</span>
@@ -394,7 +316,6 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
                 )}
               </button>
 
-              {/* User Menu Dropdown */}
               <AnimatePresence>
                 {showUserMenu && !isCollapsed && (
                   <motion.div
@@ -404,16 +325,16 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
                     className="absolute bottom-full left-0 right-0 mb-2 p-2 rounded-xl bg-slate-800 border border-white/10 shadow-xl"
                   >
                     <button
-                      onClick={() => { router.push('/hub'); setShowUserMenu(false); }}
+                      onClick={() => { router.push('/suite'); setShowUserMenu(false); }}
                       className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 text-slate-300 hover:text-white text-left"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                       </svg>
-                      <span className="text-sm">Suite Selector</span>
+                      <span className="text-sm">Dashboard</span>
                     </button>
                     <button
-                      onClick={() => { router.push('/settings'); setShowUserMenu(false); }}
+                      onClick={() => { router.push('/suite/settings'); setShowUserMenu(false); }}
                       className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 text-slate-300 hover:text-white text-left"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1,6 +1,6 @@
 'use client';
 
-import { authHelpers } from '@/lib/supabase';
+import { authHelpers } from '@/lib/firebase';
 import { useStore } from '@/lib/store';
 
 interface HeaderProps {

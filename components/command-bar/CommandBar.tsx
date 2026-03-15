@@ -15,14 +15,6 @@ interface Module {
 
 const modules: Module[] = [
   {
-    id: 'interview',
-    name: 'Interview',
-    icon: '🎙️',
-    path: '/interview',
-    description: 'AI Interview Co-Pilot',
-    color: '#00f5ff',
-  },
-  {
     id: 'resume',
     name: 'Resume',
     icon: '📄',
@@ -39,11 +31,11 @@ const modules: Module[] = [
     color: '#bf00ff',
   },
   {
-    id: 'shadow',
-    name: 'Practice',
-    icon: '🎭',
-    path: '/suite/shadow-interview',
-    description: 'Shadow Interviewer',
+    id: 'flashcards',
+    name: 'Study Cards',
+    icon: '🎴',
+    path: '/suite/flashcards',
+    description: 'Flash Cards',
     color: '#ff0055',
   },
   {

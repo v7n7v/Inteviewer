@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { authHelpers } from '@/lib/firebase';
 import { showToast } from '@/components/Toast';
 
 // Separate component for the form logic that uses useSearchParams
@@ -14,17 +14,6 @@ function ResetPasswordForm() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
-
-    useEffect(() => {
-        // Check if we have a valid session from the reset link
-        const checkSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
-                showToast('Invalid or expired reset link', '❌');
-            }
-        };
-        checkSession();
-    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -43,16 +32,12 @@ function ResetPasswordForm() {
         setLoading(true);
 
         try {
-            const { error } = await supabase.auth.updateUser({
-                password: password,
-            });
-
+            const { error } = await authHelpers.updatePassword(password);
             if (error) throw error;
 
             setSuccess(true);
             showToast('Password updated successfully!', '✅');
 
-            // Redirect to home after 2 seconds
             setTimeout(() => {
                 router.push('/');
             }, 2000);
@@ -79,7 +64,6 @@ function ResetPasswordForm() {
 
     return (
         <div className="relative max-w-md w-full">
-            {/* Background glow */}
             <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 via-blue-500/10 to-cyan-500/20 rounded-3xl blur-3xl" />
 
             <div className="relative glass-card p-8">
@@ -133,7 +117,6 @@ function ResetPasswordForm() {
     );
 }
 
-// Main page component wrapped in Suspense
 import { Suspense } from 'react';
 
 export default function ResetPasswordPage() {

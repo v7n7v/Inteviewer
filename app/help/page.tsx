@@ -37,12 +37,13 @@ const docs: DocSection[] = [
                 tips: ['The "Generating Insights..." animation means the AI is currently analyzing your profile or candidates.']
             },
             {
-                title: 'Switching Personas',
+                title: 'AI Insights',
                 steps: [
-                    'Use the toggle at the top to switch between **Hiring Team** and **Job Seeker** modes.',
-                    '**Hiring Team**: Focuses on candidate matches and team skill gaps.',
-                    '**Job Seeker**: Focuses on job opportunities and your personal career roadmap.'
-                ]
+                    'The Dashboard automatically generates real-time insights for your job search.',
+                    'Data is fetched from your database or simulated by AI if no data exists.',
+                    'Click **Refresh AI Insights** in the top right to generate a new analysis.'
+                ],
+                tips: ['The "Generating Insights..." animation means the AI is currently analyzing your profile.']
             },
             {
                 title: 'Interactive Widgets',
@@ -88,71 +89,7 @@ const docs: DocSection[] = [
                     'View salary data, demand heatmaps, and skill gaps.'
                 ]
             },
-            {
-                title: 'Shadow Practice',
-                steps: [
-                    'Go to **Talent Suite > Practice**.',
-                    'Start an AI-simulated interview session.',
-                    'Practice answering behavioral and technical questions.',
-                    'Get real-time feedback on your tone, pace, and content.'
-                ],
-                tips: ['Treat this like a real interview; the AI adapts to your responses.']
-            }
-        ]
-    },
-    {
-        id: 'interview-suite',
-        title: 'Interview Suite',
-        icon: '🎯',
-        description: 'Tools for hiring teams to conduct better interviews.',
-        color: 'from-[#22C55E] to-[#22C55E]/60',
-        borderColor: 'border-[#22C55E]/30',
-        content: [
-            {
-                title: 'Detective',
-                steps: [
-                    'Go to **Interview Suite > Detective**.',
-                    'Upload a candidate\'s CV.',
-                    'The AI analyzes the resume for red flags, inconsistencies, and gaps.',
-                    'Review the generated "Interrogation Questions" to probe deeper during the interview.'
-                ]
-            },
-            {
-                title: 'Co-Pilot',
-                steps: [
-                    'Navigate to **Interview Suite > Co-Pilot** during an interview.',
-                    'Start a session and enable microphone access (optional).',
-                    'The AI listens (or you can type contexts) and suggests real-time follow-up questions.',
-                    'Use the "Quick Actions" to mark key moments.'
-                ],
-                tips: ['Use Co-Pilot to ensure you cover all necessary competencies without getting stuck.']
-            },
-            {
-                title: 'Calibration',
-                steps: [
-                    'After an interview, go to **Interview Suite > Calibration**.',
-                    'Select the candidate and the role.',
-                    'Rate the candidate on defined competencies.',
-                    'The AI helps normalize scores across different interviewers to reduce bias.'
-                ]
-            },
-            {
-                title: 'JD Generator',
-                steps: [
-                    'Navigate to **Interview Suite > JD Generator**.',
-                    'Enter the role title and key requirements.',
-                    'The AI generates a comprehensive, unbiased Job Description.',
-                    'Export or save the JD for use in your ATS.'
-                ]
-            },
-            {
-                title: 'Analytics',
-                steps: [
-                    'Go to **Interview Suite > Analytics**.',
-                    'View dashboard metrics on time-to-hire, candidate quality, and interview pass rates.',
-                    'Identify bottlenecks in your hiring pipeline.'
-                ]
-            }
+
         ]
     },
     {
@@ -173,10 +110,10 @@ const docs: DocSection[] = [
                 ]
             },
             {
-                title: 'Switching Suites',
+                title: 'Navigation',
                 steps: [
-                    'Use the "Switch to..." button in the sidebar to toggle between **Talent Suite** (for candidates) and **Interview Suite** (for recruiters).',
-                    'Each suite has its own specialized tools and dashboard views.'
+                    'Use the sidebar to navigate between Talent Suite tools.',
+                    'Use **Cmd+K** to quickly jump to any tool or page.'
                 ]
             }
         ]

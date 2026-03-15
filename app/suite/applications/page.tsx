@@ -3,8 +3,14 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/lib/store';
-import { getJobApplications, updateApplicationStatus, deleteJobApplication, type JobApplication } from '@/lib/database-suite';
+import {
+    getJobApplications, updateApplicationStatus, deleteJobApplication,
+    getResumeVersions, type JobApplication, type ResumeVersion
+} from '@/lib/database-suite';
+import { downloadResumePDF } from '@/lib/pdf-templates';
 import { showToast } from '@/components/Toast';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
+import { saveAs } from 'file-saver';
 
 const STATUS_CONFIG = {
     not_applied: { bg: 'bg-slate-500/20', border: 'border-slate-500/30', text: 'text-silver', label: 'Not Applied', icon: '📝', gradient: 'from-slate-500 to-slate-600' },
@@ -30,10 +36,15 @@ export default function ApplicationsPage() {
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [editingNotes, setEditingNotes] = useState('');
     const [viewMode, setViewMode] = useState<ViewMode>('grid');
+    const [linkedResume, setLinkedResume] = useState<ResumeVersion | null>(null);
+    const [resumeLoading, setResumeLoading] = useState(false);
+    const [showResumePreview, setShowResumePreview] = useState(false);
+    const [downloading, setDownloading] = useState(false);
+    const [statusDropdownId, setStatusDropdownId] = useState<string | null>(null);
 
     useEffect(() => {
-        if (user) loadApplications();
-    }, [user]);
+        loadApplications();
+    }, []);
 
     const loadApplications = async () => {
         setIsLoading(true);
@@ -46,12 +57,9 @@ export default function ApplicationsPage() {
 
     const handleStatusUpdate = async (app: JobApplication, newStatus: JobApplication['status']) => {
         const additionalData: any = {};
-
-        // Auto-set applied_at when marking as applied
         if (newStatus === 'applied' && !app.applied_at) {
             additionalData.appliedAt = new Date();
         }
-
         const result = await updateApplicationStatus(app.id, newStatus, additionalData);
         if (result.success) {
             showToast(`Status updated to: ${STATUS_CONFIG[newStatus].label}`, STATUS_CONFIG[newStatus].icon);
@@ -66,7 +74,6 @@ export default function ApplicationsPage() {
 
     const handleNotesUpdate = async () => {
         if (!selectedApp) return;
-
         const result = await updateApplicationStatus(selectedApp.id, selectedApp.status, { notes: editingNotes });
         if (result.success) {
             showToast('Notes saved!', '📝');
@@ -90,10 +97,80 @@ export default function ApplicationsPage() {
         }
     };
 
-    const openDetailModal = (app: JobApplication) => {
+    const openDetailModal = async (app: JobApplication) => {
         setSelectedApp(app);
         setEditingNotes(app.notes || '');
         setShowDetailModal(true);
+        setLinkedResume(null);
+        setShowResumePreview(false);
+
+        // Fetch linked resume
+        if (app.resume_version_id) {
+            setResumeLoading(true);
+            const versions = await getResumeVersions();
+            if (versions.success && versions.data) {
+                const found = versions.data.find(v => v.id === app.resume_version_id);
+                setLinkedResume(found || null);
+            }
+            setResumeLoading(false);
+        }
+    };
+
+    const handleDownloadPDF = async () => {
+        if (!linkedResume?.content) return;
+        setDownloading(true);
+        try {
+            await downloadResumePDF(linkedResume.content as any, { primary: '#0ea5e9', accent: '#06b6d4', text: '#1a202c' });
+            showToast('PDF downloaded!', '✅');
+        } catch (error: any) {
+            showToast(`PDF failed: ${error.message}`, '❌');
+        }
+        setDownloading(false);
+    };
+
+    const handleDownloadWord = async () => {
+        if (!linkedResume?.content) return;
+        const resume = linkedResume.content as any;
+        setDownloading(true);
+        try {
+            const doc = new Document({
+                sections: [{
+                    properties: {},
+                    children: [
+                        new Paragraph({ children: [new TextRun({ text: resume.name || '', bold: true, size: 48 })] }),
+                        new Paragraph({ children: [new TextRun({ text: resume.title || '', size: 28, color: "666666" })] }),
+                        new Paragraph({ children: [new TextRun({ text: [resume.email, resume.phone, resume.location].filter(Boolean).join(' • '), size: 20 })] }),
+                        new Paragraph({ text: '' }),
+                        ...(resume.summary ? [
+                            new Paragraph({ text: 'PROFESSIONAL SUMMARY', heading: HeadingLevel.HEADING_2 }),
+                            new Paragraph({ text: resume.summary }),
+                            new Paragraph({ text: '' }),
+                        ] : []),
+                        ...(resume.experience?.length ? [
+                            new Paragraph({ text: 'EXPERIENCE', heading: HeadingLevel.HEADING_2 }),
+                            ...resume.experience.flatMap((exp: any) => [
+                                new Paragraph({ children: [new TextRun({ text: `${exp.role} at ${exp.company}`, bold: true }), new TextRun({ text: ` (${exp.duration})`, italics: true })] }),
+                                ...exp.achievements.map((a: string) => new Paragraph({ text: `• ${a}`, indent: { left: 360 } })),
+                                new Paragraph({ text: '' }),
+                            ]),
+                        ] : []),
+                        ...(resume.education?.length ? [
+                            new Paragraph({ text: 'EDUCATION', heading: HeadingLevel.HEADING_2 }),
+                            ...resume.education.map((edu: any) => new Paragraph({ text: `${edu.degree} - ${edu.institution} (${edu.year})` })),
+                            new Paragraph({ text: '' }),
+                        ] : []),
+                        ...(resume.skills?.length ? [
+                            new Paragraph({ text: 'SKILLS', heading: HeadingLevel.HEADING_2 }),
+                            ...resume.skills.map((cat: any) => new Paragraph({ text: `${cat.category}: ${cat.items.join(', ')}` })),
+                        ] : []),
+                    ],
+                }],
+            });
+            const blob = await Packer.toBlob(doc);
+            saveAs(blob, `${resume.name?.replace(/\s+/g, '_') || 'resume'}.docx`);
+            showToast('Word document downloaded!', '✅');
+        } catch { showToast('Download failed', '❌'); }
+        setDownloading(false);
     };
 
     const filteredApplications = applications.filter(app => {
@@ -103,31 +180,12 @@ export default function ApplicationsPage() {
         return matchesSearch && matchesStatus;
     });
 
-    // Group applications by status for Kanban view
-    const kanbanColumns = ['not_applied', 'applied', 'screening', 'interview_scheduled', 'interviewed', 'offer', 'rejected', 'accepted'] as const;
-    const groupedApplications = kanbanColumns.reduce((acc, status) => {
-        acc[status] = filteredApplications.filter(app => app.status === status);
-        return acc;
-    }, {} as Record<string, JobApplication[]>);
-
     const stats = {
         total: applications.length,
         active: applications.filter(a => !['rejected', 'withdrawn', 'accepted'].includes(a.status)).length,
         interviews: applications.filter(a => a.status === 'interview_scheduled' || a.status === 'interviewed').length,
         offers: applications.filter(a => a.status === 'offer' || a.status === 'accepted').length,
     };
-
-    if (!user) {
-        return (
-            <div className="min-h-screen flex items-center justify-center p-8">
-                <div className="glass-card p-12 text-center max-w-md">
-                    <span className="text-6xl mb-4 block">🔒</span>
-                    <h2 className="text-2xl font-bold text-white mb-3">Sign In Required</h2>
-                    <p className="text-silver">Please sign in to access your application tracker</p>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="min-h-screen p-6 lg:p-8">
@@ -206,7 +264,6 @@ export default function ApplicationsPage() {
                     </select>
                 </div>
 
-                {/* View Mode Toggle */}
                 <div className="flex gap-1 p-1 rounded-xl bg-[#111111] border border-white/10">
                     {[
                         { mode: 'grid' as ViewMode, icon: '⊞', label: 'Grid' },
@@ -253,7 +310,6 @@ export default function ApplicationsPage() {
                     </a>
                 </motion.div>
             ) : viewMode === 'grid' ? (
-                /* Grid View */
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredApplications.map((app, i) => (
                         <ApplicationCard
@@ -267,9 +323,8 @@ export default function ApplicationsPage() {
                     ))}
                 </div>
             ) : (
-                /* List View */
-                <div className="rounded-2xl bg-[#111111] border border-white/10 overflow-hidden">
-                    <table className="w-full">
+                <div className="rounded-2xl bg-[#111111] border border-white/10 overflow-visible">
+                    <table className="w-full" style={{ overflow: 'visible' }}>
                         <thead>
                             <tr className="border-b border-white/10">
                                 <th className="text-left p-4 text-silver font-medium">Company</th>
@@ -284,7 +339,7 @@ export default function ApplicationsPage() {
                             {filteredApplications.map((app) => (
                                 <tr
                                     key={app.id}
-                                    className="border-b border-white/5 hover:bg-[#111111] cursor-pointer transition-colors"
+                                    className="border-b border-white/5 hover:bg-white/5 cursor-pointer transition-colors"
                                     onClick={() => openDetailModal(app)}
                                 >
                                     <td className="p-4">
@@ -297,9 +352,39 @@ export default function ApplicationsPage() {
                                     </td>
                                     <td className="p-4 text-silver">{app.job_title || '-'}</td>
                                     <td className="p-4">
-                                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium ${STATUS_CONFIG[app.status].bg} ${STATUS_CONFIG[app.status].border} border ${STATUS_CONFIG[app.status].text}`}>
-                                            {STATUS_CONFIG[app.status].icon} {STATUS_CONFIG[app.status].label}
-                                        </span>
+                                        <div className="relative">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setStatusDropdownId(statusDropdownId === app.id ? null : app.id); }}
+                                                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium ${STATUS_CONFIG[app.status].bg} ${STATUS_CONFIG[app.status].border} border ${STATUS_CONFIG[app.status].text} hover:scale-105 transition-all cursor-pointer`}
+                                            >
+                                                {STATUS_CONFIG[app.status].icon} {STATUS_CONFIG[app.status].label}
+                                                <span className="text-[10px] opacity-60 ml-1">▼</span>
+                                            </button>
+                                            <AnimatePresence>
+                                                {statusDropdownId === app.id && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: -10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        exit={{ opacity: 0, y: -10 }}
+                                                        className="absolute top-full left-0 mt-2 p-2 rounded-xl bg-[#111111] border border-white/10 shadow-2xl z-50 min-w-[200px]"
+                                                    >
+                                                        {Object.entries(STATUS_CONFIG).map(([key, config]) => (
+                                                            <button
+                                                                key={key}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleStatusUpdate(app, key as JobApplication['status']);
+                                                                    setStatusDropdownId(null);
+                                                                }}
+                                                                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition-colors ${app.status === key ? 'bg-white/10' : 'hover:bg-white/5'} ${config.text}`}
+                                                            >
+                                                                {config.icon} {config.label}
+                                                            </button>
+                                                        ))}
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                        </div>
                                     </td>
                                     <td className="p-4">
                                         {app.talent_density_score ? (
@@ -326,7 +411,7 @@ export default function ApplicationsPage() {
                 </div>
             )}
 
-            {/* Detail Modal - Compact Redesign */}
+            {/* Detail Modal with Resume Preview & Download */}
             <AnimatePresence>
                 {showDetailModal && selectedApp && (
                     <>
@@ -342,10 +427,10 @@ export default function ApplicationsPage() {
                                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                                className="relative w-full max-w-lg rounded-2xl bg-[#0a0a0a] border border-white/10 overflow-hidden shadow-2xl"
+                                className="relative w-full max-w-2xl max-h-[90vh] rounded-2xl bg-[#0a0a0a] border border-white/10 overflow-y-auto shadow-2xl"
                             >
-                                {/* Compact Header */}
-                                <div className="p-5 border-b border-white/10 flex items-center gap-4">
+                                {/* Header */}
+                                <div className="p-5 border-b border-white/10 flex items-center gap-4 sticky top-0 bg-[#0a0a0a] z-10">
                                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center text-xl font-bold text-white">
                                         {selectedApp.company_name[0]}
                                     </div>
@@ -366,7 +451,7 @@ export default function ApplicationsPage() {
                                     </button>
                                 </div>
 
-                                {/* Compact Status Grid - 5 columns */}
+                                {/* Status Grid */}
                                 <div className="p-4 border-b border-white/10">
                                     <div className="grid grid-cols-5 gap-1.5">
                                         {Object.entries(STATUS_CONFIG).slice(0, 5).map(([key, config]) => (
@@ -400,7 +485,100 @@ export default function ApplicationsPage() {
                                     </div>
                                 </div>
 
-                                {/* Compact Notes */}
+                                {/* ===== RESUME PREVIEW & DOWNLOAD ===== */}
+                                <div className="p-4 border-b border-white/10">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                                            📄 Saved Resume
+                                        </h3>
+                                        {linkedResume && (
+                                            <button
+                                                onClick={() => setShowResumePreview(!showResumePreview)}
+                                                className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors"
+                                            >
+                                                {showResumePreview ? 'Hide Preview' : 'Show Preview'}
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {resumeLoading ? (
+                                        <div className="flex items-center gap-2 py-3">
+                                            <div className="w-4 h-4 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
+                                            <span className="text-xs text-silver">Loading resume...</span>
+                                        </div>
+                                    ) : linkedResume ? (
+                                        <div className="space-y-3">
+                                            {/* Resume Info Bar */}
+                                            <div className="flex items-center gap-3 p-3 rounded-xl bg-[#111111] border border-white/10">
+                                                <div className="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center">
+                                                    <span className="text-lg">📋</span>
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium text-white truncate">
+                                                        {linkedResume.version_name}
+                                                    </p>
+                                                    <p className="text-xs text-silver">
+                                                        {(linkedResume.content as any)?.name || 'Resume'} • Saved {new Date(linkedResume.created_at).toLocaleDateString()}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* Download Buttons */}
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={handleDownloadPDF}
+                                                    disabled={downloading}
+                                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-500/20 text-red-300 text-sm font-medium hover:border-red-500/40 hover:bg-red-500/20 transition-all disabled:opacity-50"
+                                                >
+                                                    {downloading ? (
+                                                        <div className="w-4 h-4 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin" />
+                                                    ) : (
+                                                        <span>📥</span>
+                                                    )}
+                                                    Download PDF
+                                                </button>
+                                                <button
+                                                    onClick={handleDownloadWord}
+                                                    disabled={downloading}
+                                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border border-blue-500/20 text-blue-300 text-sm font-medium hover:border-blue-500/40 hover:bg-blue-500/20 transition-all disabled:opacity-50"
+                                                >
+                                                    {downloading ? (
+                                                        <div className="w-4 h-4 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin" />
+                                                    ) : (
+                                                        <span>📄</span>
+                                                    )}
+                                                    Download Word
+                                                </button>
+                                            </div>
+
+                                            {/* Expandable Resume Preview */}
+                                            <AnimatePresence>
+                                                {showResumePreview && (
+                                                    <motion.div
+                                                        initial={{ height: 0, opacity: 0 }}
+                                                        animate={{ height: 'auto', opacity: 1 }}
+                                                        exit={{ height: 0, opacity: 0 }}
+                                                        className="overflow-hidden"
+                                                    >
+                                                        <ResumePreviewCard resume={linkedResume.content as any} />
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-3 p-3 rounded-xl bg-[#111111] border border-white/10">
+                                            <span className="text-lg">📝</span>
+                                            <div>
+                                                <p className="text-sm text-silver">No saved resume linked</p>
+                                                <a href="/suite/resume" className="text-xs text-cyan-400 hover:text-cyan-300">
+                                                    Go to Liquid Resume to create one →
+                                                </a>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Notes */}
                                 <div className="p-4 border-b border-white/10">
                                     <textarea
                                         value={editingNotes}
@@ -419,13 +597,13 @@ export default function ApplicationsPage() {
                                     )}
                                 </div>
 
-                                {/* Compact Timeline */}
+                                {/* Timeline */}
                                 <div className="p-4 flex items-center gap-4 text-xs text-silver">
                                     <span>📝 Created {new Date(selectedApp.created_at).toLocaleDateString()}</span>
                                     {selectedApp.applied_at && <span>🚀 Applied {new Date(selectedApp.applied_at).toLocaleDateString()}</span>}
                                 </div>
 
-                                {/* Footer Actions */}
+                                {/* Footer */}
                                 <div className="p-4 pt-0 flex gap-2">
                                     <button
                                         onClick={() => handleDelete(selectedApp.id)}
@@ -449,13 +627,99 @@ export default function ApplicationsPage() {
     );
 }
 
-// Application Card Component
+// ===== RESUME PREVIEW CARD =====
+function ResumePreviewCard({ resume }: { resume: any }) {
+    if (!resume) return null;
+
+    return (
+        <div className="mt-3 p-4 rounded-xl bg-white text-black max-h-[400px] overflow-y-auto" style={{ fontSize: '11px', lineHeight: '1.5' }}>
+            {/* Header */}
+            <div className="text-center border-b border-gray-200 pb-3 mb-3">
+                <h2 className="text-lg font-bold text-gray-900">{resume.name || 'Your Name'}</h2>
+                {resume.title && <p className="text-sm text-gray-500 mt-0.5">{resume.title}</p>}
+                <p className="text-[10px] text-gray-400 mt-1">
+                    {[resume.email, resume.phone, resume.location].filter(Boolean).join(' • ')}
+                </p>
+            </div>
+
+            {/* Summary */}
+            {resume.summary && (
+                <div className="mb-3">
+                    <h3 className="text-xs font-bold uppercase text-gray-700 border-b border-gray-100 pb-1 mb-1.5">
+                        Professional Summary
+                    </h3>
+                    <p className="text-gray-600">{resume.summary}</p>
+                </div>
+            )}
+
+            {/* Experience */}
+            {resume.experience?.length > 0 && (
+                <div className="mb-3">
+                    <h3 className="text-xs font-bold uppercase text-gray-700 border-b border-gray-100 pb-1 mb-1.5">
+                        Experience
+                    </h3>
+                    {resume.experience.map((exp: any, i: number) => (
+                        <div key={i} className="mb-2">
+                            <div className="flex justify-between items-baseline">
+                                <span className="font-semibold text-gray-800">{exp.role}</span>
+                                <span className="text-[10px] text-gray-400 ml-2 whitespace-nowrap">{exp.duration}</span>
+                            </div>
+                            <p className="text-gray-500 text-[10px]">{exp.company}</p>
+                            {exp.achievements?.length > 0 && (
+                                <ul className="mt-1 space-y-0.5">
+                                    {exp.achievements.slice(0, 3).map((a: string, j: number) => (
+                                        <li key={j} className="text-gray-600 pl-3 relative">
+                                            <span className="absolute left-0">•</span>
+                                            {a}
+                                        </li>
+                                    ))}
+                                    {exp.achievements.length > 3 && (
+                                        <li className="text-gray-400 pl-3 italic">+{exp.achievements.length - 3} more</li>
+                                    )}
+                                </ul>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Education */}
+            {resume.education?.length > 0 && (
+                <div className="mb-3">
+                    <h3 className="text-xs font-bold uppercase text-gray-700 border-b border-gray-100 pb-1 mb-1.5">
+                        Education
+                    </h3>
+                    {resume.education.map((edu: any, i: number) => (
+                        <div key={i} className="flex justify-between">
+                            <span className="text-gray-700">{edu.degree} — {edu.institution}</span>
+                            <span className="text-[10px] text-gray-400">{edu.year}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Skills */}
+            {resume.skills?.length > 0 && (
+                <div>
+                    <h3 className="text-xs font-bold uppercase text-gray-700 border-b border-gray-100 pb-1 mb-1.5">
+                        Skills
+                    </h3>
+                    <div className="flex flex-wrap gap-1">
+                        {resume.skills.flatMap((cat: any) => cat.items).slice(0, 15).map((skill: string, i: number) => (
+                            <span key={i} className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 text-[10px]">
+                                {skill}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ===== APPLICATION CARD =====
 function ApplicationCard({
-    app,
-    index,
-    onStatusUpdate,
-    onDelete,
-    onOpenDetail
+    app, index, onStatusUpdate, onDelete, onOpenDetail
 }: {
     app: JobApplication;
     index: number;
@@ -472,7 +736,6 @@ function ApplicationCard({
             transition={{ delay: index * 0.05 }}
             className={`relative group rounded-2xl bg-[#0A0A0A] border border-white/10 hover:border-cyan-500/30 transition-all ${showQuickStatus ? 'z-50' : 'z-0'}`}
         >
-            {/* Glow effect */}
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-cyan-500/5 to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
 
             <div className="relative p-6">
@@ -525,7 +788,6 @@ function ApplicationCard({
                         <span className="text-xs opacity-60">▼</span>
                     </button>
 
-                    {/* Quick Status Dropdown */}
                     <AnimatePresence>
                         {showQuickStatus && (
                             <motion.div
@@ -541,7 +803,7 @@ function ApplicationCard({
                                             onStatusUpdate(app, key as JobApplication['status']);
                                             setShowQuickStatus(false);
                                         }}
-                                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition-colors ${app.status === key ? 'bg-white/10' : 'hover:bg-[#111111]'
+                                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition-colors ${app.status === key ? 'bg-white/10' : 'hover:bg-white/5'
                                             } ${config.text}`}
                                     >
                                         {config.icon} {config.label}
@@ -565,7 +827,7 @@ function ApplicationCard({
                     {app.applied_at && <span>🚀 Applied {new Date(app.applied_at).toLocaleDateString()}</span>}
                 </div>
 
-                {/* View Details Button */}
+                {/* View Details */}
                 <button
                     onClick={() => onOpenDetail(app)}
                     className="w-full mt-4 px-4 py-2 rounded-xl bg-[#111111] text-silver text-sm font-medium hover:bg-white/10 transition-colors"

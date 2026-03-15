@@ -1,16 +1,294 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/lib/store';
-import { authHelpers } from '@/lib/supabase';
+import { authHelpers } from '@/lib/firebase';
 
 interface Toast {
     id: string;
     type: 'success' | 'error' | 'info';
     message: string;
 }
+
+// ============================================
+// MFA ENROLLMENT COMPONENT (TOTP / Google Authenticator)
+// ============================================
+function MFASection({ addToast }: { addToast: (type: 'success' | 'error' | 'info', message: string) => void }) {
+    const { user } = useStore();
+    const [mfaStatus, setMfaStatus] = useState<{ enrolled: boolean; hints: any[] }>({ enrolled: false, hints: [] });
+    const [step, setStep] = useState<'idle' | 'qr' | 'unenrolling'>('idle');
+    const [totpSecret, setTotpSecret] = useState<any>(null);
+    const [qrDataUrl, setQrDataUrl] = useState('');
+    const [secretKey, setSecretKey] = useState('');
+    const [verifyCode, setVerifyCode] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+
+    useEffect(() => {
+        refreshMFAStatus();
+    }, [user]);
+
+    const refreshMFAStatus = () => {
+        const status = authHelpers.getMFAStatus();
+        setMfaStatus(status);
+    };
+
+    const handleStartEnroll = async () => {
+        setLoading(true);
+        setError('');
+
+        try {
+            const result = await authHelpers.generateTOTPSecret();
+            if (result.error) throw result.error;
+
+            setTotpSecret(result.totpSecret);
+            setSecretKey(result.secretKey || '');
+
+            // Generate QR code as data URL
+            if (result.qrCodeUrl) {
+                const QRCode = (await import('qrcode')).default;
+                const dataUrl = await QRCode.toDataURL(result.qrCodeUrl, {
+                    width: 200,
+                    margin: 2,
+                    color: { dark: '#ffffff', light: '#00000000' },
+                });
+                setQrDataUrl(dataUrl);
+            }
+
+            setStep('qr');
+        } catch (err: any) {
+            console.error('TOTP enroll error:', err);
+            setError(err.message || 'Failed to generate authenticator secret');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleVerifyEnroll = async () => {
+        if (!verifyCode || verifyCode.length < 6) {
+            setError('Please enter the 6-digit code from your authenticator app');
+            return;
+        }
+
+        setLoading(true);
+        setError('');
+
+        try {
+            const { success, error } = await authHelpers.completeTOTPEnrollment(
+                totpSecret,
+                verifyCode,
+                'Google Authenticator'
+            );
+
+            if (error) throw error;
+
+            if (success) {
+                addToast('success', 'Two-factor authentication enabled!');
+                refreshMFAStatus();
+                setStep('idle');
+                setVerifyCode('');
+                setTotpSecret(null);
+                setQrDataUrl('');
+                setSecretKey('');
+            }
+        } catch (err: any) {
+            console.error('TOTP verify error:', err);
+            setError(err.message || 'Invalid verification code');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleUnenroll = async () => {
+        setLoading(true);
+        setError('');
+        setStep('unenrolling');
+
+        try {
+            const { success, error } = await authHelpers.unenrollMFA();
+            if (error) throw error;
+
+            if (success) {
+                addToast('success', 'Two-factor authentication disabled');
+                refreshMFAStatus();
+            }
+        } catch (err: any) {
+            console.error('MFA unenroll error:', err);
+            setError(err.message || 'Failed to remove 2FA');
+        } finally {
+            setLoading(false);
+            setStep('idle');
+        }
+    };
+
+    const copySecret = () => {
+        navigator.clipboard.writeText(secretKey);
+        addToast('info', 'Secret key copied!');
+    };
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="rounded-2xl bg-gradient-to-br from-slate-900/80 to-slate-800/50 border border-white/10 overflow-hidden relative"
+        >
+            <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-amber-500/10 to-orange-500/10 blur-3xl" />
+            <div className="relative p-6">
+                <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                            <span className="text-2xl">🔐</span>
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-white">Two-Factor Authentication</h2>
+                            <p className="text-slate-400 text-sm">Protect your account with Google Authenticator</p>
+                        </div>
+                    </div>
+                    {mfaStatus.enrolled ? (
+                        <span className="px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-xs font-medium border border-green-500/30">
+                            ✓ Enabled
+                        </span>
+                    ) : (
+                        <span className="px-3 py-1 rounded-full bg-slate-500/20 text-slate-400 text-xs font-medium border border-slate-500/30">
+                            Not Enrolled
+                        </span>
+                    )}
+                </div>
+
+                {mfaStatus.enrolled ? (
+                    <div className="space-y-4">
+                        <div className="p-4 rounded-xl bg-green-500/5 border border-green-500/20">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                                    <span className="text-lg">🛡️</span>
+                                </div>
+                                <div>
+                                    <p className="text-white font-medium">Authenticator App</p>
+                                    <p className="text-sm text-slate-400">
+                                        {mfaStatus.hints[0]?.displayName || 'Google Authenticator'}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={handleUnenroll}
+                            disabled={loading}
+                            className="w-full px-6 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 font-medium hover:bg-red-500/20 transition-all disabled:opacity-50"
+                        >
+                            {loading && step === 'unenrolling' ? 'Removing...' : 'Remove 2FA'}
+                        </motion.button>
+                    </div>
+                ) : step === 'qr' ? (
+                    <div className="space-y-5">
+                        {/* QR Code */}
+                        <div className="flex flex-col items-center">
+                            <p className="text-slate-400 text-sm mb-4 text-center">
+                                Scan this QR code with <strong className="text-amber-400">Google Authenticator</strong> or any TOTP app
+                            </p>
+                            {qrDataUrl && (
+                                <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                                    <img src={qrDataUrl} alt="QR Code for authenticator" className="w-48 h-48" />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Manual key */}
+                        <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                            <p className="text-xs text-slate-500 mb-1">Can't scan? Enter this key manually:</p>
+                            <div className="flex items-center gap-2">
+                                <code className="flex-1 text-sm text-amber-400 font-mono break-all select-all">{secretKey}</code>
+                                <button
+                                    onClick={copySecret}
+                                    className="px-2 py-1 rounded-lg bg-white/5 text-slate-400 hover:text-white text-xs transition-colors shrink-0"
+                                >
+                                    Copy
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Verify */}
+                        <div>
+                            <label className="block text-sm font-medium text-slate-300 mb-2">
+                                Enter code from app
+                            </label>
+                            <input
+                                type="text"
+                                value={verifyCode}
+                                onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                className="w-full rounded-xl px-4 py-4 bg-white/5 border border-white/10 text-white text-center text-2xl tracking-[0.3em] font-mono focus:outline-none focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition-all"
+                                placeholder="000000"
+                                maxLength={6}
+                                disabled={loading}
+                                autoFocus
+                            />
+                        </div>
+
+                        {error && (
+                            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30">
+                                <p className="text-sm text-red-300">{error}</p>
+                            </div>
+                        )}
+
+                        <div className="flex gap-3">
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={handleVerifyEnroll}
+                                disabled={loading || verifyCode.length < 6}
+                                className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium hover:shadow-lg hover:shadow-amber-500/30 transition-all disabled:opacity-50"
+                            >
+                                {loading ? 'Verifying...' : 'Verify & Enable'}
+                            </motion.button>
+                            <button
+                                onClick={() => { setStep('idle'); setVerifyCode(''); setError(''); setTotpSecret(null); setQrDataUrl(''); }}
+                                className="px-4 py-3 rounded-xl border border-white/10 text-slate-400 hover:text-white transition-colors"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        <p className="text-xs text-slate-500">
+                            Use Google Authenticator, Authy, or any TOTP-compatible app to generate verification codes every time you sign in.
+                        </p>
+                        {error && (
+                            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30">
+                                <p className="text-sm text-red-300">{error}</p>
+                            </div>
+                        )}
+                        <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={handleStartEnroll}
+                            disabled={loading}
+                            className="w-full px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium hover:shadow-lg hover:shadow-amber-500/30 transition-all disabled:opacity-50"
+                        >
+                            {loading ? (
+                                <span className="flex items-center justify-center gap-2">
+                                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                    </svg>
+                                    Setting up...
+                                </span>
+                            ) : (
+                                'Set Up Authenticator App'
+                            )}
+                        </motion.button>
+                    </div>
+                )}
+            </div>
+        </motion.div>
+    );
+}
+
 
 export default function SettingsPage() {
     const router = useRouter();
@@ -220,7 +498,7 @@ export default function SettingsPage() {
                                 <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10">
                                     <div>
                                         <p className="text-sm text-slate-500">Full Name</p>
-                                        <p className="text-white font-medium">{user?.user_metadata?.full_name || 'Not specified'}</p>
+                                        <p className="text-white font-medium">{user?.displayName || 'Not specified'}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10">
@@ -235,7 +513,7 @@ export default function SettingsPage() {
                                 <div className="p-4 rounded-xl bg-white/5 border border-white/10">
                                     <p className="text-sm text-slate-500">Account Created</p>
                                     <p className="text-white font-medium">
-                                        {user?.created_at ? new Date(user.created_at).toLocaleDateString('en-US', {
+                                        {user?.metadata?.creationTime ? new Date(user.metadata.creationTime).toLocaleDateString('en-US', {
                                             year: 'numeric',
                                             month: 'long',
                                             day: 'numeric'
@@ -468,41 +746,7 @@ export default function SettingsPage() {
                     </motion.div>
 
                     {/* 2FA Section */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3 }}
-                        className="rounded-2xl bg-gradient-to-br from-slate-900/80 to-slate-800/50 border border-white/10 overflow-hidden"
-                    >
-                        <div className="p-6">
-                            <div className="flex items-center gap-4 mb-6">
-                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
-                                    <span className="text-2xl">🔐</span>
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-bold text-white">Two-Factor Authentication</h2>
-                                    <p className="text-slate-400 text-sm">Add an extra layer of security</p>
-                                </div>
-                            </div>
-
-                            <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-white font-medium">Authenticator App</p>
-                                        <p className="text-sm text-slate-400">Use Google Authenticator or Authy</p>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 text-xs font-medium border border-amber-500/30">
-                                            Coming Soon
-                                        </span>
-                                    </div>
-                                </div>
-                                <p className="text-xs text-slate-500 mt-4">
-                                    Two-factor authentication adds an additional layer of security to your account by requiring a code from your authenticator app when signing in.
-                                </p>
-                            </div>
-                        </div>
-                    </motion.div>
+                    <MFASection addToast={addToast} />
                 </div>
             </div>
         </div>

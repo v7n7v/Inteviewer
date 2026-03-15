@@ -7,24 +7,22 @@ const TIPS = [
     // core features
     { icon: '⌘K', text: 'Use Cmd+K to quickly jump anywhere' },
     { icon: '📊', text: 'Track your market value in real-time with Market Oracle' },
-    { icon: '🎙️', text: 'Practice with AI personas in Shadow Interview' },
     { icon: '📄', text: 'Create targeted resumes with Liquid Resume' },
+    { icon: '🎴', text: 'Master concepts with AI-generated Study Cards' },
 
-    // detective & analysis
+    // analysis & tools
     { icon: '🔍', text: 'Analyze any JD to find hidden requirements' },
-    { icon: '📈', text: 'Get detailed feedback on your interview performance' },
-    { icon: '🎯', text: 'Score your answers against top candidates' },
-    { icon: '💡', text: 'Receive real-time suggestions during mock interviews' },
+    { icon: '🎯', text: 'Get matched with the best job opportunities' },
+    { icon: '💼', text: 'Generate compelling job descriptions with AI' },
 
     // customization
-    { icon: '🎭', text: 'Customize interviewer personalities to match your target company' },
     { icon: '📝', text: 'Generate cover letters that match your resume tone' },
     { icon: '🎨', text: 'Edit your portfolio theme in Settings' },
     { icon: '🔄', text: 'Sync your LinkedIn profile for auto-updates' },
 
     // productivity
     { icon: '⚡', text: 'Use shortcuts to navigate the dashboard faster' },
-    { icon: '📱', text: 'Interview Suite works great on mobile too' },
+    { icon: '📱', text: 'Talent Suite works great on mobile too' },
     { icon: '🔔', text: 'Enable notifications for job alerts' },
     { icon: '🤝', text: 'Share your verified profile with recruiters' }
 ];

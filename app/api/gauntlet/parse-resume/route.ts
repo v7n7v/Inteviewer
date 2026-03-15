@@ -1,0 +1,62 @@
+import { NextRequest, NextResponse } from 'next/server';
+
+export async function POST(req: NextRequest) {
+    try {
+        const formData = await req.formData();
+        const file = formData.get('file') as File;
+
+        if (!file) {
+            return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+        }
+
+        const fileName = file.name.toLowerCase();
+
+        // Handle plain text files
+        if (fileName.endsWith('.txt') || fileName.endsWith('.md')) {
+            const text = await file.text();
+            return NextResponse.json({ text, fileName: file.name });
+        }
+
+        // Handle PDF files
+        if (fileName.endsWith('.pdf')) {
+            const arrayBuffer = await file.arrayBuffer();
+            const uint8Array = new Uint8Array(arrayBuffer);
+
+            // Dynamic import to avoid SSR issues
+            const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
+
+            const loadingTask = pdfjsLib.getDocument({ data: uint8Array });
+            const pdf = await loadingTask.promise;
+
+            let fullText = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                const pageText = textContent.items
+                    .map((item: any) => item.str)
+                    .join(' ');
+                fullText += pageText + '\n';
+            }
+
+            return NextResponse.json({ text: fullText.trim(), fileName: file.name });
+        }
+
+        // Handle DOCX files using mammoth
+        if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
+            const mammoth = await import('mammoth');
+            const arrayBuffer = await file.arrayBuffer();
+            const result = await mammoth.extractRawText({ arrayBuffer });
+            const cleanText = result.value.trim();
+            return NextResponse.json({ text: cleanText.substring(0, 10000), fileName: file.name });
+        }
+
+        return NextResponse.json({ error: 'Unsupported file type. Please upload a PDF, TXT, or DOCX file.' }, { status: 400 });
+
+    } catch (error: any) {
+        console.error('Resume parsing error:', error);
+        return NextResponse.json(
+            { error: error.message || 'Failed to parse resume' },
+            { status: 500 }
+        );
+    }
+}

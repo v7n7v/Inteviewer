@@ -19,10 +19,10 @@ const shortcuts: Shortcut[] = [
     { keys: ['⌘', 'S'], description: 'Save current work', category: 'Actions' },
     { keys: ['⌘', 'Enter'], description: 'Submit / Confirm', category: 'Actions' },
 
-    // Interview Suite
-    { keys: ['G', 'D'], description: 'Go to Detective', category: 'Quick Navigation' },
-    { keys: ['G', 'C'], description: 'Go to Co-Pilot', category: 'Quick Navigation' },
+    // Talent Suite
     { keys: ['G', 'R'], description: 'Go to Resume Builder', category: 'Quick Navigation' },
+    { keys: ['G', 'J'], description: 'Go to JD Generator', category: 'Quick Navigation' },
+    { keys: ['G', 'O'], description: 'Go to Market Oracle', category: 'Quick Navigation' },
     { keys: ['G', 'H'], description: 'Go to Hub', category: 'Quick Navigation' },
 ];
 

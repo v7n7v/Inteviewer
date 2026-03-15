@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { guardApiRoute } from '@/lib/api-auth';
 
 export async function POST(req: NextRequest) {
     try {
+        const guard = await guardApiRoute(req, { rateLimit: 5, rateLimitWindow: 60_000 });
+        if (guard.error) return guard.error;
+
         const { text, voiceId } = await req.json();
 
         if (!text) {

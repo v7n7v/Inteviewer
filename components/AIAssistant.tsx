@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { groqCompletion } from '@/lib/ai/groq-client';
+import { useStore } from '@/lib/store';
+import { getJobApplications, getResumeVersions, getUserProfile } from '@/lib/database-suite';
 
 interface Message {
   id: string;
@@ -12,72 +13,102 @@ interface Message {
 }
 
 export default function AIAssistant() {
+  const { user } = useStore();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       role: 'assistant',
-      content: "Hi! I'm Sona, your AI career companion ✨. I can help you with interview prep, resume writing, job descriptions, and more. How can I assist you today?",
+      content: "Hi! I'm Sona, your AI career companion ✨. I know about your applications, resumes, and interview prep. Ask me anything — I'm personalized to you!",
       timestamp: new Date(),
     },
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [hintIndex, setHintIndex] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const contextRef = useRef<string>('');
+  const contextLoadedRef = useRef(false);
 
-  // Creative hint messages that rotate
-  const hintMessages = [
-    { text: "Ask Sona anything ✨", emoji: "💬" },
-    { text: "Need interview tips?", emoji: "🎯" },
-    { text: "Let's optimize your resume", emoji: "📝" },
-    { text: "Stuck on a question? Ask me!", emoji: "🤔" },
-    { text: "Career advice? I'm here!", emoji: "🚀" },
-    { text: "Want to practice interviews?", emoji: "🎤" },
-  ];
+  // Build user context from Firestore (cached per session)
+  const buildUserContext = useCallback(async () => {
+    if (contextLoadedRef.current) return contextRef.current;
+    try {
+      const [appsResult, resumesResult, profileResult] = await Promise.allSettled([
+        getJobApplications(),
+        getResumeVersions(),
+        getUserProfile(),
+      ]);
 
-  // Check if API key is available
-  useEffect(() => {
-    const apiKey = process.env.NEXT_PUBLIC_GROQ_API_KEY;
-    if (!apiKey || apiKey.includes('your_api_key')) {
-      console.warn('⚠️ Groq API key not configured. Please set NEXT_PUBLIC_GROQ_API_KEY in .env.local and restart the dev server.');
+      const parts: string[] = [];
+
+      // Profile
+      if (profileResult.status === 'fulfilled' && profileResult.value.success && profileResult.value.data) {
+        const p = profileResult.value.data;
+        parts.push(`## User Profile\n- Name: ${p.full_name || 'Unknown'}\n- Email: ${p.email || 'Unknown'}\n- Skills: ${p.skills?.join(', ') || 'Not specified'}`);
+      }
+
+      // Applications
+      if (appsResult.status === 'fulfilled' && appsResult.value.success && appsResult.value.data) {
+        const apps = appsResult.value.data;
+        const statusCount: Record<string, number> = {};
+        const appLines = apps.slice(0, 15).map(a => {
+          statusCount[a.status] = (statusCount[a.status] || 0) + 1;
+          return `  - ${a.company_name} — ${a.job_title || 'Unknown'} [${a.status}]${a.notes ? ` | Notes: ${a.notes.substring(0, 80)}` : ''} | Added: ${new Date(a.created_at).toLocaleDateString()}`;
+        });
+        parts.push(`## Job Applications (${apps.length} total)\nStatus: ${Object.entries(statusCount).map(([k, v]) => `${k}: ${v}`).join(', ')}\n${appLines.join('\n')}`);
+      }
+
+      // Resumes
+      if (resumesResult.status === 'fulfilled' && resumesResult.value.success && resumesResult.value.data) {
+        const resumes = resumesResult.value.data;
+        parts.push(`## Resumes (${resumes.length} versions)\n${resumes.slice(0, 5).map(r =>
+          `  - "${r.version_name || 'Untitled'}" — Mode: ${r.mode || 'General'}`
+        ).join('\n')}`);
+      }
+
+      contextRef.current = parts.length > 0 ? parts.join('\n\n') : '(New user — no data yet)';
+      contextLoadedRef.current = true;
+      return contextRef.current;
+    } catch (err) {
+      console.warn('Context fetch error:', err);
+      return '(Context temporarily unavailable)';
     }
   }, []);
+
+  const hintMessages = [
+    { text: "Ask Sona anything ✨", emoji: "💬" },
+    { text: "How's my job search going?", emoji: "📊" },
+    { text: "Help me prep for Amazon", emoji: "🎯" },
+    { text: "Which apps need follow-ups?", emoji: "📋" },
+    { text: "Review my resume for Google", emoji: "📝" },
+    { text: "How to answer 'Why us?'", emoji: "🤔" },
+  ];
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  useEffect(() => { scrollToBottom(); }, [messages]);
 
   useEffect(() => {
-    if (isOpen) {
-      inputRef.current?.focus();
-    }
+    if (isOpen) inputRef.current?.focus();
   }, [isOpen]);
 
   // Popup hint every 2 minutes (only when chat is closed)
   useEffect(() => {
-    if (isOpen) return; // Don't show hints when chat is open
-
+    if (isOpen) return;
     const showHintPopup = () => {
       setShowHint(true);
       setHintIndex(prev => (prev + 1) % hintMessages.length);
-      setTimeout(() => setShowHint(false), 3000); // Hide after 3 seconds
+      setTimeout(() => setShowHint(false), 3000);
     };
-
-    // Show first hint after 30 seconds, then every 2 minutes
     const initialTimer = setTimeout(showHintPopup, 30000);
     const interval = setInterval(showHintPopup, 120000);
-
-    return () => {
-      clearTimeout(initialTimer);
-      clearInterval(interval);
-    };
+    return () => { clearTimeout(initialTimer); clearInterval(interval); };
   }, [isOpen, hintMessages.length]);
 
   const handleSend = async () => {
@@ -90,52 +121,101 @@ export default function AIAssistant() {
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
+    setIsStreaming(true);
+
+    // Add placeholder assistant message for streaming
+    const assistantId = (Date.now() + 1).toString();
+    setMessages(prev => [...prev, {
+      id: assistantId,
+      role: 'assistant',
+      content: '',
+      timestamp: new Date(),
+    }]);
 
     try {
-      const systemPrompt = `You are Sona, TalentConsulting.io's friendly AI career advisor. You help users with:
-- Interview preparation and practice answers
-- Resume writing and optimization
-- Job description analysis
-- Career advice and guidance
-- Technical interview questions
-- Behavioral interview strategies
+      const conversationHistory = messages
+        .filter(m => m.id !== '1') // skip initial greeting
+        .slice(-8)
+        .map(m => ({ role: m.role, content: m.content }));
 
-Be concise, helpful, and warm. Provide actionable advice. Keep responses under 150 words unless more detail is specifically requested. Your tone should be encouraging and supportive.`;
+      conversationHistory.push({ role: 'user', content: userMessage.content });
 
-      const conversationContext = messages
-        .slice(-6) // Last 6 messages for context
-        .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
-        .join('\n\n');
+      // Fetch user context (cached)
+      const userContext = await buildUserContext();
 
-      const response = await groqCompletion(
-        systemPrompt,
-        `${conversationContext}\n\nUser: ${userMessage.content}\n\nAssistant:`,
-        { temperature: 0.7, maxTokens: 512 }
-      );
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: conversationHistory,
+          userContext,
+        }),
+      });
 
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: response.trim(),
-        timestamp: new Date(),
-      };
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || `API error: ${response.status}`);
+      }
 
-      setMessages((prev) => [...prev, assistantMessage]);
+      // Stream the response
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let fullContent = '';
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
+
+          for (const line of lines) {
+            const data = line.replace('data: ', '');
+            if (data === '[DONE]') break;
+
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.content) {
+                fullContent += parsed.content;
+                setMessages(prev =>
+                  prev.map(m => m.id === assistantId ? { ...m, content: fullContent } : m)
+                );
+              }
+            } catch {
+              // Skip malformed chunks
+            }
+          }
+        }
+      }
+
+      // Final update
+      if (!fullContent) {
+        const fallbackData = await response.text();
+        try {
+          const parsed = JSON.parse(fallbackData);
+          fullContent = parsed.content || parsed.message || fallbackData;
+        } catch {
+          fullContent = fallbackData || "I'm sorry, I couldn't generate a response. Please try again.";
+        }
+        setMessages(prev =>
+          prev.map(m => m.id === assistantId ? { ...m, content: fullContent } : m)
+        );
+      }
     } catch (error: any) {
-      console.error('AI Assistant error:', error);
-      const errorDetails = error?.message || 'Unknown error occurred';
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: `I'm sorry, I encountered an error: ${errorDetails}. Please check your API key configuration or try again later.`,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+      console.error('AI Companion error:', error);
+      setMessages(prev =>
+        prev.map(m => m.id === assistantId
+          ? { ...m, content: `Sorry, I encountered an error: ${error.message}. Please try again.` }
+          : m
+        )
+      );
     } finally {
       setIsLoading(false);
+      setIsStreaming(false);
     }
   };
 
@@ -147,9 +227,9 @@ Be concise, helpful, and warm. Provide actionable advice. Keep responses under 1
   };
 
   const quickPrompts = [
-    "Help me prepare for a technical interview",
-    "Review my resume summary",
-    "How to answer 'Tell me about yourself'",
+    "How's my job search going?",
+    "Which applications need follow-up?",
+    "Help me prep for my next interview",
     "Tips for salary negotiation",
   ];
 
@@ -182,7 +262,6 @@ Be concise, helpful, and warm. Provide actionable advice. Keep responses under 1
                 </div>
                 <span className="text-xl ml-1">{hintMessages[hintIndex].emoji}</span>
               </div>
-              {/* Speech bubble tail */}
               <div className="absolute -bottom-2 right-10 w-4 h-4 bg-slate-800 border-r border-b border-cyan-500/30 rotate-45" />
             </motion.div>
           )}
@@ -196,13 +275,10 @@ Be concise, helpful, and warm. Provide actionable advice. Keep responses under 1
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.95 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="absolute bottom-[76px] right-6 w-[360px] h-[480px] pointer-events-auto"
-              style={{
-                backdropFilter: 'blur(40px)',
-                WebkitBackdropFilter: 'blur(40px)',
-              }}
+              className="absolute bottom-[76px] right-6 w-[400px] h-[520px] pointer-events-auto"
+              style={{ backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)' }}
             >
-              <div className="glass-card h-full flex flex-col bg-black/70 border border-cyan-500/30 rounded-2xl shadow-2xl overflow-hidden">
+              <div className="glass-card h-full flex flex-col bg-black/80 border border-cyan-500/30 rounded-2xl shadow-2xl overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between p-3 border-b border-white/10 bg-black/40">
                   <div className="flex items-center gap-2">
@@ -211,41 +287,47 @@ Be concise, helpful, and warm. Provide actionable advice. Keep responses under 1
                     </div>
                     <div>
                       <h3 className="text-xs font-semibold text-white">Sona</h3>
-                      <p className="text-[10px] text-slate-400">Your Career Companion</p>
+                      <p className="text-[10px] text-cyan-400">Context-Aware Career AI</p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setIsOpen(false)}
-                    className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
-                  >
-                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                    <span className="text-[10px] text-green-400 mr-2">Live</span>
+                    <button
+                      onClick={() => setIsOpen(false)}
+                      className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+                    >
+                      <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-3 space-y-3">
                   {messages.map((message) => (
-                    <div
+                    <motion.div
                       key={message.id}
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
                       className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
                       <div
                         className={`max-w-[85%] rounded-xl px-3 py-2 ${message.role === 'user'
                           ? 'bg-gradient-to-br from-cyan-500 to-blue-500 text-white'
                           : 'bg-white/10 text-slate-200'
-                          }`}
+                        }`}
                       >
-                        <p className="text-xs whitespace-pre-wrap">{message.content}</p>
-                        <p className="text-[10px] mt-1 opacity-60">
+                        <p className="text-xs whitespace-pre-wrap leading-relaxed">{message.content || '...'}</p>
+                        <p className="text-[10px] mt-1 opacity-50">
                           {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
 
-                  {isLoading && (
+                  {isLoading && !isStreaming && (
                     <div className="flex justify-start">
                       <div className="bg-white/10 rounded-xl px-3 py-2">
                         <div className="flex gap-1">
@@ -263,16 +345,13 @@ Be concise, helpful, and warm. Provide actionable advice. Keep responses under 1
                 {/* Quick Prompts */}
                 {messages.length === 1 && !isLoading && (
                   <div className="px-3 pb-2">
-                    <p className="text-[10px] text-slate-400 mb-1.5">Quick prompts:</p>
+                    <p className="text-[10px] text-slate-400 mb-1.5">Ask me about your job search:</p>
                     <div className="flex flex-wrap gap-1.5">
                       {quickPrompts.map((prompt, index) => (
                         <button
                           key={index}
-                          onClick={() => {
-                            setInput(prompt);
-                            inputRef.current?.focus();
-                          }}
-                          className="text-[10px] px-2 py-1 rounded-full bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 hover:border-cyan-500/30 transition-colors"
+                          onClick={() => { setInput(prompt); inputRef.current?.focus(); }}
+                          className="text-[10px] px-2.5 py-1.5 rounded-full bg-white/5 hover:bg-cyan-500/10 text-slate-300 border border-white/10 hover:border-cyan-500/30 transition-colors"
                         >
                           {prompt}
                         </button>
@@ -290,7 +369,7 @@ Be concise, helpful, and warm. Provide actionable advice. Keep responses under 1
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      placeholder="Ask me anything..."
+                      placeholder="Ask about your applications, interviews..."
                       disabled={isLoading}
                       className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-cyan-500/50 transition-colors disabled:opacity-50"
                     />
@@ -318,9 +397,7 @@ Be concise, helpful, and warm. Provide actionable advice. Keep responses under 1
           whileTap={{ scale: 0.95 }}
           onClick={() => setIsOpen(!isOpen)}
           className="absolute bottom-6 right-6 w-14 h-14 rounded-full overflow-hidden shadow-lg hover:shadow-2xl transition-all flex items-center justify-center pointer-events-auto border-2 border-cyan-500/50"
-          style={{
-            boxShadow: '0 0 40px rgba(0, 245, 255, 0.3)',
-          }}
+          style={{ boxShadow: '0 0 40px rgba(0, 245, 255, 0.3)' }}
         >
           <AnimatePresence mode="wait">
             {isOpen ? (
@@ -346,7 +423,6 @@ Be concise, helpful, and warm. Provide actionable advice. Keep responses under 1
                 className="relative w-full h-full"
               >
                 <img src="/sona-avatar.png" alt="Chat with Sona" className="w-full h-full object-cover" />
-                {/* Notification dot */}
                 <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-green-400 rounded-full border-2 border-white animate-pulse" />
               </motion.div>
             )}

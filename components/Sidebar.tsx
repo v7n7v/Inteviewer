@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
-import { authHelpers } from '@/lib/supabase';
+import { authHelpers } from '@/lib/firebase';
 import { useStore } from '@/lib/store';
 
 interface NavigationItem {
@@ -17,20 +17,11 @@ interface NavigationItem {
 
 const navigationSections = [
   {
-    title: 'Interview Suite',
-    items: [
-      { id: 'detective', label: 'Detective', icon: '🔍', description: 'CV Intelligence', path: '/dashboard/detective' },
-      { id: 'copilot', label: 'Co-Pilot', icon: '🎙️', description: 'Live Interview', path: '/dashboard/copilot' },
-      { id: 'calibration', label: 'Calibration', icon: '⚖️', description: 'Hybrid Grading', path: '/dashboard/calibration' },
-      { id: 'analytics', label: 'Analytics', icon: '📊', description: 'Insights Hub', path: '/dashboard/analytics' },
-    ],
-  },
-  {
     title: 'Talent Suite',
     items: [
       { id: 'resume', label: 'Resume Builder', icon: '📄', description: 'Liquid Resume', path: '/suite/resume', badge: 'New' },
       { id: 'jd-generator', label: 'JD Generator', icon: '💼', description: 'Persona-JD Engine', path: '/suite/jd-generator' },
-      { id: 'shadow', label: 'Practice', icon: '🎭', description: 'Shadow Interviewer', path: '/suite/shadow-interview', badge: 'New' },
+      { id: 'flashcards', label: 'Study Cards', icon: '🎴', description: 'Flash Cards', path: '/suite/flashcards', badge: 'New' },
       { id: 'oracle', label: 'Market Oracle', icon: '🔮', description: 'Career Intelligence', path: '/suite/market-oracle', badge: 'New' },
     ],
   },
@@ -61,7 +52,6 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
   };
 
   const isActive = (path: string) => {
-    if (path === '/dashboard/detective' && (pathname === '/dashboard' || pathname === '/')) return true;
     return pathname?.startsWith(path);
   };
 
@@ -119,7 +109,6 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
           {/* Navigation */}
           <div className="p-3 space-y-3">
             {navigationSections.map((section, sectionIndex) => {
-              // Get initials from section title (e.g., "Interview Suite" -> "IS", "Talent Suite" -> "TS")
               const getInitials = (title: string) => {
                 return title
                   .split(' ')
@@ -211,10 +200,9 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
                           )}
                         </button>
 
-                        {/* User Menu - Show after Market Oracle */}
-                        {section.title === 'Talent Suite' && item.id === 'oracle' && (
+                        {/* User Menu - Show after last item */}
+                        {item.id === 'oracle' && (
                           <>
-                            {/* Divider */}
                             <AnimatePresence>
                               {!isCollapsed && (
                                 <motion.div
@@ -227,7 +215,6 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
                               )}
                             </AnimatePresence>
 
-                            {/* User Account - Always visible, shows initials when collapsed */}
                             <div className="relative">
                               <button
                                 onClick={() => !isCollapsed && setShowUserMenu(!showUserMenu)}
@@ -273,7 +260,6 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
                                 </AnimatePresence>
                               </button>
 
-                              {/* User Dropdown */}
                               <AnimatePresence>
                                 {showUserMenu && !isCollapsed && (
                                   <motion.div

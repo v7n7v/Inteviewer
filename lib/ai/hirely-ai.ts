@@ -7,11 +7,11 @@
 import Groq from "groq-sdk";
 
 const MODEL = "openai/gpt-oss-120b";
-const FALLBACK_MODEL = "llama-3.3-70b-versatile";
+const FALLBACK_MODEL = "openai/gpt-oss-120b";
 
-// Initialize Groq client
+// Initialize Groq client (server-side only)
 const getGroqClient = () => {
-  const apiKey = process.env.NEXT_PUBLIC_GROQ_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   
   if (!apiKey) {
     throw new Error('GROQ_API_KEY not found in environment variables');
@@ -19,7 +19,6 @@ const getGroqClient = () => {
 
   return new Groq({
     apiKey: apiKey,
-    dangerouslyAllowBrowser: true
   });
 };
 

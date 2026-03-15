@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import type { Candidate, TabType, AudioSnippet } from '@/types';
-import type { User } from '@supabase/supabase-js';
+import type { User } from 'firebase/auth';
 
-// Per-question interview data
+// Per-question evaluation data
 export interface QuestionData {
   questionIndex: number;
   transcript: string;
@@ -27,12 +27,12 @@ interface AppState {
   currentTab: TabType;
   setCurrentTab: (tab: TabType) => void;
 
-  // Current candidate being interviewed
+  // Current candidate being evaluated
   currentCandidate: Candidate;
   setCurrentCandidate: (candidate: Partial<Candidate>) => void;
   resetCurrentCandidate: () => void;
 
-  // Interview state
+  // Evaluation state
   currentQuestionIndex: number;
   setCurrentQuestionIndex: (index: number) => void;
   isRecording: boolean;
@@ -97,7 +97,7 @@ export const useStore = create<AppState>((set, get) => ({
     })),
   resetCurrentCandidate: () => set({ currentCandidate: { ...defaultCandidate } }),
 
-  // Interview state
+  // Evaluation state
   currentQuestionIndex: 0,
   setCurrentQuestionIndex: (index) => set({ currentQuestionIndex: index }),
   isRecording: false,

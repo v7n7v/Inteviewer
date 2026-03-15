@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { authHelpers } from '@/lib/supabase';
+import { authHelpers } from '@/lib/firebase';
 import { useStore } from '@/lib/store';
 import { showToast } from '@/components/Toast';
+import type { MultiFactorResolver } from 'firebase/auth';
 
 interface AuthModalProps {
   mode: 'login' | 'signup';
@@ -12,13 +13,10 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProps) {
-  const { setUser, setPending2FA } = useStore();
+  const { setUser } = useStore();
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showOTPVerification, setShowOTPVerification] = useState(false);
-  const [verificationType, setVerificationType] = useState<'signup' | 'login'>('signup');
-  const [otpCode, setOtpCode] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [formData, setFormData] = useState({
@@ -27,6 +25,11 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
     password: '',
     confirmPassword: '',
   });
+
+  // MFA Challenge State (TOTP — Google Authenticator)
+  const [showMFAChallenge, setShowMFAChallenge] = useState(false);
+  const [mfaResolver, setMfaResolver] = useState<MultiFactorResolver | null>(null);
+  const [totpCode, setTotpCode] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,10 +62,11 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
 
         if (error) throw error;
 
-        // Show OTP verification screen
-        setVerificationType('signup');
-        setShowOTPVerification(true);
-        showToast('Verification code sent to your email!', '📧');
+        if (data?.user) {
+          setUser(data.user);
+          showToast('Account created! Welcome!', '✅');
+          onClose();
+        }
       } else {
         if (!formData.email || !formData.password) {
           setError('Please fill in all fields');
@@ -70,50 +74,45 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
           return;
         }
 
-        // Phase 1: Set 2FA pending state to prevent auto-redirect
-        setPending2FA(true);
-
-        // Phase 2: Verify Password first
-        const { data, error } = await authHelpers.signIn(
+        const { data, error, mfaResolver: resolver } = await authHelpers.signIn(
           formData.email,
           formData.password
         );
 
+        // MFA required — show authenticator code input
+        if (resolver) {
+          setMfaResolver(resolver);
+          setShowMFAChallenge(true);
+          setLoading(false);
+          return;
+        }
+
         if (error) {
-          if (error.message.includes('Email not confirmed')) {
-            throw new Error('Please verify your email first.');
-          } else if (error.message.includes('Invalid login credentials')) {
+          if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
             throw new Error('Invalid email or password.');
           } else {
             throw error;
           }
         }
 
-        // Phase 2: Sign out immediately to enforce OTP step
-        await authHelpers.signOut();
-
-        // Phase 3: Send OTP for 2FA
-        const { error: otpError } = await authHelpers.signInWithOtp(formData.email);
-
-        if (otpError) throw otpError;
-
-        setVerificationType('login');
-        setShowOTPVerification(true);
-        showToast('Password verified. Please check your email for the login code.', '🛡️');
+        if (data?.user) {
+          setUser(data.user);
+          showToast('Login successful!', '✅');
+          onClose();
+        }
       }
     } catch (err: any) {
       console.error('Auth error:', err);
       setError(err.message || 'Authentication failed');
-      setPending2FA(false); // Clear 2FA state on error
     } finally {
       setLoading(false);
     }
   };
 
-  const handleVerifyOTP = async (e: React.FormEvent) => {
+  const handleMFAVerify = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!otpCode || otpCode.length < 6) {
-      setError('Please enter the verification code');
+    if (!totpCode || totpCode.length < 6) {
+      setError('Please enter the 6-digit code from your authenticator app');
       return;
     }
 
@@ -121,34 +120,24 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
     setError('');
 
     try {
-      // Use 'email' type for login verification (magiclink/otp), 'signup' for new registrations
-      const type = verificationType === 'login' ? 'email' : 'signup';
-      const { data, error } = await authHelpers.verifyOTP(formData.email, otpCode, type);
+      if (!mfaResolver) throw new Error('MFA session expired. Please try again.');
+
+      const { data, error } = await authHelpers.resolveTOTPSignIn(
+        mfaResolver,
+        totpCode,
+        0
+      );
+
       if (error) throw error;
 
-      if (data.user) {
-        setPending2FA(false); // Clear 2FA state on success
+      if (data?.user) {
         setUser(data.user);
-        showToast(verificationType === 'login' ? 'Login successful!' : 'Email verified! Welcome!', '✅');
+        showToast('Login successful!', '✅');
         onClose();
       }
     } catch (err: any) {
-      setError(err.message || 'Invalid verification code');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResendOTP = async () => {
-    setLoading(true);
-    setError('');
-
-    try {
-      const { error } = await authHelpers.resendOTP(formData.email);
-      if (error) throw error;
-      showToast('New code sent!', '📧');
-    } catch (err: any) {
-      setError(err.message || 'Failed to resend code');
+      console.error('MFA verify error:', err);
+      setError(err.message || 'Invalid or expired code');
     } finally {
       setLoading(false);
     }
@@ -159,11 +148,17 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
     setError('');
 
     try {
-      const { error } = await authHelpers.signInWithGoogle();
+      const { data, error } = await authHelpers.signInWithGoogle();
       if (error) throw error;
+      if (data?.user) {
+        setUser(data.user);
+        showToast('Signed in with Google!', '✅');
+        onClose();
+      }
     } catch (err: any) {
       console.error('OAuth error:', err);
       setError(err.message || 'Failed to sign in with Google');
+    } finally {
       setOauthLoading(false);
     }
   };
@@ -191,69 +186,75 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
     }
   };
 
-  // OTP Verification Screen
-  if (showOTPVerification) {
+  // ============================================
+  // TOTP MFA VERIFICATION SCREEN
+  // ============================================
+  if (showMFAChallenge) {
     return (
       <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div className="glass-card p-8 max-w-md w-full">
           <div className="text-center mb-6">
-            <div className="w-20 h-20 rounded-full bg-cyan-500/20 flex items-center justify-center mx-auto mb-4">
-              <span className="text-4xl">📧</span>
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center mx-auto mb-4 border border-amber-500/30">
+              <span className="text-4xl">🔐</span>
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">
-              {verificationType === 'login' ? 'Verify Login' : 'Verify Your Email'}
+              Two-Factor Verification
             </h2>
             <p className="text-slate-400">
-              We sent a verification code to <strong className="text-cyan-400">{formData.email}</strong>
+              Enter the 6-digit code from your <strong className="text-cyan-400">authenticator app</strong>
             </p>
           </div>
 
-          <form onSubmit={handleVerifyOTP} className="space-y-4">
+          <form onSubmit={handleMFAVerify} className="space-y-4">
             <div>
               <label className="block text-sm text-slate-400 mb-2">Verification Code</label>
               <input
                 type="text"
-                value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                className="w-full rounded-xl px-4 py-4 bg-white/5 border border-white/10 text-white text-center text-2xl tracking-[0.3em] font-mono focus:outline-none focus:border-cyan-500/50"
-                placeholder="00000000"
-                maxLength={8}
+                value={totpCode}
+                onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                className="w-full rounded-xl px-4 py-4 bg-white/5 border border-white/10 text-white text-center text-2xl tracking-[0.3em] font-mono focus:outline-none focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition-all"
+                placeholder="000000"
+                maxLength={6}
                 disabled={loading}
                 autoFocus
               />
             </div>
 
             {error && (
-              <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/30">
+              <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30">
                 <p className="text-sm text-red-300">{error}</p>
               </div>
             )}
 
             <button
               type="submit"
-              disabled={loading || otpCode.length < 6}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-medium disabled:opacity-50"
+              disabled={loading || totpCode.length < 6}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium hover:shadow-lg hover:shadow-amber-500/25 transition-all disabled:opacity-50"
             >
-              {loading ? 'Verifying...' : 'Verify Email'}
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Verifying...
+                </span>
+              ) : (
+                'Verify & Sign In'
+              )}
             </button>
-
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={handleResendOTP}
-                disabled={loading}
-                className="text-sm text-cyan-400 hover:underline"
-              >
-                Didn't receive code? Resend
-              </button>
-            </div>
 
             <button
               type="button"
-              onClick={() => { setShowOTPVerification(false); setOtpCode(''); setError(''); }}
-              className="w-full text-sm text-slate-400 hover:text-white"
+              onClick={() => {
+                setShowMFAChallenge(false);
+                setTotpCode('');
+                setError('');
+                setMfaResolver(null);
+              }}
+              className="w-full text-sm text-slate-400 hover:text-white transition-colors"
             >
-              ← Back to Sign Up
+              ← Back to Login
             </button>
           </form>
         </div>

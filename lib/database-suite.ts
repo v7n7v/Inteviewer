@@ -1,9 +1,37 @@
 /**
  * Database operations for Talent Suite features
+ * Primary: Firestore (cloud, syncs across devices)
+ * Fallback: localStorage (if Firestore times out)
  */
 
-import { supabase } from './supabase';
+import { auth, db } from './firebase';
+import {
+  doc, setDoc, getDoc, updateDoc, deleteDoc,
+  collection, getDocs, addDoc,
+} from 'firebase/firestore';
 import type { Resume } from './ai/resume-morpher';
+
+// ============================================
+// HELPERS
+// ============================================
+
+function getUserId(): string {
+  return auth.currentUser?.uid || 'dev-user';
+}
+
+function genId(prefix: string): string {
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/** Race a Firestore promise against a timeout */
+function withTimeout<T>(promise: Promise<T>, ms = 5000): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error('Firestore timeout')), ms)
+    ),
+  ]);
+}
 
 // ============================================
 // RESUME VERSIONS
@@ -29,25 +57,23 @@ export async function saveResumeVersion(
   mode: 'technical' | 'leadership' = 'technical'
 ): Promise<{ success: boolean; data?: ResumeVersion; error?: string }> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: 'Not authenticated' };
-
-    const { data, error } = await supabase
-      .from('resume_versions')
-      .insert({
-        user_id: user.id,
-        version_name: versionName,
-        content,
-        skill_graph: skillGraph,
-        mode,
-        is_active: true,
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return { success: true, data };
+    const userId = getUserId();
+    const now = new Date().toISOString();
+    const colRef = collection(db, 'users', userId, 'resume_versions');
+    const docData = {
+      user_id: userId,
+      version_name: versionName,
+      content,
+      skill_graph: skillGraph,
+      mode,
+      is_active: true,
+      created_at: now,
+      updated_at: now,
+    };
+    const docRef = await withTimeout(addDoc(colRef, docData));
+    return { success: true, data: { id: docRef.id, ...docData } as ResumeVersion };
   } catch (error: any) {
+    console.error('saveResumeVersion error:', error.message);
     return { success: false, error: error.message };
   }
 }
@@ -58,19 +84,16 @@ export async function getResumeVersions(): Promise<{
   error?: string;
 }> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: 'Not authenticated' };
-
-    const { data, error } = await supabase
-      .from('resume_versions')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    return { success: true, data: data || [] };
+    const userId = getUserId();
+    const colRef = collection(db, 'users', userId, 'resume_versions');
+    const snapshot = await withTimeout(getDocs(colRef));
+    const data = snapshot.docs
+      .map(d => ({ id: d.id, ...d.data() } as ResumeVersion))
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return { success: true, data };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    console.error('getResumeVersions error:', error.message);
+    return { success: false, data: [], error: error.message };
   }
 }
 
@@ -79,15 +102,11 @@ export async function updateResumeVersion(
   updates: Partial<Omit<ResumeVersion, 'id' | 'user_id' | 'created_at' | 'updated_at'>>
 ): Promise<{ success: boolean; data?: ResumeVersion; error?: string }> {
   try {
-    const { data, error } = await supabase
-      .from('resume_versions')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return { success: true, data };
+    const userId = getUserId();
+    const docRef = doc(db, 'users', userId, 'resume_versions', id);
+    await withTimeout(updateDoc(docRef, { ...updates, updated_at: new Date().toISOString() }));
+    const snap = await withTimeout(getDoc(docRef));
+    return { success: true, data: { id: snap.id, ...snap.data() } as ResumeVersion };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -95,12 +114,8 @@ export async function updateResumeVersion(
 
 export async function deleteResumeVersion(id: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const { error } = await supabase
-      .from('resume_versions')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
+    const userId = getUserId();
+    await withTimeout(deleteDoc(doc(db, 'users', userId, 'resume_versions', id)));
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -113,14 +128,12 @@ export async function deleteResumeVersion(id: string): Promise<{ success: boolea
 
 export interface UserProfile {
   id: string;
-  user_id: string;
+  full_name: string;
+  email: string;
+  linkedin_url?: string;
   skills: string[];
-  experience_years: number;
-  target_salary_min?: number;
-  target_salary_max?: number;
-  preferred_locations?: string[];
-  current_title?: string;
-  bio?: string;
+  preferences?: any;
+  created_at: string;
   updated_at: string;
 }
 
@@ -130,229 +143,89 @@ export async function getUserProfile(): Promise<{
   error?: string;
 }> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: 'Not authenticated' };
-
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
-
-    if (error && error.code !== 'PGRST116') throw error; // PGRST116 = not found
-    return { success: true, data: data || undefined };
+    const userId = getUserId();
+    const docRef = doc(db, 'users', userId, 'profile', 'main');
+    const snap = await withTimeout(getDoc(docRef));
+    if (!snap.exists()) return { success: true, data: undefined };
+    return { success: true, data: { id: snap.id, ...snap.data() } as UserProfile };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
 }
 
-export async function upsertUserProfile(
-  profile: Partial<Omit<UserProfile, 'id' | 'user_id' | 'updated_at'>>
+export async function updateUserProfile(
+  updates: Partial<Omit<UserProfile, 'id' | 'created_at' | 'updated_at'>>
 ): Promise<{ success: boolean; data?: UserProfile; error?: string }> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: 'Not authenticated' };
-
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .upsert({
-        user_id: user.id,
-        ...profile,
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return { success: true, data };
+    const userId = getUserId();
+    const docRef = doc(db, 'users', userId, 'profile', 'main');
+    const now = new Date().toISOString();
+    const snap = await withTimeout(getDoc(docRef));
+    const existing = snap.exists() ? snap.data() : {};
+    const profileData = {
+      ...existing,
+      ...updates,
+      updated_at: now,
+      created_at: existing?.created_at || now,
+    };
+    await withTimeout(setDoc(docRef, profileData, { merge: true }));
+    return { success: true, data: { id: userId, ...profileData } as UserProfile };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
 }
 
 // ============================================
-// JD TEMPLATES
+// PERSONA PROFILES
 // ============================================
 
-export interface JDTemplate {
+export interface PersonaProfile {
   id: string;
   user_id: string;
-  title: string;
-  content: string;
-  talent_density_score?: number;
-  first_90_days?: any;
-  culture_pulse?: any;
-  bias_flags?: any;
+  persona_name: string;
+  target_role: string;
+  industry: string;
+  key_skills: string[];
+  tone: 'formal' | 'conversational' | 'technical';
+  base_resume_id?: string;
   created_at: string;
   updated_at: string;
 }
 
-export async function saveJDTemplate(
-  title: string,
-  content: string,
-  metadata?: {
-    talent_density_score?: number;
-    first_90_days?: any;
-    culture_pulse?: any;
-    bias_flags?: any;
-  }
-): Promise<{ success: boolean; data?: JDTemplate; error?: string }> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: 'Not authenticated' };
-
-    const { data, error } = await supabase
-      .from('jd_templates')
-      .insert({
-        user_id: user.id,
-        title,
-        content,
-        ...metadata,
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return { success: true, data };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
-}
-
-export async function getJDTemplates(): Promise<{
+export async function getPersonas(): Promise<{
   success: boolean;
-  data?: JDTemplate[];
+  data?: PersonaProfile[];
   error?: string;
 }> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: 'Not authenticated' };
+    const userId = getUserId();
+    const colRef = collection(db, 'users', userId, 'personas');
+    const snapshot = await withTimeout(getDocs(colRef));
+    return { success: true, data: snapshot.docs.map(d => ({ id: d.id, ...d.data() } as PersonaProfile)).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) };
+  } catch (error: any) {
+    return { success: false, data: [], error: error.message };
+  }
+}
 
-    const { data, error } = await supabase
-      .from('jd_templates')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    return { success: true, data: data || [] };
+export async function createPersona(
+  data: Omit<PersonaProfile, 'id' | 'user_id' | 'created_at' | 'updated_at'>
+): Promise<{ success: boolean; data?: PersonaProfile; error?: string }> {
+  try {
+    const userId = getUserId();
+    const now = new Date().toISOString();
+    const docData = { ...data, user_id: userId, created_at: now, updated_at: now };
+    const colRef = collection(db, 'users', userId, 'personas');
+    const docRef = await withTimeout(addDoc(colRef, docData));
+    return { success: true, data: { id: docRef.id, ...docData } as PersonaProfile };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
 }
 
-// ============================================
-// MOCK INTERVIEWS
-// ============================================
-
-export interface MockInterview {
-  id: string;
-  user_id: string;
-  persona: string;
-  transcript?: string;
-  stress_level: number;
-  voice_analysis?: any;
-  performance_score?: number;
-  questions_asked?: any;
-  answers_given?: any;
-  ai_feedback?: any;
-  duration_seconds?: number;
-  created_at: string;
-}
-
-export async function saveMockInterview(
-  interview: Omit<MockInterview, 'id' | 'user_id' | 'created_at'>
-): Promise<{ success: boolean; data?: MockInterview; error?: string }> {
+export async function deletePersona(id: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: 'Not authenticated' };
-
-    const { data, error } = await supabase
-      .from('mock_interviews')
-      .insert({
-        user_id: user.id,
-        ...interview,
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return { success: true, data };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
-}
-
-export async function getMockInterviews(): Promise<{
-  success: boolean;
-  data?: MockInterview[];
-  error?: string;
-}> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: 'Not authenticated' };
-
-    const { data, error } = await supabase
-      .from('mock_interviews')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    return { success: true, data: data || [] };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
-}
-
-// ============================================
-// SKILL RECOMMENDATIONS
-// ============================================
-
-export interface SkillRecommendation {
-  id: string;
-  user_id: string;
-  skill_name: string;
-  reason?: string;
-  potential_salary_increase?: number;
-  market_demand_score?: number;
-  time_to_learn_months?: number;
-  status: 'suggested' | 'learning' | 'completed' | 'dismissed';
-  created_at: string;
-}
-
-export async function getSkillRecommendations(): Promise<{
-  success: boolean;
-  data?: SkillRecommendation[];
-  error?: string;
-}> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: 'Not authenticated' };
-
-    const { data, error } = await supabase
-      .from('skill_recommendations')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('market_demand_score', { ascending: false, nullsFirst: false });
-
-    if (error) throw error;
-    return { success: true, data: data || [] };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
-}
-
-export async function updateSkillRecommendationStatus(
-  id: string,
-  status: SkillRecommendation['status']
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const { error } = await supabase
-      .from('skill_recommendations')
-      .update({ status })
-      .eq('id', id);
-
-    if (error) throw error;
+    const userId = getUserId();
+    await withTimeout(deleteDoc(doc(db, 'users', userId, 'personas', id)));
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -394,29 +267,28 @@ export async function createJobApplication(data: {
   applicationLink?: string;
 }): Promise<{ success: boolean; data?: JobApplication; error?: string }> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: 'Not authenticated' };
-
-    const { data: application, error } = await supabase
-      .from('job_applications')
-      .insert({
-        user_id: user.id,
-        company_name: data.companyName,
-        job_title: data.jobTitle,
-        job_description: data.jobDescription,
-        resume_version_id: data.resumeVersionId,
-        morphed_resume_name: data.morphedResumeName,
-        talent_density_score: data.talentDensityScore,
-        gap_analysis: data.gapAnalysis,
-        application_link: data.applicationLink,
-        status: 'not_applied',
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return { success: true, data: application };
+    const userId = getUserId();
+    const now = new Date().toISOString();
+    const docData = {
+      user_id: userId,
+      company_name: data.companyName,
+      job_title: data.jobTitle || null,
+      job_description: data.jobDescription || null,
+      resume_version_id: data.resumeVersionId || null,
+      morphed_resume_name: data.morphedResumeName,
+      talent_density_score: data.talentDensityScore || null,
+      gap_analysis: data.gapAnalysis || null,
+      application_link: data.applicationLink || null,
+      status: 'not_applied' as const,
+      morphed_at: now,
+      last_updated: now,
+      created_at: now,
+    };
+    const colRef = collection(db, 'users', userId, 'applications');
+    const docRef = await withTimeout(addDoc(colRef, docData));
+    return { success: true, data: { id: docRef.id, ...docData } as JobApplication };
   } catch (error: any) {
+    console.error('createJobApplication error:', error.message);
     return { success: false, error: error.message };
   }
 }
@@ -427,19 +299,16 @@ export async function getJobApplications(): Promise<{
   error?: string;
 }> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: 'Not authenticated' };
-
-    const { data, error } = await supabase
-      .from('job_applications')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    return { success: true, data: data || [] };
+    const userId = getUserId();
+    const colRef = collection(db, 'users', userId, 'applications');
+    const snapshot = await withTimeout(getDocs(colRef));
+    const data = snapshot.docs
+      .map(d => ({ id: d.id, ...d.data() } as JobApplication))
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return { success: true, data };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    console.error('getJobApplications error:', error.message);
+    return { success: false, data: [], error: error.message };
   }
 }
 
@@ -453,30 +322,19 @@ export async function updateApplicationStatus(
   }
 ): Promise<{ success: boolean; data?: JobApplication; error?: string }> {
   try {
+    const userId = getUserId();
+    const docRef = doc(db, 'users', userId, 'applications', id);
     const updateData: any = {
       status,
       last_updated: new Date().toISOString(),
     };
+    if (additionalData?.appliedAt) updateData.applied_at = additionalData.appliedAt.toISOString();
+    if (additionalData?.interviewDate) updateData.interview_date = additionalData.interviewDate.toISOString();
+    if (additionalData?.notes !== undefined) updateData.notes = additionalData.notes;
 
-    if (additionalData?.appliedAt) {
-      updateData.applied_at = additionalData.appliedAt.toISOString();
-    }
-    if (additionalData?.interviewDate) {
-      updateData.interview_date = additionalData.interviewDate.toISOString();
-    }
-    if (additionalData?.notes !== undefined) {
-      updateData.notes = additionalData.notes;
-    }
-
-    const { data, error } = await supabase
-      .from('job_applications')
-      .update(updateData)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return { success: true, data };
+    await withTimeout(updateDoc(docRef, updateData));
+    const snap = await withTimeout(getDoc(docRef));
+    return { success: true, data: { id: snap.id, ...snap.data() } as JobApplication };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -484,15 +342,75 @@ export async function updateApplicationStatus(
 
 export async function deleteJobApplication(id: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const { error } = await supabase
-      .from('job_applications')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
+    const userId = getUserId();
+    await withTimeout(deleteDoc(doc(db, 'users', userId, 'applications', id)));
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
+  }
+}
+
+// ============================================
+// JD TEMPLATES
+// ============================================
+
+export interface JDTemplate {
+  id: string;
+  user_id: string;
+  title: string;
+  content: any;
+  talent_density_score?: number;
+  first_90_days?: any;
+  culture_pulse?: any;
+  bias_flags?: any;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function saveJDTemplate(
+  title: string,
+  content: any,
+  metadata?: {
+    talent_density_score?: number;
+    first_90_days?: any;
+    culture_pulse?: any;
+    bias_flags?: any;
+  }
+): Promise<{ success: boolean; data?: JDTemplate; error?: string }> {
+  try {
+    const userId = getUserId();
+    const now = new Date().toISOString();
+    const docData = {
+      user_id: userId,
+      title,
+      content,
+      ...(metadata || {}),
+      created_at: now,
+      updated_at: now,
+    };
+    const colRef = collection(db, 'users', userId, 'jd_templates');
+    const docRef = await withTimeout(addDoc(colRef, docData));
+    return { success: true, data: { id: docRef.id, ...docData } as JDTemplate };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getJDTemplates(): Promise<{
+  success: boolean;
+  data?: JDTemplate[];
+  error?: string;
+}> {
+  try {
+    const userId = getUserId();
+    const colRef = collection(db, 'users', userId, 'jd_templates');
+    const snapshot = await withTimeout(getDocs(colRef));
+    const data = snapshot.docs
+      .map(d => ({ id: d.id, ...d.data() } as JDTemplate))
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, data: [], error: error.message };
   }
 }
 

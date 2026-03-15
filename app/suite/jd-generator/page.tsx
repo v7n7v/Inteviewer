@@ -1,13 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { groqCompletion, groqJSONCompletion } from '@/lib/ai/groq-client';
+import { authFetch } from '@/lib/auth-fetch';
 import { saveJDTemplate, getJDTemplates, type JDTemplate } from '@/lib/database-suite';
 import { useStore } from '@/lib/store';
 import { showToast } from '@/components/Toast';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import { downloadJDPDF } from '@/lib/pdf-templates';
 
 // JD Structure
 interface GeneratedJD {
@@ -79,7 +78,7 @@ export default function JDGeneratorPage() {
   const [editableJD, setEditableJD] = useState('');
   const [showBiasPanel, setShowBiasPanel] = useState(false);
   
-  const jdRef = useRef<HTMLDivElement>(null);
+
 
   useEffect(() => { if (user) loadTemplates(); }, [user]);
 
@@ -151,10 +150,22 @@ ${includeCompensation ? `Salary Range: ${salaryRange}` : ''}
 Generate a professional, compelling job description that would attract top-tier talent.`;
 
     try {
-      const result = await groqJSONCompletion<GeneratedJD>(systemPrompt, userPrompt, {
-        temperature: 0.7,
-        maxTokens: 4000,
+      const response = await authFetch('/api/ai', {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'json',
+          systemPrompt,
+          prompt: userPrompt,
+          options: { temperature: 0.7, maxTokens: 4000 },
+        }),
       });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: 'Request failed' }));
+        throw new Error(err.error || `Server error ${response.status}`);
+      }
+
+      const { result } = await response.json() as { result: GeneratedJD };
 
       setGeneratedJD(result);
       
@@ -227,15 +238,9 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
 
   // Download as PDF
   const downloadPDF = async () => {
-    if (!jdRef.current) return;
     setIsLoading(true);
     try {
-      const canvas = await html2canvas(jdRef.current, { scale: 2, backgroundColor: '#ffffff' });
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`${generatedJD?.roleTitle || 'job-description'}.pdf`);
+      await downloadJDPDF(generatedJD || undefined, editableJD);
       showToast('PDF downloaded!', '✅');
     } catch { showToast('Failed to generate PDF', '❌'); }
     finally { setIsLoading(false); }
@@ -555,12 +560,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
                   </div>
                 </div>
 
-                {/* PDF Preview (hidden) */}
-                <div className="absolute -left-[9999px]">
-                  <div ref={jdRef} className="bg-white p-12 w-[800px] text-gray-900 font-sans">
-                    <pre className="whitespace-pre-wrap text-sm leading-relaxed">{editableJD}</pre>
-                  </div>
-                </div>
+
               </div>
 
               {/* Sidebar */}

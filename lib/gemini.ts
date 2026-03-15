@@ -1,73 +1,77 @@
 /**
- * AI Client - Now powered by Groq GPT-OSS 120B
- * Maintains backward compatibility with previous Gemini interface
+ * AI Client — Secure BFF Pattern
+ * All AI calls now go through /api/ai server-side route
+ * No API keys are exposed to the client
  */
 
-import { groqCompletion, groqJSONCompletion, extractJSON } from './ai/groq-client';
-
-const GROQ_API_KEY = process.env.NEXT_PUBLIC_GROQ_API_KEY;
-
 /**
- * Main AI API call - now using Groq
- * @param prompt The prompt to send to the AI
- * @param systemPrompt Optional system prompt for context
+ * Main AI text completion
  */
 export async function callGeminiAPI(
   prompt: string,
   systemPrompt: string = 'You are a helpful AI assistant specializing in talent assessment and career development.'
 ): Promise<string> {
-  if (!GROQ_API_KEY) {
-    throw new Error('Groq API key not configured. Please check your .env.local file.');
+  const response = await fetch('/api/ai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'complete',
+      prompt,
+      systemPrompt,
+      options: { temperature: 0.7, maxTokens: 4096 },
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ error: 'AI request failed' }));
+    throw new Error(err.error || `AI API error (${response.status})`);
   }
 
-  try {
-    const response = await groqCompletion(systemPrompt, prompt, {
-      temperature: 0.7,
-      maxTokens: 4096,
-    });
-    return response;
-  } catch (error: any) {
-    console.error('AI API error:', error);
-    throw new Error(`AI API error: ${error.message}`);
-  }
+  const data = await response.json();
+  return data.result;
 }
 
 /**
- * Parse JSON response from AI
- * Handles various formats including markdown code blocks
+ * Parse JSON from AI response text
  */
 export function parseJSONResponse<T>(text: string): T | null {
   try {
-    return extractJSON(text) as T;
-  } catch (e) {
-    console.error('Could not parse JSON response:', e);
+    const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (codeBlockMatch) return JSON.parse(codeBlockMatch[1].trim());
+    const jsonMatch = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+    if (jsonMatch) return JSON.parse(jsonMatch[0]);
+    return null;
+  } catch {
+    console.error('Could not parse JSON response');
     return null;
   }
 }
 
 /**
- * Call AI with JSON response expected
- * @param prompt The prompt to send
- * @param systemPrompt Optional system context
+ * AI completion with structured JSON response
  */
 export async function callGeminiAPIForJSON<T = any>(
   prompt: string,
   systemPrompt: string = 'You are a helpful AI assistant. Always respond with valid JSON.'
 ): Promise<T> {
-  if (!GROQ_API_KEY) {
-    throw new Error('Groq API key not configured');
+  const response = await fetch('/api/ai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'json',
+      prompt,
+      systemPrompt,
+      options: { temperature: 0.5, maxTokens: 4096 },
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ error: 'AI JSON request failed' }));
+    throw new Error(err.error || `AI JSON API error (${response.status})`);
   }
 
-  try {
-    const response = await groqJSONCompletion<T>(systemPrompt, prompt, {
-      temperature: 0.5,
-      maxTokens: 4096,
-    });
-    return response;
-  } catch (error: any) {
-    console.error('AI JSON API error:', error);
-    throw new Error(`AI JSON API error: ${error.message}`);
-  }
+  const data = await response.json();
+  return data.result as T;
 }
 
 /**
@@ -106,7 +110,7 @@ Return JSON:
 }
 
 /**
- * Analyze interview transcript and generate AI grades
+ * Analyze transcript and generate AI grades
  */
 export async function analyzeInterviewTranscript(
   transcript: string,
@@ -172,5 +176,4 @@ Return JSON:
   return callGeminiAPIForJSON(userPrompt, systemPrompt);
 }
 
-// Export for backward compatibility
 export default callGeminiAPI;

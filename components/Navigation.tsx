@@ -7,10 +7,10 @@ export default function Navigation() {
   const { currentTab, setCurrentTab } = useStore();
 
   const tabs: { id: TabType; label: string; icon: string; description: string }[] = [
-    { id: 'detective', label: 'Detective', icon: '🔍', description: 'CV Intelligence' },
-    { id: 'copilot', label: 'Co-Pilot', icon: '🎙️', description: 'Live Interview' },
-    { id: 'calibration', label: 'Calibration', icon: '⚖️', description: 'Hybrid Grading' },
-    { id: 'analytics', label: 'Analytics', icon: '📊', description: 'Insights Hub' },
+    { id: 'detective', label: 'Resume', icon: '📄', description: 'Liquid Resume' },
+    { id: 'copilot', label: 'JD Generator', icon: '💼', description: 'Job Descriptions' },
+    { id: 'calibration', label: 'Study Cards', icon: '🎴', description: 'Flash Cards' },
+    { id: 'analytics', label: 'Market Oracle', icon: '🔮', description: 'Career Intelligence' },
   ];
 
   return (

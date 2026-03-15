@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase, authHelpers } from '@/lib/supabase';
+import { authHelpers } from '@/lib/firebase';
 import { useStore } from '@/lib/store';
 import HeroSection from '@/components/HeroSection';
 import AuthModal from '@/components/modals/AuthModal';
@@ -16,49 +16,16 @@ export default function Home() {
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
 
   useEffect(() => {
-    // Check for existing session
-    authHelpers.getSession()
-      .then(({ session }) => {
-        if (session) {
-          setUser(session.user);
-          // Don't redirect - let user view landing page, they can use "Open Dashboard" button
-        }
-      })
-      .catch((error) => {
-        console.error('Session check failed:', error);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-
-    // Listen for auth changes - only redirect on actual sign in, not on page load
-    // Also check pending2FA to avoid redirecting during 2FA flow
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        // Get current pending2FA state directly from store
-        const isPending2FA = useStore.getState().pending2FA;
-
-        // Always clear user on sign out - this is critical for security
-        if (event === 'SIGNED_OUT') {
-          setUser(null);
-          return;
-        }
-
-        // Don't update user state during 2FA flow
-        if (!isPending2FA) {
-          setUser(session?.user ?? null);
-        }
-
-        // Only redirect to hub on actual sign in, not during 2FA
-        if (event === 'SIGNED_IN' && session && !isPending2FA) {
-          router.push('/hub');
-        }
+    const unsubscribe = authHelpers.onAuthStateChanged((firebaseUser) => {
+      if (firebaseUser) {
+        setUser(firebaseUser);
+        router.push('/suite');
+      } else {
+        setUser(null);
       }
-    );
-
-    return () => {
-      subscription.unsubscribe();
-    };
+      setLoading(false);
+    });
+    return () => unsubscribe();
   }, [setUser, router]);
 
   const handleShowLogin = () => {
@@ -73,7 +40,7 @@ export default function Home() {
 
   const handleGetStarted = () => {
     if (user) {
-      router.push('/hub');
+      router.push('/suite');
     } else {
       handleShowSignup();
     }
@@ -102,7 +69,12 @@ export default function Home() {
       {showAuthModal && (
         <AuthModal
           mode={authMode}
-          onClose={() => setShowAuthModal(false)}
+          onClose={() => {
+            setShowAuthModal(false);
+            // If user was set by the modal (successful login), redirect to dashboard
+            const currentUser = useStore.getState().user;
+            if (currentUser) router.push('/suite');
+          }}
           onSwitchMode={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
         />
       )}
