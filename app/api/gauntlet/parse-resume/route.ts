@@ -21,7 +21,8 @@ export async function POST(req: NextRequest) {
         if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
             const mammoth = await import('mammoth');
             const arrayBuffer = await file.arrayBuffer();
-            const result = await mammoth.extractRawText({ arrayBuffer });
+            const buffer = Buffer.from(arrayBuffer);
+            const result = await mammoth.extractRawText({ buffer });
             const cleanText = result.value.trim();
             return NextResponse.json({ text: cleanText.substring(0, 10000), fileName: file.name });
         }
