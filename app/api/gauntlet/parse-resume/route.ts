@@ -17,28 +17,16 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ text, fileName: file.name });
         }
 
-        // Handle PDF files
+        // Handle PDF files — use pdf-parse (works in Node.js without workers)
         if (fileName.endsWith('.pdf')) {
             const arrayBuffer = await file.arrayBuffer();
-            const uint8Array = new Uint8Array(arrayBuffer);
+            const buffer = Buffer.from(arrayBuffer);
 
             // Dynamic import to avoid SSR issues
-            const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
+            const pdfParse = (await import('pdf-parse')).default;
+            const pdfData = await pdfParse(buffer);
 
-            const loadingTask = pdfjsLib.getDocument({ data: uint8Array });
-            const pdf = await loadingTask.promise;
-
-            let fullText = '';
-            for (let i = 1; i <= pdf.numPages; i++) {
-                const page = await pdf.getPage(i);
-                const textContent = await page.getTextContent();
-                const pageText = textContent.items
-                    .map((item: any) => item.str)
-                    .join(' ');
-                fullText += pageText + '\n';
-            }
-
-            return NextResponse.json({ text: fullText.trim(), fileName: file.name });
+            return NextResponse.json({ text: pdfData.text.trim(), fileName: file.name });
         }
 
         // Handle DOCX files using mammoth
