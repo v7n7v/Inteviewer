@@ -591,7 +591,7 @@ export default function GauntletPage() {
                                                 rows={3}
                                                 className="w-full p-4 rounded-xl bg-[#111] border border-white/10 focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 text-white placeholder-silver/50 resize-none transition-all"
                                             />
-                                            <input ref={fileInputRef} type="file" accept=".txt,.docx,.doc" onChange={(e) => { if (e.target.files?.[0]) handleResumeUpload(e.target.files[0]); }} className="hidden" />
+                                            <input ref={fileInputRef} type="file" accept=".pdf,.txt,.docx,.doc" onChange={(e) => { if (e.target.files?.[0]) handleResumeUpload(e.target.files[0]); }} className="hidden" />
                                             <button
                                                 onClick={() => fileInputRef.current?.click()}
                                                 disabled={isUploadingResume}
@@ -632,7 +632,7 @@ export default function GauntletPage() {
                                                 rows={4}
                                                 className="w-full p-4 rounded-xl bg-[#111] border border-white/10 focus:border-red-500/50 focus:ring-2 focus:ring-red-500/20 text-white placeholder-silver/50 resize-none transition-all"
                                             />
-                                            <input ref={fileInputRef} type="file" accept=".txt,.docx,.doc" onChange={(e) => { if (e.target.files?.[0]) handleResumeUpload(e.target.files[0]); }} className="hidden" />
+                                            <input ref={fileInputRef} type="file" accept=".pdf,.txt,.docx,.doc" onChange={(e) => { if (e.target.files?.[0]) handleResumeUpload(e.target.files[0]); }} className="hidden" />
                                             <button
                                                 onClick={() => fileInputRef.current?.click()}
                                                 disabled={isUploadingResume}
@@ -716,7 +716,7 @@ export default function GauntletPage() {
                                                 rows={3}
                                                 className="w-full p-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 outline-none focus:border-amber-500/50 resize-none transition-colors text-sm"
                                             />
-                                            <input ref={fileInputRef} type="file" accept=".txt,.docx,.doc" onChange={(e) => { if (e.target.files?.[0]) handleResumeUpload(e.target.files[0]); }} className="hidden" />
+                                            <input ref={fileInputRef} type="file" accept=".pdf,.txt,.docx,.doc" onChange={(e) => { if (e.target.files?.[0]) handleResumeUpload(e.target.files[0]); }} className="hidden" />
                                             <button
                                                 onClick={() => fileInputRef.current?.click()}
                                                 disabled={isUploadingResume}

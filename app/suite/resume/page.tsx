@@ -584,9 +584,9 @@ export default function LiquidResumePage() {
   const handleFileUpload = async (file: File) => {
     if (!file) return;
     const ext = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
-    const validExtensions = ['.docx', '.doc', '.txt'];
+    const validExtensions = ['.pdf', '.docx', '.doc', '.txt'];
     if (!validExtensions.includes(ext)) {
-      showToast('Please upload Word (.docx) or TXT file', '❌');
+      showToast('Please upload PDF, Word, or TXT file', '❌');
       return;
     }
 
@@ -1154,7 +1154,7 @@ export default function LiquidResumePage() {
             {step === 'upload' && (
               <motion.div key="upload" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
                 <div className="max-w-2xl mx-auto">
-                  <input type="file" ref={fileInputRef} onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])} className="hidden" accept=".docx,.doc,.txt" />
+                  <input type="file" ref={fileInputRef} onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])} className="hidden" accept=".pdf,.docx,.doc,.txt" />
                   <div
                     onClick={() => fileInputRef.current?.click()}
                     onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
@@ -1169,7 +1169,7 @@ export default function LiquidResumePage() {
                       <>
                         <span className="text-6xl block mb-4">📄</span>
                         <p className="text-xl text-white mb-2">Drop your resume here</p>
-                        <p className="text-silver">or click to browse (Word, TXT)</p>
+                        <p className="text-silver">or click to browse (PDF, Word, TXT)</p>
                       </>
                     )}
                   </div>
