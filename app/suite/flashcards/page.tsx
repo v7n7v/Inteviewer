@@ -413,7 +413,7 @@ export default function GauntletPage() {
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="relative overflow-hidden rounded-3xl bg-[#0A0A0A] border border-white/10 p-8 mb-8"
+                className="relative overflow-hidden rounded-3xl glass-card p-8 mb-8"
             >
                 <div className="absolute inset-0 overflow-hidden">
                     <motion.div
@@ -486,7 +486,7 @@ export default function GauntletPage() {
                                 whileHover={{ scale: 1.02, y: -4 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => setInterviewType('mock-interview')}
-                                className={`group relative p-8 rounded-3xl bg-[#0A0A0A] border text-left transition-all overflow-hidden ${interviewType === 'mock-interview' ? 'border-red-500/50 shadow-lg shadow-red-500/10' : 'border-white/10 hover:border-white/20'}`}
+                                className={`group relative p-8 rounded-3xl glass-card text-left transition-all overflow-hidden ${interviewType === 'mock-interview' ? 'border-red-500/50 shadow-lg shadow-red-500/10' : 'border-white/10 hover:border-white/20'}`}
                             >
                                 <div className={`absolute inset-0 bg-gradient-to-br from-red-500/10 to-orange-500/10 ${interviewType === 'mock-interview' ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'} transition-opacity`} />
                                 <div className="relative">
@@ -507,7 +507,7 @@ export default function GauntletPage() {
                                 whileHover={{ scale: 1.02, y: -4 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => setInterviewType('quick-drill')}
-                                className={`group relative p-8 rounded-3xl bg-[#0A0A0A] border text-left transition-all overflow-hidden ${interviewType === 'quick-drill' ? 'border-amber-500/50 shadow-lg shadow-amber-500/10' : 'border-white/10 hover:border-white/20'}`}
+                                className={`group relative p-8 rounded-3xl glass-card text-left transition-all overflow-hidden ${interviewType === 'quick-drill' ? 'border-amber-500/50 shadow-lg shadow-amber-500/10' : 'border-white/10 hover:border-white/20'}`}
                             >
                                 <div className={`absolute inset-0 bg-gradient-to-br from-amber-500/10 to-yellow-500/10 ${interviewType === 'quick-drill' ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'} transition-opacity`} />
                                 <div className="relative">
@@ -528,7 +528,7 @@ export default function GauntletPage() {
                                 whileHover={{ scale: 1.02, y: -4 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => setInterviewType('study-cards')}
-                                className={`group relative p-8 rounded-3xl bg-[#0A0A0A] border text-left transition-all overflow-hidden ${interviewType === 'study-cards' ? 'border-cyan-500/50 shadow-lg shadow-cyan-500/10' : 'border-white/10 hover:border-white/20'}`}
+                                className={`group relative p-8 rounded-3xl glass-card text-left transition-all overflow-hidden ${interviewType === 'study-cards' ? 'border-cyan-500/50 shadow-lg shadow-cyan-500/10' : 'border-white/10 hover:border-white/20'}`}
                             >
                                 <div className={`absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 ${interviewType === 'study-cards' ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'} transition-opacity`} />
                                 <div className="relative">
@@ -547,7 +547,7 @@ export default function GauntletPage() {
                         </div>
 
                         {/* Configuration Panel */}
-                        <div className="rounded-3xl bg-[#0A0A0A] border border-white/10 p-8">
+                        <div className="rounded-3xl glass-card p-8">
                             {interviewType === 'study-cards' ? (
                                 <div className="space-y-6">
                                     <div>
@@ -823,7 +823,7 @@ export default function GauntletPage() {
                             key={questions[currentIndex].id}
                             initial={{ opacity: 0, x: 40 }}
                             animate={{ opacity: 1, x: 0 }}
-                            className="rounded-2xl bg-[#0A0A0A] border border-white/10 overflow-hidden mb-6"
+                            className="rounded-2xl glass-card overflow-hidden mb-6"
                         >
                             {/* Question Type Badge */}
                             <div className={`px-6 py-3 bg-gradient-to-r ${QUESTION_TYPE_CONFIG[questions[currentIndex].type]?.color || 'from-white/5 to-white/5'} border-b border-white/10 flex items-center justify-between`}>
@@ -859,7 +859,7 @@ export default function GauntletPage() {
                         </motion.div>
 
                         {/* Answer Area */}
-                        <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+                        <div className="rounded-2xl glass-card p-6">
                             <label className="flex items-center justify-between mb-3">
                                 <span className="text-sm font-medium text-white">Your Answer</span>
                                 <span className="text-xs text-silver">{userAnswer.length} characters</span>
@@ -1041,7 +1041,7 @@ export default function GauntletPage() {
                         </div>
 
                         {/* STAR Method Breakdown */}
-                        <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+                        <div className="rounded-2xl glass-card p-6">
                             <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">⭐ STAR Method Analysis</h3>
                             <div className="grid md:grid-cols-2 gap-4">
                                 {(['situation', 'task', 'action', 'result'] as const).map((key) => {
@@ -1068,7 +1068,7 @@ export default function GauntletPage() {
 
                         {/* Strengths & Improvements */}
                         <div className="grid md:grid-cols-2 gap-6">
-                            <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+                            <div className="rounded-2xl glass-card p-6">
                                 <h3 className="text-base font-bold text-emerald-400 mb-3 flex items-center gap-2">💪 Strengths</h3>
                                 <ul className="space-y-2">
                                     {currentGrading.strengths.map((s, i) => (
@@ -1078,7 +1078,7 @@ export default function GauntletPage() {
                                     ))}
                                 </ul>
                             </div>
-                            <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+                            <div className="rounded-2xl glass-card p-6">
                                 <h3 className="text-base font-bold text-amber-400 mb-3 flex items-center gap-2">📈 Improvements</h3>
                                 <ul className="space-y-2">
                                     {currentGrading.improvements.map((s, i) => (
@@ -1092,7 +1092,7 @@ export default function GauntletPage() {
 
                         {/* Filler Analysis */}
                         {currentGrading.filler_analysis?.weak_phrases?.length > 0 && (
-                            <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+                            <div className="rounded-2xl glass-card p-6">
                                 <h3 className="text-base font-bold text-rose-400 mb-3 flex items-center gap-2">🚫 Weak Phrases Detected</h3>
                                 <div className="flex flex-wrap gap-2 mb-3">
                                     {currentGrading.filler_analysis.weak_phrases.map((w, i) => (
@@ -1112,13 +1112,13 @@ export default function GauntletPage() {
                         </div>
 
                         {/* Model Answer */}
-                        <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+                        <div className="rounded-2xl glass-card p-6">
                             <h3 className="text-base font-bold text-cyan-400 mb-3 flex items-center gap-2">✨ Model Answer</h3>
                             <p className="text-silver leading-relaxed italic">&quot;{currentGrading.rewritten_answer}&quot;</p>
                         </div>
 
                         {/* Follow-Up Question */}
-                        <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+                        <div className="rounded-2xl glass-card p-6">
                             <h3 className="text-base font-bold text-violet-400 mb-2 flex items-center gap-2">🔄 Follow-Up Question</h3>
                             <p className="text-white font-medium">&quot;{currentGrading.follow_up_question}&quot;</p>
                             <p className="text-xs text-silver mt-2">A real interviewer would ask this next. Practice your answer mentally.</p>
@@ -1148,7 +1148,7 @@ export default function GauntletPage() {
                 {viewMode === 'debrief' && results.length > 0 && (
                     <motion.div key="debrief" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-5xl mx-auto space-y-6">
                         {/* Summary Stats */}
-                        <div className="rounded-3xl bg-[#0A0A0A] border border-white/10 p-8 relative overflow-hidden">
+                        <div className="rounded-3xl glass-card p-8 relative overflow-hidden">
                             <div className="absolute inset-0 overflow-hidden">
                                 {[...Array(12)].map((_, i) => (
                                     <motion.div
@@ -1213,7 +1213,7 @@ export default function GauntletPage() {
                         </div>
 
                         {/* Per-Question Breakdown */}
-                        <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+                        <div className="rounded-2xl glass-card p-6">
                             <h3 className="text-lg font-bold text-white mb-4">📋 Question Breakdown</h3>
                             <div className="space-y-3">
                                 {results.map((r, i) => (

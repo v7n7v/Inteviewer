@@ -316,7 +316,7 @@ export default function HelpPage() {
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="relative overflow-hidden rounded-3xl bg-[#0A0A0A] border border-white/10 p-8 mb-8"
+                className="relative overflow-hidden rounded-3xl glass-card p-8 mb-8"
             >
                 <div className="absolute inset-0 opacity-20">
                     <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/30 rounded-full blur-3xl" />
@@ -361,7 +361,7 @@ export default function HelpPage() {
                         onClick={() => setActiveTab(tab.id)}
                         className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${activeTab === tab.id
                             ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 text-amber-300 shadow-lg'
-                            : 'bg-[#0A0A0A] border border-white/10 text-silver hover:text-white hover:bg-white/5'
+                            : 'glass-card text-silver hover:text-white hover:bg-white/5'
                             }`}
                     >
                         <span>{tab.icon}</span>
@@ -397,7 +397,7 @@ export default function HelpPage() {
 
                         {/* Guide Cards */}
                         {filteredGuides.map((guide) => (
-                            <div key={guide.id} className="rounded-2xl bg-[#0A0A0A] border border-white/10 overflow-hidden">
+                            <div key={guide.id} className="rounded-2xl glass-card overflow-hidden">
                                 <button
                                     onClick={() => setExpandedGuide(expandedGuide === guide.id ? null : guide.id)}
                                     className="w-full p-6 flex items-center justify-between group"
@@ -476,7 +476,7 @@ export default function HelpPage() {
                                     {category.questions.map((faq, i) => {
                                         const faqKey = `${category.category}-${i}`;
                                         return (
-                                            <div key={i} className="rounded-xl bg-[#0A0A0A] border border-white/10 overflow-hidden">
+                                            <div key={i} className="rounded-xl glass-card overflow-hidden">
                                                 <button
                                                     onClick={() => setExpandedFaq(expandedFaq === faqKey ? null : faqKey)}
                                                     className="w-full p-4 flex items-center justify-between text-left"
@@ -507,7 +507,7 @@ export default function HelpPage() {
                 {activeTab === 'shortcuts' && (
                     <motion.div key="shortcuts" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-6">
                         {shortcuts.map((group) => (
-                            <div key={group.category} className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+                            <div key={group.category} className="rounded-2xl glass-card p-6">
                                 <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                                     <span>⌨️</span> {group.category}
                                 </h3>
@@ -549,7 +549,7 @@ export default function HelpPage() {
                         </div>
 
                         {/* Feedback Form */}
-                        <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+                        <div className="rounded-2xl glass-card p-6">
                             <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><span>📝</span> Send Feedback</h3>
                             <div className="space-y-4">
                                 <div className="grid md:grid-cols-2 gap-4">
@@ -582,7 +582,7 @@ export default function HelpPage() {
                         </div>
 
                         {/* Platform Info */}
-                        <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+                        <div className="rounded-2xl glass-card p-6">
                             <h3 className="text-lg font-bold text-white mb-4">ℹ️ Platform Info</h3>
                             <div className="grid md:grid-cols-2 gap-3">
                                 {[

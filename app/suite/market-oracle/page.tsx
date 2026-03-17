@@ -522,7 +522,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                         ? 'bg-emerald-500/10 border-emerald-500/30'
                         : analyzeStage === s.stage - 1
                         ? 'bg-cyan-500/10 border-cyan-500/30 animate-pulse'
-                        : 'bg-[#111111] border-white/10 opacity-40'
+                        : 'bg-[var(--theme-bg-elevated)] border-white/10 opacity-40'
                     }`}
                   >
                     <span className="text-2xl">{analyzeStage > s.stage ? '✅' : s.icon}</span>
@@ -1041,7 +1041,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                   exit={{ opacity: 0, x: 50 }}
                   className="absolute right-4 top-1/2 -translate-y-1/2 z-10"
                 >
-                  <div className="glass-card p-6 rounded-2xl border border-cyan-500/30 bg-[#0A0A0A]/95 backdrop-blur-xl w-80">
+                  <div className="glass-card p-6 rounded-2xl border border-cyan-500/30 bg-[var(--theme-bg-card)]/95 backdrop-blur-xl w-80">
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center">
                         <span className="text-2xl">🌉</span>

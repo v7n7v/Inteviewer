@@ -175,7 +175,7 @@ function SkillGapCard({ gap, index, onPractice }: { gap: SkillGap; index: number
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
-      className="rounded-xl bg-[#0A0A0A] border border-white/[0.06] overflow-hidden hover:border-white/[0.1] transition-all"
+      className="rounded-xl glass-card overflow-hidden hover:border-white/[0.1] transition-all"
     >
       {/* Card header */}
       <button
@@ -307,7 +307,7 @@ export default function SkillBridgePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white">
+    <div className="min-h-screen bg-[var(--theme-bg)] text-[var(--theme-text)]">
       <div className="max-w-4xl mx-auto px-6 py-8">
         {/* Hero header */}
         <motion.div
@@ -331,7 +331,7 @@ export default function SkillBridgePage() {
           className="relative mb-8 p-5 rounded-xl overflow-hidden"
         >
           <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/[0.06] via-emerald-500/[0.03] to-blue-500/[0.06]" />
-          <div className="absolute inset-[1px] rounded-xl bg-[#080808]" />
+          <div className="absolute inset-[1px] rounded-xl bg-[var(--theme-bg-card)]" />
           <div className="relative flex items-start gap-4">
             <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
               <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -362,7 +362,7 @@ export default function SkillBridgePage() {
             { label: 'AI-Enhanced', value: aiAddedCount, icon: '⚠️', color: 'text-amber-400' },
             { label: 'Needs Practice', value: weakCount, icon: '📈', color: 'text-orange-400' },
           ].map((stat) => (
-            <div key={stat.label} className="p-3 rounded-xl bg-[#0A0A0A] border border-white/[0.06] text-center">
+            <div key={stat.label} className="p-3 rounded-xl glass-card text-center">
               <span className="text-base">{stat.icon}</span>
               <p className={`text-lg font-bold ${stat.color} mt-0.5`}>{stat.value}</p>
               <p className="text-[9px] text-white/20">{stat.label}</p>
@@ -442,7 +442,7 @@ export default function SkillBridgePage() {
                 href={platform.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-3 rounded-xl bg-[#0A0A0A] border border-white/[0.06] hover:border-white/[0.12] transition-all group"
+                className="p-3 rounded-xl glass-card hover:border-white/[0.12] transition-all group"
               >
                 <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${platform.color} flex items-center justify-center text-base mb-2`}>
                   {platform.icon}

@@ -335,61 +335,12 @@
 
 /* ============================================
    GLOBAL THEME-AWARE OVERRIDES FOR TAILWIND
-   These catch the most common dark-mode patterns
+   Safety net for any remaining hardcoded patterns
    ============================================ */
 
 /* bg-black → theme bg */
 [data-theme="light"] .bg-black {
   background-color: var(--theme-bg) !important;
-}
-
-/* bg-[#0A0A0A] / bg-[#111111] → white cards */
-[data-theme="light"] [class*="bg-\[#0A0A0A\]"] {
-  background-color: #FFFFFF !important;
-}
-[data-theme="light"] [class*="bg-\[#111111\]"] {
-  background-color: #F8F9FC !important;
-}
-[data-theme="light"] [class*="bg-\[#1A1A1A\]"] {
-  background-color: #F1F3F8 !important;
-}
-[data-theme="light"] [class*="bg-\[#161616\]"] {
-  background-color: #F1F3F8 !important;
-}
-
-/* text-white → true black */
-[data-theme="light"] .text-white {
-  color: #111111 !important;
-}
-
-/* text-silver → secondary text */
-[data-theme="light"] .text-silver {
-  color: #64748B !important;
-}
-
-/* border-white/* → light borders */
-[data-theme="light"] [class*="border-white\/"] {
-  border-color: var(--theme-border) !important;
-}
-
-/* bg-white/* opacity backgrounds → darker opacity */
-[data-theme="light"] [class*="bg-white\/5"],
-[data-theme="light"] [class*="bg-white\/\[0.03\]"] {
-  background-color: rgba(0, 0, 0, 0.03) !important;
-}
-[data-theme="light"] [class*="bg-white\/10"] {
-  background-color: rgba(0, 0, 0, 0.05) !important;
-}
-
-/* text-slate-* → much darker in light mode */
-[data-theme="light"] .text-slate-300 {
-  color: #000000 !important;
-}
-[data-theme="light"] .text-slate-400 {
-  color: #000000 !important;
-}
-[data-theme="light"] .text-slate-500 {
-  color: #000000 !important;
 }
 
 /* bg-slate-* dark backgrounds → light */

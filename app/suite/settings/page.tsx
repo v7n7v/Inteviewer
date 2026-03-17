@@ -31,7 +31,7 @@ export default function SettingsPage() {
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="relative overflow-hidden rounded-3xl bg-[#0A0A0A] border border-white/10 p-8 mb-8"
+                className="relative overflow-hidden rounded-3xl glass-card p-8 mb-8"
             >
                 <div className="absolute inset-0 opacity-20">
                     <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/30 rounded-full blur-3xl" />
@@ -60,7 +60,7 @@ export default function SettingsPage() {
                     animate={{ opacity: 1, x: 0 }}
                     className="lg:w-64 flex-shrink-0"
                 >
-                    <div className="lg:sticky lg:top-8 space-y-1.5 p-2 rounded-2xl bg-[#0A0A0A] border border-white/10">
+                    <div className="lg:sticky lg:top-8 space-y-1.5 p-2 rounded-2xl glass-card">
                         {TABS.map((tab) => (
                             <button
                                 key={tab.id}
@@ -114,7 +114,7 @@ function SubscriptionTab() {
             className="space-y-6"
         >
             {/* Current Plan */}
-            <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+            <div className="rounded-2xl glass-card p-6">
                 <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                     <span>💎</span> Your Plan
                 </h3>
@@ -170,7 +170,7 @@ function SubscriptionTab() {
 
             {/* What's Included */}
             {tier === 'free' && (
-                <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+                <div className="rounded-2xl glass-card p-6">
                     <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                         <span>✨</span> What you get with Pro
                     </h3>
@@ -233,7 +233,7 @@ function ProfileTab({ user, setUser }: { user: any; setUser: any }) {
             className="space-y-6"
         >
             {/* Avatar & Name */}
-            <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 overflow-hidden">
+            <div className="rounded-2xl glass-card overflow-hidden">
                 <div className="h-24 bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-purple-500/20 relative">
                     <div className="absolute -bottom-10 left-6">
                         <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-3xl font-bold text-white border-4 border-[#0A0A0A] shadow-xl">
@@ -309,7 +309,7 @@ function ProfileTab({ user, setUser }: { user: any; setUser: any }) {
             </div>
 
             {/* Account Details Card */}
-            <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+            <div className="rounded-2xl glass-card p-6">
                 <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                     <span>📋</span> Account Details
                 </h3>
@@ -451,7 +451,7 @@ function SecurityTab({ user }: { user: any }) {
     return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-6">
             {/* Security Overview */}
-            <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+            <div className="rounded-2xl glass-card p-6">
                 <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">🔒 Security Overview</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {[
@@ -473,7 +473,7 @@ function SecurityTab({ user }: { user: any }) {
             </div>
 
             {/* Change Password */}
-            <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 overflow-hidden">
+            <div className="rounded-2xl glass-card overflow-hidden">
                 <button onClick={() => setIsPasswordOpen(!isPasswordOpen)} className="w-full p-6 flex items-center justify-between group">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center"><span className="text-xl">🔒</span></div>
@@ -523,7 +523,7 @@ function SecurityTab({ user }: { user: any }) {
             </div>
 
             {/* Change Email */}
-            <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 overflow-hidden">
+            <div className="rounded-2xl glass-card overflow-hidden">
                 <button onClick={() => setIsEmailOpen(!isEmailOpen)} className="w-full p-6 flex items-center justify-between group">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center"><span className="text-xl">📧</span></div>
@@ -551,7 +551,7 @@ function SecurityTab({ user }: { user: any }) {
             </div>
 
             {/* Two-Factor Authentication */}
-            <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+            <div className="rounded-2xl glass-card p-6">
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center"><span className="text-xl">🔐</span></div>
@@ -647,7 +647,7 @@ function NotificationsTab() {
     return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-6">
             {/* Email Notifications */}
-            <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+            <div className="rounded-2xl glass-card p-6">
                 <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2"><span>📧</span> Email Notifications</h3>
                 <div className="space-y-4">
                     {[
@@ -668,7 +668,7 @@ function NotificationsTab() {
             </div>
 
             {/* Push Notifications */}
-            <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+            <div className="rounded-2xl glass-card p-6">
                 <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2"><span>📱</span> Push Notifications</h3>
                 <div className="space-y-4">
                     {[
@@ -699,7 +699,7 @@ function SessionsTab({ user }: { user: any }) {
 
     return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-6">
-            <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+            <div className="rounded-2xl glass-card p-6">
                 <div className="flex items-center justify-between mb-6">
                     <h3 className="text-lg font-semibold text-white flex items-center gap-2"><span>💻</span> Active Sessions</h3>
                     <button className="px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium hover:bg-red-500/20 transition-all" onClick={() => showToast('All other sessions will be signed out', 'ℹ️')}>
@@ -733,7 +733,7 @@ function SessionsTab({ user }: { user: any }) {
             </div>
 
             {/* Login History */}
-            <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+            <div className="rounded-2xl glass-card p-6">
                 <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2"><span>📋</span> Login History</h3>
                 <div className="space-y-2">
                     {[
@@ -769,7 +769,7 @@ function DangerTab({ user }: { user: any }) {
     return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-6">
             {/* Export Data */}
-            <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+            <div className="rounded-2xl glass-card p-6">
                 <h3 className="text-lg font-semibold text-white mb-2 flex items-center gap-2"><span>📦</span> Export Your Data</h3>
                 <p className="text-sm text-silver mb-4">Download all your data including resumes, applications, and profile information.</p>
                 <button
@@ -781,7 +781,7 @@ function DangerTab({ user }: { user: any }) {
             </div>
 
             {/* Delete Account */}
-            <div className="rounded-2xl bg-[#0A0A0A] border border-red-500/20 p-6">
+            <div className="rounded-2xl bg-[var(--theme-bg-card)] border border-red-500/20 p-6">
                 <h3 className="text-lg font-semibold text-red-400 mb-2 flex items-center gap-2"><span>⚠️</span> Delete Account</h3>
                 <p className="text-sm text-silver mb-4">
                     Permanently delete your account and all associated data. This action cannot be undone.

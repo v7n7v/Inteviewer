@@ -204,7 +204,7 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
               onClick={() => router.push('/suite')}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-[#0A0A0A] border border-white/10 hover:bg-[#1A1A1A] hover:border-white/20 transition-all ${isCollapsed ? 'justify-center' : ''}`}
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg glass-card hover:bg-[var(--theme-bg-hover)] hover:border-white/20 transition-all ${isCollapsed ? 'justify-center' : ''}`}
               title="Back to Dashboard"
             >
               <svg className="w-4 h-4 text-silver" fill="none" stroke="currentColor" viewBox="0 0 24 24">

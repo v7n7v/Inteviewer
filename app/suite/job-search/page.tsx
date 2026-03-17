@@ -15,7 +15,7 @@ export default function JobSearchPage() {
                 <div className="absolute inset-0 bg-[#0070F3]/10 rounded-3xl blur-3xl" />
 
                 {/* Card - obsidian theme */}
-                <div className="relative rounded-3xl bg-[#0A0A0A] border border-white/10 p-12 text-center">
+                <div className="relative rounded-3xl glass-card p-12 text-center">
                     {/* Icon */}
                     <motion.div
                         animate={{
@@ -68,7 +68,7 @@ export default function JobSearchPage() {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.3 + i * 0.1 }}
-                                className="p-4 rounded-xl bg-[#111111] border border-white/10 hover:border-[#0070F3]/30 transition-colors"
+                                className="p-4 rounded-xl glass-card hover:border-[#0070F3]/30 transition-colors"
                             >
                                 <span className="text-2xl block mb-2">{feature.icon}</span>
                                 <h3 className="font-semibold text-white text-sm">{feature.title}</h3>

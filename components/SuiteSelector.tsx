@@ -92,7 +92,7 @@ export default function SuiteSelector({ fullPage = false, showBrandHeader = true
             onClick={handleSelect}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="relative w-full h-full text-left overflow-hidden rounded-3xl border border-white/10 bg-[#0A0A0A] hover:bg-[#1A1A1A] hover:border-white/20 transition-all duration-300 flex flex-col"
+            className="relative w-full h-full text-left overflow-hidden rounded-3xl border border-white/10 glass-card hover:border-[var(--theme-border-hover)] transition-all duration-300 flex flex-col"
           >
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
@@ -124,7 +124,7 @@ export default function SuiteSelector({ fullPage = false, showBrandHeader = true
                 {suite.features.map((feature) => (
                   <div
                     key={feature.name}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-[#111111] border border-white/10 hover:bg-[#1A1A1A] transition-colors"
+                    className="flex items-center gap-3 p-3 rounded-xl bg-[var(--theme-bg-elevated)] border border-white/10 hover:bg-[var(--theme-bg-hover)] transition-colors"
                   >
                     <span className="text-xl">{feature.icon}</span>
                     <div>

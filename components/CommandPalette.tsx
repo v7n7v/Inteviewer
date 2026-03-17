@@ -145,9 +145,9 @@ export default function CommandPalette() {
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               className="fixed top-[20%] left-1/2 -translate-x-1/2 w-full max-w-xl z-50"
             >
-              <div className="mx-4 rounded-2xl bg-[#0A0A0A] border border-white/10 shadow-2xl shadow-black/50 overflow-hidden">
+              <div className="mx-4 rounded-2xl glass-card shadow-2xl shadow-black/50 overflow-hidden">
                 {/* Search Input */}
-                <div className="flex items-center gap-3 p-4 border-b border-white/10 bg-[#111111]">
+                <div className="flex items-center gap-3 p-4 border-b border-white/10 bg-[var(--theme-bg-elevated)]">
                   <svg className="w-5 h-5 text-silver" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
@@ -160,7 +160,7 @@ export default function CommandPalette() {
                     placeholder="Search or jump to..."
                     className="flex-1 bg-transparent text-white placeholder-silver/50 outline-none text-lg"
                   />
-                  <kbd className="px-2 py-1 rounded bg-[#161616] text-xs text-silver font-mono border border-white/10">ESC</kbd>
+                  <kbd className="px-2 py-1 rounded bg-[var(--theme-bg-elevated)] text-xs text-silver font-mono border border-white/10">ESC</kbd>
                 </div>
 
                 {/* Results */}
@@ -211,14 +211,14 @@ export default function CommandPalette() {
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-between p-3 border-t border-white/10 bg-[#111111]">
+                <div className="flex items-center justify-between p-3 border-t border-white/10 bg-[var(--theme-bg-elevated)]">
                   <div className="flex items-center gap-4 text-xs text-silver">
                     <span className="flex items-center gap-1">
-                      <kbd className="px-1.5 py-0.5 rounded bg-[#161616] text-silver border border-white/10">↑↓</kbd>
+                      <kbd className="px-1.5 py-0.5 rounded bg-[var(--theme-bg-elevated)] text-silver border border-white/10">↑↓</kbd>
                       Navigate
                     </span>
                     <span className="flex items-center gap-1">
-                      <kbd className="px-1.5 py-0.5 rounded bg-[#161616] text-silver border border-white/10">↵</kbd>
+                      <kbd className="px-1.5 py-0.5 rounded bg-[var(--theme-bg-elevated)] text-silver border border-white/10">↵</kbd>
                       Select
                     </span>
                   </div>
@@ -248,7 +248,7 @@ function CommandItem({
     <button
       onClick={onSelect}
       onMouseEnter={onHover}
-      className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-colors ${isSelected ? 'bg-[#1A1A1A] text-white border border-white/10' : 'text-silver hover:bg-[#111111]'
+      className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-colors ${isSelected ? 'bg-[var(--theme-bg-hover)] text-white border border-white/10' : 'text-silver hover:bg-[var(--theme-bg-elevated)]'
         }`}
     >
       <span className="text-xl">{command.icon}</span>

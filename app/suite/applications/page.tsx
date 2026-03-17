@@ -193,7 +193,7 @@ export default function ApplicationsPage() {
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="relative overflow-hidden rounded-3xl bg-[#0A0A0A] to-cyan-900/20 border border-white/10 p-8 mb-8"
+                className="relative overflow-hidden rounded-3xl glass-card p-8 mb-8"
             >
                 <div className="absolute inset-0 opacity-20">
                     <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/30 rounded-full blur-3xl" />
@@ -229,7 +229,7 @@ export default function ApplicationsPage() {
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: i * 0.1 }}
-                        className="p-6 rounded-2xl bg-[#0A0A0A] border border-white/10 hover:border-white/20 transition-all"
+                        className="p-6 rounded-2xl glass-card hover:border-white/20 transition-all"
                     >
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-2xl">{stat.icon}</span>
@@ -250,12 +250,12 @@ export default function ApplicationsPage() {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="🔍 Search companies or positions..."
-                        className="flex-1 px-4 py-3 rounded-xl bg-[#111111] border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20"
+                        className="flex-1 px-4 py-3 rounded-xl glass-card text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20"
                     />
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
-                        className="px-4 py-3 rounded-xl bg-[#111111] border border-white/10 text-white focus:outline-none focus:border-cyan-500/50"
+                        className="px-4 py-3 rounded-xl glass-card text-white focus:outline-none focus:border-cyan-500/50"
                     >
                         <option value="all">All Statuses</option>
                         {Object.entries(STATUS_CONFIG).map(([key, value]) => (
@@ -264,7 +264,7 @@ export default function ApplicationsPage() {
                     </select>
                 </div>
 
-                <div className="flex gap-1 p-1 rounded-xl bg-[#111111] border border-white/10">
+                <div className="flex gap-1 p-1 rounded-xl glass-card">
                     {[
                         { mode: 'grid' as ViewMode, icon: '⊞', label: 'Grid' },
                         { mode: 'list' as ViewMode, icon: '≡', label: 'List' },
@@ -323,7 +323,7 @@ export default function ApplicationsPage() {
                     ))}
                 </div>
             ) : (
-                <div className="rounded-2xl bg-[#111111] border border-white/10 overflow-visible">
+                <div className="rounded-2xl glass-card overflow-visible">
                     <table className="w-full" style={{ overflow: 'visible' }}>
                         <thead>
                             <tr className="border-b border-white/10">
@@ -366,7 +366,7 @@ export default function ApplicationsPage() {
                                                         initial={{ opacity: 0, y: -10 }}
                                                         animate={{ opacity: 1, y: 0 }}
                                                         exit={{ opacity: 0, y: -10 }}
-                                                        className="absolute top-full left-0 mt-2 p-2 rounded-xl bg-[#111111] border border-white/10 shadow-2xl z-50 min-w-[200px]"
+                                                        className="absolute top-full left-0 mt-2 p-2 rounded-xl glass-card shadow-2xl z-50 min-w-[200px]"
                                                     >
                                                         {Object.entries(STATUS_CONFIG).map(([key, config]) => (
                                                             <button
@@ -427,10 +427,10 @@ export default function ApplicationsPage() {
                                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                                className="relative w-full max-w-2xl max-h-[90vh] rounded-2xl bg-[#0a0a0a] border border-white/10 overflow-y-auto shadow-2xl"
+                                className="relative w-full max-w-2xl max-h-[90vh] rounded-2xl glass-card overflow-y-auto shadow-2xl"
                             >
                                 {/* Header */}
-                                <div className="p-5 border-b border-white/10 flex items-center gap-4 sticky top-0 bg-[#0a0a0a] z-10">
+                                <div className="p-5 border-b border-white/10 flex items-center gap-4 sticky top-0 bg-[var(--theme-bg-card)] z-10">
                                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center text-xl font-bold text-white">
                                         {selectedApp.company_name[0]}
                                     </div>
@@ -509,7 +509,7 @@ export default function ApplicationsPage() {
                                     ) : linkedResume ? (
                                         <div className="space-y-3">
                                             {/* Resume Info Bar */}
-                                            <div className="flex items-center gap-3 p-3 rounded-xl bg-[#111111] border border-white/10">
+                                            <div className="flex items-center gap-3 p-3 rounded-xl glass-card">
                                                 <div className="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center">
                                                     <span className="text-lg">📋</span>
                                                 </div>
@@ -566,7 +566,7 @@ export default function ApplicationsPage() {
                                             </AnimatePresence>
                                         </div>
                                     ) : (
-                                        <div className="flex items-center gap-3 p-3 rounded-xl bg-[#111111] border border-white/10">
+                                        <div className="flex items-center gap-3 p-3 rounded-xl glass-card">
                                             <span className="text-lg">📝</span>
                                             <div>
                                                 <p className="text-sm text-silver">No saved resume linked</p>
@@ -585,7 +585,7 @@ export default function ApplicationsPage() {
                                         onChange={(e) => setEditingNotes(e.target.value)}
                                         placeholder="Add notes..."
                                         rows={2}
-                                        className="w-full px-3 py-2 rounded-lg bg-[#111111] border border-white/10 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 resize-none"
+                                        className="w-full px-3 py-2 rounded-lg glass-card text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 resize-none"
                                     />
                                     {editingNotes !== (selectedApp.notes || '') && (
                                         <button
@@ -734,7 +734,7 @@ function ApplicationCard({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
-            className={`relative group rounded-2xl bg-[#0A0A0A] border border-white/10 hover:border-cyan-500/30 transition-all ${showQuickStatus ? 'z-50' : 'z-0'}`}
+            className={`relative group rounded-2xl glass-card hover:border-cyan-500/30 transition-all ${showQuickStatus ? 'z-50' : 'z-0'}`}
         >
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-cyan-500/5 to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
 
@@ -767,7 +767,7 @@ function ApplicationCard({
                                 {app.talent_density_score}%
                             </span>
                         </div>
-                        <div className="w-full h-2 bg-[#111111] rounded-full overflow-hidden">
+                        <div className="w-full h-2 bg-[var(--theme-bg-elevated)] rounded-full overflow-hidden">
                             <motion.div
                                 initial={{ width: 0 }}
                                 animate={{ width: `${app.talent_density_score}%` }}
@@ -794,7 +794,7 @@ function ApplicationCard({
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
-                                className="absolute top-full left-0 mt-2 p-2 rounded-xl bg-[#111111] border border-white/10 shadow-xl z-10 min-w-[200px]"
+                                className="absolute top-full left-0 mt-2 p-2 rounded-xl glass-card shadow-xl z-10 min-w-[200px]"
                             >
                                 {Object.entries(STATUS_CONFIG).map(([key, config]) => (
                                     <button
@@ -816,7 +816,7 @@ function ApplicationCard({
 
                 {/* Notes Preview */}
                 {app.notes && (
-                    <div className="mb-4 p-3 rounded-lg bg-[#111111] border border-white/10">
+                    <div className="mb-4 p-3 rounded-lg glass-card">
                         <p className="text-xs text-silver line-clamp-2">{app.notes}</p>
                     </div>
                 )}
@@ -830,7 +830,7 @@ function ApplicationCard({
                 {/* View Details */}
                 <button
                     onClick={() => onOpenDetail(app)}
-                    className="w-full mt-4 px-4 py-2 rounded-xl bg-[#111111] text-silver text-sm font-medium hover:bg-white/10 transition-colors"
+                    className="w-full mt-4 px-4 py-2 rounded-xl bg-[var(--theme-bg-elevated)] text-silver text-sm font-medium hover:bg-white/10 transition-colors"
                 >
                     View Details →
                 </button>

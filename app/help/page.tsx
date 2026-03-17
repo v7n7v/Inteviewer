@@ -147,7 +147,7 @@ export default function HelpPage() {
                         animate={{ opacity: 1, y: 0 }}
                         className="inline-block"
                     >
-                        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-[#111111] border border-white/10 flex items-center justify-center">
+                        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl glass-card flex items-center justify-center">
                             <span className="text-4xl">📚</span>
                         </div>
                     </motion.div>
@@ -178,7 +178,7 @@ export default function HelpPage() {
                         className="mt-8 max-w-xl mx-auto"
                     >
                         <div className="relative group">
-                            <div className="relative bg-[#111111] border border-white/10 rounded-xl flex items-center p-1 focus-within:border-white/20 transition-all">
+                            <div className="relative glass-card rounded-xl flex items-center p-1 focus-within:border-white/20 transition-all">
                                 <span className="pl-4 text-silver">
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -207,7 +207,7 @@ export default function HelpPage() {
                             onClick={() => setSelectedDoc(doc)}
                             className="relative group text-left h-full"
                         >
-                            <div className={`absolute inset-0 bg-[#0A0A0A] rounded-2xl border ${doc.borderColor} group-hover:border-opacity-60 transition-all`} />
+                            <div className={`absolute inset-0 bg-[var(--theme-bg-card)] rounded-2xl border ${doc.borderColor} group-hover:border-opacity-60 transition-all`} />
 
                             <div className="relative p-6 h-full flex flex-col">
                                 <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${doc.color} flex items-center justify-center text-2xl mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
@@ -268,7 +268,7 @@ export default function HelpPage() {
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="relative w-full max-w-4xl max-h-[85vh] bg-[#0A0A0A] rounded-2xl border border-white/10 shadow-2xl overflow-hidden flex flex-col"
+                            className="relative w-full max-w-4xl max-h-[85vh] glass-card rounded-2xl shadow-2xl overflow-hidden flex flex-col"
                         >
                             {/* Modal Header */}
                             <div className="relative p-8 pb-6 border-b border-white/10 z-10 shrink-0">
@@ -320,7 +320,7 @@ export default function HelpPage() {
                                                 </div>
 
                                                 {section.tips && section.tips.length > 0 && (
-                                                    <div className="mt-4 p-4 rounded-xl bg-[#111111] border border-white/10 flex gap-4">
+                                                    <div className="mt-4 p-4 rounded-xl glass-card flex gap-4">
                                                         <span className="text-xl">💡</span>
                                                         <div className="text-sm text-silver">
                                                             {section.tips.map((tip, tipIdx) => (

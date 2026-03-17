@@ -140,7 +140,7 @@ export default function FileUploadDropzone({
               exit={{ opacity: 0 }}
               className="absolute inset-0 z-20 rounded-xl bg-cyan-500/10 backdrop-blur-[2px] border-2 border-cyan-500/50 flex items-center justify-center pointer-events-none"
             >
-              <div className="bg-[#0A0A0A] px-4 py-2 rounded-lg border border-cyan-500/30 text-cyan-400 font-medium flex items-center gap-2 shadow-xl">
+              <div className="bg-[var(--theme-bg-card)] px-4 py-2 rounded-lg border border-cyan-500/30 text-cyan-400 font-medium flex items-center gap-2 shadow-xl">
                 <span>📄</span> Drop to extract text
               </div>
             </motion.div>
@@ -169,7 +169,7 @@ export default function FileUploadDropzone({
         className={`p-16 rounded-2xl border-2 border-dashed text-center cursor-pointer transition-all relative overflow-hidden ${
           dragActive 
             ? 'border-cyan-500/50 bg-cyan-500/[0.05]' 
-            : 'border-white/[0.08] bg-[#0A0A0A] hover:border-white/[0.15]'
+            : 'border-white/[0.08] bg-[var(--theme-bg-card)] hover:border-white/[0.15]'
         }`}
       >
         {/* Subtle glow effect when dragging */}

@@ -297,7 +297,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
     <div className="min-h-screen p-6 lg:p-8">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-3xl bg-[#0A0A0A] to-cyan-900/20 border border-white/10 p-8 mb-8"
+        className="relative overflow-hidden rounded-3xl glass-card p-8 mb-8"
       >
         <div className="absolute inset-0 opacity-20">
           <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/30 rounded-full blur-3xl" />
@@ -335,7 +335,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
             <div className="grid lg:grid-cols-3 gap-6">
               {/* Main Form */}
               <div className="lg:col-span-2 space-y-6">
-                <div className="rounded-2xl bg-[#0A0A0A] to-cyan-900/10 border border-cyan-500/20 overflow-hidden">
+                <div className="rounded-2xl glass-card border border-cyan-500/20 overflow-hidden">
                   <div className="p-6 border-b border-white/10">
                     <h3 className="text-xl font-bold text-white">Role Details</h3>
                   </div>
@@ -397,7 +397,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
                 </div>
 
                 {/* JD Style */}
-                <div className="rounded-2xl bg-[#111111] border border-white/10 p-6">
+                <div className="rounded-2xl glass-card p-6">
                   <h3 className="font-bold text-white mb-4">JD Style</h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {JD_STYLES.map((style) => (
@@ -425,7 +425,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
               {/* Sidebar */}
               <div className="space-y-4">
                 {/* What You Get */}
-                <div className="rounded-2xl bg-[#111111] border border-white/10 p-6">
+                <div className="rounded-2xl glass-card p-6">
                   <h3 className="font-bold text-white mb-4">✨ What You'll Get</h3>
                   <ul className="space-y-3">
                     {[
@@ -446,7 +446,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
 
                 {/* Saved Templates */}
                 {savedTemplates.length > 0 && (
-                  <div className="rounded-2xl bg-[#111111] border border-white/10 p-6">
+                  <div className="rounded-2xl glass-card p-6">
                     <h3 className="font-bold text-white mb-3">📁 Saved Templates</h3>
                     <div className="space-y-2 max-h-48 overflow-y-auto">
                       {savedTemplates.slice(0, 5).map((t) => (
@@ -456,7 +456,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
                           setBiasFlags([]);
                           setStep('result');
                         }}
-                          className="w-full p-3 rounded-xl bg-[#111111] hover:bg-white/10 text-left transition-colors"
+                          className="w-full p-3 rounded-xl bg-[var(--theme-bg-elevated)] hover:bg-white/10 text-left transition-colors"
                         >
                           <p className="text-sm font-medium text-white truncate">{t.title}</p>
                           <p className="text-xs text-silver">{new Date(t.created_at).toLocaleDateString()}</p>
@@ -542,7 +542,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
                 </div>
 
                 {/* Editable JD */}
-                <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 overflow-hidden">
+                <div className="rounded-2xl glass-card overflow-hidden">
                   <div className="p-6 border-b border-white/10 flex items-center justify-between">
                     <h3 className="text-xl font-bold text-white">Generated Job Description</h3>
                     <div className="flex gap-2">
@@ -594,7 +594,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
                     ) : (
                       <div className="space-y-2">
                         {biasFlags.map((flag, i) => (
-                          <div key={i} className="p-3 rounded-xl bg-[#111111] border border-white/10">
+                          <div key={i} className="p-3 rounded-xl glass-card">
                             <div className="flex items-start justify-between gap-2">
                               <div>
                                 <p className="text-sm">
@@ -615,7 +615,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
                 </div>
 
                 {/* Quick Actions */}
-                <div className="rounded-2xl bg-[#111111] border border-white/10 p-5">
+                <div className="rounded-2xl glass-card p-5">
                   <h3 className="font-bold text-white mb-4">Quick Actions</h3>
                   <div className="space-y-2">
                     <button onClick={copyToClipboard}
@@ -628,13 +628,13 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
                       className="w-full py-3 rounded-xl font-semibold bg-white/10 text-white hover:bg-white/20 transition-all"
                     >💾 Save to Library</button>
                     <button onClick={() => setStep('input')}
-                      className="w-full py-3 rounded-xl font-semibold bg-[#111111] text-silver hover:bg-white/10 transition-all"
+                      className="w-full py-3 rounded-xl font-semibold bg-[var(--theme-bg-elevated)] text-silver hover:bg-white/10 transition-all"
                     >✨ Generate New JD</button>
                   </div>
                 </div>
 
                 {/* Tips */}
-                <div className="rounded-2xl bg-[#111111] border border-white/10 p-5">
+                <div className="rounded-2xl glass-card p-5">
                   <h3 className="font-bold text-white mb-3">💡 Pro Tips</h3>
                   <ul className="space-y-2 text-sm text-silver">
                     <li>• Keep requirements focused (5-7 core items)</li>
