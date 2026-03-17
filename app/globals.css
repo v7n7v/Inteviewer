@@ -49,11 +49,11 @@
   --theme-bg-card: #FFFFFF;
   --theme-bg-input: rgba(0, 0, 0, 0.03);
   --theme-bg-hover: #F1F3F8;
-  --theme-text: #1A1A2E;
-  --theme-text-secondary: #64748B;
-  --theme-text-muted: #94A3B8;
-  --theme-border: rgba(0, 0, 0, 0.08);
-  --theme-border-hover: rgba(0, 0, 0, 0.15);
+  --theme-text: #111111;
+  --theme-text-secondary: #374151;
+  --theme-text-muted: #6B7280;
+  --theme-border: rgba(0, 0, 0, 0.15);
+  --theme-border-hover: rgba(0, 0, 0, 0.25);
   --theme-glow: rgba(0, 112, 243, 0.15);
   --theme-shadow: rgba(0, 0, 0, 0.06);
   --theme-accent: #0070F3;
@@ -67,7 +67,7 @@
 /* Light mode body */
 [data-theme="light"] body {
   background: var(--theme-bg);
-  color: var(--theme-text-secondary);
+  color: var(--theme-text);
 }
 
 /* ---- Root Background Theme ---- */
@@ -87,11 +87,11 @@
 [data-theme="light"] .elevation-1 {
   background: #FFFFFF;
   border-color: var(--theme-border);
-  box-shadow: 0 1px 3px var(--theme-shadow), 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.06);
 }
 [data-theme="light"] .elevation-1:hover {
   background: #FFFFFF;
-  box-shadow: 0 4px 12px var(--theme-shadow);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 [data-theme="light"] .elevation-2 {
   background: #F8F9FC;
@@ -112,7 +112,7 @@
 [data-theme="light"] .glass-card {
   background: #FFFFFF;
   border-color: var(--theme-border);
-  box-shadow: 0 1px 3px var(--theme-shadow);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.06);
 }
 [data-theme="light"] .glass-card::before {
   background: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.05) 50%, transparent 100%);
@@ -313,9 +313,9 @@
   background-color: #F1F3F8 !important;
 }
 
-/* text-white → dark text */
+/* text-white → true black */
 [data-theme="light"] .text-white {
-  color: #1A1A2E !important;
+  color: #111111 !important;
 }
 
 /* text-silver → secondary text */
@@ -337,15 +337,15 @@
   background-color: rgba(0, 0, 0, 0.05) !important;
 }
 
-/* text-slate-* keep as-is for most, adjust dark ones */
+/* text-slate-* → much darker in light mode */
 [data-theme="light"] .text-slate-300 {
-  color: #475569 !important;
+  color: #1E293B !important;
 }
 [data-theme="light"] .text-slate-400 {
-  color: #64748B !important;
+  color: #374151 !important;
 }
 [data-theme="light"] .text-slate-500 {
-  color: #94A3B8 !important;
+  color: #6B7280 !important;
 }
 
 /* bg-slate-* dark backgrounds → light */
