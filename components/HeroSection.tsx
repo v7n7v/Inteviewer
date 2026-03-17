@@ -123,7 +123,7 @@ function WorkflowAnimation() {
                   transition={{ duration: 0.6 }}
                 >{ws.icon}</motion.div>
                 <h3 className={`text-[11px] font-semibold mt-1 transition-colors ${isActive ? (isLight ? 'text-gray-900' : 'text-white') : (isLight ? 'text-gray-500' : 'text-white/40')}`}>{ws.title}</h3>
-                <p className={`text-[9px] mt-0.5 transition-colors ${isActive ? (isLight ? 'text-gray-500' : 'text-white/40') : (isLight ? 'text-gray-400' : 'text-white/15')}`}>{ws.desc}</p>
+                <p className={`text-[9px] mt-0.5 transition-colors ${isActive ? (isLight ? 'font-bold text-gray-500' : 'text-white/40') : (isLight ? 'text-gray-400' : 'text-white/15')}`}>{ws.desc}</p>
               </div>
 
               {/* Checkmark for completed */}
@@ -149,7 +149,7 @@ function WorkflowAnimation() {
                 <motion.span animate={{ y: [0, -3, 0] }} transition={{ repeat: Infinity, duration: 1.5 }}>↑</motion.span>
                 resume_v3.pdf uploaded
               </motion.div>
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }} className={`mt-2.5 flex items-center gap-3 text-[10px] ${isLight ? 'text-gray-500' : 'text-white/30'}`}>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }} className={`mt-2.5 flex items-center gap-3 text-[10px] ${isLight ? 'font-bold text-gray-500' : 'text-white/30'}`}>
                 <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />PDF parsed</span>
                 <span>•</span><span>3 pages</span><span>•</span><span>12 skills detected</span>
               </motion.div>
@@ -160,8 +160,8 @@ function WorkflowAnimation() {
           {activeStep === 1 && (
             <motion.div key="paste" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }} className="p-5 h-[140px]">
               <div className="flex items-center gap-2 mb-2.5">
-                <span className={`text-[10px] ${isLight ? 'text-gray-500' : 'text-white/30'}`}>Target:</span>
-                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className={`text-[11px] font-medium ${isLight ? 'text-emerald-700' : 'text-emerald-400'}`}>Senior Frontend Engineer — Vercel</motion.span>
+                <span className={`text-[10px] ${isLight ? 'font-bold text-gray-500' : 'text-white/30'}`}>Target:</span>
+                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className={`text-[11px] font-medium ${isLight ? 'font-bold text-emerald-700' : 'text-emerald-400'}`}>Senior Frontend Engineer — Vercel</motion.span>
               </div>
               <div className="space-y-1.5 font-mono">
                 {[
@@ -170,7 +170,7 @@ function WorkflowAnimation() {
                   'Experience with design systems, A11y...',
                   'Bonus: GraphQL, testing frameworks',
                 ].map((line, i) => (
-                  <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 + i * 0.4 }} className={`text-[10px] flex items-center gap-2 ${isLight ? 'text-gray-500' : 'text-white/25'}`}>
+                  <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 + i * 0.4 }} className={`text-[10px] flex items-center gap-2 ${isLight ? 'font-bold text-gray-500' : 'text-white/25'}`}>
                     <span className="text-emerald-500/40">|</span>
                     <motion.span initial={{ width: 0 }} animate={{ width: 'auto' }} transition={{ delay: 0.5 + i * 0.4, duration: 0.3 }} className="overflow-hidden whitespace-nowrap">{line}</motion.span>
                   </motion.div>
@@ -186,7 +186,7 @@ function WorkflowAnimation() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2.5">
                     <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: 'linear' }} className="w-4 h-4 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full" />
-                    <span className={`text-[11px] font-medium ${isLight ? 'text-emerald-700' : 'text-emerald-400'}`}>Morphing in progress...</span>
+                    <span className={`text-[11px] font-medium ${isLight ? 'font-bold text-emerald-700' : 'text-emerald-400'}`}>Morphing in progress...</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {morphSkills.map((skill) => (
@@ -194,12 +194,12 @@ function WorkflowAnimation() {
                         className="px-2 py-0.5 rounded text-[9px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">{skill}</motion.span>
                     ))}
                   </div>
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: morphScore > 0 ? 1 : 0 }} className={`mt-2.5 flex items-center gap-2 text-[9px] ${isLight ? 'text-gray-500' : 'text-white/25'}`}>
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: morphScore > 0 ? 1 : 0 }} className={`mt-2.5 flex items-center gap-2 text-[9px] ${isLight ? 'font-bold text-gray-500' : 'text-white/25'}`}>
                     <span>Keywords injected</span><span className="text-emerald-500/30">•</span><span>Skills reordered</span><span className="text-emerald-500/30">•</span><span>Format optimized</span>
                   </motion.div>
                 </div>
                 <div className="text-right ml-4">
-                  <div className={`text-[9px] mb-0.5 ${isLight ? 'text-gray-500' : 'text-white/25'}`}>ATS Match</div>
+                  <div className={`text-[9px] mb-0.5 ${isLight ? 'font-bold text-gray-500' : 'text-white/25'}`}>ATS Match</div>
                   <motion.div className={`text-2xl font-bold ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`}>{morphScore}%</motion.div>
                   <div className={`w-16 h-1.5 rounded-full mt-1 overflow-hidden ${isLight ? 'bg-black/5' : 'bg-white/[0.04]'}`}>
                     <motion.div className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500" animate={{ width: `${morphScore}%` }} transition={{ duration: 0.05 }} />
@@ -220,8 +220,8 @@ function WorkflowAnimation() {
               </motion.div>
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className={`text-[13px] font-semibold mb-1.5 ${isLight ? 'text-gray-900' : 'text-white'}`}>Resume Ready</motion.div>
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }} className="flex items-center gap-2.5">
-                <span className={`px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-medium flex items-center gap-1 ${isLight ? 'text-emerald-700' : 'text-emerald-400'}`}>📄 PDF</span>
-                <span className={`px-2.5 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-[10px] font-medium flex items-center gap-1 ${isLight ? 'text-blue-700' : 'text-blue-400'}`}>📝 Word</span>
+                <span className={`px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-medium flex items-center gap-1 ${isLight ? 'font-bold text-emerald-700' : 'text-emerald-400'}`}>📄 PDF</span>
+                <span className={`px-2.5 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-[10px] font-medium flex items-center gap-1 ${isLight ? 'font-bold text-blue-700' : 'text-blue-400'}`}>📝 Word</span>
                 <span className={`text-[10px] font-bold ${isLight ? 'text-emerald-700' : 'text-emerald-400'}`}>92% Match</span>
               </motion.div>
             </motion.div>
@@ -267,7 +267,7 @@ function DualAIAnimation() {
         <div className="flex items-center gap-2">
           <span className="text-sm">✨</span>
           <span className={`text-[11px] font-semibold ${isLight ? 'text-gray-500' : 'text-white/50'}`}>Dual-AI Enhance Pipeline</span>
-          <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium border ${isLight ? 'bg-cyan-50 border-cyan-200 text-cyan-600' : 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400'}`}>PRO</span>
+          <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium border ${isLight ? 'font-bold bg-cyan-50 border-cyan-200 text-cyan-600' : 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400'}`}>PRO</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className={`text-[9px] font-mono ${isLight ? 'text-gray-400' : 'text-white/20'}`}>{stage + 1}/{totalStages}</span>
@@ -284,7 +284,7 @@ function DualAIAnimation() {
                 animate={stage === i ? { scale: [1, 1.3, 1] } : {}}
                 transition={{ duration: 0.6, repeat: stage === i ? Infinity : 0 }}
                 className={`w-5 h-5 rounded-full flex items-center justify-center text-[8px] transition-all duration-400 ${
-                  stage > i ? (isLight ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-emerald-500/20 border border-emerald-500/30') :
+                  stage > i ? (isLight ? 'font-bold bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-emerald-500/20 border border-emerald-500/30') :
                   stage === i ? 'border-2 shadow-lg' : (isLight ? 'bg-gray-50 border border-gray-200' : 'bg-white/[0.02] border border-white/[0.06]')
                 }`}
                 style={stage === i ? { borderColor: `${p.color}60`, boxShadow: `0 0 10px ${p.color}30` } : {}}
@@ -298,7 +298,7 @@ function DualAIAnimation() {
         <div className="flex items-center justify-between mb-3 px-0.5">
           {pipelineSteps.map((p, i) => (
             <span key={p.label} className={`text-[7px] font-medium transition-colors ${
-              stage === i ? (isLight ? 'text-gray-900' : 'text-white/60') : stage > i ? (isLight ? 'text-emerald-600' : 'text-emerald-500/40') : (isLight ? 'text-gray-400' : 'text-white/15')
+              stage === i ? (isLight ? 'font-bold text-gray-900' : 'text-white/60') : stage > i ? (isLight ? 'font-bold text-emerald-600' : 'text-emerald-500/40') : (isLight ? 'text-gray-400' : 'text-white/15')
             }`}>{p.label}</span>
           ))}
         </div>
@@ -311,7 +311,7 @@ function DualAIAnimation() {
               <div className="flex items-center gap-2 mb-2.5">
                 <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
                   className="w-3.5 h-3.5 border-2 border-amber-500/30 border-t-amber-500 rounded-full" />
-                <span className={`text-[10px] font-medium ${isLight ? 'text-amber-600' : 'text-amber-400'}`}>Scanning resume for issues...</span>
+                <span className={`text-[10px] font-medium ${isLight ? 'font-bold text-amber-600' : 'text-amber-400'}`}>Scanning resume for issues...</span>
               </div>
               <div className="space-y-1.5">
                 {[
@@ -321,13 +321,13 @@ function DualAIAnimation() {
                   { text: '⚠️ No ATS-friendly keywords from target JD', delay: 1.7 },
                 ].map((item, i) => (
                   <motion.div key={item.text} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: item.delay }}
-                    className={`text-[9px] flex items-center gap-1.5 ${isLight ? 'text-gray-600' : 'text-white/30'}`}>
+                    className={`text-[9px] flex items-center gap-1.5 ${isLight ? 'font-bold text-gray-600' : 'text-white/30'}`}>
                     <span>{item.text}</span>
                   </motion.div>
                 ))}
               </div>
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2.2 }}
-                className={`mt-2 text-[9px] font-medium ${isLight ? 'text-amber-700' : 'text-amber-400/60'}`}>Found 3 issues → sending to GPT...</motion.div>
+                className={`mt-2 text-[9px] font-medium ${isLight ? 'font-bold text-amber-700' : 'text-amber-400/60'}`}>Found 3 issues → sending to GPT...</motion.div>
             </motion.div>
           )}
 
@@ -337,23 +337,23 @@ function DualAIAnimation() {
               <div className="flex items-center gap-2 mb-2.5">
                 <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
                   className="w-3.5 h-3.5 border-2 border-amber-500/30 border-t-amber-500 rounded-full" />
-                <span className={`text-[10px] font-medium ${isLight ? 'text-amber-600' : 'text-amber-400'}`}>GPT-OSS 120B rewriting bullets...</span>
+                <span className={`text-[10px] font-medium ${isLight ? 'font-bold text-amber-600' : 'text-amber-400'}`}>GPT-OSS 120B rewriting bullets...</span>
               </div>
               {/* Before/after comparison */}
               <div className="space-y-2">
                 <div className="p-2 rounded bg-red-500/[0.03] border border-red-500/10">
-                  <span className={`text-[8px] font-medium ${isLight ? 'text-red-500' : 'text-red-400/60'}`}>BEFORE</span>
+                  <span className={`text-[8px] font-medium ${isLight ? 'font-bold text-red-500' : 'text-red-400/60'}`}>BEFORE</span>
                   <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
-                    className={`text-[9px] line-through mt-0.5 ${isLight ? 'text-gray-500' : 'text-white/20'}`}>Responsible for managing team projects</motion.p>
+                    className={`text-[9px] line-through mt-0.5 ${isLight ? 'font-bold text-gray-500' : 'text-white/20'}`}>Responsible for managing team projects</motion.p>
                 </div>
                 <div className="p-2 rounded bg-emerald-500/[0.03] border border-emerald-500/10">
-                  <span className={`text-[8px] font-medium ${isLight ? 'text-emerald-600' : 'text-emerald-400/60'}`}>AFTER</span>
+                  <span className={`text-[8px] font-medium ${isLight ? 'font-bold text-emerald-600' : 'text-emerald-400/60'}`}>AFTER</span>
                   <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
-                    className={`text-[9px] mt-0.5 ${isLight ? 'text-gray-700' : 'text-white/40'}`}>Led cross-functional team of 8, delivering 3 products on schedule, reducing time-to-market by 40%</motion.p>
+                    className={`text-[9px] mt-0.5 ${isLight ? 'font-bold text-gray-700' : 'text-white/40'}`}>Led cross-functional team of 8, delivering 3 products on schedule, reducing time-to-market by 40%</motion.p>
                 </div>
               </div>
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.8 }}
-                className={`mt-2 flex items-center gap-2 text-[8px] ${isLight ? 'text-gray-500' : 'text-white/20'}`}>
+                className={`mt-2 flex items-center gap-2 text-[8px] ${isLight ? 'font-bold text-gray-500' : 'text-white/20'}`}>
                 <motion.span animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1, repeat: Infinity }}
                   className="w-1 h-1 rounded-full bg-amber-500/60" />
                 Rewriting 8 more bullets...
@@ -367,7 +367,7 @@ function DualAIAnimation() {
               <div className="flex items-center gap-2 mb-2.5">
                 <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
                   className="w-3.5 h-3.5 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full" />
-                <span className={`text-[10px] font-medium ${isLight ? 'text-emerald-700' : 'text-emerald-400'}`}>Gemini 3 Flash cross-validating...</span>
+                <span className={`text-[10px] font-medium ${isLight ? 'font-bold text-emerald-700' : 'text-emerald-400'}`}>Gemini 3 Flash cross-validating...</span>
               </div>
               <div className="space-y-1.5">
                 {[
@@ -377,7 +377,7 @@ function DualAIAnimation() {
                   { text: 'Checking tone consistency & professionalism', icon: '✍️' },
                 ].map((item, i) => (
                   <motion.div key={item.text} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 + i * 0.5 }}
-                    className={`text-[9px] flex items-center gap-1.5 ${isLight ? 'text-gray-600' : 'text-white/25'}`}>
+                    className={`text-[9px] flex items-center gap-1.5 ${isLight ? 'font-bold text-gray-600' : 'text-white/25'}`}>
                     <span className="text-[8px]">{item.icon}</span>
                     <span>{item.text}</span>
                     {i < 2 && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 + i * 0.5 }}
@@ -394,7 +394,7 @@ function DualAIAnimation() {
               <div className="flex items-center gap-2 mb-2.5">
                 <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
                   className="w-3.5 h-3.5 border-2 border-violet-500/30 border-t-violet-500 rounded-full" />
-                <span className={`text-[10px] font-medium ${isLight ? 'text-violet-700' : 'text-violet-400'}`}>Auto-applying fixes to resume...</span>
+                <span className={`text-[10px] font-medium ${isLight ? 'font-bold text-violet-700' : 'text-violet-400'}`}>Auto-applying fixes to resume...</span>
               </div>
               <div className="space-y-1">
                 {[
@@ -404,7 +404,7 @@ function DualAIAnimation() {
                   'Inserted target role keywords',
                 ].map((t, i) => (
                   <motion.div key={t} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 + i * 0.4 }}
-                    className={`text-[9px] flex items-center gap-1.5 ${isLight ? 'text-gray-600' : 'text-white/25'}`}>
+                    className={`text-[9px] flex items-center gap-1.5 ${isLight ? 'font-bold text-gray-600' : 'text-white/25'}`}>
                     <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.5 + i * 0.4 }}
                       className="text-emerald-400 text-[8px]">✓</motion.span>
                     {t}
@@ -422,13 +422,13 @@ function DualAIAnimation() {
               <div className="flex items-center gap-2 mb-2.5">
                 <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
                   className="w-3.5 h-3.5 border-2 border-blue-500/30 border-t-blue-500 rounded-full" />
-                <span className={`text-[10px] font-medium ${isLight ? 'text-blue-700' : 'text-blue-400'}`}>Generating tailored cover letter...</span>
+                <span className={`text-[10px] font-medium ${isLight ? 'font-bold text-blue-700' : 'text-blue-400'}`}>Generating tailored cover letter...</span>
               </div>
               <div className={`p-2 rounded font-mono border ${isLight ? 'bg-black/[0.02] border-black/[0.04]' : 'bg-white/[0.01] border-white/[0.04]'}`}>
                 <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
-                  className={`text-[8px] leading-relaxed ${isLight ? 'text-gray-500' : 'text-white/20'}`}>Dear Hiring Manager,</motion.p>
+                  className={`text-[8px] leading-relaxed ${isLight ? 'font-bold text-gray-500' : 'text-white/20'}`}>Dear Hiring Manager,</motion.p>
                 <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
-                  className={`text-[8px] leading-relaxed mt-1 ${isLight ? 'text-gray-500' : 'text-white/20'}`}>I&apos;m excited to apply for the Senior Frontend Engineer role. With 5+ years building scalable React applications...</motion.p>
+                  className={`text-[8px] leading-relaxed mt-1 ${isLight ? 'font-bold text-gray-500' : 'text-white/20'}`}>I&apos;m excited to apply for the Senior Frontend Engineer role. With 5+ years building scalable React applications...</motion.p>
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: [0, 1, 0] }} transition={{ duration: 0.8, repeat: Infinity, delay: 1.5 }}
                   className="inline-block w-1.5 h-3 bg-blue-400/60 mt-1" />
               </div>
@@ -457,7 +457,7 @@ function DualAIAnimation() {
                   <motion.div key={stat.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }} className="text-center">
                     <p className={`text-[11px] font-bold ${stat.color}`}>{stat.value}</p>
-                    <p className={`text-[7px] ${isLight ? 'text-gray-500' : 'text-white/20'}`}>{stat.label}</p>
+                    <p className={`text-[7px] ${isLight ? 'font-bold text-gray-500' : 'text-white/20'}`}>{stat.label}</p>
                   </motion.div>
                 ))}
               </div>
@@ -910,7 +910,7 @@ function GauntletAnimation() {
           <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium border" style={{ backgroundColor: `${typeColor}${isLight ? '20' : '15'}`, borderColor: `${typeColor}${isLight ? '40' : '30'}`, color: isLight ? '#C2410C' : typeColor }}>{q.type}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className={`text-[9px] px-1.5 py-0.5 rounded border ${isLight ? 'bg-black/5 text-gray-500 border-black/10' : 'bg-white/[0.04] text-white/25 border-white/[0.06]'}`}>{q.difficulty}</span>
+          <span className={`text-[9px] px-1.5 py-0.5 rounded border ${isLight ? 'font-bold bg-black/5 text-gray-500 border-black/10' : 'bg-white/[0.04] text-white/25 border-white/[0.06]'}`}>{q.difficulty}</span>
           <motion.div className="w-1.5 h-1.5 rounded-full bg-amber-500" animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
         </div>
       </div>
@@ -927,8 +927,8 @@ function GauntletAnimation() {
                   <span className="text-sm">🤖</span>
                 </motion.div>
                 <div>
-                  <span className={`text-[9px] font-medium uppercase tracking-wider ${isLight ? 'text-amber-700' : 'text-amber-400/60'}`}>AI Interviewer</span>
-                  <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className={`text-[13px] leading-relaxed mt-1 ${isLight ? 'text-gray-900' : 'text-white/70'}`}>{q.question}</motion.p>
+                  <span className={`text-[9px] font-medium uppercase tracking-wider ${isLight ? 'font-bold text-amber-700' : 'text-amber-400/60'}`}>AI Interviewer</span>
+                  <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className={`text-[13px] leading-relaxed mt-1 ${isLight ? 'font-bold text-gray-900' : 'text-white/70'}`}>{q.question}</motion.p>
                 </div>
               </div>
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }} className={`mt-4 flex items-center gap-2 text-[9px] ${isLight ? 'text-gray-400' : 'text-white/15'}`}>
@@ -947,9 +947,9 @@ function GauntletAnimation() {
                   <span className="text-sm">👤</span>
                 </div>
                 <div className="flex-1">
-                  <span className={`text-[9px] font-medium uppercase tracking-wider ${isLight ? 'text-emerald-700' : 'text-emerald-400/60'}`}>Your Answer</span>
+                  <span className={`text-[9px] font-medium uppercase tracking-wider ${isLight ? 'font-bold text-emerald-700' : 'text-emerald-400/60'}`}>Your Answer</span>
                   <div className={`mt-1 p-3 rounded-lg border ${isLight ? 'bg-black/5 border-black/10' : 'bg-white/[0.02] border-white/[0.06]'}`}>
-                    <p className={`text-[12px] leading-relaxed font-mono ${isLight ? 'text-gray-700' : 'text-white/50'}`}>
+                    <p className={`text-[12px] leading-relaxed font-mono ${isLight ? 'font-bold text-gray-700' : 'text-white/50'}`}>
                       {q.answer.substring(0, typedChars)}
                       <motion.span animate={{ opacity: [1, 0, 1] }} transition={{ duration: 0.6, repeat: Infinity }} className="inline-block w-[2px] h-3 bg-amber-400/60 ml-0.5 align-middle" />
                     </p>
@@ -958,7 +958,7 @@ function GauntletAnimation() {
               </div>
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className={`mt-3 flex items-center justify-between text-[9px] ${isLight ? 'text-gray-400' : 'text-white/15'}`}>
                 <span>{Math.min(typedChars, q.answer.length)} / {q.answer.length} chars</span>
-                <span className="flex items-center gap-1"><kbd className={`px-1 py-0.5 rounded border text-[8px] ${isLight ? 'bg-black/5 border-black/10 text-gray-500' : 'bg-white/[0.04] border-white/[0.08] text-white/70'}`}>⏎</kbd> Submit</span>
+                <span className="flex items-center gap-1"><kbd className={`px-1 py-0.5 rounded border text-[8px] ${isLight ? 'font-bold bg-black/5 border-black/10 text-gray-500' : 'bg-white/[0.04] border-white/[0.08] text-white/70'}`}>⏎</kbd> Submit</span>
               </motion.div>
             </motion.div>
           )}
@@ -968,7 +968,7 @@ function GauntletAnimation() {
             <motion.div key="grading" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }} className="p-5">
               <div className="flex items-center gap-2 mb-4">
                 <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: 'linear' }} className="w-4 h-4 border-2 border-amber-500/30 border-t-amber-500 rounded-full" />
-                <span className={`text-[11px] font-medium ${isLight ? 'text-amber-600' : 'text-amber-400'}`}>AI grading with STAR methodology...</span>
+                <span className={`text-[11px] font-medium ${isLight ? 'font-bold text-amber-600' : 'text-amber-400'}`}>AI grading with STAR methodology...</span>
               </div>
               <div className="space-y-2.5">
                 {(['situation', 'task', 'action', 'result'] as const).map((key) => {
@@ -999,9 +999,9 @@ function GauntletAnimation() {
               <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className={`text-[13px] font-semibold mb-1 ${isLight ? 'text-gray-900' : 'text-white/80'}`}>
                 {overallScore >= 90 ? 'Excellent Answer' : overallScore >= 85 ? 'Strong Answer' : 'Good — Room to Improve'}
               </motion.p>
-              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className={`text-[11px] text-center max-w-xs ${isLight ? 'text-gray-600' : 'text-white/30'}`}>{q.feedback}</motion.p>
+              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className={`text-[11px] text-center max-w-xs ${isLight ? 'font-bold text-gray-600' : 'text-white/30'}`}>{q.feedback}</motion.p>
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }} className="mt-3 flex items-center gap-2">
-                <span className={`text-[9px] px-2 py-1 rounded-lg font-medium border ${isLight ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>Next Question →</span>
+                <span className={`text-[9px] px-2 py-1 rounded-lg font-medium border ${isLight ? 'font-bold bg-amber-50 text-amber-700 border-amber-200' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>Next Question →</span>
               </motion.div>
             </motion.div>
           )}
@@ -1290,11 +1290,11 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
             </button>
 
             {isAuthenticated ? (
-              <button onClick={onGetStarted} className={`text-[13px] font-medium px-3 py-1 rounded-md transition-all ${isLight ? 'text-gray-700 hover:text-gray-900 hover:bg-black/[0.04]' : 'text-white/70 hover:text-white hover:bg-white/[0.04]'}`}>Dashboard →</button>
+              <button onClick={onGetStarted} className={`text-[13px] font-medium px-3 py-1 rounded-md transition-all ${isLight ? 'font-bold text-gray-700 hover:text-gray-900 hover:bg-black/[0.04]' : 'text-white/70 hover:text-white hover:bg-white/[0.04]'}`}>Dashboard →</button>
             ) : (
               <>
-                <button onClick={onShowLogin} className={`text-[13px] px-3 py-1 transition-colors ${isLight ? 'text-gray-500 hover:text-gray-800' : 'text-white/40 hover:text-white/70'}`}>Sign in</button>
-                <button onClick={onShowSignup} className={`text-[13px] font-medium px-3.5 py-1 rounded-md transition-all ${isLight ? 'text-gray-800 bg-black/[0.05] hover:bg-black/[0.08] border border-black/[0.1]' : 'text-white bg-white/[0.07] hover:bg-white/[0.12] border border-white/[0.08]'}`}>Get Started</button>
+                <button onClick={onShowLogin} className={`text-[13px] px-3 py-1 transition-colors ${isLight ? 'font-bold text-gray-500 hover:text-gray-800' : 'text-white/40 hover:text-white/70'}`}>Sign in</button>
+                <button onClick={onShowSignup} className={`text-[13px] font-medium px-3.5 py-1 rounded-md transition-all ${isLight ? 'font-bold text-gray-800 bg-black/[0.05] hover:bg-black/[0.08] border border-black/[0.1]' : 'text-white bg-white/[0.07] hover:bg-white/[0.12] border border-white/[0.08]'}`}>Get Started</button>
               </>
             )}
           </div>
@@ -1313,7 +1313,7 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/[0.08] border border-emerald-500/20 mb-4">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span className={`text-[10px] font-medium ${isLight ? 'text-emerald-700' : 'text-emerald-400/90'}`}>AI-Powered Career Platform</span>
+                <span className={`text-[10px] font-medium ${isLight ? 'font-bold text-emerald-700' : 'text-emerald-400/90'}`}>AI-Powered Career Platform</span>
               </motion.div>
 
               <motion.h1 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
@@ -1419,7 +1419,7 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
                   Train like you{' '}
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-red-400">fight</span>
                 </h2>
-                <p className={`text-[14px] leading-relaxed mb-5 max-w-md ${isLight ? 'text-gray-600' : 'text-white/30'}` }>
+                <p className={`text-[14px] leading-relaxed mb-5 max-w-md ${isLight ? 'font-bold text-gray-600' : 'text-white/30'}` }>
                   The Gauntlet throws AI-generated behavioral questions tailored to your target JD, then grades your answers
                   using STAR methodology in real-time. Know exactly where you&apos;re strong — and where to sharpen.
                 </p>
@@ -1429,7 +1429,7 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
                     { icon: '⭐', label: 'STAR Grading' },
                     { icon: '🎙️', label: 'Voice Mode' },
                   ].map((f) => (
-                    <span key={f.label} className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-lg border ${isLight ? 'text-gray-500 bg-black/5 border-black/10' : 'text-white/30 bg-white/[0.03] border-white/[0.05]'}` }>
+                    <span key={f.label} className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-lg border ${isLight ? 'font-bold text-gray-500 bg-black/5 border-black/10' : 'text-white/30 bg-white/[0.03] border-white/[0.05]'}` }>
                       <span>{f.icon}</span> {f.label}
                     </span>
                   ))}
@@ -1450,7 +1450,7 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
           <Reveal className="mb-8">
             <div className="flex items-center gap-2.5 mb-1.5">
               <div className="h-px flex-1 max-w-[28px] bg-white/10" />
-              <span className={`text-[10px] font-medium uppercase tracking-[0.2em] ${isLight ? 'text-gray-500' : 'text-white/20'}` }>The Suite</span>
+              <span className={`text-[10px] font-medium uppercase tracking-[0.2em] ${isLight ? 'font-bold text-gray-500' : 'text-white/20'}` }>The Suite</span>
             </div>
             <h2 className={`text-xl md:text-2xl font-bold tracking-tight ${isLight ? 'text-gray-900' : 'text-white/85'}` }>
               Every tool for the talent journey
@@ -1530,7 +1530,7 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
                   </div>
 
                   {/* Description */}
-                  <p className={`text-[13px] leading-relaxed mb-5 max-w-md ${isLight ? 'text-gray-600' : 'text-white/35'}` }>
+                  <p className={`text-[13px] leading-relaxed mb-5 max-w-md ${isLight ? 'font-bold text-gray-600' : 'text-white/35'}` }>
                     {suiteTools[activeFeature].desc}
                   </p>
 
@@ -1597,7 +1597,7 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
                     {quotes[activeQuote].name.split(' ').map(n => n[0]).join('')}
                   </div>
                   <div className="text-left">
-                    <p className={`text-[11px] font-medium ${isLight ? 'text-gray-700' : 'text-white/45'}` }>{quotes[activeQuote].name}</p>
+                    <p className={`text-[11px] font-medium ${isLight ? 'font-bold text-gray-700' : 'text-white/45'}` }>{quotes[activeQuote].name}</p>
                     <p className={`text-[9px] ${isLight ? 'text-gray-400' : 'text-white/15'}` }>{quotes[activeQuote].title} • {quotes[activeQuote].co}</p>
                   </div>
                 </div>
@@ -1626,14 +1626,14 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
           <Reveal className="text-center mb-10">
             <div className="flex items-center justify-center gap-2.5 mb-2">
               <div className="h-px w-6 bg-white/10" />
-              <span className={`text-[10px] font-medium uppercase tracking-[0.2em] ${isLight ? 'text-gray-500' : 'text-white/20'}` }>Pricing</span>
+              <span className={`text-[10px] font-medium uppercase tracking-[0.2em] ${isLight ? 'font-bold text-gray-500' : 'text-white/20'}` }>Pricing</span>
               <div className="h-px w-6 bg-white/10" />
             </div>
             <h2 className="text-2xl md:text-3xl font-bold text-white/90 tracking-tight mb-2">
               Start free. Upgrade when you&apos;re{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">hooked</span>
             </h2>
-            <p className={`text-[14px] max-w-md mx-auto ${isLight ? 'text-gray-500' : 'text-white/25'}` }>Less than a coffee. Cancel anytime.</p>
+            <p className={`text-[14px] max-w-md mx-auto ${isLight ? 'font-bold text-gray-500' : 'text-white/25'}` }>Less than a coffee. Cancel anytime.</p>
           </Reveal>
 
           <Reveal delay={0.1}>
@@ -1647,7 +1647,7 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
                     <span className={`text-3xl font-bold ${isLight ? 'text-gray-900' : 'text-white/80'}` }>$0</span>
                     <span className={`text-[12px] ${isLight ? 'text-gray-400' : 'text-white/20'}` }>forever</span>
                   </div>
-                  <p className={`text-[12px] mt-2 ${isLight ? 'text-gray-500' : 'text-white/25'}` }>Try every tool. No credit card needed.</p>
+                  <p className={`text-[12px] mt-2 ${isLight ? 'font-bold text-gray-500' : 'text-white/25'}` }>Try every tool. No credit card needed.</p>
                 </div>
 
                 <div className="space-y-2.5 mb-6 flex-1">
@@ -1662,14 +1662,14 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
                       <div className="w-4 h-4 rounded-full bg-white/[0.04] flex items-center justify-center shrink-0">
                         <svg className={`w-2.5 h-2.5 ${isLight ? 'text-gray-400' : 'text-white/25'}` } fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                       </div>
-                      <span className={`text-[12px] ${isLight ? 'text-gray-600' : 'text-white/40'}` }>{item.text}</span>
+                      <span className={`text-[12px] ${isLight ? 'font-bold text-gray-600' : 'text-white/40'}` }>{item.text}</span>
                       {item.sub && <span className={`text-[9px] ml-auto ${isLight ? 'text-gray-400' : 'text-white/15'}` }>{item.sub}</span>}
                     </div>
                   ))}
                 </div>
 
                 <button onClick={onGetStarted}
-                  className={`w-full text-[13px] font-medium py-2.5 rounded-xl transition-all ${isLight ? 'text-gray-600 bg-black/5 hover:bg-black/10 border border-black/10' : 'text-white/60 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08]'}` }>
+                  className={`w-full text-[13px] font-medium py-2.5 rounded-xl transition-all ${isLight ? 'font-bold text-gray-600 bg-black/5 hover:bg-black/10 border border-black/10' : 'text-white/60 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08]'}` }>
                   Get Started Free
                 </button>
               </div>
@@ -1693,7 +1693,7 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
                   <h3 className={`text-[15px] font-semibold mb-1 ${isLight ? 'text-gray-900' : 'text-white/90'}` }>Pro</h3>
                   <div className="flex items-baseline gap-1">
                     <span className={`text-3xl font-bold ${isLight ? 'text-gray-900' : 'text-white'}` }>$2.99</span>
-                    <span className={`text-[12px] ${isLight ? 'text-gray-500' : 'text-white/30'}` }>/ month</span>
+                    <span className={`text-[12px] ${isLight ? 'font-bold text-gray-500' : 'text-white/30'}` }>/ month</span>
                   </div>
                   <p className="text-[12px] text-emerald-400/60 mt-2 flex items-center gap-1.5">
                     <span className={`line-through ${isLight ? 'text-gray-400' : 'text-white/15'}` }>$35.88/yr</span>
@@ -1720,7 +1720,7 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
         <div className="max-w-xl mx-auto px-6 text-center">
           <Reveal>
             <h2 className={`text-xl font-bold tracking-tight mb-2 ${isLight ? 'text-gray-800' : 'text-white/80'}` }>Ready to start?</h2>
-            <p className={`text-[13px] mb-5 ${isLight ? 'text-gray-500' : 'text-white/20'}` }>Free forever. No credit card needed.</p>
+            <p className={`text-[13px] mb-5 ${isLight ? 'font-bold text-gray-500' : 'text-white/20'}` }>Free forever. No credit card needed.</p>
             <button onClick={onGetStarted}
               className="group text-[13px] font-medium text-black bg-white hover:bg-white/90 px-6 py-2 rounded-lg transition-all inline-flex items-center gap-2">
               Launch Dashboard
@@ -1751,7 +1751,7 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
             </div>
             <div className={`flex items-center gap-4 text-[11px] ${isLight ? 'text-gray-400' : 'text-white/15'}` }>
               {['Privacy', 'Terms', 'Status'].map(link => (
-                <button key={link} className={`transition-colors ${isLight ? 'hover:text-gray-600' : 'hover:text-white/35'}` }>{link}</button>
+                <button key={link} className={`transition-colors ${isLight ? 'font-bold hover:text-gray-600' : 'hover:text-white/35'}` }>{link}</button>
               ))}
               <span className="flex items-center gap-1">
                 <span className="w-1 h-1 rounded-full bg-emerald-400/50 animate-pulse" />
