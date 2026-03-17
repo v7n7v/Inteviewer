@@ -23,6 +23,7 @@ const navigationSections = [
       { id: 'jd-generator', label: 'JD Generator', icon: '💼', description: 'Persona-JD Engine', path: '/suite/jd-generator' },
       { id: 'flashcards', label: 'Study Cards', icon: '🎴', description: 'Flash Cards', path: '/suite/flashcards', badge: 'New' },
       { id: 'oracle', label: 'Market Oracle', icon: '🔮', description: 'Career Intelligence', path: '/suite/market-oracle', badge: 'New' },
+      { id: 'skill-bridge', label: 'Skill Bridge', icon: '🌉', description: 'From Resume to Ready', path: '/suite/skill-bridge', badge: 'PRO' },
     ],
   },
 ];
@@ -91,7 +92,7 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
                 </div>
                 <div className="min-w-0">
                   <h1 className="text-base font-bold text-gradient whitespace-nowrap">TalentConsulting.io</h1>
-                  <p className="text-[10px] text-slate-500 whitespace-nowrap">Talent Platform</p>
+                  <p className="text-[10px] text-slate-500 whitespace-nowrap">Your AI Career Co-Pilot</p>
                 </div>
               </motion.div>
               <button
@@ -181,7 +182,7 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
                                 <div className="font-semibold text-sm flex items-center gap-2 whitespace-nowrap">
                                   {item.label}
                                   {item.badge && (
-                                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${item.badge === 'New' ? 'bg-green-500/20 text-green-400' : 'bg-slate-500/20 text-slate-400'
+                                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${item.badge === 'New' ? 'bg-green-500/20 text-green-400' : item.badge === 'PRO' ? 'bg-cyan-500/20 text-cyan-400' : 'bg-slate-500/20 text-slate-400'
                                       }`}>
                                       {item.badge}
                                     </span>
@@ -201,7 +202,7 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
                         </button>
 
                         {/* User Menu - Show after last item */}
-                        {item.id === 'oracle' && (
+                        {item.id === 'skill-bridge' && (
                           <>
                             <AnimatePresence>
                               {!isCollapsed && (

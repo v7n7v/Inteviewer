@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
 import { guardApiRoute } from '@/lib/api-auth';
+import { checkUsageAllowed, incrementUsage, type UsageFeature } from '@/lib/usage-tracker';
 
 const MODEL = 'openai/gpt-oss-120b';
 
@@ -24,7 +25,23 @@ export async function POST(request: NextRequest) {
     if (guard.error) return guard.error;
 
     const body = await request.json();
-    const { action, prompt, systemPrompt, options = {} } = body;
+    const { action, prompt, systemPrompt, options = {}, usageFeature } = body;
+
+    // Optional lifetime usage cap (e.g., JD generator passes 'jdGenerations')
+    if (usageFeature) {
+      const usageCheck = await checkUsageAllowed(guard.user.uid, usageFeature as UsageFeature, guard.user.tier);
+      if (!usageCheck.allowed) {
+        return NextResponse.json(
+          {
+            error: `Free tier limit reached (${usageCheck.cap} uses). Upgrade to Pro for unlimited access.`,
+            upgrade: true,
+            used: usageCheck.used,
+            cap: usageCheck.cap,
+          },
+          { status: 403 }
+        );
+      }
+    }
 
     if (!prompt) {
       return NextResponse.json({ error: 'prompt is required' }, { status: 400 });
@@ -53,6 +70,7 @@ export async function POST(request: NextRequest) {
 
       try {
         const parsed = JSON.parse(content);
+        if (usageFeature) await incrementUsage(guard.user.uid, usageFeature as UsageFeature);
         return NextResponse.json({ result: parsed });
       } catch {
         return NextResponse.json({ error: 'AI response was not valid JSON', raw: content }, { status: 502 });
@@ -111,6 +129,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No response from AI' }, { status: 502 });
     }
 
+    if (usageFeature) await incrementUsage(guard.user.uid, usageFeature as UsageFeature);
     return NextResponse.json({ result: content });
   } catch (error: any) {
     console.error('AI API route error:', error);

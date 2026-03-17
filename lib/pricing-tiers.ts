@@ -9,6 +9,14 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 
 export type PlanTier = 'free' | 'pro';
 
+/**
+ * Master test accounts — always treated as 'pro' tier.
+ * Works on both localhost and cloud deployments.
+ */
+export const MASTER_EMAILS: string[] = [
+  'alula2006@gmail.com',
+];
+
 export const PLAN_PRICE = {
   free: 0,
   pro: 2.99, // USD/month
@@ -49,8 +57,12 @@ function getDb() {
   return getFirestore(app);
 }
 
-/** Check user's subscription tier from Firestore */
-export async function getUserTier(uid: string): Promise<PlanTier> {
+/** Check user's subscription tier from Firestore (with master override) */
+export async function getUserTier(uid: string, email?: string): Promise<PlanTier> {
+  // Master account override — instant pro
+  if (email && MASTER_EMAILS.includes(email.toLowerCase())) {
+    return 'pro';
+  }
   try {
     const db = getDb();
     const subDoc = await getDoc(doc(db, 'users', uid, 'subscription', 'current'));

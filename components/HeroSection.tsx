@@ -230,6 +230,309 @@ function WorkflowAnimation() {
 }
 
 // ═══════════════════════════════════════
+// DUAL-AI ENHANCE ANIMATION — Expanded PRO Workflow
+// Shows the full enhance pipeline: Check → GPT → Gemini → Fix → Cover Letter → Done
+// ═══════════════════════════════════════
+function DualAIAnimation() {
+  const [stage, setStage] = useState(0);
+  // 0: resume check, 1: GPT rewriting, 2: gemini validating, 3: auto-fix, 4: cover letter, 5: done
+  const totalStages = 6;
+
+  useEffect(() => {
+    const timings = [2800, 3000, 3000, 2800, 3000, 3000];
+    const timer = setTimeout(() => {
+      setStage(prev => (prev + 1) % totalStages);
+    }, timings[stage]);
+    return () => clearTimeout(timer);
+  }, [stage]);
+
+  const pipelineSteps = [
+    { label: 'Check', icon: '🔍', color: '#f59e0b' },
+    { label: 'GPT Write', icon: '🧠', color: '#f59e0b' },
+    { label: 'Gemini Val', icon: '✨', color: '#22c55e' },
+    { label: 'Auto-Fix', icon: '🔧', color: '#8b5cf6' },
+    { label: 'Cover Letter', icon: '📝', color: '#3b82f6' },
+    { label: 'Complete', icon: '🚀', color: '#06b6d4' },
+  ];
+
+  return (
+    <div className="rounded-xl bg-[#0A0A0A] border border-white/[0.06] overflow-hidden">
+      {/* Title bar */}
+      <div className="px-4 py-2.5 border-b border-white/[0.04] flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-sm">✨</span>
+          <span className="text-[11px] font-semibold text-white/50">Dual-AI Enhance Pipeline</span>
+          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-medium">PRO</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[9px] text-white/20 font-mono">{stage + 1}/{totalStages}</span>
+          <motion.div className="w-1.5 h-1.5 rounded-full bg-cyan-500" animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+        </div>
+      </div>
+
+      <div className="p-4">
+        {/* Mini pipeline progress dots */}
+        <div className="flex items-center gap-1 mb-4">
+          {pipelineSteps.map((p, i) => (
+            <div key={p.label} className="flex items-center gap-1 flex-1">
+              <motion.div
+                animate={stage === i ? { scale: [1, 1.3, 1] } : {}}
+                transition={{ duration: 0.6, repeat: stage === i ? Infinity : 0 }}
+                className={`w-5 h-5 rounded-full flex items-center justify-center text-[8px] transition-all duration-400 ${
+                  stage > i ? 'bg-emerald-500/20 border border-emerald-500/30' :
+                  stage === i ? 'border-2 shadow-lg' : 'bg-white/[0.02] border border-white/[0.06]'
+                }`}
+                style={stage === i ? { borderColor: `${p.color}60`, boxShadow: `0 0 10px ${p.color}30` } : {}}
+              >
+                {stage > i ? <span className="text-[7px]">✓</span> : <span className="text-[7px]">{p.icon}</span>}
+              </motion.div>
+              {i < 5 && <div className={`flex-1 h-px ${stage > i ? 'bg-emerald-500/30' : 'bg-white/[0.04]'}`} />}
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center justify-between mb-3 px-0.5">
+          {pipelineSteps.map((p, i) => (
+            <span key={p.label} className={`text-[7px] font-medium transition-colors ${
+              stage === i ? 'text-white/60' : stage > i ? 'text-emerald-500/40' : 'text-white/15'
+            }`}>{p.label}</span>
+          ))}
+        </div>
+
+        {/* Stage content — each stage shows actual workflow details */}
+        <div className="min-h-[160px]">
+          {stage === 0 && (
+            <motion.div key="check" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+              className="p-3 rounded-lg bg-amber-500/[0.03] border border-amber-500/10">
+              <div className="flex items-center gap-2 mb-2.5">
+                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
+                  className="w-3.5 h-3.5 border-2 border-amber-500/30 border-t-amber-500 rounded-full" />
+                <span className="text-[10px] text-amber-400 font-medium">Scanning resume for issues...</span>
+              </div>
+              <div className="space-y-1.5">
+                {[
+                  { text: '⚠️ Missing quantified achievements in 3 roles', delay: 0.2 },
+                  { text: '⚠️ Weak action verbs: "responsible for", "helped"', delay: 0.7 },
+                  { text: '✅ Skills section well-structured', delay: 1.2 },
+                  { text: '⚠️ No ATS-friendly keywords from target JD', delay: 1.7 },
+                ].map((item, i) => (
+                  <motion.div key={item.text} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: item.delay }}
+                    className="text-[9px] text-white/30 flex items-center gap-1.5">
+                    <span>{item.text}</span>
+                  </motion.div>
+                ))}
+              </div>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2.2 }}
+                className="mt-2 text-[9px] text-amber-400/60 font-medium">Found 3 issues → sending to GPT...</motion.div>
+            </motion.div>
+          )}
+
+          {stage === 1 && (
+            <motion.div key="gpt" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+              className="p-3 rounded-lg bg-amber-500/[0.03] border border-amber-500/10">
+              <div className="flex items-center gap-2 mb-2.5">
+                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
+                  className="w-3.5 h-3.5 border-2 border-amber-500/30 border-t-amber-500 rounded-full" />
+                <span className="text-[10px] text-amber-400 font-medium">GPT-OSS 120B rewriting bullets...</span>
+              </div>
+              {/* Before/after comparison */}
+              <div className="space-y-2">
+                <div className="p-2 rounded bg-red-500/[0.03] border border-red-500/10">
+                  <span className="text-[8px] text-red-400/60 font-medium">BEFORE</span>
+                  <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
+                    className="text-[9px] text-white/20 line-through mt-0.5">Responsible for managing team projects</motion.p>
+                </div>
+                <div className="p-2 rounded bg-emerald-500/[0.03] border border-emerald-500/10">
+                  <span className="text-[8px] text-emerald-400/60 font-medium">AFTER</span>
+                  <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
+                    className="text-[9px] text-white/40 mt-0.5">Led cross-functional team of 8, delivering 3 products on schedule, reducing time-to-market by 40%</motion.p>
+                </div>
+              </div>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.8 }}
+                className="mt-2 flex items-center gap-2 text-[8px] text-white/20">
+                <motion.span animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1, repeat: Infinity }}
+                  className="w-1 h-1 rounded-full bg-amber-500/60" />
+                Rewriting 8 more bullets...
+              </motion.div>
+            </motion.div>
+          )}
+
+          {stage === 2 && (
+            <motion.div key="gemini" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+              className="p-3 rounded-lg bg-emerald-500/[0.03] border border-emerald-500/10">
+              <div className="flex items-center gap-2 mb-2.5">
+                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
+                  className="w-3.5 h-3.5 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full" />
+                <span className="text-[10px] text-emerald-400 font-medium">Gemini 3 Flash cross-validating...</span>
+              </div>
+              <div className="space-y-1.5">
+                {[
+                  { text: 'Verifying factual consistency across roles', icon: '🔎' },
+                  { text: 'Injecting 12 ATS keywords from target JD', icon: '🔑' },
+                  { text: 'Optimizing section ordering for impact', icon: '📊' },
+                  { text: 'Checking tone consistency & professionalism', icon: '✍️' },
+                ].map((item, i) => (
+                  <motion.div key={item.text} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 + i * 0.5 }}
+                    className="text-[9px] text-white/25 flex items-center gap-1.5">
+                    <span className="text-[8px]">{item.icon}</span>
+                    <span>{item.text}</span>
+                    {i < 2 && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 + i * 0.5 }}
+                      className="text-emerald-400/40 text-[7px] ml-auto">done</motion.span>}
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {stage === 3 && (
+            <motion.div key="fix" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+              className="p-3 rounded-lg bg-violet-500/[0.03] border border-violet-500/10">
+              <div className="flex items-center gap-2 mb-2.5">
+                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
+                  className="w-3.5 h-3.5 border-2 border-violet-500/30 border-t-violet-500 rounded-full" />
+                <span className="text-[10px] text-violet-400 font-medium">Auto-applying fixes to resume...</span>
+              </div>
+              <div className="space-y-1">
+                {[
+                  'Replaced 5 weak action verbs → power verbs',
+                  'Added metrics to 3 achievement bullets',
+                  'Reordered skills by JD relevance',
+                  'Inserted target role keywords',
+                ].map((t, i) => (
+                  <motion.div key={t} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 + i * 0.4 }}
+                    className="text-[9px] text-white/25 flex items-center gap-1.5">
+                    <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.5 + i * 0.4 }}
+                      className="text-emerald-400 text-[8px]">✓</motion.span>
+                    {t}
+                  </motion.div>
+                ))}
+              </div>
+              <motion.div initial={{ width: 0 }} animate={{ width: '100%' }} transition={{ duration: 2, delay: 0.5 }}
+                className="h-1 rounded-full bg-gradient-to-r from-violet-500/30 to-emerald-500/30 mt-2.5" />
+            </motion.div>
+          )}
+
+          {stage === 4 && (
+            <motion.div key="cover" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+              className="p-3 rounded-lg bg-blue-500/[0.03] border border-blue-500/10">
+              <div className="flex items-center gap-2 mb-2.5">
+                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
+                  className="w-3.5 h-3.5 border-2 border-blue-500/30 border-t-blue-500 rounded-full" />
+                <span className="text-[10px] text-blue-400 font-medium">Generating tailored cover letter...</span>
+              </div>
+              <div className="p-2 rounded bg-white/[0.01] border border-white/[0.04] font-mono">
+                <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
+                  className="text-[8px] text-white/20 leading-relaxed">Dear Hiring Manager,</motion.p>
+                <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
+                  className="text-[8px] text-white/20 leading-relaxed mt-1">I&apos;m excited to apply for the Senior Frontend Engineer role. With 5+ years building scalable React applications...</motion.p>
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: [0, 1, 0] }} transition={{ duration: 0.8, repeat: Infinity, delay: 1.5 }}
+                  className="inline-block w-1.5 h-3 bg-blue-400/60 mt-1" />
+              </div>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2 }}
+                className="mt-1.5 text-[8px] text-white/15">Also generating LinkedIn summary...</motion.div>
+            </motion.div>
+          )}
+
+          {stage === 5 && (
+            <motion.div key="done" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+              className="p-3 rounded-lg bg-cyan-500/[0.03] border border-cyan-500/10 text-center">
+              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200 }}
+                className="w-10 h-10 rounded-full bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mx-auto mb-2">
+                <svg className="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </motion.div>
+              <p className="text-[11px] text-white/70 font-semibold">Full Enhancement Complete</p>
+              <div className="grid grid-cols-4 gap-2 mt-3">
+                {[
+                  { label: 'ATS Score', value: '94%', color: 'text-cyan-400' },
+                  { label: 'Keywords', value: '+12', color: 'text-emerald-400' },
+                  { label: 'Bullets', value: '8 fixed', color: 'text-amber-400' },
+                  { label: 'Docs', value: '3 ready', color: 'text-blue-400' },
+                ].map((stat) => (
+                  <motion.div key={stat.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }} className="text-center">
+                    <p className={`text-[11px] font-bold ${stat.color}`}>{stat.value}</p>
+                    <p className="text-[7px] text-white/20">{stat.label}</p>
+                  </motion.div>
+                ))}
+              </div>
+              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }}
+                className="text-[8px] text-white/15 mt-2">Resume + Cover Letter + LinkedIn ready for download</motion.p>
+            </motion.div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════
+// PROCESS CAROUSEL — Auto-cycling horizontal showcase
+// Wraps WorkflowAnimation, DualAIAnimation, GauntletAnimation
+// ═══════════════════════════════════════
+function ProcessCarousel() {
+  const [activeSlide, setActiveSlide] = useState(0);
+  const slides = [
+    { label: 'Liquid Resume', icon: '📄', color: '#10B981', duration: 15000 },
+    { label: 'Dual-AI Enhance', icon: '✨', color: '#06B6D4', duration: 18000 },
+  ];
+
+  // Auto-advance after each animation's full cycle
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setActiveSlide(prev => (prev + 1) % slides.length);
+    }, slides[activeSlide].duration);
+    return () => clearTimeout(timer);
+  }, [activeSlide]);
+
+  return (
+    <div className="rounded-xl overflow-hidden">
+      {/* Slide tabs */}
+      <div className="flex items-center gap-2 mb-3">
+        {slides.map((s, i) => (
+          <button
+            key={s.label}
+            onClick={() => setActiveSlide(i)}
+            className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+              activeSlide === i
+                ? 'text-white bg-white/[0.08] border border-white/[0.12]'
+                : 'text-white/30 hover:text-white/50'
+            }`}
+          >
+            <span>{s.icon}</span> {s.label}
+            {/* Progress bar under active tab */}
+            {activeSlide === i && (
+              <motion.div
+                className="absolute bottom-0 left-0 h-[2px] bg-gradient-to-r rounded-full"
+                style={{ backgroundImage: `linear-gradient(to right, ${s.color}, ${s.color}80)` }}
+                initial={{ width: '0%' }}
+                animate={{ width: '100%' }}
+                transition={{ duration: slides[activeSlide].duration / 1000, ease: 'linear' }}
+                key={`progress-${activeSlide}`}
+              />
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Slides container — simple conditional render */}
+      <div className="relative">
+        {activeSlide === 0 && (
+          <motion.div key="s0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+            <WorkflowAnimation />
+          </motion.div>
+        )}
+        {activeSlide === 1 && (
+          <motion.div key="s1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+            <DualAIAnimation />
+          </motion.div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════
 // TALENT CONSTELLATION — Orbital Animation
 // ═══════════════════════════════════════
 const orbitNodes = [
@@ -480,12 +783,232 @@ function LiveTerminal() {
   );
 }
 
-// ─── DATA ───
+// ═══════════════════════════════════════
+// THE GAUNTLET — Interview Simulation
+// Cycles: Question → Answer → STAR Grade → Score
+// ═══════════════════════════════════════
+const gauntletQuestions = [
+  {
+    question: 'Tell me about a time you had to lead a project with conflicting stakeholder priorities.',
+    type: 'Behavioral',
+    difficulty: 'Advanced',
+    answer: 'At my previous role, our product and engineering leads disagreed on Q3 priorities. I organized a stakeholder alignment workshop where we mapped each request to OKRs...',
+    star: { situation: 92, task: 88, action: 95, result: 78 },
+    overall: 88,
+    feedback: 'Strong STAR structure. Result could be more quantitative.',
+  },
+  {
+    question: 'Describe a situation where you had to quickly learn a new technology to deliver on a deadline.',
+    type: 'Technical',
+    difficulty: 'Standard',
+    answer: 'When our team adopted GraphQL mid-sprint, I spent the weekend building a proof-of-concept, then led a knowledge transfer session for the team on Monday...',
+    star: { situation: 95, task: 90, action: 92, result: 85 },
+    overall: 91,
+    feedback: 'Excellent initiative shown. Quantify the timeline impact.',
+  },
+  {
+    question: 'How do you handle a situation where a team member is consistently underperforming?',
+    type: 'Leadership',
+    difficulty: 'Killer',
+    answer: 'I scheduled a 1-on-1 to understand their blockers. Turns out they were struggling with our legacy codebase. I paired with them for a week and created onboarding docs...',
+    star: { situation: 90, task: 85, action: 94, result: 88 },
+    overall: 89,
+    feedback: 'Great empathy and action. Add measurable outcome.',
+  },
+];
+
+function GauntletAnimation() {
+  const [qIndex, setQIndex] = useState(0);
+  const [phase, setPhase] = useState<'question' | 'answer' | 'grading' | 'score'>('question');
+  const [typedChars, setTypedChars] = useState(0);
+  const [starScores, setStarScores] = useState({ situation: 0, task: 0, action: 0, result: 0 });
+  const [overallScore, setOverallScore] = useState(0);
+
+  const q = gauntletQuestions[qIndex];
+
+  // Phase cycle
+  useEffect(() => {
+    const timings = { question: 2500, answer: 3000, grading: 3000, score: 2500 };
+    const timer = setTimeout(() => {
+      if (phase === 'question') setPhase('answer');
+      else if (phase === 'answer') setPhase('grading');
+      else if (phase === 'grading') setPhase('score');
+      else {
+        setPhase('question');
+        setQIndex((p) => (p + 1) % gauntletQuestions.length);
+      }
+    }, timings[phase]);
+    return () => clearTimeout(timer);
+  }, [phase, qIndex]);
+
+  // Typing effect during 'answer' phase
+  useEffect(() => {
+    if (phase === 'answer') {
+      setTypedChars(0);
+      const maxChars = q.answer.length;
+      const interval = setInterval(() => {
+        setTypedChars((prev) => {
+          if (prev >= maxChars) { clearInterval(interval); return maxChars; }
+          return prev + 2;
+        });
+      }, 30);
+      return () => clearInterval(interval);
+    }
+  }, [phase, q.answer.length]);
+
+  // STAR score animation during 'grading' phase
+  useEffect(() => {
+    if (phase === 'grading') {
+      setStarScores({ situation: 0, task: 0, action: 0, result: 0 });
+      setOverallScore(0);
+      const keys: (keyof typeof q.star)[] = ['situation', 'task', 'action', 'result'];
+      keys.forEach((key, i) => {
+        const target = q.star[key];
+        setTimeout(() => {
+          let cur = 0;
+          const interval = setInterval(() => {
+            cur += 4;
+            if (cur >= target) { cur = target; clearInterval(interval); }
+            setStarScores((prev) => ({ ...prev, [key]: cur }));
+          }, 25);
+        }, i * 400);
+      });
+      // Overall score with delay
+      setTimeout(() => {
+        let cur = 0;
+        const interval = setInterval(() => {
+          cur += 3;
+          if (cur >= q.overall) { cur = q.overall; clearInterval(interval); }
+          setOverallScore(cur);
+        }, 30);
+      }, 1600);
+    }
+  }, [phase, q.star, q.overall]);
+
+  const typeColor = q.type === 'Behavioral' ? '#FCA130' : q.type === 'Technical' ? '#38BDF8' : '#F87171';
+
+  return (
+    <div className="rounded-xl bg-[#0A0A0A] border border-white/[0.06] overflow-hidden">
+      {/* Title bar */}
+      <div className="px-4 py-2.5 border-b border-white/[0.04] flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-sm">⚔️</span>
+          <span className="text-[11px] font-semibold text-white/50">The Gauntlet</span>
+          <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium border" style={{ backgroundColor: `${typeColor}15`, borderColor: `${typeColor}30`, color: typeColor }}>{q.type}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.04] text-white/25 border border-white/[0.06]">{q.difficulty}</span>
+          <motion.div className="w-1.5 h-1.5 rounded-full bg-amber-500" animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+        </div>
+      </div>
+
+      {/* Content area */}
+      <div className="relative min-h-[210px]">
+        <AnimatePresence mode="wait">
+          {/* Phase 1: Question appears */}
+          {phase === 'question' && (
+            <motion.div key={`q-${qIndex}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }} className="p-5">
+              <div className="flex items-start gap-3">
+                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
+                  className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="text-sm">🤖</span>
+                </motion.div>
+                <div>
+                  <span className="text-[9px] text-amber-400/60 font-medium uppercase tracking-wider">AI Interviewer</span>
+                  <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="text-[13px] text-white/70 leading-relaxed mt-1">{q.question}</motion.p>
+                </div>
+              </div>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }} className="mt-4 flex items-center gap-2 text-[9px] text-white/15">
+                <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.5, repeat: Infinity }} className="flex items-center gap-1">
+                  <span className="w-1 h-1 rounded-full bg-amber-500/50" /> Waiting for response...
+                </motion.div>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {/* Phase 2: User typing answer */}
+          {phase === 'answer' && (
+            <motion.div key="answer" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }} className="p-5">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="text-sm">👤</span>
+                </div>
+                <div className="flex-1">
+                  <span className="text-[9px] text-emerald-400/60 font-medium uppercase tracking-wider">Your Answer</span>
+                  <div className="mt-1 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+                    <p className="text-[12px] text-white/50 leading-relaxed font-mono">
+                      {q.answer.substring(0, typedChars)}
+                      <motion.span animate={{ opacity: [1, 0, 1] }} transition={{ duration: 0.6, repeat: Infinity }} className="inline-block w-[2px] h-3 bg-amber-400/60 ml-0.5 align-middle" />
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-3 flex items-center justify-between text-[9px] text-white/15">
+                <span>{Math.min(typedChars, q.answer.length)} / {q.answer.length} chars</span>
+                <span className="flex items-center gap-1"><kbd className="px-1 py-0.5 rounded bg-white/[0.04] border border-white/[0.08] text-[8px]">⏎</kbd> Submit</span>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {/* Phase 3: STAR Grading */}
+          {phase === 'grading' && (
+            <motion.div key="grading" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }} className="p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: 'linear' }} className="w-4 h-4 border-2 border-amber-500/30 border-t-amber-500 rounded-full" />
+                <span className="text-[11px] text-amber-400 font-medium">AI grading with STAR methodology...</span>
+              </div>
+              <div className="space-y-2.5">
+                {(['situation', 'task', 'action', 'result'] as const).map((key) => {
+                  const score = starScores[key];
+                  const color = score >= 90 ? '#22C55E' : score >= 80 ? '#F59E0B' : '#EF4444';
+                  return (
+                    <div key={key} className="flex items-center gap-3">
+                      <span className="text-[10px] font-semibold text-white/30 uppercase tracking-wider w-16">{key[0].toUpperCase()}</span>
+                      <div className="flex-1 h-2 rounded-full bg-white/[0.04] overflow-hidden">
+                        <motion.div className="h-full rounded-full" style={{ backgroundColor: color }} animate={{ width: `${score}%` }} transition={{ duration: 0.05 }} />
+                      </div>
+                      <span className="text-[11px] font-bold w-8 text-right" style={{ color: score > 0 ? color : 'rgba(255,255,255,0.1)' }}>{score > 0 ? score : '—'}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Phase 4: Score Card */}
+          {phase === 'score' && (
+            <motion.div key="score" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.3 }} className="p-5 flex flex-col items-center justify-center h-[210px]">
+              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
+                className="w-16 h-16 rounded-full border-2 flex items-center justify-center mb-3"
+                style={{ borderColor: overallScore >= 85 ? '#22C55E40' : '#F59E0B40', backgroundColor: overallScore >= 85 ? '#22C55E08' : '#F59E0B08' }}>
+                <span className="text-2xl font-bold" style={{ color: overallScore >= 85 ? '#22C55E' : '#F59E0B' }}>{overallScore}</span>
+              </motion.div>
+              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="text-[13px] font-semibold text-white/80 mb-1">
+                {overallScore >= 90 ? 'Excellent Answer' : overallScore >= 85 ? 'Strong Answer' : 'Good — Room to Improve'}
+              </motion.p>
+              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-[11px] text-white/30 text-center max-w-xs">{q.feedback}</motion.p>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }} className="mt-3 flex items-center gap-2">
+                <span className="text-[9px] px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 font-medium">Next Question →</span>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Phase indicator dots */}
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+          {['question', 'answer', 'grading', 'score'].map((p) => (
+            <div key={p} className={`rounded-full transition-all duration-300 ${phase === p ? 'w-3 h-1 bg-amber-500/50' : 'w-1 h-1 bg-white/[0.06]'}`} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 const suiteTools = [
   {
     icon: '📄', title: 'Liquid Resume', tag: 'AI-Morphing Builder',
-    desc: 'One resume, infinite versions. AI morphs it to match any JD — keywords injected, skills reordered, ATS-optimized.',
-    color: '#10B981', chips: ['JD Morphing', 'Skill Graph', 'Match Score'],
+    desc: 'One resume, infinite versions. Choose from 18+ professional templates, then AI morphs it to match any JD — keywords injected, skills reordered, ATS-optimized.',
+    color: '#10B981', chips: ['18+ Templates', 'JD Morphing', 'Skill Graph', 'Match Score'],
   },
   {
     icon: '⚔️', title: 'The Gauntlet', tag: 'Interview Simulator',
@@ -509,6 +1032,170 @@ const quotes = [
   { text: "The Gauntlet's tough mode made my actual Google interview feel easy. Best $0 I ever spent.", name: "Marcus T.", title: "SDE II → Senior SDE", co: "Amazon" },
   { text: "I was mass-applying with zero results. After one session with Liquid Resume, I got 5 callbacks.", name: "Jamal R.", title: "New Grad → SWE", co: "Meta" },
 ];
+
+// ═══════════════════════════════════════
+// PRO FEATURE LIST — Cycling Scanner Wave
+// ═══════════════════════════════════════
+const proFeatures = [
+  { text: 'Unlimited Morphs', highlight: true },
+  { text: 'Unlimited Gauntlet', highlight: true },
+  { text: 'Unlimited Flashcards', highlight: true },
+  { text: 'Unlimited JD Analysis', highlight: true },
+  { text: 'Voice Interview Mode', highlight: true },
+  { text: 'All 18 Premium Templates', highlight: false },
+  { text: 'Priority AI processing', highlight: false },
+];
+
+function ProFeatureList() {
+  const [activeIdx, setActiveIdx] = useState(-1);
+
+  useEffect(() => {
+    let idx = 0;
+    let loopId: ReturnType<typeof setInterval> | null = null;
+
+    const stagger = setInterval(() => {
+      setActiveIdx(idx);
+      idx++;
+      if (idx >= proFeatures.length) {
+        clearInterval(stagger);
+        let loopIdx = 0;
+        loopId = setInterval(() => {
+          setActiveIdx(loopIdx % proFeatures.length);
+          loopIdx++;
+        }, 700);
+      }
+    }, 400);
+
+    return () => {
+      clearInterval(stagger);
+      if (loopId) clearInterval(loopId);
+    };
+  }, []);
+
+  return (
+    <div className="space-y-2 mb-6 flex-1 relative overflow-hidden">
+      {proFeatures.map((item, idx) => {
+        const isActive = activeIdx === idx;
+        const wasRecent = activeIdx === idx + 1 || (activeIdx === 0 && idx === proFeatures.length - 1);
+
+        return (
+          <div
+            key={item.text}
+            className="relative flex items-center gap-2.5 py-0.5 transition-all duration-500"
+          >
+            {/* Horizontal light streak — sweeps across when active */}
+            <motion.div
+              className="absolute inset-0 rounded-lg pointer-events-none"
+              style={{
+                background: 'linear-gradient(90deg, transparent, rgba(16,185,129,0.08) 30%, rgba(16,185,129,0.15) 50%, rgba(16,185,129,0.08) 70%, transparent)',
+              }}
+              animate={{
+                opacity: isActive ? 1 : 0,
+                x: isActive ? ['-100%', '0%'] : '0%',
+              }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+            />
+
+            <div className="relative shrink-0">
+              {/* Expanding glow burst when active */}
+              <motion.div
+                className="absolute rounded-full"
+                style={{
+                  inset: '-6px',
+                  background: 'radial-gradient(circle, rgba(16,185,129,0.5) 0%, rgba(16,185,129,0.15) 50%, transparent 70%)',
+                }}
+                animate={{
+                  opacity: isActive ? [0, 1, 0.6] : wasRecent ? 0.2 : 0,
+                  scale: isActive ? [0.3, 1.2, 1] : wasRecent ? 0.8 : 0.3,
+                }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
+              />
+
+              {/* Checkmark circle */}
+              <motion.div
+                className={`relative w-4 h-4 rounded-full flex items-center justify-center ${
+                  item.highlight
+                    ? 'border'
+                    : 'bg-white/[0.04]'
+                }`}
+                animate={{
+                  scale: isActive ? [1, 1.3, 1.1] : 1,
+                  backgroundColor: isActive
+                    ? 'rgba(16,185,129,0.25)'
+                    : item.highlight
+                    ? 'rgba(16,185,129,0.12)'
+                    : 'rgba(255,255,255,0.04)',
+                  borderColor: isActive
+                    ? 'rgba(16,185,129,0.8)'
+                    : item.highlight
+                    ? 'rgba(16,185,129,0.25)'
+                    : 'transparent',
+                  boxShadow: isActive
+                    ? '0 0 12px rgba(16,185,129,0.5), 0 0 4px rgba(16,185,129,0.3)'
+                    : wasRecent
+                    ? '0 0 6px rgba(16,185,129,0.2)'
+                    : '0 0 0px transparent',
+                }}
+                transition={{ duration: 0.35, ease: 'easeOut' }}
+              >
+                <motion.svg
+                  className="w-2.5 h-2.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  strokeWidth={3}
+                  animate={{
+                    color: isActive
+                      ? '#34d399'
+                      : item.highlight
+                      ? 'rgba(52,211,153,0.7)'
+                      : 'rgba(255,255,255,0.2)',
+                  }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </motion.svg>
+              </motion.div>
+            </div>
+
+            {/* Label text — brightens when active */}
+            <motion.span
+              className="text-[12px] relative z-10"
+              animate={{
+                color: isActive
+                  ? 'rgba(255,255,255,0.95)'
+                  : item.highlight
+                  ? 'rgba(255,255,255,0.55)'
+                  : 'rgba(255,255,255,0.3)',
+                fontWeight: isActive ? 600 : item.highlight ? 500 : 400,
+              }}
+              transition={{ duration: 0.3 }}
+            >
+              {item.text}
+            </motion.span>
+
+            {/* Infinity symbol — flashes when active */}
+            {item.highlight && (
+              <motion.span
+                className="text-[9px] ml-auto font-mono relative z-10"
+                animate={{
+                  color: isActive ? 'rgba(52,211,153,0.9)' : 'rgba(52,211,153,0.25)',
+                  scale: isActive ? [1, 1.4, 1.1] : 1,
+                  textShadow: isActive
+                    ? '0 0 8px rgba(16,185,129,0.6)'
+                    : '0 0 0px transparent',
+                }}
+                transition={{ duration: 0.35, ease: 'easeOut' }}
+              >
+                ∞
+              </motion.span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 // ─── MAIN ───
 export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, isAuthenticated }: HeroSectionProps) {
@@ -607,7 +1294,7 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
 
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.45 }}
                 className="flex items-center gap-5 text-[11px]">
-                {[{ val: '10x', label: 'Faster prep' }, { val: '95%', label: 'Match accuracy' }, { val: '8+', label: 'AI tools' }].map((s, i) => (
+                {[{ val: '10x', label: 'Faster prep' }, { val: '95%', label: 'Match accuracy' }, { val: '18+', label: 'Resume templates' }, { val: '8+', label: 'AI tools' }].map((s, i) => (
                   <div key={i} className="flex items-center gap-1.5">
                     <span className="font-semibold text-white/60">{s.val}</span>
                     <span className="text-white/15">{s.label}</span>
@@ -623,18 +1310,93 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
             </motion.div>
           </div>
 
-          {/* ── "How It Works" workflow animation ── */}
+          {/* ── Mission Statement Callout ── */}
+          <Reveal delay={0.3}>
+            <div className="relative my-12 py-8 px-6 rounded-2xl overflow-hidden">
+              {/* Gradient border glow */}
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-cyan-500/10 via-emerald-500/5 to-blue-500/10" />
+              <div className="absolute inset-[1px] rounded-2xl bg-[#080808]" />
+              <div className="relative text-center">
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.8, delay: 0.2 }}
+                  className="text-lg md:text-xl font-light text-white/70 italic leading-relaxed max-w-2xl mx-auto"
+                >
+                  &ldquo;We don&apos;t just dress up your resume.{' '}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-emerald-400 font-medium not-italic">
+                    We make you the candidate it says you are.
+                  </span>&rdquo;
+                </motion.p>
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.6 }}
+                  className="mt-3 text-[11px] text-white/20 font-medium tracking-widest uppercase"
+                >
+                  Your AI Career Co-Pilot
+                </motion.p>
+              </div>
+            </div>
+          </Reveal>
+
+          {/* ── Process Showcase Carousel ── */}
           <Reveal>
             <div className="mb-3">
               <div className="flex items-center gap-2 mb-1.5">
                 <div className="w-0.5 h-4 rounded-full bg-emerald-500" />
-                <span className="text-[12px] font-semibold text-white/60">From Upload to Offer in Four Steps</span>
+                <span className="text-[12px] font-semibold text-white/60">See How Each Tool Works</span>
               </div>
             </div>
-            <WorkflowAnimation />
+            <ProcessCarousel />
           </Reveal>
         </div>
       </motion.section>
+
+      {/* ════════════════════════════════════════════════ */}
+      {/* THE GAUNTLET — Interview Simulation Showcase     */}
+      {/* ════════════════════════════════════════════════ */}
+      <section className="relative py-14 border-t border-white/[0.03]">
+        <div className="max-w-6xl mx-auto px-6">
+          <Reveal className="mb-8">
+            <div className="grid lg:grid-cols-2 gap-10 items-center">
+              {/* Left — Copy */}
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-0.5 h-4 rounded-full bg-amber-500" />
+                  <span className="text-[10px] font-medium text-amber-400/80 uppercase tracking-[0.2em]">Interview Simulator</span>
+                </div>
+                <h2 className="text-2xl md:text-3xl font-bold text-white/90 tracking-tight leading-tight mb-3">
+                  Train like you{' '}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-red-400">fight</span>
+                </h2>
+                <p className="text-[14px] text-white/30 leading-relaxed mb-5 max-w-md">
+                  The Gauntlet throws AI-generated behavioral questions tailored to your target JD, then grades your answers
+                  using STAR methodology in real-time. Know exactly where you&apos;re strong — and where to sharpen.
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  {[
+                    { icon: '🎯', label: 'JD-Targeted Questions' },
+                    { icon: '⭐', label: 'STAR Grading' },
+                    { icon: '🎙️', label: 'Voice Mode' },
+                  ].map((f) => (
+                    <span key={f.label} className="flex items-center gap-1.5 text-[11px] text-white/30 px-2.5 py-1 rounded-lg bg-white/[0.03] border border-white/[0.05]">
+                      <span>{f.icon}</span> {f.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right — Live Interview Animation */}
+              <div>
+                <GauntletAnimation />
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </section>
 
       <section className="relative py-14 border-t border-white/[0.03]">
         <div className="max-w-6xl mx-auto px-6">
@@ -801,6 +1563,106 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
               ))}
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════════ */}
+      {/* PRICING                                         */}
+      {/* ════════════════════════════════════════════════ */}
+      <section className="relative py-16 border-t border-white/[0.03]">
+        {/* Ambient background glow */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full" style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.04) 0%, transparent 70%)' }} />
+        </div>
+
+        <div className="max-w-4xl mx-auto px-6 relative z-10">
+          <Reveal className="text-center mb-10">
+            <div className="flex items-center justify-center gap-2.5 mb-2">
+              <div className="h-px w-6 bg-white/10" />
+              <span className="text-[10px] font-medium text-white/20 uppercase tracking-[0.2em]">Pricing</span>
+              <div className="h-px w-6 bg-white/10" />
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold text-white/90 tracking-tight mb-2">
+              Start free. Upgrade when you&apos;re{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">hooked</span>
+            </h2>
+            <p className="text-[14px] text-white/25 max-w-md mx-auto">Less than a coffee. Cancel anytime.</p>
+          </Reveal>
+
+          <Reveal delay={0.1}>
+            <div className="grid md:grid-cols-2 gap-5 max-w-3xl mx-auto">
+
+              {/* ── FREE TIER ── */}
+              <div className="relative rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 flex flex-col">
+                <div className="mb-5">
+                  <h3 className="text-[15px] font-semibold text-white/70 mb-1">Free</h3>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl font-bold text-white/80">$0</span>
+                    <span className="text-[12px] text-white/20">forever</span>
+                  </div>
+                  <p className="text-[12px] text-white/25 mt-2">Try every tool. No credit card needed.</p>
+                </div>
+
+                <div className="space-y-2.5 mb-6 flex-1">
+                  {[
+                    { text: '3 Resume Morphs', sub: 'lifetime' },
+                    { text: '3 Gauntlet Sessions', sub: 'lifetime' },
+                    { text: '2 Flashcard Decks', sub: 'lifetime' },
+                    { text: '3 JD Analyses', sub: 'lifetime' },
+                    { text: '4 Resume Templates', sub: 'free' },
+                  ].map((item) => (
+                    <div key={item.text} className="flex items-center gap-2.5">
+                      <div className="w-4 h-4 rounded-full bg-white/[0.04] flex items-center justify-center shrink-0">
+                        <svg className="w-2.5 h-2.5 text-white/25" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                      </div>
+                      <span className="text-[12px] text-white/40">{item.text}</span>
+                      {item.sub && <span className="text-[9px] text-white/15 ml-auto">{item.sub}</span>}
+                    </div>
+                  ))}
+                </div>
+
+                <button onClick={onGetStarted}
+                  className="w-full text-[13px] font-medium text-white/60 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] py-2.5 rounded-xl transition-all">
+                  Get Started Free
+                </button>
+              </div>
+
+              {/* ── PRO TIER ── */}
+              <div className="relative rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.03] p-6 flex flex-col overflow-hidden">
+                {/* Glow effect */}
+                <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: 'inset 0 1px 0 rgba(16,185,129,0.1), 0 0 40px rgba(16,185,129,0.04)' }} />
+
+                {/* Popular badge */}
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="absolute top-4 right-4 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/25 text-[9px] font-semibold text-emerald-400 uppercase tracking-wider"
+                >
+                  Popular
+                </motion.div>
+
+                <div className="relative mb-5">
+                  <h3 className="text-[15px] font-semibold text-white/90 mb-1">Pro</h3>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl font-bold text-white">$2.99</span>
+                    <span className="text-[12px] text-white/30">/ month</span>
+                  </div>
+                  <p className="text-[12px] text-emerald-400/60 mt-2 flex items-center gap-1.5">
+                    <span className="line-through text-white/15">$35.88/yr</span>
+                    <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-bold text-emerald-400">$24.99/yr — SAVE 30%</span>
+                  </p>
+                </div>
+
+                <ProFeatureList />
+
+                <button onClick={onGetStarted}
+                  className="relative w-full text-[13px] font-semibold text-black bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-300 hover:to-teal-300 py-2.5 rounded-xl transition-all shadow-lg shadow-emerald-500/10">
+                  Upgrade to Pro
+                </button>
+              </div>
+            </div>
+          </Reveal>
         </div>
       </section>
 

@@ -18,9 +18,8 @@ interface Command {
 const commands: Command[] = [
   // Talent Suite
   { id: 'resume', label: 'Resume Builder', icon: '📄', description: 'Liquid Resume Architect', path: '/suite/resume', category: 'navigation', keywords: ['build', 'create', 'cv', 'morph'] },
-  { id: 'jd-generator', label: 'JD Generator', icon: '💼', description: 'Mission Blueprint Creator', path: '/suite/jd-generator', category: 'navigation', keywords: ['job', 'description', 'posting', 'write'] },
   { id: 'flashcards', label: 'Study Cards', icon: '🎴', description: 'Flash Cards', path: '/suite/flashcards', category: 'navigation', keywords: ['study', 'flash', 'cards', 'learn'] },
-  { id: 'oracle', label: 'Market Oracle', icon: '🔮', description: '3D Career Intelligence', path: '/suite/market-oracle', category: 'navigation', keywords: ['market', 'career', 'salary', 'trends'] },
+  { id: 'oracle', label: 'Market Oracle', icon: '🔮', description: 'JD Decoder + Career Intelligence', path: '/suite/market-oracle', category: 'navigation', keywords: ['market', 'career', 'salary', 'trends', 'job', 'description', 'decode', 'fit'] },
   { id: 'applications', label: 'Applications', icon: '📊', description: 'Track Your Jobs', path: '/suite/applications', category: 'navigation', keywords: ['track', 'apply', 'jobs', 'status'] },
   { id: 'job-search', label: 'Job Search', icon: '🔍', description: 'Find Opportunities', path: '/suite/job-search', category: 'navigation', keywords: ['search', 'find', 'jobs', 'openings'] },
 

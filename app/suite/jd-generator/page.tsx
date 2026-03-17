@@ -157,6 +157,7 @@ Generate a professional, compelling job description that would attract top-tier 
           systemPrompt,
           prompt: userPrompt,
           options: { temperature: 0.7, maxTokens: 4000 },
+          usageFeature: 'jdGenerations',
         }),
       });
 

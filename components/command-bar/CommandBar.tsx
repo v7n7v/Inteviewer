@@ -23,14 +23,6 @@ const modules: Module[] = [
     color: '#ffffff',
   },
   {
-    id: 'jd',
-    name: 'Job Desc',
-    icon: '💼',
-    path: '/suite/jd-generator',
-    description: 'Persona-JD Engine',
-    color: '#bf00ff',
-  },
-  {
     id: 'flashcards',
     name: 'Study Cards',
     icon: '🎴',
@@ -43,7 +35,7 @@ const modules: Module[] = [
     name: 'Oracle',
     icon: '🔮',
     path: '/suite/market-oracle',
-    description: 'Market Intelligence',
+    description: 'JD Decoder + Career Intel',
     color: '#00ff88',
   },
 ];

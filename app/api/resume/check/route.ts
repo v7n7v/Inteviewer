@@ -1,0 +1,86 @@
+/**
+ * Resume Checker API
+ * Gemini-only fast analysis — designed as free-tier funnel tool
+ * Scores ATS compliance, keyword match, formatting, and provides suggestions
+ */
+
+import { NextRequest, NextResponse } from 'next/server';
+import { guardApiRoute } from '@/lib/api-auth';
+import { checkUsageAllowed, incrementUsage } from '@/lib/usage-tracker';
+import { geminiQuickCheck } from '@/lib/ai/dual-ai';
+
+interface ResumeCheckResult {
+  atsScore: number;
+  keywordMatch: number;
+  formattingScore: number;
+  overallGrade: 'A+' | 'A' | 'B+' | 'B' | 'C' | 'D' | 'F';
+  strengths: string[];
+  issues: string[];
+  suggestions: string[];
+  sectionScores: {
+    summary: number;
+    experience: number;
+    skills: number;
+    education: number;
+    formatting: number;
+  };
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const guard = await guardApiRoute(req, { rateLimit: 5, rateLimitWindow: 60_000 });
+    if (guard.error) return guard.error;
+
+    // Pro-only feature
+    if (guard.user.tier !== 'pro') {
+      return NextResponse.json(
+        { error: 'Resume Checker is a Pro feature. Upgrade to access dual-AI tools.', upgrade: true },
+        { status: 403 }
+      );
+    }
+
+    const { resumeText, targetJD } = await req.json();
+
+    if (!resumeText) {
+      return NextResponse.json({ error: 'Resume text is required' }, { status: 400 });
+    }
+
+    const systemPrompt = `You are an expert ATS (Applicant Tracking System) analyst and resume reviewer.
+Analyze the resume thoroughly and provide a detailed quality assessment.
+
+You MUST respond with a JSON object containing:
+- "atsScore": number 0-100 (how well it passes ATS parsing)
+- "keywordMatch": number 0-100 (keyword density and relevance${targetJD ? ' against the provided job description' : ''})
+- "formattingScore": number 0-100 (structure, readability, length)
+- "overallGrade": "A+" | "A" | "B+" | "B" | "C" | "D" | "F"
+- "strengths": string[] (3-5 things done well)
+- "issues": string[] (3-5 specific problems found)
+- "suggestions": string[] (3-5 actionable improvements)
+- "sectionScores": { "summary": number, "experience": number, "skills": number, "education": number, "formatting": number } (each 0-100)
+
+Be specific and actionable. Reference exact text from the resume when pointing out issues.
+${targetJD ? 'Score keyword match against the provided job description.' : 'Score keyword match based on general industry standards.'}`;
+
+    const userPrompt = `Analyze this resume:
+
+${resumeText}
+${targetJD ? `\n\nTARGET JOB DESCRIPTION:\n${targetJD}` : ''}
+
+Provide your complete analysis as a JSON object.`;
+
+    const result = await geminiQuickCheck<ResumeCheckResult>(systemPrompt, userPrompt);
+
+    await incrementUsage(guard.user.uid, 'resumeChecks');
+
+    return NextResponse.json({
+      ...result,
+      poweredBy: 'gemini-flash',
+    });
+  } catch (error: any) {
+    console.error('Resume check error:', error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to check resume' },
+      { status: 500 }
+    );
+  }
+}

@@ -10,6 +10,7 @@ interface FileUploadDropzoneProps {
   isUploading: boolean;
   setIsUploading: (state: boolean) => void;
   variant?: 'large' | 'compact';
+  processingStage?: 'uploading' | 'extracting' | 'parsing' | null;
   // Props for compact variant (textarea)
   value?: string;
   onChange?: (val: string) => void;
@@ -23,6 +24,7 @@ export default function FileUploadDropzone({
   isUploading,
   setIsUploading,
   variant = 'large',
+  processingStage = null,
   value = '',
   onChange = () => {},
   placeholder = 'Paste your text or drop a file...',
@@ -68,10 +70,11 @@ export default function FileUploadDropzone({
       }
 
       onUploadSuccess(text, fileName);
+      // Don't setIsUploading(false) here — parent keeps loading state
+      // through AI parsing. Parent will reset when fully done.
     } catch (error: any) {
       console.error('Upload error:', error);
       showToast(error.message || 'Failed to process file', '❌');
-    } finally {
       setIsUploading(false);
     }
   };
@@ -185,11 +188,44 @@ export default function FileUploadDropzone({
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="relative z-10"
+            className="relative z-10 w-full max-w-sm mx-auto"
           >
             <span className="text-6xl block mb-4 animate-pulse">🧠</span>
-            <p className="text-xl text-white font-medium">Processing File...</p>
-            <p className="text-sm text-silver mt-2">Extracting and structuring text</p>
+            <p className="text-xl text-white font-medium mb-1">
+              {processingStage === 'parsing' ? 'Parsing with AI...' : processingStage === 'extracting' ? 'Extracting Text...' : 'Uploading File...'}
+            </p>
+            <p className="text-sm text-silver mb-5">
+              {processingStage === 'parsing' ? 'Structuring your resume data' : processingStage === 'extracting' ? 'Reading document contents' : 'Preparing your file'}
+            </p>
+            {/* Stage indicators */}
+            <div className="flex items-center justify-center gap-1.5 mb-4">
+              {['uploading', 'extracting', 'parsing'].map((stage, i) => {
+                const stages = ['uploading', 'extracting', 'parsing'];
+                const currentIdx = stages.indexOf(processingStage || 'uploading');
+                const isDone = i < currentIdx;
+                const isActive = i === currentIdx;
+                return (
+                  <div key={stage} className="flex items-center gap-1.5">
+                    <div className={`w-2 h-2 rounded-full transition-all duration-500 ${
+                      isDone ? 'bg-cyan-400 scale-100' : isActive ? 'bg-cyan-400 animate-pulse scale-125' : 'bg-white/10 scale-100'
+                    }`} />
+                    {i < 2 && <div className={`w-6 h-px transition-colors duration-500 ${isDone ? 'bg-cyan-400/50' : 'bg-white/10'}`} />}
+                  </div>
+                );
+              })}
+            </div>
+            {/* Progress bar */}
+            <div className="w-full h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+              <motion.div
+                className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500"
+                initial={{ width: '0%' }}
+                animate={{
+                  width: processingStage === 'parsing' ? '90%' : processingStage === 'extracting' ? '50%' : '20%'
+                }}
+                transition={{ duration: 2, ease: 'easeInOut' }}
+              />
+            </div>
+            <p className="text-[10px] text-slate-600 mt-2 uppercase tracking-wider font-medium">Step {processingStage === 'parsing' ? '3' : processingStage === 'extracting' ? '2' : '1'} of 3</p>
           </motion.div>
         ) : (
           <motion.div

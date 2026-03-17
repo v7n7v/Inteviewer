@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
 import { guardApiRoute } from '@/lib/api-auth';
+import { checkUsageAllowed, incrementUsage, type UsageFeature } from '@/lib/usage-tracker';
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -9,7 +10,24 @@ export async function POST(req: NextRequest) {
         const guard = await guardApiRoute(req, { rateLimit: 7, rateLimitWindow: 60_000 });
         if (guard.error) return guard.error;
 
-        const { jobDescription, resumeText, interviewStyle, questionCount, interviewType, drillCategory, mode, drillRole } = await req.json();
+        const body = await req.json();
+        const { jobDescription, resumeText, interviewStyle, questionCount, interviewType, drillCategory, mode, drillRole } = body;
+
+        // Determine which feature cap to check
+        const usageFeature: UsageFeature = mode === 'flashcards' ? 'flashcards' : 'gauntlets';
+        const usageCheck = await checkUsageAllowed(guard.user.uid, usageFeature, guard.user.tier);
+        if (!usageCheck.allowed) {
+            const label = mode === 'flashcards' ? 'flashcard decks' : 'Gauntlet sessions';
+            return NextResponse.json(
+                {
+                    error: `Free tier limit reached (${usageCheck.cap} ${label}). Upgrade to Pro for unlimited access.`,
+                    upgrade: true,
+                    used: usageCheck.used,
+                    cap: usageCheck.cap,
+                },
+                { status: 403 }
+            );
+        }
 
         // ===== FLASHCARD MODE =====
         if (mode === 'flashcards') {
@@ -51,6 +69,7 @@ Return: { "flashcards": [...] }`;
 
             const content = response.choices[0]?.message?.content;
             if (!content) throw new Error('No response from Groq');
+            await incrementUsage(guard.user.uid, 'flashcards');
             return NextResponse.json(JSON.parse(content));
         }
 
@@ -120,6 +139,7 @@ Return: { "questions": [...] }`;
         }
 
         const parsed = JSON.parse(content);
+        await incrementUsage(guard.user.uid, 'gauntlets');
         return NextResponse.json(parsed);
 
     } catch (error: any) {

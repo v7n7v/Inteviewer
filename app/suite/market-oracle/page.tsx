@@ -4,17 +4,12 @@ import { useState, useEffect, useRef, useMemo, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Canvas } from '@react-three/fiber';
 import dynamic from 'next/dynamic';
-import { groqJSONCompletion } from '@/lib/ai/groq-client';
 import { useStore } from '@/lib/store';
 import { showToast } from '@/components/Toast';
-import * as pdfjsLib from 'pdfjs-dist';
-import mammoth from 'mammoth';
+import { authFetch } from '@/lib/auth-fetch';
+import FileUploadDropzone from '@/components/FileUploadDropzone';
 import { calculateFitScore, type RealJob } from '@/lib/job-search-api';
-
-// Set up PDF.js worker
-if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-}
+import { useRouter } from 'next/navigation';
 
 // Types
 interface JobStar {
@@ -52,7 +47,25 @@ interface MarketAnalysis {
   jobs: JobStar[];
   marketTrends: { skill: string; growth: number }[];
   industryInsights: string[];
-  jobDataSource: string; // Track where job data comes from
+  jobDataSource: string;
+}
+
+// JD Decoder analysis from Dual-AI
+interface JDIntelligence {
+  fitScore: number;
+  fitVerdict: string;
+  overallAssessment: string;
+  competitiveEdge: string;
+  matchedSkills: string[];
+  gapSkills: string[];
+  keywordsToAdd: string[];
+  salaryIntel: { min: number; max: number; userPosition: number; withBridgeSkills: number; currency: string };
+  redFlags: { flag: string; severity: 'low' | 'medium' | 'high'; explanation: string }[];
+  hiddenRequirements: { stated: string; actual: string }[];
+  roleLevel: string;
+  bridgeSkills: { skill: string; impact: number; salaryIncrease: number }[];
+  marketTrends: { skill: string; growth: number }[];
+  industryInsights: string[];
 }
 
 // Generate mock job data with positions
@@ -88,58 +101,32 @@ const OracleScene = dynamic(() => import('./Scene'), { ssr: false });
 // Main Component
 export default function MarketOraclePage() {
   const { user } = useStore();
+  const router = useRouter();
   const [step, setStep] = useState<'setup' | 'analyzing' | 'oracle'>('setup');
   const [resumeText, setResumeText] = useState('');
+  const [jdText, setJdText] = useState('');
   const [targetRole, setTargetRole] = useState('');
   const [location, setLocation] = useState('');
   const [analysis, setAnalysis] = useState<MarketAnalysis | null>(null);
+  const [jdIntel, setJdIntel] = useState<JDIntelligence | null>(null);
   const [selectedJob, setSelectedJob] = useState<JobStar | null>(null);
   const [showBridge, setShowBridge] = useState(false);
   const [activeBridgeSkill, setActiveBridgeSkill] = useState<BridgeSkill | null>(null);
   const [showJobCard, setShowJobCard] = useState(false);
-  const [dragActive, setDragActive] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [analyzeStage, setAnalyzeStage] = useState(0);
+  const [showIntelPanel, setShowIntelPanel] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
+  const [processingStage, setProcessingStage] = useState<'uploading' | 'extracting' | 'parsing' | null>(null);
 
-  // File processing
-  const processFile = async (file: File) => {
-    const fileName = file.name.toLowerCase();
-    const fileType = file.type;
-
-    const isPDF = fileType === 'application/pdf' || fileName.endsWith('.pdf');
-    const isWord = fileType.includes('wordprocessingml') || fileName.endsWith('.docx');
-    const isText = fileType === 'text/plain' || fileName.endsWith('.txt');
-
-    if (!isPDF && !isWord && !isText) {
-      showToast('Upload PDF, Word, or TXT', '❌');
-      return;
-    }
-
-    try {
-      let text = '';
-      if (isPDF) {
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const content = await page.getTextContent();
-          text += content.items.map((item: any) => item.str).join(' ') + '\n';
-        }
-      } else if (isWord) {
-        const arrayBuffer = await file.arrayBuffer();
-        const result = await mammoth.extractRawText({ arrayBuffer });
-        text = result.value;
-      } else {
-        text = await file.text();
-      }
-
-      setResumeText(text.trim());
-      showToast('Resume loaded!', '✅');
-    } catch {
-      showToast('Error processing file', '❌');
-    }
+  // Handle resume upload via FileUploadDropzone
+  const handleResumeUploaded = (text: string, _fileName: string) => {
+    setResumeText(text.trim());
+    setIsUploading(false);
+    setProcessingStage(null);
+    showToast('Resume loaded!', '✅');
   };
 
-  // Analyze market position
+  // Analyze market position with Dual-AI
   const analyzeMarket = async () => {
     if (!resumeText.trim()) {
       showToast('Please upload your resume', '❌');
@@ -147,55 +134,55 @@ export default function MarketOraclePage() {
     }
 
     setStep('analyzing');
+    setAnalyzeStage(0);
+    setJdIntel(null);
 
     try {
-      // Step 1: AI Analysis of resume
-      const response = await groqJSONCompletion<{
-        topSkills: string[];
-        missingSkills: string[];
-        bridgeSkills: { skill: string; impact: number; salaryIncrease: number }[];
-        talentDensityPercentile: number;
-        marketTrends: { skill: string; growth: number }[];
-        industryInsights: string[];
-      }>(
-        `You are a Lead Data Scientist analyzing talent market positioning. Analyze this resume against current market demands for ${targetRole || 'tech roles'} in ${location || 'the US'}.`,
-        `RESUME:\n${resumeText}\n\nAnalyze and return JSON:
-{
-  "topSkills": ["skill1", "skill2", ...] (candidate's strongest 5-7 skills),
-  "missingSkills": ["skill1", ...] (3-5 in-demand skills they lack),
-  "bridgeSkills": [
-    {"skill": "specific skill name", "impact": 1-10 score, "salaryIncrease": estimated $ increase}
-  ] (top 3 skills that would maximize career growth),
-  "talentDensityPercentile": 1-100 (how rare is this candidate in current market),
-  "marketTrends": [{"skill": "name", "growth": % growth}] (5 trending skills in their field),
-  "industryInsights": ["insight1", ...] (3 actionable market insights)
-}`,
-        { temperature: 0.3, maxTokens: 2000 }
-      );
+      // ═══ STAGE 1: Dual-AI JD Analysis (if JD provided) ═══
+      if (jdText.trim()) {
+        setAnalyzeStage(1);
+        try {
+          const intelRes = await authFetch('/api/oracle/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ resumeText, jdText, targetRole, location }),
+          });
+          const intelData = await intelRes.json();
+          if (intelData.success && intelData.analysis) {
+            setJdIntel(intelData.analysis);
+          }
+        } catch (intelError) {
+          console.warn('Dual-AI analysis unavailable, continuing with basic analysis:', intelError);
+        }
+      }
 
-      // Step 2: Fetch REAL jobs from API
+      // ═══ STAGE 2: Job Market Scan ═══
+      setAnalyzeStage(2);
+
       let jobs: JobStar[] = [];
       let jobDataSource = 'Mock Data (Fallback)';
 
+      // Use JD intel skills if available, otherwise try to extract from JD text
+      const topSkillsFallback = ['JavaScript', 'Python', 'React', 'Node.js', 'SQL'];
+      const extractedSkills = jdIntel?.matchedSkills || topSkillsFallback;
+
       try {
-        const searchQuery = targetRole || response.topSkills.slice(0, 3).join(' ');
+        const searchQuery = targetRole || (jdText ? jdText.substring(0, 100) : extractedSkills.slice(0, 3).join(' '));
         const jobResponse = await fetch(`/api/jobs/search?query=${encodeURIComponent(searchQuery)}&location=${encodeURIComponent(location || '')}`);
         const jobData = await jobResponse.json();
 
         if (jobData.success && jobData.jobs && jobData.jobs.length > 0) {
           jobDataSource = `${jobData.source} (${jobData.jobs.length} real jobs)`;
 
-          // Convert real jobs to JobStar format with calculated fit scores
           jobs = jobData.jobs.map((job: any, index: number) => {
-            const fitScore = calculateFitScore(response.topSkills, job.skills || []);
+            const fitScore = calculateFitScore(jdIntel?.matchedSkills || extractedSkills, job.skills || []);
             const salary = job.salary?.max || job.salary?.min || (100000 + Math.random() * 150000);
 
-            // Position: spread jobs in 3D space based on fit score and salary
             const angle = (index / jobData.jobs.length) * Math.PI * 2;
-            const radius = (1 - fitScore) * 10 + 2; // Higher fit = closer to center
+            const radius = (1 - fitScore) * 10 + 2;
             const x = Math.cos(angle) * radius + (Math.random() - 0.5) * 3;
             const y = Math.sin(angle) * radius + (Math.random() - 0.5) * 3;
-            const z = (salary - 100000) / 50000 - 2; // Normalize salary to Z axis
+            const z = (salary - 100000) / 50000 - 2;
 
             return {
               id: job.id || `job-${index}`,
@@ -207,12 +194,11 @@ export default function MarketOraclePage() {
               position: [x, y, z] as [number, number, number],
               color: fitScore > 0.7 ? '#00f2ff' : fitScore > 0.5 ? '#a855f7' : fitScore > 0.3 ? '#22c55e' : '#6b7280',
               isConstellation: fitScore > 0.6,
-              // Real job fields
               url: job.url,
               location: job.location,
               description: job.description?.substring(0, 500),
               isReal: true,
-              source: job.source
+              source: job.source,
             };
           });
 
@@ -222,41 +208,43 @@ export default function MarketOraclePage() {
         console.error('Job search error, using fallback:', jobError);
       }
 
-      // Fallback to mock data if no real jobs
       if (jobs.length === 0) {
-        jobs = generateJobStars(response.topSkills, 60);
+        jobs = generateJobStars(jdIntel?.matchedSkills || extractedSkills, 60);
         jobDataSource = 'Simulated Data';
       }
 
-      // Calculate user position (center-ish, based on percentile)
-      const userZ = (response.talentDensityPercentile / 100) * 6 - 3;
+      // ═══ STAGE 3: Build Analysis ═══
+      setAnalyzeStage(3);
+
+      const percentile = jdIntel?.fitScore || 50;
+      const userZ = (percentile / 100) * 6 - 3;
       const currentPosition: [number, number, number] = [0, 0, userZ];
 
-      // Calculate bridge skill positions
-      const bridgeSkills: BridgeSkill[] = response.bridgeSkills.map((bs, i) => ({
+      const bridgeSkillsData = jdIntel?.bridgeSkills || [];
+      const bridgeSkills: BridgeSkill[] = bridgeSkillsData.slice(0, 3).map((bs, i) => ({
         ...bs,
         newPosition: [
           currentPosition[0] + (Math.random() - 0.5) * 4,
           currentPosition[1] + (Math.random() - 0.5) * 4,
-          currentPosition[2] + (bs.impact / 10) * 3
+          currentPosition[2] + (bs.impact / 10) * 3,
         ] as [number, number, number],
         newFitScore: Math.min(0.95, 0.6 + bs.impact * 0.035),
       }));
 
       setAnalysis({
         currentPosition,
-        talentDensityPercentile: response.talentDensityPercentile,
-        topSkills: response.topSkills,
-        missingSkills: response.missingSkills,
+        talentDensityPercentile: percentile,
+        topSkills: jdIntel?.matchedSkills || extractedSkills,
+        missingSkills: jdIntel?.gapSkills || [],
         bridgeSkills,
         jobs,
-        marketTrends: response.marketTrends,
-        industryInsights: response.industryInsights,
+        marketTrends: jdIntel?.marketTrends || [],
+        industryInsights: jdIntel?.industryInsights || [],
         jobDataSource,
       });
 
       setStep('oracle');
-      showToast('Market analysis complete!', '✅');
+      showToast(jdText.trim() ? 'Dual-AI analysis complete!' : 'Market analysis complete!', '✅');
     } catch (error) {
       console.error('Analysis error:', error);
       showToast('Error analyzing market', '❌');
@@ -349,7 +337,7 @@ export default function MarketOraclePage() {
                   </span>
                 </h1>
                 <p className="text-silver text-lg max-w-2xl">
-                  Navigate the 3D Opportunity Starfield. Discover your market position, find bridge skills, and chart your path to higher-paying roles.
+                  Paste a job description + your resume → Dual-AI decodes your fit score, salary intel, red flags, and bridge skills in the 3D Starfield.
                 </p>
               </div>
             </motion.div>
@@ -365,33 +353,53 @@ export default function MarketOraclePage() {
                   <span>📄</span> Your Resume
                 </h3>
                 {!resumeText ? (
-                  <div
-                    onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
-                    onDragLeave={() => setDragActive(false)}
-                    onDrop={(e) => { e.preventDefault(); setDragActive(false); e.dataTransfer.files[0] && processFile(e.dataTransfer.files[0]); }}
-                    onClick={() => fileInputRef.current?.click()}
-                    className={`rounded-xl border-2 border-dashed p-8 text-center cursor-pointer transition-all ${dragActive ? 'border-indigo-400 bg-indigo-500/10' : 'border-white/20 hover:border-white/40'
-                      }`}
-                  >
-                    <span className="text-4xl block mb-3">🚀</span>
-                    <p className="text-white font-medium">Drop resume or click to upload</p>
-                    <p className="text-sm text-silver mt-1">PDF, Word, or TXT</p>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".pdf,.docx,.doc,.txt"
-                      onChange={(e) => e.target.files?.[0] && processFile(e.target.files[0])}
-                      className="hidden"
-                    />
-                  </div>
+                  <FileUploadDropzone
+                    onUploadSuccess={handleResumeUploaded}
+                    isUploading={isUploading}
+                    setIsUploading={setIsUploading}
+                    variant="large"
+                    processingStage={processingStage}
+                  />
                 ) : (
                   <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/30">
                     <div className="flex items-center justify-between">
-                      <span className="text-green-400 font-medium">✓ Resume loaded</span>
+                      <span className="text-green-400 font-medium">✓ Resume loaded ({resumeText.length.toLocaleString()} chars)</span>
                       <button onClick={() => setResumeText('')} className="text-xs text-red-400 hover:text-red-300">Clear</button>
                     </div>
                   </div>
                 )}
+              </motion.div>
+
+              {/* JD Decoder Input */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.05 }}
+                className="rounded-2xl bg-[#111111] border border-emerald-500/20 p-6 relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl" />
+                <div className="relative">
+                  <h3 className="font-bold text-white mb-2 flex items-center gap-2">
+                    <span>📋</span> Paste Job Description
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] border border-emerald-500/30 font-medium">JD DECODER</span>
+                  </h3>
+                  <p className="text-xs text-silver mb-4">Paste any JD to unlock Dual-AI fit analysis, red flags, salary intel, and hidden requirements.</p>
+                  <textarea
+                    value={jdText}
+                    onChange={(e) => setJdText(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:outline-none focus:border-emerald-500/50 text-sm resize-none transition-colors"
+                    placeholder="Paste the full job description here...
+
+e.g., 'We're looking for a Senior Software Engineer to join our platform team...'"
+                    rows={5}
+                  />
+                  {jdText.trim() && (
+                    <div className="flex items-center justify-between mt-3">
+                      <span className="text-xs text-emerald-400">✓ JD loaded • Dual-AI analysis will activate</span>
+                      <button onClick={() => setJdText('')} className="text-xs text-red-400 hover:text-red-300">Clear</button>
+                    </div>
+                  )}
+                </div>
               </motion.div>
 
               {/* Target Role & Location */}
@@ -443,27 +451,29 @@ export default function MarketOraclePage() {
                   <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
                   <span className="relative flex items-center gap-3 text-white">
                     <span className="text-2xl">🔮</span>
-                    Launch Market Oracle
+                    {jdText.trim() ? 'Decode JD + Analyze Market' : 'Launch Market Oracle'}
                   </span>
                 </button>
               </motion.div>
 
-              {/* Features Preview */}
+              {/* Inline Feature Strip */}
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
-                className="grid md:grid-cols-3 gap-4 pt-8"
+                className="flex items-center justify-center gap-6 pt-6 flex-wrap"
               >
                 {[
-                  { icon: '🌌', title: '3D Starfield', desc: 'Navigate job opportunities in 3D space' },
-                  { icon: '🌉', title: 'Bridge Skills', desc: 'Discover skills that unlock higher salaries' },
-                  { icon: '💎', title: 'Talent Density', desc: 'See how rare you are in the market' },
-                ].map((feature, i) => (
-                  <div key={i} className="p-4 rounded-xl bg-[#111111] border border-white/10 text-center">
-                    <span className="text-3xl block mb-2">{feature.icon}</span>
-                    <h4 className="font-semibold text-white">{feature.title}</h4>
-                    <p className="text-xs text-silver">{feature.desc}</p>
+                  { icon: '📋', label: 'JD Decoder' },
+                  { icon: '💰', label: 'Salary Intel' },
+                  { icon: '🚩', label: 'Red Flags' },
+                  { icon: '🌌', label: '3D Starfield' },
+                  { icon: '🌉', label: 'Bridge Skills' },
+                  { icon: '🎯', label: 'Actions' },
+                ].map((f, i) => (
+                  <div key={i} className="flex items-center gap-1.5 text-silver text-sm">
+                    <span>{f.icon}</span>
+                    <span>{f.label}</span>
                   </div>
                 ))}
               </motion.div>
@@ -471,7 +481,7 @@ export default function MarketOraclePage() {
           </motion.div>
         )}
 
-        {/* ANALYZING STEP */}
+        {/* ANALYZING STEP — Dual-AI Pipeline */}
         {step === 'analyzing' && (
           <motion.div
             key="analyzing"
@@ -480,7 +490,7 @@ export default function MarketOraclePage() {
             exit={{ opacity: 0 }}
             className="min-h-screen flex items-center justify-center p-8"
           >
-            <div className="text-center">
+            <div className="text-center max-w-lg">
               <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
@@ -492,16 +502,38 @@ export default function MarketOraclePage() {
                   <span className="text-4xl">🔮</span>
                 </div>
               </motion.div>
-              <h2 className="text-2xl font-bold text-white mb-4">Scanning the Market Universe</h2>
-              <div className="flex justify-center gap-2 mb-4">
-                {['Analyzing skills', 'Mapping positions', 'Finding bridges', 'Calculating density'].map((text, i) => (
-                  <motion.span
-                    key={text}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: i * 0.5 }}
-                    className="px-3 py-1 rounded-full bg-[#111111] text-xs text-silver"
-                  >{text}</motion.span>
+              <h2 className="text-2xl font-bold text-white mb-6">
+                {jdText.trim() ? 'Dual-AI Decoding Your Fit' : 'Scanning the Market Universe'}
+              </h2>
+              {/* Pipeline Stages */}
+              <div className="space-y-3 mb-6">
+                {[
+                  { stage: 1, label: 'GPT-OSS 120B', desc: 'Extracting skills, parsing JD, detecting red flags', icon: '🧠' },
+                  { stage: 2, label: 'Gemini 3 Flash', desc: 'Cross-validating, scoring fit, refining salary intel', icon: '✨' },
+                  { stage: 3, label: 'Market Scan', desc: 'Mapping job opportunities in 3D space', icon: '🌌' },
+                ].map((s) => (
+                  <motion.div
+                    key={s.stage}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: s.stage * 0.3 }}
+                    className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${
+                      analyzeStage >= s.stage
+                        ? 'bg-emerald-500/10 border-emerald-500/30'
+                        : analyzeStage === s.stage - 1
+                        ? 'bg-cyan-500/10 border-cyan-500/30 animate-pulse'
+                        : 'bg-[#111111] border-white/10 opacity-40'
+                    }`}
+                  >
+                    <span className="text-2xl">{analyzeStage > s.stage ? '✅' : s.icon}</span>
+                    <div className="text-left flex-1">
+                      <p className="text-sm font-semibold text-white">{s.label}</p>
+                      <p className="text-xs text-silver">{s.desc}</p>
+                    </div>
+                    {analyzeStage === s.stage && (
+                      <div className="w-5 h-5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+                    )}
+                  </motion.div>
                 ))}
               </div>
             </div>
@@ -801,6 +833,204 @@ export default function MarketOraclePage() {
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {/* ═══ JD INTELLIGENCE PANEL ═══ */}
+            <AnimatePresence>
+              {jdIntel && showIntelPanel && (
+                <motion.div
+                  initial={{ opacity: 0, x: -60 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -60 }}
+                  className="absolute left-4 top-20 bottom-20 z-20 w-[380px] overflow-y-auto"
+                  style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.2) transparent' }}
+                >
+                  <div className="glass-card rounded-2xl border border-emerald-500/30 bg-[#0A0A0A]/95 backdrop-blur-xl overflow-hidden">
+                    {/* Header */}
+                    <div className="p-4 border-b border-white/10 bg-gradient-to-r from-emerald-500/10 to-cyan-500/10">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl">📋</span>
+                          <div>
+                            <h3 className="text-sm font-bold text-white">JD Intelligence Report</h3>
+                            <p className="text-[10px] text-silver">Dual-AI Analysis • GPT + Gemini</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setShowIntelPanel(false)}
+                          className="p-1.5 rounded-lg hover:bg-white/10 text-silver"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="p-4 space-y-4">
+                      {/* Fit Score */}
+                      <div className="text-center p-4 rounded-xl bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 border border-emerald-500/20">
+                        <div className="relative w-24 h-24 mx-auto mb-3">
+                          <svg className="w-24 h-24 -rotate-90">
+                            <circle cx="48" cy="48" r="40" stroke="rgba(255,255,255,0.1)" strokeWidth="8" fill="none" />
+                            <circle
+                              cx="48" cy="48" r="40"
+                              stroke={jdIntel.fitScore > 75 ? '#22c55e' : jdIntel.fitScore > 50 ? '#f59e0b' : '#ef4444'}
+                              strokeWidth="8"
+                              fill="none"
+                              strokeLinecap="round"
+                              strokeDasharray={`${jdIntel.fitScore * 2.51} 251`}
+                            />
+                          </svg>
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className={`text-2xl font-bold ${jdIntel.fitScore > 75 ? 'text-emerald-400' : jdIntel.fitScore > 50 ? 'text-amber-400' : 'text-red-400'}`}>
+                              {jdIntel.fitScore}%
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-xs font-semibold text-white mb-1">
+                          {jdIntel.fitVerdict === 'excellent' ? '🌟 Excellent Match' :
+                           jdIntel.fitVerdict === 'strong' ? '💪 Strong Match' :
+                           jdIntel.fitVerdict === 'moderate' ? '📊 Moderate Match' : '🎯 Growth Opportunity'}
+                        </p>
+                        <p className="text-[11px] text-silver">{jdIntel.overallAssessment}</p>
+                      </div>
+
+                      {/* Matched vs Gap Skills */}
+                      <div>
+                        <p className="text-xs text-silver uppercase tracking-wider mb-2">✅ Matched Skills</p>
+                        <div className="flex flex-wrap gap-1.5 mb-3">
+                          {jdIntel.matchedSkills.slice(0, 8).map(s => (
+                            <span key={s} className="px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] border border-emerald-500/30">{s}</span>
+                          ))}
+                        </div>
+                        <p className="text-xs text-silver uppercase tracking-wider mb-2">❌ Gap Skills</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {jdIntel.gapSkills.slice(0, 6).map(s => (
+                            <span key={s} className="px-2 py-1 rounded-full bg-red-500/20 text-red-400 text-[10px] border border-red-500/30">{s}</span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Keywords to Add */}
+                      {jdIntel.keywordsToAdd?.length > 0 && (
+                        <div className="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20">
+                          <p className="text-xs text-cyan-400 font-semibold mb-2">🔑 Keywords to Add to Resume</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {jdIntel.keywordsToAdd.slice(0, 8).map(k => (
+                              <span key={k} className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 text-[10px]">{k}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Salary Intel */}
+                      <div className="p-3 rounded-xl bg-[#111111] border border-white/10">
+                        <p className="text-xs text-silver uppercase tracking-wider mb-3">💰 Salary Intelligence</p>
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-silver">Range</span>
+                            <span className="text-sm font-bold text-green-400">
+                              ${(jdIntel.salaryIntel.min / 1000).toFixed(0)}K — ${(jdIntel.salaryIntel.max / 1000).toFixed(0)}K
+                            </span>
+                          </div>
+                          <div className="h-2 bg-white/10 rounded-full overflow-hidden relative">
+                            <div className="h-full bg-gradient-to-r from-red-500 via-amber-500 to-emerald-500 rounded-full" />
+                            <div
+                              className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white border-2 border-cyan-400 shadow-lg"
+                              style={{ left: `${Math.max(5, Math.min(95, jdIntel.salaryIntel.userPosition))}%` }}
+                            />
+                          </div>
+                          <div className="flex justify-between text-[10px] text-silver">
+                            <span>Your position: top {100 - jdIntel.salaryIntel.userPosition}%</span>
+                            <span className="text-emerald-400">+bridge: ${(jdIntel.salaryIntel.withBridgeSkills / 1000).toFixed(0)}K</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Red Flags */}
+                      {jdIntel.redFlags?.length > 0 && (
+                        <div className="p-3 rounded-xl bg-red-500/5 border border-red-500/20">
+                          <p className="text-xs text-red-400 font-semibold mb-2">🚩 Red Flags Detected</p>
+                          <div className="space-y-2">
+                            {jdIntel.redFlags.slice(0, 4).map((rf, i) => (
+                              <div key={i} className="flex gap-2">
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium flex-shrink-0 ${
+                                  rf.severity === 'high' ? 'bg-red-500/20 text-red-400' :
+                                  rf.severity === 'medium' ? 'bg-amber-500/20 text-amber-400' :
+                                  'bg-slate-500/20 text-slate-400'
+                                }`}>{rf.severity.toUpperCase()}</span>
+                                <div>
+                                  <p className="text-xs text-white font-medium">{rf.flag}</p>
+                                  <p className="text-[10px] text-silver">{rf.explanation}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Hidden Requirements */}
+                      {jdIntel.hiddenRequirements?.length > 0 && (
+                        <div className="p-3 rounded-xl bg-indigo-500/5 border border-indigo-500/20">
+                          <p className="text-xs text-indigo-400 font-semibold mb-2">🧠 Hidden Requirements</p>
+                          <div className="space-y-2">
+                            {jdIntel.hiddenRequirements.slice(0, 4).map((hr, i) => (
+                              <div key={i} className="text-xs">
+                                <p className="text-silver line-through">{hr.stated}</p>
+                                <p className="text-white font-medium">→ {hr.actual}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Competitive Edge */}
+                      {jdIntel.competitiveEdge && (
+                        <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
+                          <p className="text-xs text-emerald-400 font-semibold mb-1">⚡ Your Competitive Edge</p>
+                          <p className="text-xs text-silver">{jdIntel.competitiveEdge}</p>
+                        </div>
+                      )}
+
+                      {/* Action Buttons */}
+                      <div className="space-y-2 pt-2 border-t border-white/10">
+                        <p className="text-xs text-silver uppercase tracking-wider">🎯 Take Action</p>
+                        <button
+                          onClick={() => router.push('/suite/resume')}
+                          className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-sm font-semibold hover:shadow-lg hover:shadow-cyan-500/25 transition-all"
+                        >
+                          🔄 Morph Resume for This JD
+                        </button>
+                        <button
+                          onClick={() => router.push('/suite/resume')}
+                          className="w-full py-2.5 rounded-xl bg-white/10 text-white text-sm font-medium hover:bg-white/20 border border-white/10 transition-all"
+                        >
+                          ✉️ Generate Cover Letter
+                        </button>
+                        <button
+                          onClick={() => router.push('/suite/flashcards')}
+                          className="w-full py-2.5 rounded-xl bg-white/10 text-white text-sm font-medium hover:bg-white/20 border border-white/10 transition-all"
+                        >
+                          ⚔️ Practice Interview for This Role
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Toggle Intel Panel button (when hidden) */}
+            {jdIntel && !showIntelPanel && (
+              <motion.button
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                onClick={() => setShowIntelPanel(true)}
+                className="absolute left-4 top-20 z-20 px-4 py-3 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-sm font-medium hover:bg-emerald-500/30 transition-all backdrop-blur-xl"
+              >
+                📋 Show JD Intelligence
+              </motion.button>
+            )}
 
             {/* Bridge Skill Impact Panel */}
             <AnimatePresence>

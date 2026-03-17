@@ -19,7 +19,6 @@ interface NavigationItem {
 const talentSuiteItems: NavigationItem[] = [
   { id: 'resume', label: 'Liquid Resume', icon: '📄', description: 'Resume Builder', path: '/suite/resume' },
   { id: 'applications', label: 'Applications', icon: '📊', description: 'Track Jobs', path: '/suite/applications' },
-  { id: 'jd-generator', label: 'JD Generator', icon: '💼', description: 'Job Descriptions', path: '/suite/jd-generator' },
   { id: 'flashcards', label: 'The Gauntlet', icon: '⚔️', description: 'Interview Simulator', path: '/suite/flashcards' },
   { id: 'oracle', label: 'Market Oracle', icon: '🔮', description: 'Career Intelligence', path: '/suite/market-oracle' },
   { id: 'job-search', label: 'Job Search', icon: '🔍', description: 'Find Jobs', path: '/suite/job-search', badge: 'Soon' },

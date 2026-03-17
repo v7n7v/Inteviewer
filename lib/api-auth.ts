@@ -59,8 +59,8 @@ export async function guardApiRoute(
     };
   }
 
-  // Get user tier from Firestore
-  const tier = await getUserTier(authUser.uid);
+  // Get user tier from Firestore (master emails auto-promoted)
+  const tier = await getUserTier(authUser.uid, authUser.email);
 
   // Determine rate limit: use tier-aware config or fallback to explicit options
   const pathname = new URL(req.url).pathname;

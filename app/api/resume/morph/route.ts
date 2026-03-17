@@ -1,12 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { groqJSONCompletion } from '@/lib/ai/groq-client';
 import { guardApiRoute } from '@/lib/api-auth';
+import { checkUsageAllowed, incrementUsage } from '@/lib/usage-tracker';
 
 export async function POST(req: NextRequest) {
   try {
     // Auth + rate limit check
     const guard = await guardApiRoute(req, { rateLimit: 1, rateLimitWindow: 60_000 });
     if (guard.error) return guard.error;
+
+    // Lifetime usage cap check
+    const usageCheck = await checkUsageAllowed(guard.user.uid, 'morphs', guard.user.tier);
+    if (!usageCheck.allowed) {
+      return NextResponse.json(
+        {
+          error: `Free tier limit reached (${usageCheck.cap} morphs). Upgrade to Pro for unlimited morphs.`,
+          upgrade: true,
+          used: usageCheck.used,
+          cap: usageCheck.cap,
+        },
+        { status: 403 }
+      );
+    }
 
     const { resume, jobDescription, morphPercentage, targetPageCount } = await req.json();
 
@@ -47,6 +62,9 @@ Return JSON:
     } else {
       morphedData = { ...resume, summary: resume.summary + ' [Optimized for target role]' };
     }
+
+    // Increment usage count on success
+    await incrementUsage(guard.user.uid, 'morphs');
 
     return NextResponse.json({
       morphedResume: morphedData,

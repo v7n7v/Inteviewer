@@ -13,6 +13,7 @@
     "deploy:preview": "firebase hosting:channel:deploy preview"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@react-pdf/renderer": "^4.3.2",
     "@react-three/drei": "^9.122.0",
     "@react-three/fiber": "^8.18.0",
