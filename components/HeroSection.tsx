@@ -1042,6 +1042,10 @@ const proFeatures = [
   { text: 'Unlimited Flashcards', highlight: true },
   { text: 'Unlimited JD Analysis', highlight: true },
   { text: 'Voice Interview Mode', highlight: true },
+  { text: 'Skill Bridge — Learning Paths', highlight: true },
+  { text: 'Market Oracle — Career Intel', highlight: true },
+  { text: 'Dual-AI Enhance Pipeline', highlight: true },
+  { text: 'Auto Cover Letter + LinkedIn', highlight: false },
   { text: 'All 18 Premium Templates', highlight: false },
   { text: 'Priority AI processing', highlight: false },
 ];
@@ -1050,25 +1054,29 @@ function ProFeatureList() {
   const [activeIdx, setActiveIdx] = useState(-1);
 
   useEffect(() => {
-    let idx = 0;
-    let loopId: ReturnType<typeof setInterval> | null = null;
+    let timeout: ReturnType<typeof setTimeout>;
+    let cancelled = false;
 
-    const stagger = setInterval(() => {
+    function runCycle(idx: number) {
+      if (cancelled) return;
       setActiveIdx(idx);
-      idx++;
-      if (idx >= proFeatures.length) {
-        clearInterval(stagger);
-        let loopIdx = 0;
-        loopId = setInterval(() => {
-          setActiveIdx(loopIdx % proFeatures.length);
-          loopIdx++;
-        }, 700);
+      if (idx < proFeatures.length - 1) {
+        // Move to next item
+        timeout = setTimeout(() => runCycle(idx + 1), 500);
+      } else {
+        // Reached bottom — pause, then restart
+        timeout = setTimeout(() => {
+          setActiveIdx(-1);
+          timeout = setTimeout(() => runCycle(0), 800);
+        }, 1500);
       }
-    }, 400);
+    }
+
+    timeout = setTimeout(() => runCycle(0), 600);
 
     return () => {
-      clearInterval(stagger);
-      if (loopId) clearInterval(loopId);
+      cancelled = true;
+      clearTimeout(timeout);
     };
   }, []);
 

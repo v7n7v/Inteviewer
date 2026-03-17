@@ -5,6 +5,8 @@ import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { authHelpers } from '@/lib/firebase';
 import { useStore } from '@/lib/store';
+import UpgradeBanner from '@/components/UpgradeBanner';
+import { useUserTier } from '@/hooks/use-user-tier';
 
 interface NavigationItem {
   id: string;
@@ -38,6 +40,7 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
   const { user, setUser } = useStore();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const { tier } = useUserTier();
 
   const handleNavigation = (path: string) => {
     router.push(path);
@@ -204,6 +207,21 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
                         {/* User Menu - Show after last item */}
                         {item.id === 'skill-bridge' && (
                           <>
+                            {/* Upgrade / Pro Status Banner */}
+                            <AnimatePresence>
+                              {!isCollapsed && (
+                                <motion.div
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: 'auto' }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  transition={{ duration: 0.15 }}
+                                  className="mx-3 mt-2"
+                                >
+                                  <UpgradeBanner currentTier={tier} compact />
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+
                             <AnimatePresence>
                               {!isCollapsed && (
                                 <motion.div
