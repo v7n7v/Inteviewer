@@ -1123,9 +1123,7 @@ function ProFeatureList() {
               {/* Checkmark circle */}
               <motion.div
                 className={`relative w-4 h-4 rounded-full flex items-center justify-center ${
-                  item.highlight
-                    ? 'border'
-                    : 'bg-white/[0.04]'
+                  item.highlight ? 'border' : ''
                 }`}
                 animate={{
                   scale: isActive ? [1, 1.3, 1.1] : 1,
@@ -1133,7 +1131,7 @@ function ProFeatureList() {
                     ? 'rgba(16,185,129,0.25)'
                     : item.highlight
                     ? 'rgba(16,185,129,0.12)'
-                    : 'rgba(255,255,255,0.04)',
+                    : 'var(--theme-border)',
                   borderColor: isActive
                     ? 'rgba(16,185,129,0.8)'
                     : item.highlight
@@ -1158,7 +1156,7 @@ function ProFeatureList() {
                       ? '#34d399'
                       : item.highlight
                       ? 'rgba(52,211,153,0.7)'
-                      : 'rgba(255,255,255,0.2)',
+                      : 'var(--theme-text-muted)',
                   }}
                   transition={{ duration: 0.3 }}
                 >
@@ -1172,10 +1170,10 @@ function ProFeatureList() {
               className="text-[12px] relative z-10"
               animate={{
                 color: isActive
-                  ? 'rgba(255,255,255,0.95)'
+                  ? 'var(--theme-text)'
                   : item.highlight
-                  ? 'rgba(255,255,255,0.55)'
-                  : 'rgba(255,255,255,0.3)',
+                  ? 'var(--theme-text-secondary)'
+                  : 'var(--theme-text-muted)',
                 fontWeight: isActive ? 600 : item.highlight ? 500 : 400,
               }}
               transition={{ duration: 0.3 }}
@@ -1303,17 +1301,17 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/[0.08] border border-emerald-500/20 mb-4">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-[10px] font-medium text-emerald-400/90">AI-Powered Career Platform</span>
+                <span className={`text-[10px] font-medium ${isLight ? 'text-emerald-700' : 'text-emerald-400/90'}`}>AI-Powered Career Platform</span>
               </motion.div>
 
               <motion.h1 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                className="text-3xl md:text-4xl font-bold text-white/95 tracking-tight leading-[1.15] mb-3">
+                className="text-3xl md:text-4xl font-bold text-[var(--theme-text)] tracking-tight leading-[1.15] mb-3">
                 Talent Density,{' '}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">Decoded</span>
               </motion.h1>
 
               <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
-                className="text-[14px] text-white/30 leading-relaxed mb-5 max-w-md">
+                className="text-[14px] text-[var(--theme-text-secondary)] leading-relaxed mb-5 max-w-md">
                 Resume morphing, interview simulation, JD generation, and market intelligence — the end-to-end AI career platform.
               </motion.p>
 
@@ -1326,15 +1324,15 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
-                <button onClick={onShowLogin} className="text-[13px] text-white/30 hover:text-white/60 px-3 py-2 transition-colors">Watch demo</button>
+                <button onClick={onShowLogin} className="text-[13px] text-[var(--theme-text-muted)] hover:text-[var(--theme-text)] px-3 py-2 transition-colors">Watch demo</button>
               </motion.div>
 
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.45 }}
                 className="flex items-center gap-5 text-[11px]">
                 {[{ val: '10x', label: 'Faster prep' }, { val: '95%', label: 'Match accuracy' }, { val: '18+', label: 'Resume templates' }, { val: '8+', label: 'AI tools' }].map((s, i) => (
                   <div key={i} className="flex items-center gap-1.5">
-                    <span className="font-semibold text-white/60">{s.val}</span>
-                    <span className="text-white/15">{s.label}</span>
+                    <span className="font-semibold text-[var(--theme-text-secondary)]">{s.val}</span>
+                    <span className="text-[var(--theme-text-muted)]">{s.label}</span>
                   </div>
                 ))}
               </motion.div>
@@ -1359,7 +1357,7 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.8, delay: 0.2 }}
-                  className="text-lg md:text-xl font-light text-white/70 italic leading-relaxed max-w-2xl mx-auto"
+                  className="text-lg md:text-xl font-light text-[var(--theme-text-secondary)] italic leading-relaxed max-w-2xl mx-auto"
                 >
                   &ldquo;We don&apos;t just dress up your resume.{' '}
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-emerald-400 font-medium not-italic">
@@ -1371,7 +1369,7 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
                   whileInView={{ opacity: 1 }}
                   viewport={{ once: true }}
                   transition={{ delay: 0.6 }}
-                  className="mt-3 text-[11px] text-white/20 font-medium tracking-widest uppercase"
+                  className="mt-3 text-[11px] text-[var(--theme-text-muted)] font-medium tracking-widest uppercase"
                 >
                   Your AI Career Co-Pilot
                 </motion.p>
@@ -1384,7 +1382,7 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
             <div className="mb-3">
               <div className="flex items-center gap-2 mb-1.5">
                 <div className="w-0.5 h-4 rounded-full bg-emerald-500" />
-                <span className="text-[12px] font-semibold text-white/60">See How Each Tool Works</span>
+                <span className="text-[12px] font-semibold text-[var(--theme-text-secondary)]">See How Each Tool Works</span>
               </div>
             </div>
             <ProcessCarousel />
@@ -1674,7 +1672,7 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="absolute top-4 right-4 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/25 text-[9px] font-semibold text-emerald-400 uppercase tracking-wider"
+                  className={`absolute top-4 right-4 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/25 text-[9px] font-semibold uppercase tracking-wider ${isLight ? 'text-emerald-700' : 'text-emerald-400'}`}
                 >
                   Popular
                 </motion.div>

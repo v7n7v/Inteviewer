@@ -36,32 +36,32 @@
    LIGHT MODE OVERRIDES
    ============================================ */
 [data-theme="light"] {
-  --obsidian: #F8F9FC;
-  --charcoal: #F1F3F8;
-  --silver: #64748B;
-  --cyber-cyan: #0070F3;
+  --obsidian: #FFFFFF;
+  --charcoal: #F8FAFC;
+  --silver: #475569;
+  --cyber-cyan: #2563EB;
   --vercel-blue: #0070F3;
-  --hairline: rgba(0, 0, 0, 0.08);
+  --hairline: rgba(0, 0, 0, 0.15);
 
   /* Light Mode Canvas vs Card */
   --theme-bg: #F8FAFC;          /* Canvas: Slate 50 */
   --theme-bg-elevated: #FFFFFF; /* Card: Pure White */
   --theme-bg-card: #FFFFFF;     /* Card: Pure White */
   --theme-bg-input: #F1F5F9;    /* Input inside card: Slate 100 */
-  --theme-bg-hover: #F1F5F9;
-  --theme-text: #0F172A;        /* Slate 900 */
-  --theme-text-secondary: #64748B; /* Slate 500 */
-  --theme-text-muted: #94A3B8;     /* Slate 400 */
-  --theme-border: #E2E8F0;      /* Slate 200 */
-  --theme-border-hover: #CBD5E1; /* Slate 300 */
-  --theme-glow: rgba(59, 130, 246, 0.15); /* Azure glow */
-  --theme-shadow: rgba(0, 0, 0, 0.05); /* Very subtle drop shadow */
-  --theme-accent: #3B82F6;      /* Azure Blue */
-  --theme-accent-soft: rgba(59, 130, 246, 0.1);
-  --theme-overlay: rgba(248, 250, 252, 0.85);
-  --theme-mesh-dot: rgba(0, 0, 0, 0.04);
+  --theme-bg-hover: #E2E8F0;
+  --theme-text: #000000;        /* Pure Black */
+  --theme-text-secondary: #334155; /* Slate 700 */
+  --theme-text-muted: #64748B;     /* Slate 500 */
+  --theme-border: #CBD5E1;      /* Slate 300 (Darker for contrast) */
+  --theme-border-hover: #94A3B8; /* Slate 400 */
+  --theme-glow: rgba(0, 0, 0, 0.05); /* Subtle shadow base */
+  --theme-shadow: rgba(0, 0, 0, 0.1); /* Clear shadow */
+  --theme-accent: #0F172A;      /* Deep Slate 900 for high-contrast accents */
+  --theme-accent-soft: rgba(15, 23, 42, 0.05);
+  --theme-overlay: rgba(255, 255, 255, 0.9);
+  --theme-mesh-dot: rgba(0, 0, 0, 0.08);
   --theme-radial-from: #FFFFFF;
-  --theme-radial-to: #F8FAFC;
+  --theme-radial-to: #F1F5F9;
 }
 
 /* Light mode body */
@@ -85,13 +85,13 @@
 
 /* ---- Elevation System Light Override ---- */
 [data-theme="light"] .elevation-1 {
-  background: #FFFFFF;
+  background: var(--theme-bg-card);
   border-color: var(--theme-border);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03), 0 0 0 1px rgba(0, 0, 0, 0.02);
 }
 [data-theme="light"] .elevation-1:hover {
-  background: #FFFFFF;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.08);
+  background: var(--theme-bg-card);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.05);
 }
 [data-theme="light"] .elevation-2 {
   background: #F8F9FC;
@@ -110,17 +110,17 @@
 
 /* ---- Glass Components Light Override ---- */
 [data-theme="light"] .glass-card {
-  background: #FFFFFF;
+  background: var(--theme-bg-card);
   border-color: var(--theme-border);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03), 0 0 0 1px rgba(0, 0, 0, 0.02);
 }
 [data-theme="light"] .glass-card::before {
-  background: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.05) 50%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.02) 50%, transparent 100%);
 }
 [data-theme="light"] .glass-card:hover {
-  background: #FFFFFF;
+  background: var(--theme-bg-card);
   border-color: var(--theme-border-hover);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.05);
 }
 
 [data-theme="light"] .glass-button {
@@ -167,6 +167,50 @@
 [data-theme="light"] .sub-headline {
   color: rgba(26, 26, 46, 0.6);
 }
+
+/* Global Tailwind Overrides for Light Mode (Auto-Darkens text-white/text-slate utilities) */
+[data-theme="light"] .text-white { color: var(--theme-text) !important; }
+[data-theme="light"] .text-white\/5 { color: rgba(0, 0, 0, 0.1) !important; }
+[data-theme="light"] .text-white\/10 { color: rgba(0, 0, 0, 0.2) !important; }
+[data-theme="light"] .text-white\/15 { color: rgba(0, 0, 0, 0.25) !important; }
+[data-theme="light"] .text-white\/20 { color: rgba(0, 0, 0, 0.3) !important; }
+[data-theme="light"] .text-white\/25 { color: rgba(0, 0, 0, 0.4) !important; }
+[data-theme="light"] .text-white\/30 { color: rgba(0, 0, 0, 0.5) !important; }
+[data-theme="light"] .text-white\/40 { color: rgba(0, 0, 0, 0.6) !important; }
+[data-theme="light"] .text-white\/50 { color: rgba(0, 0, 0, 0.65) !important; }
+[data-theme="light"] .text-white\/60 { color: rgba(0, 0, 0, 0.7) !important; }
+[data-theme="light"] .text-white\/70 { color: rgba(0, 0, 0, 0.8) !important; }
+[data-theme="light"] .text-white\/80 { color: rgba(0, 0, 0, 0.9) !important; }
+[data-theme="light"] .text-white\/90,
+[data-theme="light"] .text-white\/95 { color: #000000 !important; }
+
+[data-theme="light"] .text-slate-200,
+[data-theme="light"] .text-slate-300 { color: var(--theme-text-secondary) !important; }
+[data-theme="light"] .text-slate-400,
+[data-theme="light"] .text-slate-500,
+[data-theme="light"] .text-silver { color: var(--theme-text-muted) !important; }
+
+[data-theme="light"] .bg-white\/5,
+[data-theme="light"] .bg-white\/10 { background-color: rgba(0, 0, 0, 0.05) !important; }
+[data-theme="light"] .bg-white\/20,
+[data-theme="light"] .bg-white\/30 { background-color: rgba(0, 0, 0, 0.1) !important; }
+[data-theme="light"] .bg-white\/\[0\.02\],
+[data-theme="light"] .bg-white\/\[0\.03\],
+[data-theme="light"] .bg-white\/\[0\.04\] { background-color: rgba(0, 0, 0, 0.04) !important; }
+[data-theme="light"] .bg-white\/\[0\.05\],
+[data-theme="light"] .bg-white\/\[0\.06\],
+[data-theme="light"] .bg-white\/\[0\.08\] { background-color: rgba(0, 0, 0, 0.06) !important; }
+[data-theme="light"] .bg-white\/\[0\.12\] { background-color: rgba(0, 0, 0, 0.08) !important; }
+
+[data-theme="light"] .border-white\/5,
+[data-theme="light"] .border-white\/10,
+[data-theme="light"] .border-white\/\[0\.04\],
+[data-theme="light"] .border-white\/\[0\.06\],
+[data-theme="light"] .border-white\/\[0\.08\] { border-color: rgba(0, 0, 0, 0.1) !important; }
+[data-theme="light"] .border-white\/20,
+[data-theme="light"] .border-white\/30,
+[data-theme="light"] .border-white\/\[0\.15\],
+[data-theme="light"] .border-white\/\[0\.25\] { border-color: rgba(0, 0, 0, 0.2) !important; }
 
 /* ---- Form Inputs Light Override ---- */
 [data-theme="light"] input:not([type="range"]),
