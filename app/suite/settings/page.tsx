@@ -6,11 +6,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/lib/store';
 import { authHelpers } from '@/lib/firebase';
 import { showToast } from '@/components/Toast';
+import UpgradeBanner from '@/components/UpgradeBanner';
+import { useUserTier } from '@/hooks/use-user-tier';
 
-type SettingsTab = 'profile' | 'security' | 'notifications' | 'sessions' | 'danger';
+type SettingsTab = 'profile' | 'subscription' | 'security' | 'notifications' | 'sessions' | 'danger';
 
 const TABS: { id: SettingsTab; label: string; icon: string; description: string }[] = [
     { id: 'profile', label: 'Profile', icon: '👤', description: 'Personal info & avatar' },
+    { id: 'subscription', label: 'Subscription', icon: '💎', description: 'Plan & billing' },
     { id: 'security', label: 'Security', icon: '🛡️', description: 'Password, 2FA & login' },
     { id: 'notifications', label: 'Notifications', icon: '🔔', description: 'Email & push alerts' },
     { id: 'sessions', label: 'Sessions', icon: '💻', description: 'Active devices' },
@@ -87,6 +90,7 @@ export default function SettingsPage() {
                 <div className="flex-1">
                     <AnimatePresence mode="wait">
                         {activeTab === 'profile' && <ProfileTab key="profile" user={user} setUser={setUser} />}
+                        {activeTab === 'subscription' && <SubscriptionTab key="subscription" />}
                         {activeTab === 'security' && <SecurityTab key="security" user={user} />}
                         {activeTab === 'notifications' && <NotificationsTab key="notifications" />}
                         {activeTab === 'sessions' && <SessionsTab key="sessions" user={user} />}
@@ -95,6 +99,104 @@ export default function SettingsPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+// ===== SUBSCRIPTION TAB =====
+function SubscriptionTab() {
+    const { tier, loading } = useUserTier();
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="space-y-6"
+        >
+            {/* Current Plan */}
+            <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <span>💎</span> Your Plan
+                </h3>
+
+                {loading ? (
+                    <div className="animate-pulse space-y-3">
+                        <div className="h-6 bg-white/5 rounded-lg w-1/3" />
+                        <div className="h-4 bg-white/5 rounded-lg w-1/2" />
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        {/* Plan Status Card */}
+                        <div className={`p-5 rounded-xl border ${
+                            tier === 'pro'
+                                ? 'bg-gradient-to-br from-emerald-500/10 to-teal-500/5 border-emerald-500/30'
+                                : 'bg-white/5 border-white/10'
+                        }`}>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${
+                                        tier === 'pro'
+                                            ? 'bg-gradient-to-br from-emerald-500 to-teal-500'
+                                            : 'bg-white/10'
+                                    }`}>
+                                        {tier === 'pro' ? '👑' : '🆓'}
+                                    </div>
+                                    <div>
+                                        <h4 className="text-xl font-bold text-white">
+                                            {tier === 'pro' ? 'Pro Plan' : 'Free Plan'}
+                                        </h4>
+                                        <p className="text-sm text-silver">
+                                            {tier === 'pro'
+                                                ? '$2.99/month — Unlimited access'
+                                                : 'Limited usage — Upgrade for full access'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                                    tier === 'pro'
+                                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                        : 'bg-slate-500/20 text-slate-400 border border-slate-500/30'
+                                }`}>
+                                    {tier === 'pro' ? '✓ Active' : 'Free Tier'}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Upgrade or Manage */}
+                        <UpgradeBanner currentTier={tier} />
+                    </div>
+                )}
+            </div>
+
+            {/* What's Included */}
+            {tier === 'free' && (
+                <div className="rounded-2xl bg-[#0A0A0A] border border-white/10 p-6">
+                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <span>✨</span> What you get with Pro
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {[
+                            { icon: '♾️', label: 'Unlimited Resume Morphs', desc: 'No limits on AI-powered resume tailoring' },
+                            { icon: '⚔️', label: 'Unlimited Gauntlet Sessions', desc: 'Practice interviews without caps' },
+                            { icon: '🎴', label: 'Unlimited Flashcards', desc: 'Study decks with no restrictions' },
+                            { icon: '💼', label: 'Unlimited JD Analysis', desc: 'Analyze as many job descriptions as you want' },
+                            { icon: '🎙️', label: 'Voice Interview Mode', desc: 'Speak naturally with AI interviewer' },
+                            { icon: '🌉', label: 'Skill Bridge', desc: 'Curated learning to close skill gaps' },
+                            { icon: '🔮', label: 'Market Oracle', desc: 'Real-time career intelligence' },
+                            { icon: '🤖', label: 'Dual-AI Enhance', desc: 'GPT + Gemini working together' },
+                        ].map((feature, i) => (
+                            <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/5">
+                                <span className="text-lg mt-0.5">{feature.icon}</span>
+                                <div>
+                                    <p className="text-sm font-medium text-white">{feature.label}</p>
+                                    <p className="text-xs text-slate-500">{feature.desc}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </motion.div>
     );
 }
 

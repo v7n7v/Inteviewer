@@ -6,7 +6,7 @@ import { authHelpers } from '@/lib/firebase';
 import { useStore } from '@/lib/store';
 import SuiteSidebar from '@/components/SuiteSidebar';
 import AIAssistant from '@/components/AIAssistant';
-import CommandPalette from '@/components/CommandPalette';
+
 
 export default function SuiteLayout({
   children,
@@ -63,7 +63,7 @@ export default function SuiteLayout({
         {children}
       </main>
       <AIAssistant />
-      <CommandPalette />
+
     </div>
   );
 }

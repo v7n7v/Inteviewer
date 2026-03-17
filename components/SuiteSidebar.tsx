@@ -6,6 +6,8 @@ import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { authHelpers } from '@/lib/firebase';
 import { useStore } from '@/lib/store';
 import LogoutModal from './modals/LogoutModal';
+import UpgradeBanner from '@/components/UpgradeBanner';
+import { useUserTier } from '@/hooks/use-user-tier';
 
 interface NavigationItem {
   id: string;
@@ -21,6 +23,7 @@ const talentSuiteItems: NavigationItem[] = [
   { id: 'applications', label: 'Applications', icon: '📊', description: 'Track Jobs', path: '/suite/applications' },
   { id: 'flashcards', label: 'The Gauntlet', icon: '⚔️', description: 'Interview Simulator', path: '/suite/flashcards' },
   { id: 'oracle', label: 'Market Oracle', icon: '🔮', description: 'Career Intelligence', path: '/suite/market-oracle' },
+  { id: 'skill-bridge', label: 'Skill Bridge', icon: '🌉', description: 'From Resume to Ready', path: '/suite/skill-bridge', badge: 'PRO' },
   { id: 'job-search', label: 'Job Search', icon: '🔍', description: 'Find Jobs', path: '/suite/job-search', badge: 'Soon' },
 ];
 
@@ -46,6 +49,7 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const { tier } = useUserTier();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   useEffect(() => {
@@ -242,6 +246,8 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
                           {item.badge && (
                             <span className={`text-[10px] px-2 py-0.5 rounded-full ${item.badge === 'New'
                               ? `bg-gradient-to-r ${suite.gradient} text-white`
+                              : item.badge === 'PRO'
+                              ? 'bg-cyan-500/20 text-cyan-400'
                               : 'bg-slate-500/20 text-slate-400'
                               }`}>
                               {item.badge}
@@ -262,6 +268,13 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
               );
             })}
           </div>
+
+          {/* Upgrade Banner */}
+          {!isCollapsed && (
+            <div className="px-3 pb-2">
+              <UpgradeBanner currentTier={tier} compact />
+            </div>
+          )}
 
           {/* Help & Support */}
           <div className="px-3 pb-1">
