@@ -12,25 +12,24 @@
   --vercel-blue: #0070F3;
   --hairline: rgba(255, 255, 255, 0.1);
 
-  /* Theme tokens (dark defaults) */
-  --theme-bg: #000000;
-  --theme-bg-elevated: #0A0A0A;
-  --theme-bg-card: #0A0A0A;
-  --theme-bg-input: rgba(255, 255, 255, 0.03);
-  --theme-bg-hover: #1A1A1A;
-  --theme-text: #FFFFFF;
+  /* Theme tokens (Dark Mode Canvas vs Card) */
+  --theme-bg: #09090B;          /* Canvas: Zinc 950 */
+  --theme-bg-elevated: #18181B; /* Card: Zinc 900 */
+  --theme-bg-card: #18181B;     /* Card: Zinc 900 */
+  --theme-bg-input: #27272A;    /* Input inside card: Zinc 800 */
+  --theme-bg-hover: #27272A;
+  --theme-text: #FAFAFA;
   --theme-text-secondary: #A1A1AA;
-  --theme-text-muted: #64748B;
-  --theme-border: rgba(255, 255, 255, 0.1);
-  --theme-border-hover: rgba(255, 255, 255, 0.2);
-  --theme-glow: rgba(0, 245, 255, 0.3);
-  --theme-shadow: rgba(0, 0, 0, 0.3);
-  --theme-accent: #00F5FF;
-  --theme-accent-soft: rgba(0, 245, 255, 0.1);
-  --theme-overlay: rgba(0, 0, 0, 0.7);
-  --theme-mesh-dot: rgba(255, 255, 255, 0.03);
-  --theme-radial-from: #111111;
-  --theme-radial-to: #000000;
+  --theme-text-muted: #71717A;
+  --theme-border: rgba(255, 255, 255, 0.08);
+  --theme-border-hover: rgba(255, 255, 255, 0.16);
+  --theme-glow: rgba(16, 185, 129, 0.15); /* Soft emerald glow */
+  --theme-shadow: rgba(0, 0, 0, 0.5);
+  --theme-accent: #10B981;      /* Emerald 500 */
+  --theme-accent-soft: rgba(16, 185, 129, 0.1);
+  --theme-overlay: rgba(9, 9, 11, 0.8);
+  --theme-radial-from: #18181B;
+  --theme-radial-to: #09090B;
 }
 
 /* ============================================
@@ -44,24 +43,25 @@
   --vercel-blue: #0070F3;
   --hairline: rgba(0, 0, 0, 0.08);
 
-  --theme-bg: #F8F9FC;
-  --theme-bg-elevated: #FFFFFF;
-  --theme-bg-card: #FFFFFF;
-  --theme-bg-input: rgba(0, 0, 0, 0.03);
-  --theme-bg-hover: #F1F3F8;
-  --theme-text: #111111;
-  --theme-text-secondary: #374151;
-  --theme-text-muted: #6B7280;
-  --theme-border: rgba(0, 0, 0, 0.15);
-  --theme-border-hover: rgba(0, 0, 0, 0.25);
-  --theme-glow: rgba(0, 112, 243, 0.15);
-  --theme-shadow: rgba(0, 0, 0, 0.06);
-  --theme-accent: #0070F3;
-  --theme-accent-soft: rgba(0, 112, 243, 0.08);
-  --theme-overlay: rgba(255, 255, 255, 0.85);
-  --theme-mesh-dot: rgba(0, 0, 0, 0.03);
-  --theme-radial-from: #EEF0F6;
-  --theme-radial-to: #F8F9FC;
+  /* Light Mode Canvas vs Card */
+  --theme-bg: #F8FAFC;          /* Canvas: Slate 50 */
+  --theme-bg-elevated: #FFFFFF; /* Card: Pure White */
+  --theme-bg-card: #FFFFFF;     /* Card: Pure White */
+  --theme-bg-input: #F1F5F9;    /* Input inside card: Slate 100 */
+  --theme-bg-hover: #F1F5F9;
+  --theme-text: #0F172A;        /* Slate 900 */
+  --theme-text-secondary: #64748B; /* Slate 500 */
+  --theme-text-muted: #94A3B8;     /* Slate 400 */
+  --theme-border: #E2E8F0;      /* Slate 200 */
+  --theme-border-hover: #CBD5E1; /* Slate 300 */
+  --theme-glow: rgba(59, 130, 246, 0.15); /* Azure glow */
+  --theme-shadow: rgba(0, 0, 0, 0.05); /* Very subtle drop shadow */
+  --theme-accent: #3B82F6;      /* Azure Blue */
+  --theme-accent-soft: rgba(59, 130, 246, 0.1);
+  --theme-overlay: rgba(248, 250, 252, 0.85);
+  --theme-mesh-dot: rgba(0, 0, 0, 0.04);
+  --theme-radial-from: #FFFFFF;
+  --theme-radial-to: #F8FAFC;
 }
 
 /* Light mode body */
@@ -444,35 +444,35 @@ body {
 
 /* Level 1: Main Containers/Cards */
 .elevation-1 {
-  background: #0A0A0A;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--theme-bg-card);
+  border: 1px solid var(--theme-border);
   border-radius: 16px;
 }
 
 .elevation-1:hover {
-  background: #1A1A1A;
+  background: var(--theme-bg-hover);
 }
 
 /* Level 2: Nested Items/Inputs/Dropdowns */
 .elevation-2 {
-  background: #111111;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--theme-bg-input);
+  border: 1px solid var(--theme-border);
   border-radius: 12px;
 }
 
 .elevation-2:hover {
-  background: #1A1A1A;
+  background: var(--theme-bg-hover);
 }
 
 /* Level 3: Deeply nested / Input fields */
 .elevation-3 {
-  background: #161616;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--theme-bg-input);
+  border: 1px solid var(--theme-border);
   border-radius: 8px;
 }
 
 .elevation-3:hover {
-  background: #1F1F1F;
+  background: var(--theme-bg-hover);
 }
 
 /* Glassmorphism for sidebars/navigation */
@@ -487,10 +487,10 @@ body {
    LIQUID GLASS COMPONENTS (Updated)
    ============================================ */
 .glass-card {
-  background: #0A0A0A;
+  background: var(--theme-bg-card);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--theme-border);
   border-radius: 24px;
   position: relative;
   overflow: hidden;
@@ -512,9 +512,9 @@ body {
 }
 
 .glass-card:hover {
-  background: #1A1A1A;
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 32px rgba(255, 255, 255, 0.05);
+  background: var(--theme-bg-hover);
+  border-color: var(--theme-border-hover);
+  box-shadow: 0 8px 32px var(--theme-shadow);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 

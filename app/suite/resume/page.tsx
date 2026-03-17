@@ -118,10 +118,10 @@ function ResumeMorphDemo() {
   const role = demoRoles[roleIdx];
 
   return (
-    <div className="rounded-2xl bg-[#0A0A0A] border border-white/[0.06] p-5 md:p-6">
+    <div className="elevation-1 p-5 md:p-6">
       <div className="flex flex-col md:flex-row gap-6 items-stretch">
         {/* Left: "Original" resume */}
-        <div className="flex-1 rounded-xl bg-white/[0.02] border border-white/[0.06] p-4">
+        <div className="flex-1 rounded-xl bg-[var(--theme-bg-input)] border border-[var(--theme-border)] p-4">
           <div className="text-[10px] text-slate-500 uppercase tracking-wider font-medium mb-3">Your Resume</div>
           <div className="space-y-2">
             <div className="h-3 w-3/4 rounded bg-white/10" />
@@ -256,7 +256,7 @@ function WorkflowAnimation() {
   }, [activeStep]);
 
   return (
-    <div className="rounded-2xl bg-[#0A0A0A] border border-white/[0.06] p-5 md:p-6 overflow-hidden">
+    <div className="elevation-1 p-5 md:p-6 overflow-hidden">
       {/* Step indicators */}
       <div className="grid grid-cols-4 gap-2 md:gap-3 mb-6">
         {workflowSteps.map((ws, i) => {
@@ -321,7 +321,7 @@ function WorkflowAnimation() {
       </div>
 
       {/* Animated stage content */}
-      <div className="relative min-h-[160px] rounded-xl bg-white/[0.01] border border-white/[0.04] overflow-hidden">
+      <div className="relative min-h-[160px] rounded-xl bg-[var(--theme-bg-input)] border border-[var(--theme-border)] overflow-hidden">
         <AnimatePresence mode="wait">
           {/* Step 0: Upload */}
           {activeStep === 0 && (
@@ -1517,7 +1517,7 @@ export default function LiquidResumePage() {
 
           {/* Capabilities */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }} className="mb-10">
-            <div className="flex items-center justify-center gap-6 flex-wrap py-4 px-6 rounded-xl bg-[#0A0A0A] border border-white/[0.06]">
+            <div className="elevation-1 flex items-center justify-center gap-6 flex-wrap py-4 px-6 rounded-xl">
               {[
                 { icon: '📄', label: 'ATS-Safe Export' },
                 { icon: '🔄', label: 'Smart Morph' },
@@ -1534,7 +1534,7 @@ export default function LiquidResumePage() {
 
           {/* Resume Vault - More Visual Appeal */}
           {versions.length > 0 && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-2xl bg-gradient-to-br from-[#0A0A0A] to-[#111111] border border-white/10 p-6">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="elevation-1 p-6">
               <div className="flex items-center gap-3 mb-5">
                 <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
                   <span className="text-xl">📁</span>
@@ -1601,7 +1601,7 @@ export default function LiquidResumePage() {
             <>
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setDeleteConfirmId(null)} className="fixed inset-0 bg-black/70 z-50" />
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-[#0A0A0A] rounded-2xl p-6 max-w-md border border-white/10">
+                <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="elevation-1 p-6 max-w-md">
                   <h3 className="text-xl font-bold text-white mb-4">Delete Version?</h3>
                   <p className="text-silver mb-6">This action cannot be undone.</p>
                   <div className="flex gap-3">
@@ -1630,7 +1630,7 @@ export default function LiquidResumePage() {
               <h1 className="text-xl md:text-2xl font-bold text-white">Morph Your Resume</h1>
               <p className="text-slate-500 text-sm">AI-powered resume optimization</p>
             </div>
-            <button onClick={resetAll} className="px-3 md:px-4 py-2 rounded-xl bg-[#0A0A0A] border border-white/[0.06] text-slate-500 hover:border-white/[0.12] hover:text-white transition-all text-sm">
+            <button onClick={resetAll} className="px-3 md:px-4 py-2 rounded-xl bg-[var(--theme-bg-elevated)] border border-[var(--theme-border)] text-[var(--theme-text-secondary)] hover:border-[var(--theme-border-hover)] hover:text-[var(--theme-text)] transition-all text-sm">
               ← Start Over
             </button>
           </div>
@@ -1698,7 +1698,7 @@ export default function LiquidResumePage() {
               <motion.div key="jd" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
                   {/* Original Resume Preview */}
-                  <div className="rounded-2xl bg-[#0A0A0A] border border-white/[0.06] p-4 md:p-6">
+                  <div className="elevation-1 p-4 md:p-6">
                     <div>
                       <div className="flex items-center gap-3 mb-5">
                         <div className="w-10 h-10 rounded-lg bg-cyan-500/[0.08] border border-cyan-500/[0.15] flex items-center justify-center text-xl">📄</div>

@@ -32,7 +32,7 @@ export default function SuiteLayout({
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--theme-bg)]">
         <div className="text-center">
           <div className="scanning-loader mx-auto mb-4"></div>
           <p className="text-silver">Loading Talent Suite...</p>
@@ -46,7 +46,7 @@ export default function SuiteLayout({
   }
 
   return (
-    <div className="min-h-screen bg-black relative overflow-hidden">
+    <div className="min-h-screen bg-[var(--theme-bg)] relative overflow-hidden">
       {/* Theme-aware background */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute inset-0 theme-base-bg" />

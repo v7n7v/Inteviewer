@@ -347,7 +347,7 @@ export default function MarketOraclePage() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="rounded-2xl bg-[#111111] border border-white/10 p-6"
+                className="elevation-1 p-6"
               >
                 <h3 className="font-bold text-white mb-4 flex items-center gap-2">
                   <span>📄</span> Your Resume
@@ -375,7 +375,7 @@ export default function MarketOraclePage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.05 }}
-                className="rounded-2xl bg-[#111111] border border-emerald-500/20 p-6 relative overflow-hidden"
+                className="elevation-1 !border-emerald-500/20 p-6 relative overflow-hidden"
               >
                 <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl" />
                 <div className="relative">
@@ -387,7 +387,7 @@ export default function MarketOraclePage() {
                   <textarea
                     value={jdText}
                     onChange={(e) => setJdText(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:outline-none focus:border-emerald-500/50 text-sm resize-none transition-colors"
+                    className="w-full px-4 py-3 rounded-xl bg-[var(--theme-bg-input)] border border-[var(--theme-border)] text-[var(--theme-text)] focus:outline-none focus:border-emerald-500/50 text-sm resize-none transition-colors"
                     placeholder="Paste the full job description here...
 
 e.g., 'We're looking for a Senior Software Engineer to join our platform team...'"
@@ -409,7 +409,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                 transition={{ delay: 0.1 }}
                 className="grid md:grid-cols-2 gap-4"
               >
-                <div className="rounded-2xl bg-[#111111] border border-white/10 p-6">
+                <div className="elevation-1 p-6">
                   <h3 className="font-bold text-white mb-3 flex items-center gap-2">
                     <span>🎯</span> Target Role (Optional)
                   </h3>
@@ -417,11 +417,11 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                     type="text"
                     value={targetRole}
                     onChange={(e) => setTargetRole(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:outline-none"
+                    className="w-full px-4 py-3 rounded-xl bg-[var(--theme-bg-input)] border border-[var(--theme-border)] text-[var(--theme-text)] focus:outline-none"
                     placeholder="e.g., Senior ML Engineer"
                   />
                 </div>
-                <div className="rounded-2xl bg-[#111111] border border-white/10 p-6">
+                <div className="elevation-1 p-6">
                   <h3 className="font-bold text-white mb-3 flex items-center gap-2">
                     <span>📍</span> Location (Optional)
                   </h3>
@@ -429,7 +429,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                     type="text"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:outline-none"
+                    className="w-full px-4 py-3 rounded-xl bg-[var(--theme-bg-input)] border border-[var(--theme-border)] text-[var(--theme-text)] focus:outline-none"
                     placeholder="e.g., San Francisco, Remote"
                   />
                 </div>
@@ -556,7 +556,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                 <motion.div
                   initial={{ x: -50, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
-                  className="glass-card p-4 rounded-2xl border border-cyan-500/30 bg-[#0A0A0A]/80 backdrop-blur-xl max-w-xs"
+                  className="glass-card p-4 !border-cyan-500/30 max-w-xs"
                 >
                   <div className="flex items-center gap-4">
                     <div className="relative w-20 h-20">
@@ -598,7 +598,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                   initial={{ y: -50, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.1 }}
-                  className="glass-card p-4 rounded-2xl border border-cyan-500/30 bg-[#0A0A0A]/80 backdrop-blur-xl"
+                  className="glass-card p-4 !border-cyan-500/30"
                 >
                   <p className="text-xs text-silver uppercase tracking-wider mb-2 text-center">🌉 Bridge Skills</p>
                   <div className="flex gap-2">
@@ -665,7 +665,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                   initial={{ y: 50, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.3 }}
-                  className="glass-card p-4 rounded-2xl border border-white/10 bg-[#0A0A0A]/80 backdrop-blur-xl max-w-md"
+                  className="glass-card p-4 max-w-md"
                 >
                   <p className="text-xs text-silver uppercase tracking-wider mb-2">Your Top Skills</p>
                   <div className="flex flex-wrap gap-2">
@@ -690,7 +690,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                   initial={{ y: 50, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.4 }}
-                  className="glass-card p-4 rounded-2xl border border-white/10 bg-[#0A0A0A]/80 backdrop-blur-xl max-w-sm"
+                  className="glass-card p-4 max-w-sm"
                 >
                   <p className="text-xs text-silver uppercase tracking-wider mb-2">📈 Market Trends</p>
                   <div className="space-y-2">
@@ -710,7 +710,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                   initial={{ y: 50, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.5 }}
-                  className="glass-card p-4 rounded-2xl border border-white/10 bg-[#0A0A0A]/80 backdrop-blur-xl"
+                  className="glass-card p-4"
                 >
                   <p className="text-xs text-silver">
                     🖱️ Drag to rotate • Scroll to zoom • Click stars for details
@@ -731,7 +731,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                   exit={{ opacity: 0, scale: 0.9 }}
                   className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20"
                 >
-                  <div className="glass-card p-6 rounded-2xl border border-cyan-500/30 bg-[#0A0A0A]/95 backdrop-blur-xl w-[420px] max-h-[80vh] overflow-y-auto">
+                  <div className="glass-card p-6 !border-cyan-500/30 w-[420px] max-h-[80vh] overflow-y-auto">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
@@ -763,7 +763,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                         <span className="text-xl font-bold text-green-400">${selectedJob.salary.toLocaleString()}</span>
                       </div>
 
-                      <div className="p-3 rounded-xl bg-[#111111]">
+                      <div className="p-3 rounded-xl bg-[var(--theme-bg-input)] border border-[var(--theme-border)]">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-sm text-silver">Match Score</span>
                           <span className={`text-lg font-bold ${selectedJob.fitScore > 0.8 ? 'text-cyan-400' :
@@ -844,7 +844,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                   className="absolute left-4 top-20 bottom-20 z-20 w-[380px] overflow-y-auto"
                   style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.2) transparent' }}
                 >
-                  <div className="glass-card rounded-2xl border border-emerald-500/30 bg-[#0A0A0A]/95 backdrop-blur-xl overflow-hidden">
+                  <div className="glass-card !border-emerald-500/30 overflow-hidden">
                     {/* Header */}
                     <div className="p-4 border-b border-white/10 bg-gradient-to-r from-emerald-500/10 to-cyan-500/10">
                       <div className="flex items-center justify-between">
@@ -924,7 +924,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                       )}
 
                       {/* Salary Intel */}
-                      <div className="p-3 rounded-xl bg-[#111111] border border-white/10">
+                      <div className="p-3 rounded-xl bg-[var(--theme-bg-input)] border border-[var(--theme-border)]">
                         <p className="text-xs text-silver uppercase tracking-wider mb-3">💰 Salary Intelligence</p>
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform, useInView, AnimatePresence } from 'framer-motion';
+import { useTheme } from '@/components/ThemeProvider';
 
 interface HeroSectionProps {
   onGetStarted: () => void;
@@ -71,7 +72,7 @@ function WorkflowAnimation() {
   }, [activeStep]);
 
   return (
-    <div className="rounded-xl bg-[#0A0A0A] border border-white/[0.06] p-4 md:p-5 overflow-hidden">
+    <div className="elevation-1 p-4 md:p-5 overflow-hidden">
       {/* Step indicators */}
       <div className="grid grid-cols-4 gap-2 mb-4">
         {workflowSteps.map((ws, i) => {
@@ -256,7 +257,7 @@ function DualAIAnimation() {
   ];
 
   return (
-    <div className="rounded-xl bg-[#0A0A0A] border border-white/[0.06] overflow-hidden">
+    <div className="elevation-1 overflow-hidden">
       {/* Title bar */}
       <div className="px-4 py-2.5 border-b border-white/[0.04] flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -654,7 +655,7 @@ function TalentConstellation() {
             ]
           }}
           transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-          className="w-28 h-28 rounded-full bg-[#0A0A0A] border border-emerald-500/20 flex flex-col items-center justify-center"
+          className="w-28 h-28 rounded-full bg-[var(--theme-bg-elevated)] border border-emerald-500/20 flex flex-col items-center justify-center"
         >
           <span className="text-[8px] text-white/25 uppercase tracking-widest mb-0.5">Density</span>
           <motion.span className="text-2xl font-bold text-emerald-400" key={phase}>{score}</motion.span>
@@ -731,7 +732,7 @@ function LiveTerminal() {
   }, [cycle, lines]);
 
   return (
-    <div className="rounded-xl bg-[#0A0A0A] border border-white/[0.06] overflow-hidden">
+    <div className="elevation-1 overflow-hidden">
       {/* Title bar */}
       <div className="px-3 py-2 border-b border-white/[0.04] flex items-center gap-2">
         <div className="flex gap-1">
@@ -888,7 +889,7 @@ function GauntletAnimation() {
   const typeColor = q.type === 'Behavioral' ? '#FCA130' : q.type === 'Technical' ? '#38BDF8' : '#F87171';
 
   return (
-    <div className="rounded-xl bg-[#0A0A0A] border border-white/[0.06] overflow-hidden">
+    <div className="elevation-1 overflow-hidden">
       {/* Title bar */}
       <div className="px-4 py-2.5 border-b border-white/[0.04] flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -1207,6 +1208,8 @@ function ProFeatureList() {
 
 // ─── MAIN ───
 export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, isAuthenticated }: HeroSectionProps) {
+  const { theme, toggleTheme } = useTheme();
+  const isLight = theme === 'light';
   const [activeFeature, setActiveFeature] = useState(0);
   const [activeQuote, setActiveQuote] = useState(0);
   const [navSolid, setNavSolid] = useState(false);
@@ -1228,10 +1231,10 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
   }, []);
 
   return (
-    <div className="relative bg-[#09090B]">
+    <div className="relative theme-base-bg transition-colors duration-500">
       {/* Background */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 60% 40% at 50% 0%, rgba(17,24,39,0.8), transparent)' }} />
+        <div className="absolute inset-0 theme-radial-glow transition-all duration-500" />
         <div className="absolute inset-0 opacity-[0.012]" style={{
           backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E")',
           backgroundSize: '128px 128px',
@@ -1239,7 +1242,11 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
       </div>
 
       {/* Nav */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-400 ${navSolid ? 'bg-[#09090B]/90 backdrop-blur-lg border-b border-white/[0.04]' : ''}`}>
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-400 ${navSolid
+        ? isLight
+          ? 'bg-white/90 backdrop-blur-lg border-b border-gray-200 shadow-sm'
+          : 'bg-[var(--theme-bg)]/90 backdrop-blur-lg border-b border-[var(--theme-border)]'
+        : ''}`}>
         <div className="max-w-6xl mx-auto px-6 h-12 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-md bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
@@ -1247,15 +1254,37 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
             </div>
-            <span className="text-[13px] font-semibold text-white/90 tracking-tight">TalentConsulting<span className="text-emerald-400">.io</span></span>
+            <span className={`text-[13px] font-semibold tracking-tight ${isLight ? 'text-gray-900' : 'text-white/90'}`}>TalentConsulting<span className="text-emerald-400">.io</span></span>
           </div>
           <div className="flex items-center gap-2">
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className={`relative w-8 h-8 rounded-lg flex items-center justify-center transition-all ${isLight
+                ? 'hover:bg-black/[0.06] text-gray-600'
+                : 'hover:bg-white/[0.06] text-white/50 hover:text-white/80'
+              }`}
+              title={`Switch to ${isLight ? 'dark' : 'light'} mode`}
+            >
+              <AnimatePresence mode="wait">
+                {isLight ? (
+                  <motion.svg key="moon" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.2 }} className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                  </motion.svg>
+                ) : (
+                  <motion.svg key="sun" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.2 }} className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </motion.svg>
+                )}
+              </AnimatePresence>
+            </button>
+
             {isAuthenticated ? (
-              <button onClick={onGetStarted} className="text-[13px] font-medium text-white/70 hover:text-white px-3 py-1 rounded-md hover:bg-white/[0.04] transition-all">Dashboard →</button>
+              <button onClick={onGetStarted} className={`text-[13px] font-medium px-3 py-1 rounded-md transition-all ${isLight ? 'text-gray-700 hover:text-gray-900 hover:bg-black/[0.04]' : 'text-white/70 hover:text-white hover:bg-white/[0.04]'}`}>Dashboard →</button>
             ) : (
               <>
-                <button onClick={onShowLogin} className="text-[13px] text-white/40 hover:text-white/70 px-3 py-1 transition-colors">Sign in</button>
-                <button onClick={onShowSignup} className="text-[13px] font-medium text-white bg-white/[0.07] hover:bg-white/[0.12] border border-white/[0.08] px-3.5 py-1 rounded-md transition-all">Get Started</button>
+                <button onClick={onShowLogin} className={`text-[13px] px-3 py-1 transition-colors ${isLight ? 'text-gray-500 hover:text-gray-800' : 'text-white/40 hover:text-white/70'}`}>Sign in</button>
+                <button onClick={onShowSignup} className={`text-[13px] font-medium px-3.5 py-1 rounded-md transition-all ${isLight ? 'text-gray-800 bg-black/[0.05] hover:bg-black/[0.08] border border-black/[0.1]' : 'text-white bg-white/[0.07] hover:bg-white/[0.12] border border-white/[0.08]'}`}>Get Started</button>
               </>
             )}
           </div>
@@ -1323,7 +1352,7 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
             <div className="relative my-12 py-8 px-6 rounded-2xl overflow-hidden">
               {/* Gradient border glow */}
               <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-cyan-500/10 via-emerald-500/5 to-blue-500/10" />
-              <div className="absolute inset-[1px] rounded-2xl bg-[#080808]" />
+              <div className="absolute inset-[1px] rounded-2xl bg-[var(--theme-bg-card)] transition-colors" />
               <div className="relative text-center">
                 <motion.p
                   initial={{ opacity: 0, y: 10 }}
@@ -1601,7 +1630,7 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
             <div className="grid md:grid-cols-2 gap-5 max-w-3xl mx-auto">
 
               {/* ── FREE TIER ── */}
-              <div className="relative rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 flex flex-col">
+              <div className="elevation-1 relative p-6 flex flex-col">
                 <div className="mb-5">
                   <h3 className="text-[15px] font-semibold text-white/70 mb-1">Free</h3>
                   <div className="flex items-baseline gap-1">
@@ -1636,7 +1665,7 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
               </div>
 
               {/* ── PRO TIER ── */}
-              <div className="relative rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.03] p-6 flex flex-col overflow-hidden">
+              <div className="elevation-1 relative !border-emerald-500/20 p-6 flex flex-col overflow-hidden">
                 {/* Glow effect */}
                 <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: 'inset 0 1px 0 rgba(16,185,129,0.1), 0 0 40px rgba(16,185,129,0.04)' }} />
 

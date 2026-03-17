@@ -253,10 +253,10 @@ export default function AIAssistant() {
                 onClick={() => { setShowHint(false); setIsOpen(true); }}
                 className={`flex items-center gap-3 px-4 py-3 rounded-2xl border shadow-2xl cursor-pointer transition-all group ${
                   isLight
-                    ? 'bg-white border-blue-200 hover:border-blue-300'
-                    : 'bg-gradient-to-r from-slate-900 to-slate-800 border-cyan-500/30 hover:border-cyan-400/50'
+                    ? 'bg-white border-gray-200 hover:border-blue-300'
+                    : 'bg-[var(--theme-bg-elevated)] border-[var(--theme-border)] hover:border-[var(--theme-border-hover)]'
                 }`}
-                style={{ boxShadow: isLight ? '0 4px 20px rgba(0, 0, 0, 0.1)' : '0 0 30px rgba(0, 245, 255, 0.15)' }}
+                style={{ boxShadow: isLight ? '0 4px 20px rgba(0, 0, 0, 0.1)' : '0 4px 20px rgba(0, 0, 0, 0.5)' }}
               >
                 <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-cyan-500/50 flex-shrink-0">
                   <img src="/sona-avatar.png" alt="Sona" className="w-full h-full object-cover" />
@@ -269,7 +269,7 @@ export default function AIAssistant() {
                 </div>
                 <span className="text-xl ml-1">{hintMessages[hintIndex].emoji}</span>
               </div>
-              <div className={`absolute -bottom-2 right-10 w-4 h-4 rotate-45 ${isLight ? 'bg-white border-r border-b border-blue-200' : 'bg-slate-800 border-r border-b border-cyan-500/30'}`} />
+              <div className={`absolute -bottom-2 right-10 w-4 h-4 rotate-45 ${isLight ? 'bg-white border-r border-b border-gray-200' : 'bg-[var(--theme-bg-elevated)] border-r border-b border-[var(--theme-border)]'}`} />
             </motion.div>
           )}
         </AnimatePresence>
@@ -285,13 +285,9 @@ export default function AIAssistant() {
               className="absolute bottom-[76px] right-6 w-[400px] h-[520px] pointer-events-auto"
               style={{ backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)' }}
             >
-              <div className={`glass-card h-full flex flex-col rounded-2xl shadow-2xl overflow-hidden ${
-                isLight
-                  ? 'bg-white/95 border border-gray-200'
-                  : 'bg-black/80 border border-cyan-500/30'
-              }`}>
+              <div className={`glass-card h-full flex flex-col rounded-2xl shadow-2xl overflow-hidden`}>
                 {/* Header */}
-                <div className={`flex items-center justify-between p-3 border-b ${isLight ? 'border-gray-200 bg-gray-50/80' : 'border-white/10 bg-black/40'}`}>
+                <div className="flex items-center justify-between p-3 border-b border-[var(--theme-border)] bg-[var(--theme-bg-input)]">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full overflow-hidden border border-cyan-500/30">
                       <img src="/sona-avatar.png" alt="Sona" className="w-full h-full object-cover" />
@@ -326,10 +322,8 @@ export default function AIAssistant() {
                     >
                       <div
                         className={`max-w-[85%] rounded-xl px-3 py-2 ${message.role === 'user'
-                          ? 'bg-gradient-to-br from-cyan-500 to-blue-500 text-white'
-                          : isLight
-                            ? 'bg-gray-100 text-gray-800'
-                            : 'bg-white/10 text-slate-200'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-[var(--theme-bg-input)] text-[var(--theme-text)]'
                         }`}
                       >
                         <p className="text-xs whitespace-pre-wrap leading-relaxed">{message.content || '...'}</p>
@@ -377,7 +371,7 @@ export default function AIAssistant() {
                 )}
 
                 {/* Input */}
-                <div className={`p-3 border-t ${isLight ? 'border-gray-200 bg-gray-50/80' : 'border-white/10 bg-black/40'}`}>
+                <div className="p-3 border-t border-[var(--theme-border)] bg-[var(--theme-bg-input)]">
                   <div className="flex gap-2">
                     <input
                       ref={inputRef}
@@ -387,11 +381,7 @@ export default function AIAssistant() {
                       onKeyPress={handleKeyPress}
                       placeholder="Ask about your applications, interviews..."
                       disabled={isLoading}
-                      className={`flex-1 rounded-lg px-3 py-2 text-xs outline-none transition-colors disabled:opacity-50 ${
-                        isLight
-                          ? 'bg-white border border-gray-200 text-gray-900 placeholder-gray-400 focus:border-blue-400'
-                          : 'bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:border-cyan-500/50'
-                      }`}
+                      className={`flex-1 rounded-lg px-3 py-2 text-xs outline-none transition-colors disabled:opacity-50 bg-[var(--theme-bg-card)] border border-[var(--theme-border)] text-[var(--theme-text)] placeholder-[var(--theme-text-muted)] focus:border-blue-500`}
                     />
                     <button
                       onClick={handleSend}
