@@ -62,7 +62,7 @@ function ResumeCardAnimation() {
   return (
     <div className="relative w-full h-full min-h-[180px] flex items-center justify-center">
       {/* Mini resume document */}
-      <div className="w-full max-w-[200px] rounded-lg bg-[#0D0D0D] border border-white/[0.06] overflow-hidden shadow-2xl shadow-black/40">
+      <div className="w-full max-w-[200px] rounded-lg elevation-1 overflow-hidden shadow-2xl shadow-black/40 dark:shadow-black/60">
         {/* Doc header */}
         <div className="px-3 py-2 border-b border-white/[0.04]">
           <div className="flex items-center gap-1.5 mb-1.5">
@@ -338,7 +338,7 @@ export default function DashboardPage() {
             className="absolute -inset-px rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm"
             style={{ background: 'linear-gradient(135deg, rgba(0, 245, 255, 0.15), transparent 60%)' }}
           />
-          <div className="relative h-full rounded-2xl bg-[#0A0A0A] border border-white/[0.06] group-hover:border-white/[0.12] transition-all duration-300 overflow-hidden">
+          <div className="relative h-full rounded-2xl glass-card transition-all duration-300 overflow-hidden">
             <div
               className="absolute inset-x-0 top-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-500"
               style={{ background: 'linear-gradient(90deg, transparent, #00F5FF40, transparent)' }}
@@ -423,7 +423,7 @@ export default function DashboardPage() {
               className="absolute -inset-px rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm"
               style={{ background: `linear-gradient(135deg, rgba(${tool.accentRgb}, 0.15), transparent 60%)` }}
             />
-            <div className="relative h-full rounded-2xl bg-[#0A0A0A] border border-white/[0.06] group-hover:border-white/[0.12] transition-all duration-300 overflow-hidden">
+            <div className="relative h-full rounded-2xl glass-card transition-all duration-300 overflow-hidden">
               <div
                 className="absolute inset-x-0 top-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                 style={{ background: `linear-gradient(90deg, transparent, ${tool.accent}40, transparent)` }}
@@ -504,7 +504,7 @@ export default function DashboardPage() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.7 }}
-            className="rounded-2xl bg-[#0A0A0A] border border-white/[0.06] p-5 hover:border-[#00F5FF]/20 transition-all group cursor-pointer"
+            className="rounded-2xl glass-card p-5 hover:border-[#00F5FF]/20 transition-all group cursor-pointer"
             onClick={() => handleWidgetClick('aiDiscovery')}
           >
             <div className="flex items-center justify-between mb-4">
@@ -561,7 +561,7 @@ export default function DashboardPage() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.8 }}
-            className="rounded-2xl bg-[#0A0A0A] border border-white/[0.06] p-5 hover:border-[#0070F3]/20 transition-all cursor-pointer"
+            className="rounded-2xl glass-card p-5 hover:border-[#0070F3]/20 transition-all cursor-pointer"
             onClick={() => handleWidgetClick('careerRoadmap')}
           >
             <div className="flex items-center justify-between mb-4">
@@ -626,7 +626,7 @@ export default function DashboardPage() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.9 }}
-            className="rounded-2xl bg-[#0A0A0A] border border-white/[0.06] p-5 hover:border-[#22C55E]/20 transition-all cursor-pointer"
+            className="rounded-2xl glass-card p-5 hover:border-[#22C55E]/20 transition-all cursor-pointer"
             onClick={() => handleWidgetClick('marketPulse')}
           >
             <div className="flex items-center justify-between mb-4">
