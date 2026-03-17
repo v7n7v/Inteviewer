@@ -8,6 +8,7 @@ import { useStore } from '@/lib/store';
 import LogoutModal from './modals/LogoutModal';
 import UpgradeBanner from '@/components/UpgradeBanner';
 import { useUserTier } from '@/hooks/use-user-tier';
+import { useTheme } from '@/components/ThemeProvider';
 
 interface NavigationItem {
   id: string;
@@ -50,6 +51,7 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const { tier } = useUserTier();
+  const { theme, toggleTheme } = useTheme();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   useEffect(() => {
@@ -136,9 +138,10 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         className={`fixed left-0 top-0 h-screen z-50 flex flex-col overflow-hidden`}
         style={{
-          background: 'rgba(0, 0, 0, 0.85)',
+          background: theme === 'light' ? 'rgba(255, 255, 255, 0.92)' : 'rgba(0, 0, 0, 0.85)',
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
+          borderRight: theme === 'light' ? '1px solid rgba(0,0,0,0.08)' : 'none',
         }}
       >
         {/* Subtle top glow */}
@@ -277,10 +280,10 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
           )}
 
           {/* Help & Support */}
-          <div className="px-3 pb-1">
+          <div className="px-3 pb-1 flex items-center gap-1">
             <motion.button
               onClick={() => handleNavigation('/suite/help')}
-              className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 text-slate-400 hover:bg-white/5 hover:text-white ${isCollapsed ? 'justify-center' : ''}`}
+              className={`flex-1 flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 text-slate-400 hover:bg-white/5 hover:text-white ${isCollapsed ? 'justify-center' : ''}`}
             >
               <span className="text-xl">💡</span>
               <AnimatePresence mode="wait">
@@ -295,6 +298,33 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
                   </motion.div>
                 )}
               </AnimatePresence>
+            </motion.button>
+
+            {/* Theme Toggle */}
+            <motion.button
+              onClick={toggleTheme}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className="p-2.5 rounded-xl transition-all duration-200 text-slate-400 hover:bg-white/5 hover:text-white flex-shrink-0"
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              <motion.div
+                key={theme}
+                initial={{ rotate: -90, opacity: 0 }}
+                animate={{ rotate: 0, opacity: 1 }}
+                exit={{ rotate: 90, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                {theme === 'dark' ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                  </svg>
+                )}
+              </motion.div>
             </motion.button>
           </div>
 

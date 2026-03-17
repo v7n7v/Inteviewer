@@ -47,14 +47,10 @@ export default function SuiteLayout({
 
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">
-      {/* Black background with dots */}
+      {/* Theme-aware background */}
       <div className="fixed inset-0 pointer-events-none">
-        {/* Subtle radial glow at top */}
-        <div
-          className="absolute inset-0"
-          style={{ background: 'radial-gradient(ellipse 80% 50% at 50% 0%, #0A0A0A, #000000)' }}
-        />
-        {/* Dot grid overlay */}
+        <div className="absolute inset-0 theme-base-bg" />
+        <div className="absolute inset-0 theme-radial-glow" />
         <div className="mesh-gradient" />
       </div>
 

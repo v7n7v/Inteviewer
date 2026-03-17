@@ -11,6 +11,365 @@
   --cyber-cyan: #00F5FF;
   --vercel-blue: #0070F3;
   --hairline: rgba(255, 255, 255, 0.1);
+
+  /* Theme tokens (dark defaults) */
+  --theme-bg: #000000;
+  --theme-bg-elevated: #0A0A0A;
+  --theme-bg-card: #0A0A0A;
+  --theme-bg-input: rgba(255, 255, 255, 0.03);
+  --theme-bg-hover: #1A1A1A;
+  --theme-text: #FFFFFF;
+  --theme-text-secondary: #A1A1AA;
+  --theme-text-muted: #64748B;
+  --theme-border: rgba(255, 255, 255, 0.1);
+  --theme-border-hover: rgba(255, 255, 255, 0.2);
+  --theme-glow: rgba(0, 245, 255, 0.3);
+  --theme-shadow: rgba(0, 0, 0, 0.3);
+  --theme-accent: #00F5FF;
+  --theme-accent-soft: rgba(0, 245, 255, 0.1);
+  --theme-overlay: rgba(0, 0, 0, 0.7);
+  --theme-mesh-dot: rgba(255, 255, 255, 0.03);
+  --theme-radial-from: #111111;
+  --theme-radial-to: #000000;
+}
+
+/* ============================================
+   LIGHT MODE OVERRIDES
+   ============================================ */
+[data-theme="light"] {
+  --obsidian: #F8F9FC;
+  --charcoal: #F1F3F8;
+  --silver: #64748B;
+  --cyber-cyan: #0070F3;
+  --vercel-blue: #0070F3;
+  --hairline: rgba(0, 0, 0, 0.08);
+
+  --theme-bg: #F8F9FC;
+  --theme-bg-elevated: #FFFFFF;
+  --theme-bg-card: #FFFFFF;
+  --theme-bg-input: rgba(0, 0, 0, 0.03);
+  --theme-bg-hover: #F1F3F8;
+  --theme-text: #1A1A2E;
+  --theme-text-secondary: #64748B;
+  --theme-text-muted: #94A3B8;
+  --theme-border: rgba(0, 0, 0, 0.08);
+  --theme-border-hover: rgba(0, 0, 0, 0.15);
+  --theme-glow: rgba(0, 112, 243, 0.15);
+  --theme-shadow: rgba(0, 0, 0, 0.06);
+  --theme-accent: #0070F3;
+  --theme-accent-soft: rgba(0, 112, 243, 0.08);
+  --theme-overlay: rgba(255, 255, 255, 0.85);
+  --theme-mesh-dot: rgba(0, 0, 0, 0.03);
+  --theme-radial-from: #EEF0F6;
+  --theme-radial-to: #F8F9FC;
+}
+
+/* Light mode body */
+[data-theme="light"] body {
+  background: var(--theme-bg);
+  color: var(--theme-text-secondary);
+}
+
+/* ---- Root Background Theme ---- */
+.theme-base-bg {
+  background: var(--theme-bg);
+}
+.theme-radial-glow {
+  background: radial-gradient(ellipse 80% 50% at 50% 0%, var(--theme-radial-from), var(--theme-radial-to));
+}
+
+/* Light mode mesh dots */
+[data-theme="light"] .mesh-gradient {
+  background-image: radial-gradient(var(--theme-mesh-dot) 1px, transparent 1px);
+}
+
+/* ---- Elevation System Light Override ---- */
+[data-theme="light"] .elevation-1 {
+  background: #FFFFFF;
+  border-color: var(--theme-border);
+  box-shadow: 0 1px 3px var(--theme-shadow), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+[data-theme="light"] .elevation-1:hover {
+  background: #FFFFFF;
+  box-shadow: 0 4px 12px var(--theme-shadow);
+}
+[data-theme="light"] .elevation-2 {
+  background: #F8F9FC;
+  border-color: var(--theme-border);
+}
+[data-theme="light"] .elevation-2:hover {
+  background: #F1F3F8;
+}
+[data-theme="light"] .elevation-3 {
+  background: #F1F3F8;
+  border-color: var(--theme-border);
+}
+[data-theme="light"] .elevation-3:hover {
+  background: #E8EBF0;
+}
+
+/* ---- Glass Components Light Override ---- */
+[data-theme="light"] .glass-card {
+  background: #FFFFFF;
+  border-color: var(--theme-border);
+  box-shadow: 0 1px 3px var(--theme-shadow);
+}
+[data-theme="light"] .glass-card::before {
+  background: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.05) 50%, transparent 100%);
+}
+[data-theme="light"] .glass-card:hover {
+  background: #FFFFFF;
+  border-color: var(--theme-border-hover);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .glass-button {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: var(--theme-border);
+  color: var(--theme-text);
+}
+[data-theme="light"] .glass-button:hover {
+  background: rgba(0, 0, 0, 0.06);
+  border-color: var(--theme-border-hover);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .glass-nav {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border-color: var(--theme-border);
+}
+
+/* ---- Buttons Light Override ---- */
+[data-theme="light"] .btn-primary {
+  background: #1A1A2E;
+  color: white;
+}
+[data-theme="light"] .btn-primary:hover {
+  background: #2D2D44;
+}
+[data-theme="light"] .btn-secondary {
+  color: var(--theme-text);
+  border-color: var(--theme-border);
+}
+[data-theme="light"] .btn-secondary:hover {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: var(--theme-border-hover);
+}
+
+/* ---- Typography Light Override ---- */
+[data-theme="light"] .text-gradient {
+  background: linear-gradient(135deg, #1A1A2E 0%, #64748B 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+[data-theme="light"] .sub-headline {
+  color: rgba(26, 26, 46, 0.6);
+}
+
+/* ---- Form Inputs Light Override ---- */
+[data-theme="light"] input:not([type="range"]),
+[data-theme="light"] textarea,
+[data-theme="light"] select {
+  background: #F8F9FC !important;
+  border-color: var(--theme-border);
+  color: var(--theme-text);
+}
+[data-theme="light"] input:focus,
+[data-theme="light"] textarea:focus,
+[data-theme="light"] select:focus {
+  border-color: var(--theme-accent);
+  box-shadow: 0 0 0 3px rgba(0, 112, 243, 0.1);
+  background: #FFFFFF !important;
+}
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder {
+  color: #94A3B8;
+}
+
+/* ---- Badges Light Override ---- */
+[data-theme="light"] .badge-warning {
+  background: rgba(251, 146, 60, 0.08);
+  border-color: rgba(251, 146, 60, 0.2);
+}
+[data-theme="light"] .badge-success {
+  background: rgba(34, 197, 94, 0.08);
+  border-color: rgba(34, 197, 94, 0.2);
+}
+[data-theme="light"] .badge-info {
+  background: rgba(0, 112, 243, 0.08);
+  border-color: rgba(0, 112, 243, 0.2);
+  color: var(--vercel-blue);
+}
+
+/* ---- Drop Zone Light Override ---- */
+[data-theme="light"] .drop-zone {
+  border-color: rgba(0, 112, 243, 0.25);
+  background: rgba(0, 112, 243, 0.02);
+}
+[data-theme="light"] .drop-zone:hover,
+[data-theme="light"] .drop-zone.dragover {
+  border-color: var(--vercel-blue);
+  background: rgba(0, 112, 243, 0.06);
+  box-shadow: 0 0 20px rgba(0, 112, 243, 0.1);
+}
+
+/* ---- Neural feed Light Override ---- */
+[data-theme="light"] .neural-feed {
+  background: #F8F9FC;
+  border-color: var(--theme-border);
+}
+
+/* ---- Scrollbar Light Override ---- */
+[data-theme="light"] * {
+  scrollbar-color: rgba(0, 112, 243, 0.2) transparent;
+}
+[data-theme="light"] *::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.02);
+}
+[data-theme="light"] *::-webkit-scrollbar-thumb {
+  background: rgba(0, 112, 243, 0.15);
+}
+[data-theme="light"] *::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 112, 243, 0.3);
+}
+
+/* ---- Selection Light Override ---- */
+[data-theme="light"] ::selection {
+  background: rgba(0, 112, 243, 0.2);
+  color: #1A1A2E;
+}
+[data-theme="light"] ::-moz-selection {
+  background: rgba(0, 112, 243, 0.2);
+  color: #1A1A2E;
+}
+
+/* ---- Focus Rings Light Override ---- */
+[data-theme="light"] *:focus-visible {
+  box-shadow: 0 0 0 2px rgba(0, 112, 243, 0.3);
+}
+
+/* ---- Hover Effects Light Override ---- */
+[data-theme="light"] .hover-glow:hover {
+  box-shadow: 0 4px 20px rgba(0, 112, 243, 0.1);
+}
+[data-theme="light"] .hover-lift:hover {
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+}
+
+/* ---- Skeleton Wave Light Override ---- */
+[data-theme="light"] .skeleton-wave {
+  background: linear-gradient(90deg,
+    rgba(0, 0, 0, 0.04) 0px,
+    rgba(0, 0, 0, 0.08) 50px,
+    rgba(0, 0, 0, 0.04) 100px);
+}
+
+/* ---- Pulse Glow Light Override ---- */
+[data-theme="light"] .pulse-glow {
+  animation: pulse-glow-light 2s ease-in-out infinite;
+}
+@keyframes pulse-glow-light {
+  0%, 100% { box-shadow: 0 0 15px rgba(0, 112, 243, 0.15); }
+  50% { box-shadow: 0 0 30px rgba(0, 112, 243, 0.25); }
+}
+
+/* ---- Keyword Highlight Light Override ---- */
+[data-theme="light"] .keyword-highlight {
+  background: linear-gradient(90deg,
+    rgba(0, 112, 243, 0.1),
+    rgba(245, 158, 11, 0.1));
+  border-color: rgba(0, 112, 243, 0.2);
+}
+
+/* ---- Scanning Loader Light Override ---- */
+[data-theme="light"] .scanning-loader {
+  border-color: rgba(0, 112, 243, 0.2);
+  border-top-color: var(--vercel-blue);
+}
+
+/* ============================================
+   GLOBAL THEME-AWARE OVERRIDES FOR TAILWIND
+   These catch the most common dark-mode patterns
+   ============================================ */
+
+/* bg-black → theme bg */
+[data-theme="light"] .bg-black {
+  background-color: var(--theme-bg) !important;
+}
+
+/* bg-[#0A0A0A] / bg-[#111111] → white cards */
+[data-theme="light"] [class*="bg-\[#0A0A0A\]"] {
+  background-color: #FFFFFF !important;
+}
+[data-theme="light"] [class*="bg-\[#111111\]"] {
+  background-color: #F8F9FC !important;
+}
+[data-theme="light"] [class*="bg-\[#1A1A1A\]"] {
+  background-color: #F1F3F8 !important;
+}
+[data-theme="light"] [class*="bg-\[#161616\]"] {
+  background-color: #F1F3F8 !important;
+}
+
+/* text-white → dark text */
+[data-theme="light"] .text-white {
+  color: #1A1A2E !important;
+}
+
+/* text-silver → secondary text */
+[data-theme="light"] .text-silver {
+  color: #64748B !important;
+}
+
+/* border-white/* → light borders */
+[data-theme="light"] [class*="border-white\/"] {
+  border-color: var(--theme-border) !important;
+}
+
+/* bg-white/* opacity backgrounds → darker opacity */
+[data-theme="light"] [class*="bg-white\/5"],
+[data-theme="light"] [class*="bg-white\/\[0.03\]"] {
+  background-color: rgba(0, 0, 0, 0.03) !important;
+}
+[data-theme="light"] [class*="bg-white\/10"] {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* text-slate-* keep as-is for most, adjust dark ones */
+[data-theme="light"] .text-slate-300 {
+  color: #475569 !important;
+}
+[data-theme="light"] .text-slate-400 {
+  color: #64748B !important;
+}
+[data-theme="light"] .text-slate-500 {
+  color: #94A3B8 !important;
+}
+
+/* bg-slate-* dark backgrounds → light */
+[data-theme="light"] .bg-slate-800 {
+  background-color: #FFFFFF !important;
+}
+[data-theme="light"] .bg-slate-900 {
+  background-color: #F8F9FC !important;
+}
+
+/* Gradient text adjustments */
+[data-theme="light"] [class*="from-white"] {
+  --tw-gradient-from: #1A1A2E !important;
+}
+[data-theme="light"] [class*="to-slate-400"] {
+  --tw-gradient-to: #64748B !important;
+}
+
+/* Shadows in light mode */
+[data-theme="light"] [class*="shadow-xl"] {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06) !important;
+}
+[data-theme="light"] [class*="shadow-lg"] {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05) !important;
 }
 
 * {

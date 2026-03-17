@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import ClientProviders from '@/components/ClientProviders';
+import { ThemeProvider } from '@/components/ThemeProvider';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -21,27 +22,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" data-theme="dark" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased`}>
-        {/* Dynamic Ambient Background - Vercel/Linear Style */}
-        <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-          {/* Pure Obsidian Base */}
-          <div className="absolute inset-0 bg-black" />
+        <ThemeProvider>
+          {/* Dynamic Ambient Background */}
+          <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none theme-root-bg">
+            <div className="absolute inset-0 theme-base-bg" />
+            <div
+              className="absolute inset-0 theme-radial-glow"
+            />
+            <div className="mesh-gradient" />
+          </div>
 
-          {/* Subtle Radial Glow at Top */}
-          <div
-            className="absolute inset-0"
-            style={{ background: 'radial-gradient(ellipse 80% 50% at 50% 0%, #111111, #000000)' }}
-          />
-
-          {/* Dot Grid Overlay */}
-          <div className="mesh-gradient" />
-        </div>
-
-        {/* Content */}
-        <div className="relative z-10">
-          <ClientProviders>{children}</ClientProviders>
-        </div>
+          {/* Content */}
+          <div className="relative z-10">
+            <ClientProviders>{children}</ClientProviders>
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -10,6 +10,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
 import { downloadResumePDF } from '@/lib/pdf-templates';
 import { useUserTier } from '@/hooks/use-user-tier';
+import { useTheme } from '@/components/ThemeProvider';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, Table, TableRow, TableCell, WidthType, ShadingType, TableBorders } from 'docx';
 import { saveAs } from 'file-saver';
 import { authFetch } from '@/lib/auth-fetch';
@@ -470,6 +471,8 @@ function WorkflowAnimation() {
 export default function LiquidResumePage() {
   const { user } = useStore();
   const router = useRouter();
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
   const fileInputRef = useRef<HTMLInputElement>(null);
   const resumeRef = useRef<HTMLDivElement>(null);
 
@@ -1376,7 +1379,10 @@ export default function LiquidResumePage() {
             className="mb-8"
           >
             <div className="relative rounded-2xl overflow-hidden p-6 md:p-8"
-              style={{ background: 'linear-gradient(135deg, #0c1a2e 0%, #0a1628 40%, #091220 100%)', border: '1px solid rgba(0,245,255,0.1)' }}
+              style={isLight
+                ? { background: 'linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 40%, #F8F9FC 100%)', border: '1px solid rgba(0,112,243,0.12)' }
+                : { background: 'linear-gradient(135deg, #0c1a2e 0%, #0a1628 40%, #091220 100%)', border: '1px solid rgba(0,245,255,0.1)' }
+              }
             >
               {/* Animated shimmer */}
               <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -1430,10 +1436,10 @@ export default function LiquidResumePage() {
               whileTap={{ scale: 0.98 }}
               onClick={() => setMode('morph')}
               className="relative p-6 md:p-8 rounded-2xl text-left transition-all group overflow-hidden"
-              style={{
-                background: 'linear-gradient(135deg, rgba(0,245,255,0.06) 0%, rgba(0,112,243,0.04) 50%, rgba(10,10,10,1) 100%)',
-                border: '1px solid rgba(0,245,255,0.15)',
-              }}
+              style={isLight
+                ? { background: 'linear-gradient(135deg, rgba(0,112,243,0.06) 0%, rgba(99,102,241,0.04) 50%, rgba(255,255,255,1) 100%)', border: '1px solid rgba(0,112,243,0.12)' }
+                : { background: 'linear-gradient(135deg, rgba(0,245,255,0.06) 0%, rgba(0,112,243,0.04) 50%, rgba(10,10,10,1) 100%)', border: '1px solid rgba(0,245,255,0.15)' }
+              }
             >
               {/* Glow overlay on hover */}
               <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ boxShadow: 'inset 0 0 60px rgba(0,245,255,0.06), 0 0 40px rgba(0,245,255,0.05)' }} />
@@ -1473,10 +1479,10 @@ export default function LiquidResumePage() {
               whileTap={{ scale: 0.98 }}
               onClick={() => setMode('create')}
               className="relative p-6 md:p-8 rounded-2xl text-left transition-all group overflow-hidden"
-              style={{
-                background: 'linear-gradient(135deg, rgba(34,197,94,0.06) 0%, rgba(16,185,129,0.04) 50%, rgba(10,10,10,1) 100%)',
-                border: '1px solid rgba(34,197,94,0.15)',
-              }}
+              style={isLight
+                ? { background: 'linear-gradient(135deg, rgba(34,197,94,0.06) 0%, rgba(16,185,129,0.04) 50%, rgba(255,255,255,1) 100%)', border: '1px solid rgba(34,197,94,0.12)' }
+                : { background: 'linear-gradient(135deg, rgba(34,197,94,0.06) 0%, rgba(16,185,129,0.04) 50%, rgba(10,10,10,1) 100%)', border: '1px solid rgba(34,197,94,0.15)' }
+              }
             >
               {/* Glow overlay on hover */}
               <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ boxShadow: 'inset 0 0 60px rgba(34,197,94,0.06), 0 0 40px rgba(34,197,94,0.05)' }} />
