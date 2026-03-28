@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useMemo, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Canvas } from '@react-three/fiber';
 import dynamic from 'next/dynamic';
 import { useStore } from '@/lib/store';
 import { showToast } from '@/components/Toast';
@@ -97,6 +96,18 @@ const generateJobStars = (skills: string[], count: number = 50): JobStar[] => {
 };
 
 const OracleScene = dynamic(() => import('./Scene'), { ssr: false });
+
+// Dynamic Canvas wrapper to avoid SSR crash from react-reconciler
+const DynamicCanvas = dynamic(
+  () => import('@react-three/fiber').then((mod) => {
+    const { Canvas } = mod;
+    // Wrap Canvas in a forwardRef-compatible component
+    return function CanvasWrapper(props: any) {
+      return <Canvas {...props} />;
+    };
+  }),
+  { ssr: false }
+);
 
 // Main Component
 export default function MarketOraclePage() {
@@ -298,7 +309,7 @@ export default function MarketOraclePage() {
             <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900/90 via-indigo-900/30 to-cyan-900/30 border border-white/10 p-8 mb-8"
+              className="max-w-4xl mx-auto relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900/90 via-indigo-900/30 to-cyan-900/30 border border-white/10 p-8 mb-8"
             >
               <div className="absolute inset-0">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl" />
@@ -331,12 +342,12 @@ export default function MarketOraclePage() {
                   <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
                   <span className="text-xs font-medium text-indigo-400">Career Intelligence Engine</span>
                 </motion.div>
-                <h1 className="text-4xl lg:text-5xl font-bold mb-3">
+                <h1 className="text-2xl lg:text-3xl font-bold mb-2">
                   <span className="bg-gradient-to-r from-cyan-400 via-indigo-400 to-cyan-400 bg-clip-text text-transparent">
                     Market Oracle
                   </span>
                 </h1>
-                <p className="text-silver text-lg max-w-2xl">
+                <p className="text-silver text-sm max-w-2xl">
                   Paste a job description + your resume → Dual-AI decodes your fit score, salary intel, red flags, and bridge skills in the 3D Starfield.
                 </p>
               </div>
@@ -445,12 +456,12 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                 <button
                   onClick={analyzeMarket}
                   disabled={!resumeText.trim()}
-                  className="group relative px-12 py-5 rounded-2xl font-bold text-xl overflow-hidden disabled:opacity-50"
+                  className="group relative px-8 py-3 rounded-xl font-bold text-base overflow-hidden disabled:opacity-50"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 via-indigo-500 to-cyan-500 opacity-80 group-hover:opacity-100 transition-opacity" />
                   <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                  <span className="relative flex items-center gap-3 text-white">
-                    <span className="text-2xl">🔮</span>
+                  <span className="relative flex items-center gap-2 text-white">
+                    <span className="text-lg">🔮</span>
                     {jdText.trim() ? 'Decode JD + Analyze Market' : 'Launch Market Oracle'}
                   </span>
                 </button>
@@ -644,7 +655,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
 
             {/* 3D Canvas */}
             <div className="flex-1 relative w-full h-full">
-              <Canvas className="w-full h-full" camera={{ position: [0, 0, 15], fov: 60 }}>
+              <DynamicCanvas className="w-full h-full" camera={{ position: [0, 0, 15], fov: 60 }}>
                 <Suspense fallback={null}>
                   <OracleScene
                     analysis={analysis}
@@ -654,7 +665,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                     activeBridgeSkill={activeBridgeSkill}
                   />
                 </Suspense>
-              </Canvas>
+              </DynamicCanvas>
             </div>
 
             {/* Bottom HUD */}

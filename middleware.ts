@@ -24,7 +24,9 @@ const PUBLIC_PATHS = [
 // API routes that don't require authentication
 const PUBLIC_API_PATHS = [
   '/api/auth',
+  '/api/health',              // Diagnostic endpoint
   '/api/stripe/webhook', // Stripe sends webhooks without Bearer token
+  '/api/teams/interest', // Public B2B contact form
 ];
 
 export function middleware(request: NextRequest) {

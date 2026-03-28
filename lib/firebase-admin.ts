@@ -4,9 +4,11 @@
  */
 import { initializeApp, getApps, cert, type App } from 'firebase-admin/app';
 import { getAuth, type Auth } from 'firebase-admin/auth';
+import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 
 let adminApp: App;
 let adminAuth: Auth;
+let adminDb: Firestore;
 
 function getAdminApp(): App {
   if (adminApp) return adminApp;
@@ -29,6 +31,12 @@ export function getAdminAuth(): Auth {
   if (adminAuth) return adminAuth;
   adminAuth = getAuth(getAdminApp());
   return adminAuth;
+}
+
+export function getAdminDb(): Firestore {
+  if (adminDb) return adminDb;
+  adminDb = getFirestore(getAdminApp());
+  return adminDb;
 }
 
 /**

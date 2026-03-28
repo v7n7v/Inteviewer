@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
-    "deploy": "firebase deploy",
+    "deploy": "node deploy-fix.js",
     "deploy:preview": "firebase hosting:channel:deploy preview"
   },
   "dependencies": {
@@ -17,6 +17,8 @@
     "@react-pdf/renderer": "^4.3.2",
     "@react-three/drei": "^9.122.0",
     "@react-three/fiber": "^8.18.0",
+    "@stripe/react-stripe-js": "^5.6.1",
+    "@stripe/stripe-js": "^8.10.0",
     "@types/qrcode": "^1.5.6",
     "canvas-confetti": "^1.9.4",
     "chart.js": "^4.4.1",
@@ -25,10 +27,13 @@
     "file-saver": "^2.0.5",
     "firebase": "^12.10.0",
     "firebase-admin": "^13.7.0",
+    "firebase-admin-a14c8a5423a75469": "npm:firebase-admin@^13.7.0",
     "framer-motion": "^11.0.3",
     "groq-sdk": "^0.37.0",
+    "lottie-react": "^2.4.1",
     "mammoth": "^1.11.0",
-    "next": "^14.2.35",
+    "mammoth-ea033c5d84d0b9b2": "npm:mammoth@^1.9.0",
+    "next": "^16.1.7",
     "pako": "^2.1.0",
     "pdf-parse": "^2.4.5",
     "pdfjs-dist": "^4.10.38",
@@ -39,6 +44,7 @@
     "react-spring": "^9.7.3",
     "stripe": "^20.4.1",
     "three": "^0.160.1",
+    "zod": "^4.3.6",
     "zustand": "^4.5.0"
   },
   "devDependencies": {
@@ -50,7 +56,7 @@
     "@types/three": "^0.160.0",
     "autoprefixer": "^10.4.17",
     "eslint": "^8.56.0",
-    "eslint-config-next": "^14.2.35",
+    "eslint-config-next": "^16.1.7",
     "postcss": "^8.4.33",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.3.3"

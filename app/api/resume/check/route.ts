@@ -8,6 +8,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { guardApiRoute } from '@/lib/api-auth';
 import { checkUsageAllowed, incrementUsage } from '@/lib/usage-tracker';
 import { geminiQuickCheck } from '@/lib/ai/dual-ai';
+import { validateBody } from '@/lib/validate';
+import { ResumeCheckSchema } from '@/lib/schemas';
+import { sanitizeForAI } from '@/lib/sanitize';
 
 interface ResumeCheckResult {
   atsScore: number;
@@ -32,18 +35,19 @@ export async function POST(req: NextRequest) {
     if (guard.error) return guard.error;
 
     // Pro-only feature
-    if (guard.user.tier !== 'pro') {
+    if (guard.user.tier === 'free') {
       return NextResponse.json(
         { error: 'Resume Checker is a Pro feature. Upgrade to access dual-AI tools.', upgrade: true },
         { status: 403 }
       );
     }
 
-    const { resumeText, targetJD } = await req.json();
+    const validated = await validateBody(req, ResumeCheckSchema);
+    if (!validated.success) return validated.error;
+    const { resumeText, targetJD } = validated.data;
 
-    if (!resumeText) {
-      return NextResponse.json({ error: 'Resume text is required' }, { status: 400 });
-    }
+    const safeResume = sanitizeForAI(resumeText);
+    const safeJD = targetJD ? sanitizeForAI(targetJD) : undefined;
 
     const systemPrompt = `You are an expert ATS (Applicant Tracking System) analyst and resume reviewer.
 Analyze the resume thoroughly and provide a detailed quality assessment.
@@ -63,8 +67,8 @@ ${targetJD ? 'Score keyword match against the provided job description.' : 'Scor
 
     const userPrompt = `Analyze this resume:
 
-${resumeText}
-${targetJD ? `\n\nTARGET JOB DESCRIPTION:\n${targetJD}` : ''}
+${safeResume}
+${safeJD ? `\n\nTARGET JOB DESCRIPTION:\n${safeJD}` : ''}
 
 Provide your complete analysis as a JSON object.`;
 
@@ -76,10 +80,10 @@ Provide your complete analysis as a JSON object.`;
       ...result,
       poweredBy: 'gemini-flash',
     });
-  } catch (error: any) {
-    console.error('Resume check error:', error);
+  } catch (error: unknown) {
+    console.error('[api/resume/check] Error:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to check resume' },
+      { error: 'Failed to check resume' },
       { status: 500 }
     );
   }

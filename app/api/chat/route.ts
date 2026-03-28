@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
 import { guardApiRoute } from '@/lib/api-auth';
+import { validateBody } from '@/lib/validate';
+import { ChatSchema } from '@/lib/schemas';
+import { sanitizeForAI } from '@/lib/sanitize';
 
 const MODEL = 'openai/gpt-oss-120b';
 
@@ -9,16 +12,17 @@ export async function POST(req: NextRequest) {
     const guard = await guardApiRoute(req, { rateLimit: 10, rateLimitWindow: 60_000 });
     if (guard.error) return guard.error;
 
-    const { messages, userContext } = await req.json();
-
-    if (!messages || !Array.isArray(messages)) {
-      return NextResponse.json({ error: 'Messages array required' }, { status: 400 });
-    }
+    const validated = await validateBody(req, ChatSchema);
+    if (!validated.success) return validated.error;
+    const { messages, userContext } = validated.data;
 
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ error: 'GROQ_API_KEY not configured' }, { status: 500 });
+      return NextResponse.json({ error: 'AI service not configured' }, { status: 500 });
     }
+
+    // Sanitize user context to prevent prompt injection
+    const safeContext = userContext ? sanitizeForAI(userContext) : '(No data available yet — user may be new)';
 
     const systemPrompt = `You are Sona, the AI career companion for TalentConsulting.io. You are CONTEXT-AWARE — you have access to the user's personal career data shown below.
 
@@ -30,7 +34,7 @@ export async function POST(req: NextRequest) {
 - Proactively reference the user's actual data when relevant
 
 # USER'S CAREER DATA
-${userContext || '(No data available yet — user may be new)'}
+${safeContext}
 
 # WHAT YOU CAN HELP WITH
 1. **Application Status** — Summarize their pipeline, suggest next actions, identify stale applications
@@ -51,9 +55,9 @@ ${userContext || '(No data available yet — user may be new)'}
 
     const chatMessages = [
       { role: 'system' as const, content: systemPrompt },
-      ...messages.map((m: { role: string; content: string }) => ({
+      ...messages.map((m) => ({
         role: m.role as 'user' | 'assistant',
-        content: m.content,
+        content: sanitizeForAI(m.content),
       })),
     ];
 
@@ -82,7 +86,7 @@ ${userContext || '(No data available yet — user may be new)'}
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
           controller.close();
         } catch (err) {
-          console.error('Stream error:', err);
+          console.error('[api/chat] Stream error:', err);
           controller.close();
         }
       },
@@ -95,10 +99,10 @@ ${userContext || '(No data available yet — user may be new)'}
         'Connection': 'keep-alive',
       },
     });
-  } catch (error: any) {
-    console.error('Chat API error:', error);
+  } catch (error: unknown) {
+    console.error('[api/chat] Error:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to process chat request' },
+      { error: 'Failed to process chat request' },
       { status: 500 }
     );
   }

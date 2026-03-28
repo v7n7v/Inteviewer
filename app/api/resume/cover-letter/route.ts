@@ -7,6 +7,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { guardApiRoute } from '@/lib/api-auth';
 import { checkUsageAllowed, incrementUsage } from '@/lib/usage-tracker';
 import { dualAIGenerate } from '@/lib/ai/dual-ai';
+import { validateBody } from '@/lib/validate';
+import { CoverLetterSchema } from '@/lib/schemas';
+import { sanitizeForAI } from '@/lib/sanitize';
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,18 +17,19 @@ export async function POST(req: NextRequest) {
     if (guard.error) return guard.error;
 
     // Pro-only feature
-    if (guard.user.tier !== 'pro') {
+    if (guard.user.tier === 'free') {
       return NextResponse.json(
         { error: 'Cover Letter Generator is a Pro feature. Upgrade to access dual-AI tools.', upgrade: true },
         { status: 403 }
       );
     }
 
-    const { resumeText, jobDescription, companyName, tone } = await req.json();
+    const validated = await validateBody(req, CoverLetterSchema);
+    if (!validated.success) return validated.error;
+    const { resumeText, jobDescription, companyName, tone } = validated.data;
 
-    if (!resumeText || !jobDescription) {
-      return NextResponse.json({ error: 'Resume text and job description are required' }, { status: 400 });
-    }
+    const safeResume = sanitizeForAI(resumeText);
+    const safeJD = sanitizeForAI(jobDescription);
 
     const toneMap: Record<string, string> = {
       professional: 'formal, polished, and corporate-appropriate',
@@ -34,18 +38,25 @@ export async function POST(req: NextRequest) {
     };
     const toneGuide = toneMap[tone || 'professional'] || toneMap.professional;
 
-    const writerPrompt = `You are an expert cover letter writer. Write compelling, personalized cover letters that get interviews.
+    const writerPrompt = `You are a career coach who writes cover letters that sound like a real, articulate human — never like an AI.
 
 RULES:
 1. Address the hiring manager (use "Dear Hiring Manager" if no name given)
-2. Opening paragraph: Hook with a specific achievement or passion relevant to the role
-3. Body: Connect 2-3 key resume experiences to the JD requirements with specific results
-4. Closing: Express enthusiasm and include a clear call-to-action
+2. Opening paragraph: Hook with a specific achievement or genuine interest relevant to the role. Start with something unexpected — never "I am writing to..."
+3. Body: Connect 2-3 key resume experiences to JD requirements with SPECIFIC results (use exact numbers: "$1.2M", "37%", "14-person team")
+4. Closing: Express enthusiasm naturally and include a clear next step
 5. Tone: ${toneGuide}
 6. Length: 250-350 words (3-4 paragraphs)
-7. Never use clichés like "I am writing to express my interest" or "I believe I am a perfect fit"
-8. Include specific metrics and achievements from the resume
-9. Reference the company name and role naturally
+
+ANTI-AI-DETECTION — WRITE LIKE A HUMAN:
+7. BANNED PHRASES — never use: "I am writing to express my interest", "I believe I am a perfect fit", "I am excited to apply", "leveraging my experience", "results-driven professional", "proven track record", "I am confident that", "I am eager to contribute"
+8. Start sentences differently every time. Real humans don't begin every sentence with "I"
+9. Vary sentence length dramatically — mix 5-word punches with 25-word storytelling
+10. Include one moment of genuine personality or humor that feels distinctly human
+11. Use contractions naturally (I'm, I've, didn't, couldn't) — formal ≠ robotic
+12. Reference something SPECIFIC about the company that shows you actually looked them up
+13. Include specific metrics from the resume, not vague claims
+14. End with confidence, not desperation. "I'd love to talk about how [specific thing] could work for your team" beats "I look forward to hearing from you"
 
 Return ONLY the cover letter text. No headers, no "Subject:" line, no metadata.`;
 
@@ -53,10 +64,10 @@ Return ONLY the cover letter text. No headers, no "Subject:" line, no metadata.`
 
 COMPANY: ${companyName || 'the company'}
 JOB DESCRIPTION:
-${jobDescription}
+${safeJD}
 
 CANDIDATE RESUME:
-${resumeText}
+${safeResume}
 
 Write a ${tone || 'professional'} cover letter that connects the candidate's experience to this specific role.`;
 
@@ -86,10 +97,10 @@ Write a ${tone || 'professional'} cover letter that connects the candidate's exp
       modelAgreement: result.modelAgreement,
       dualAI: true,
     });
-  } catch (error: any) {
-    console.error('Cover letter generation error:', error);
+  } catch (error: unknown) {
+    console.error('[api/resume/cover-letter] Error:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to generate cover letter' },
+      { error: 'Failed to generate cover letter' },
       { status: 500 }
     );
   }

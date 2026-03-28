@@ -1,0 +1,231 @@
+/**
+ * Centralized Zod Validation Schemas
+ * Every API route body gets validated here — single source of truth.
+ */
+
+import { z } from 'zod';
+
+// ──────────────────────────────────────────────
+// Shared / Reusable
+// ──────────────────────────────────────────────
+
+const SafeString = (max = 50_000) => z.string().trim().max(max);
+const SafeText = (max = 100_000) => z.string().trim().max(max);
+
+// ──────────────────────────────────────────────
+// /api/ai
+// ──────────────────────────────────────────────
+
+export const AICompletionSchema = z.object({
+  action: z.enum(['json', 'stream', 'text']).optional(),
+  prompt: SafeString(30_000),
+  systemPrompt: SafeString(10_000).optional(),
+  options: z.object({
+    temperature: z.number().min(0).max(2).optional(),
+    maxTokens: z.number().int().min(1).max(8192).optional(),
+    topP: z.number().min(0).max(1).optional(),
+  }).optional().default({}),
+  usageFeature: z.string().max(50).optional(),
+});
+
+// ──────────────────────────────────────────────
+// /api/chat
+// ──────────────────────────────────────────────
+
+export const ChatSchema = z.object({
+  messages: z.array(z.object({
+    role: z.enum(['user', 'assistant']),
+    content: SafeString(10_000),
+  })).min(1).max(50),
+  userContext: SafeString(20_000).optional(),
+});
+
+// ──────────────────────────────────────────────
+// /api/resume/*
+// ──────────────────────────────────────────────
+
+export const ResumeParseSchema = z.object({
+  text: SafeText(100_000),
+});
+
+export const ResumeMorphSchema = z.object({
+  resume: z.record(z.string(), z.unknown()),
+  jobDescription: SafeText(30_000),
+  morphPercentage: z.number().int().min(10).max(100).optional(),
+  targetPageCount: z.number().int().min(1).max(5).optional(),
+});
+
+export const ResumeAISchema = z.object({
+  action: z.enum(['extract_company', 'generate_summary', 'generate_achievements', 'suggest_skills']),
+  text: SafeString(20_000).optional(),
+  jobDescription: SafeString(20_000).optional(),
+});
+
+export const ResumeCheckSchema = z.object({
+  resumeText: SafeText(100_000),
+  targetJD: SafeText(30_000).optional(),
+});
+
+export const CoverLetterSchema = z.object({
+  resumeText: SafeText(50_000),
+  jobDescription: SafeText(30_000),
+  companyName: SafeString(200).optional(),
+  tone: z.enum(['professional', 'friendly', 'bold']).optional(),
+});
+
+export const LinkedInSchema = z.object({
+  resumeText: SafeText(50_000),
+  targetRole: SafeString(200).optional(),
+});
+
+export const AutoFixSchema = z.object({
+  resumeText: SafeText(100_000),
+  suggestions: z.array(z.string().max(2000)).min(1).max(20),
+  targetJD: SafeText(30_000).optional(),
+});
+
+export const BlueprintSchema = z.object({
+  resume: z.record(z.string(), z.unknown()),
+  jobDescription: SafeText(30_000),
+});
+
+export const StudyPlanSchema = z.object({
+  skills: z.array(z.string().trim().max(200)).min(1).max(8),
+  userContext: SafeString(5000).optional(),
+});
+
+// ──────────────────────────────────────────────
+// /api/gauntlet/*
+// ──────────────────────────────────────────────
+
+export const GauntletGenerateSchema = z.object({
+  jobDescription: SafeText(30_000).optional(),
+  resumeText: SafeText(30_000).optional(),
+  interviewStyle: z.string().max(50).optional(),
+  questionCount: z.number().int().min(1).max(20).optional(),
+  interviewType: z.string().max(50).optional(),
+  drillCategory: z.string().max(50).optional(),
+  mode: z.enum(['flashcards', 'interview']).optional(),
+  drillRole: SafeString(200).optional(),
+  persona: z.string().max(50).optional(),
+});
+
+export const GauntletGradeSchema = z.object({
+  question: SafeString(5000),
+  answer: SafeText(20_000),
+  jobDescription: SafeText(20_000).optional(),
+  resumeText: SafeText(20_000).optional(),
+  questionType: z.string().max(50).optional(),
+  persona: z.string().max(50).optional(),
+});
+
+export const GauntletParseResumeSchema = z.object({
+  fileData: z.string().max(20_000_000), // base64 encoded, ~15MB
+  fileName: z.string().max(255),
+});
+
+// ──────────────────────────────────────────────
+// /api/voice/*
+// ──────────────────────────────────────────────
+
+export const VoiceSpeakSchema = z.object({
+  text: SafeString(5000),
+  voiceId: z.string().max(100).optional(),
+});
+
+// /api/voice/transcribe uses FormData — validated inline
+
+// ──────────────────────────────────────────────
+// /api/teams/interest
+// ──────────────────────────────────────────────
+
+export const TeamInterestSchema = z.object({
+  name: SafeString(200),
+  email: z.string().trim().email().max(320),
+  organization: SafeString(200),
+  orgType: z.string().max(100),
+  teamSize: z.string().max(50).optional(),
+  message: SafeString(5000).optional(),
+});
+
+// ──────────────────────────────────────────────
+// /api/admin/users
+// ──────────────────────────────────────────────
+
+export const AdminActionSchema = z.object({
+  action: z.enum(['set_pro', 'set_free', 'disable', 'enable']),
+  uid: z.string().min(1).max(128),
+  email: z.string().max(320).optional(),
+});
+
+// ──────────────────────────────────────────────
+// /api/oracle/analyze
+// ──────────────────────────────────────────────
+
+export const OracleAnalyzeSchema = z.object({
+  resumeText: SafeText(50_000),
+  jdText: SafeText(30_000).optional(),
+  targetRole: SafeString(200).optional(),
+  location: SafeString(200).optional(),
+});
+
+// ──────────────────────────────────────────────
+// /api/dashboard/insights
+// ──────────────────────────────────────────────
+
+export const DashboardInsightsSchema = z.object({
+  context: z.record(z.string(), z.unknown()).optional().default({}),
+});
+
+// ──────────────────────────────────────────────
+// /api/stripe/subscribe
+// ──────────────────────────────────────────────
+
+export const StripeSubscribeSchema = z.object({
+  interval: z.enum(['month', 'year']).optional().default('month'),
+});
+
+// ──────────────────────────────────────────────
+// /api/vault/*
+// ──────────────────────────────────────────────
+
+export const VaultGenerateSchema = z.object({
+  type: z.enum(['flashcards', 'interview']),
+  topic: SafeString(500),
+  items: z.array(z.record(z.string(), z.unknown())).min(1).max(50),
+});
+
+export const VaultExportPlanSchema = z.object({
+  skill: SafeString(200),
+  schedule: z.array(z.record(z.string(), z.unknown())).min(1).max(30),
+  summary: SafeString(5000).optional(),
+  applicationId: z.string().max(100).optional().nullable(),
+});
+
+// ──────────────────────────────────────────────
+// /api/notifications/study-reminder
+// ──────────────────────────────────────────────
+
+export const StudyReminderSchema = z.object({
+  email: z.string().trim().email().max(320),
+  userName: SafeString(200).optional(),
+  skills: z.array(z.object({
+    skill: z.string().max(200),
+    completedDays: z.number().int().min(0),
+    totalDays: z.number().int().min(1).max(365),
+    todayFocus: z.string().max(500).optional(),
+    todayTasks: z.array(z.string().max(500)).optional(),
+  })).min(1).max(20),
+});
+
+// ──────────────────────────────────────────────
+// /api/jobs/search
+// ──────────────────────────────────────────────
+
+export const JobSearchSchema = z.object({
+  query: SafeString(500).optional(),
+  location: SafeString(200).optional(),
+  page: z.number().int().min(1).max(100).optional(),
+  numPages: z.number().int().min(1).max(5).optional(),
+  remote: z.boolean().optional(),
+});

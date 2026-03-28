@@ -27,6 +27,10 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig, 'webhook
 const db = getFirestore(app);
 
 export async function POST(req: NextRequest) {
+  if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) {
+    return NextResponse.json({ error: 'Stripe is not configured' }, { status: 500 });
+  }
+
   const body = await req.text();
   const sig = req.headers.get('stripe-signature');
 
@@ -67,6 +71,36 @@ export async function POST(req: NextRequest) {
         });
 
         console.log(`✅ Pro subscription activated for user: ${uid}`);
+        break;
+      }
+
+      case 'invoice.payment_succeeded': {
+        // Handles Stripe Elements flow (subscription created with default_incomplete)
+        const invoice = event.data.object as Stripe.Invoice;
+        const subscriptionId = (invoice as any).subscription as string;
+        if (!subscriptionId || !invoice.customer) break;
+
+        const customer = await stripe.customers.retrieve(invoice.customer as string) as Stripe.Customer;
+        const uid = customer.metadata?.firebaseUid;
+        if (!uid) break;
+
+        // Get subscription to read interval from metadata
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        const interval = subscription.metadata?.interval || 'month';
+
+        await setDoc(doc(db, 'users', uid, 'subscription', 'current'), {
+          plan: 'pro',
+          status: 'active',
+          stripeCustomerId: invoice.customer as string,
+          stripeSubscriptionId: subscriptionId,
+          interval,
+          amount: invoice.amount_paid,
+          currency: invoice.currency,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        }, { merge: true });
+
+        console.log(`✅ Pro subscription activated via Elements for user: ${uid} (${interval})`);
         break;
       }
 

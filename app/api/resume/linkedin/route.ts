@@ -8,6 +8,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { guardApiRoute } from '@/lib/api-auth';
 import { checkUsageAllowed, incrementUsage } from '@/lib/usage-tracker';
 import { dualAIGenerate } from '@/lib/ai/dual-ai';
+import { validateBody } from '@/lib/validate';
+import { LinkedInSchema } from '@/lib/schemas';
+import { sanitizeForAI } from '@/lib/sanitize';
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,18 +18,16 @@ export async function POST(req: NextRequest) {
     if (guard.error) return guard.error;
 
     // Pro-only feature
-    if (guard.user.tier !== 'pro') {
+    if (guard.user.tier === 'free') {
       return NextResponse.json(
         { error: 'LinkedIn Builder is a Pro feature. Upgrade to access dual-AI tools.', upgrade: true },
         { status: 403 }
       );
     }
 
-    const { resumeText, targetRole } = await req.json();
-
-    if (!resumeText) {
-      return NextResponse.json({ error: 'Resume text is required' }, { status: 400 });
-    }
+    const validated = await validateBody(req, LinkedInSchema);
+    if (!validated.success) return validated.error;
+    const { resumeText, targetRole } = validated.data;
 
     const writerPrompt = `You are a LinkedIn profile optimization expert. Generate LinkedIn-optimized content from resume data.
 
@@ -47,7 +48,7 @@ FORMAT: Return a JSON object with:
 
     const userPrompt = `Generate LinkedIn profile content from this resume:
 
-${resumeText}
+${sanitizeForAI(resumeText)}
 ${targetRole ? `\nOPTIMIZE FOR TARGET ROLE: ${targetRole}` : ''}
 
 Return as a JSON object.`;
@@ -96,10 +97,10 @@ Return as a JSON object.`;
       modelAgreement: result.modelAgreement,
       dualAI: true,
     });
-  } catch (error: any) {
-    console.error('LinkedIn builder error:', error);
+  } catch (error: unknown) {
+    console.error('[api/resume/linkedin] Error:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to generate LinkedIn profile' },
+      { error: 'Failed to generate LinkedIn profile' },
       { status: 500 }
     );
   }

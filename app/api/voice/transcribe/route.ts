@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { guardApiRoute } from '@/lib/api-auth';
+import { checkVoiceAllowed, recordVoiceUsage, estimateSTTSeconds } from '@/lib/usage-tracker';
 
 export async function POST(req: NextRequest) {
     try {
-        // Auth + rate limit check
         const guard = await guardApiRoute(req, { rateLimit: 5, rateLimitWindow: 60_000 });
         if (guard.error) return guard.error;
 
@@ -14,12 +14,36 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'No audio file provided' }, { status: 400 });
         }
 
+        // Enforce file size limit: 10MB max
+        const MAX_FILE_SIZE = 10 * 1024 * 1024;
+        if (file.size > MAX_FILE_SIZE) {
+            return NextResponse.json({ error: 'Audio file too large. Max 10MB.' }, { status: 400 });
+        }
+
+        // ── Voice minute cap check ──
+        const voiceCheck = await checkVoiceAllowed(guard.user.uid, guard.user.tier);
+        if (!voiceCheck.allowed) {
+            const isFreeTier = guard.user.tier === 'free';
+            return NextResponse.json(
+                {
+                    error: isFreeTier
+                        ? 'Voice mode is a Pro feature. Upgrade to access voice transcription.'
+                        : `Monthly voice limit reached (${Math.floor(voiceCheck.capSeconds / 60)} min). Resets next month.`,
+                    upgrade: isFreeTier,
+                    remainingSeconds: voiceCheck.remainingSeconds,
+                },
+                { status: 403 }
+            );
+        }
+
+        // Estimate audio duration from file size
+        const estimatedSeconds = estimateSTTSeconds(file.size);
+
         const apiKey = process.env.DEEPGRAM_API_KEY;
         if (!apiKey) {
             return NextResponse.json({ error: 'Deepgram API key not configured' }, { status: 500 });
         }
 
-        // Direct fetch to Deepgram to avoid needing server-side SDK
         const response = await fetch('https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true', {
             method: 'POST',
             headers: {
@@ -38,9 +62,24 @@ export async function POST(req: NextRequest) {
         const data = await response.json();
         const transcript = data.results?.channels[0]?.alternatives[0]?.transcript || '';
 
-        return NextResponse.json({ text: transcript });
-    } catch (error: any) {
-        console.error('Transcription error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        // Use actual duration from Deepgram if available, else use estimate
+        const actualDuration = data.metadata?.duration
+            ? Math.ceil(data.metadata.duration)
+            : estimatedSeconds;
+
+        // ── Record usage AFTER successful transcription ──
+        await recordVoiceUsage(guard.user.uid, actualDuration);
+
+        return NextResponse.json({
+            text: transcript,
+            voiceUsage: {
+                usedSeconds: voiceCheck.usedSeconds + actualDuration,
+                remainingSeconds: Math.max(0, voiceCheck.remainingSeconds - actualDuration),
+                capMinutes: Math.floor(voiceCheck.capSeconds / 60),
+            },
+        });
+    } catch (error: unknown) {
+        console.error('[api/voice/transcribe] Error:', error);
+        return NextResponse.json({ error: 'Transcription failed' }, { status: 500 });
     }
 }

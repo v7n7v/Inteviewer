@@ -28,8 +28,8 @@ export default function SuiteSelector({ fullPage = false, showBrandHeader = true
     features: [
       { icon: '📄', name: 'Resume Builder', desc: 'Liquid Resume' },
       { icon: '💼', name: 'JD Generator', desc: 'Mission Blueprint' },
-      { icon: '🎴', name: 'Flash Cards', desc: 'Study Cards' },
-      { icon: '🔮', name: 'Market Oracle', desc: 'Career Intelligence' },
+      { icon: '⚔️', name: 'The Gauntlet', desc: 'Interview Simulator' },
+      { icon: '🌉', name: 'Skill Bridge', desc: 'From Resume to Ready' },
     ],
     stats: { label: 'Careers Launched', value: '890+' },
   };

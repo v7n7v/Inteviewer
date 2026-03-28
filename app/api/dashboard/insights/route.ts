@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { groqJSONCompletion } from '@/lib/ai/groq-client';
+import { guardApiRoute } from '@/lib/api-auth';
+import { validateBody } from '@/lib/validate';
+import { DashboardInsightsSchema } from '@/lib/schemas';
 
 export async function POST(req: NextRequest) {
   try {
-    const { context = {} } = await req.json();
+    const guard = await guardApiRoute(req, { rateLimit: 5, rateLimitWindow: 60_000 });
+    if (guard.error) return guard.error;
+
+    const validated = await validateBody(req, DashboardInsightsSchema);
+    if (!validated.success) return validated.error;
 
     // For now, generate AI-powered insights for new/demo users
     // In the future, pull real data from Firestore via Firebase Admin SDK

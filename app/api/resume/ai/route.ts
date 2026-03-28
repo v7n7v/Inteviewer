@@ -1,14 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { groqJSONCompletion, groqCompletion } from '@/lib/ai/groq-client';
+import { guardApiRoute } from '@/lib/api-auth';
+import { validateBody } from '@/lib/validate';
+import { ResumeAISchema } from '@/lib/schemas';
+import { sanitizeForAI } from '@/lib/sanitize';
 
 export async function POST(req: NextRequest) {
   try {
-    const { action, text, jobDescription } = await req.json();
+    const guard = await guardApiRoute(req, { rateLimit: 10, rateLimitWindow: 60_000 });
+    if (guard.error) return guard.error;
+
+    const validated = await validateBody(req, ResumeAISchema);
+    if (!validated.success) return validated.error;
+    const { action, text, jobDescription } = validated.data;
 
     if (action === 'extract_company') {
       const res = await groqJSONCompletion<{ company: string }>(
         'Extract the Company Name from this Job Description. Return { "company": "Name" }',
-        (jobDescription || text || '').substring(0, 2000),
+        sanitizeForAI(jobDescription || text || '', 2000),
         { temperature: 0, maxTokens: 50 }
       );
       return NextResponse.json({ company: res.company || '' });
@@ -42,10 +51,10 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
-  } catch (error: any) {
-    console.error('Resume AI helper error:', error);
+  } catch (error: unknown) {
+    console.error('[api/resume/ai] Error:', error);
     return NextResponse.json(
-      { error: error.message || 'AI request failed' },
+      { error: 'AI request failed' },
       { status: 500 }
     );
   }

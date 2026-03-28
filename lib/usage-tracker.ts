@@ -2,6 +2,7 @@
  * Lifetime Usage Tracker
  * Server-side enforcement of free tier caps via Firestore.
  * Path: users/{uid}/usage/lifetime
+ * Voice: users/{uid}/usage/voice_monthly
  */
 
 import { getFirestore, doc, getDoc, setDoc, increment } from 'firebase/firestore';
@@ -22,6 +23,12 @@ export const FREE_CAPS: Record<UsageFeature, number> = {
   linkedinProfiles: 2,
 };
 
+// ── Voice Minute Caps (per month) ──
+export const VOICE_MINUTE_CAPS: Record<Exclude<PlanTier, 'god'>, number> = {
+  free: 0,    // Free users get no voice
+  pro: 15,    // 15 minutes/month for Pro
+};
+
 // ── Usage Data Shape ──
 export interface UsageData {
   morphs: number;
@@ -31,6 +38,11 @@ export interface UsageData {
   coverLetters: number;
   resumeChecks: number;
   linkedinProfiles: number;
+}
+
+export interface VoiceUsageData {
+  usedSeconds: number;
+  month: string; // "2026-03" format for monthly reset
 }
 
 const DEFAULT_USAGE: UsageData = {
@@ -57,6 +69,16 @@ function getDb() {
 
 function usageDocRef(uid: string) {
   return doc(getDb(), 'users', uid, 'usage', 'lifetime');
+}
+
+function voiceDocRef(uid: string) {
+  return doc(getDb(), 'users', uid, 'usage', 'voice_monthly');
+}
+
+/** Current month key for reset detection */
+function currentMonthKey(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 }
 
 /** Get current usage counts */
@@ -104,8 +126,8 @@ export async function checkUsageAllowed(
   feature: UsageFeature,
   tier: PlanTier
 ): Promise<{ allowed: boolean; used: number; cap: number; remaining: number }> {
-  // Pro users: unlimited
-  if (tier === 'pro') {
+  // Pro & GOD users: unlimited
+  if (tier === 'pro' || tier === 'god') {
     return { allowed: true, used: 0, cap: Infinity, remaining: Infinity };
   }
 
@@ -120,4 +142,106 @@ export async function checkUsageAllowed(
     cap,
     remaining,
   };
+}
+
+// ═══════════════════════════════════════════════
+// VOICE MINUTE TRACKING (Monthly Reset)
+// ═══════════════════════════════════════════════
+
+/** Get current month's voice usage in seconds */
+export async function getVoiceUsage(uid: string): Promise<VoiceUsageData> {
+  try {
+    const snap = await getDoc(voiceDocRef(uid));
+    if (snap.exists()) {
+      const data = snap.data();
+      const storedMonth = data.month || '';
+      const thisMonth = currentMonthKey();
+
+      // Auto-reset if new month
+      if (storedMonth !== thisMonth) {
+        return { usedSeconds: 0, month: thisMonth };
+      }
+      return { usedSeconds: data.usedSeconds ?? 0, month: thisMonth };
+    }
+    return { usedSeconds: 0, month: currentMonthKey() };
+  } catch {
+    return { usedSeconds: 0, month: currentMonthKey() };
+  }
+}
+
+/**
+ * Check if user has voice minutes remaining.
+ * Free users: 0 minutes (voice is Pro-only).
+ * Pro users: 15 minutes/month.
+ */
+export async function checkVoiceAllowed(
+  uid: string,
+  tier: PlanTier
+): Promise<{ allowed: boolean; usedSeconds: number; capSeconds: number; remainingSeconds: number }> {
+  const capMinutes = tier === 'god' ? Infinity : (VOICE_MINUTE_CAPS[tier as Exclude<PlanTier, 'god'>] || 0);
+  const capSeconds = capMinutes * 60;
+
+  if (capSeconds === 0) {
+    return { allowed: false, usedSeconds: 0, capSeconds: 0, remainingSeconds: 0 };
+  }
+
+  const voice = await getVoiceUsage(uid);
+  const remainingSeconds = Math.max(0, capSeconds - voice.usedSeconds);
+
+  return {
+    allowed: voice.usedSeconds < capSeconds,
+    usedSeconds: voice.usedSeconds,
+    capSeconds,
+    remainingSeconds,
+  };
+}
+
+/**
+ * Record voice usage in seconds. Call AFTER a successful TTS/STT operation.
+ * Automatically resets if a new month has started.
+ */
+export async function recordVoiceUsage(uid: string, seconds: number): Promise<void> {
+  try {
+    const thisMonth = currentMonthKey();
+    const current = await getVoiceUsage(uid);
+
+    if (current.month !== thisMonth) {
+      // New month — reset counter
+      await setDoc(voiceDocRef(uid), {
+        usedSeconds: seconds,
+        month: thisMonth,
+        lastUsed: new Date().toISOString(),
+      });
+    } else {
+      // Same month — increment
+      await setDoc(
+        voiceDocRef(uid),
+        {
+          usedSeconds: increment(seconds),
+          month: thisMonth,
+          lastUsed: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+    }
+  } catch (err) {
+    console.error(`Failed to record voice usage for ${uid}`, err);
+  }
+}
+
+/**
+ * Estimate TTS duration from text.
+ * Average speaking rate: ~150 words/min, ~5 chars/word → ~750 chars/min → ~12.5 chars/sec
+ */
+export function estimateTTSSeconds(text: string): number {
+  const chars = text.trim().length;
+  return Math.max(1, Math.ceil(chars / 12.5));
+}
+
+/**
+ * Estimate STT duration from audio file size.
+ * WebM/Opus at ~32kbps → ~4KB/sec. Conservative estimate.
+ */
+export function estimateSTTSeconds(fileSizeBytes: number): number {
+  return Math.max(1, Math.ceil(fileSizeBytes / 4000));
 }

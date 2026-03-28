@@ -104,7 +104,7 @@ export default function SettingsPage() {
 
 // ===== SUBSCRIPTION TAB =====
 function SubscriptionTab() {
-    const { tier, loading } = useUserTier();
+    const { tier, isPro, loading } = useUserTier();
 
     return (
         <motion.div
@@ -128,36 +128,36 @@ function SubscriptionTab() {
                     <div className="space-y-4">
                         {/* Plan Status Card */}
                         <div className={`p-5 rounded-xl border ${
-                            tier === 'pro'
+                            isPro
                                 ? 'bg-gradient-to-br from-emerald-500/10 to-teal-500/5 border-emerald-500/30'
                                 : 'bg-white/5 border-white/10'
                         }`}>
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${
-                                        tier === 'pro'
+                                        isPro
                                             ? 'bg-gradient-to-br from-emerald-500 to-teal-500'
                                             : 'bg-white/10'
                                     }`}>
-                                        {tier === 'pro' ? '👑' : '🆓'}
+                                        {isPro ? '👑' : '🆓'}
                                     </div>
                                     <div>
                                         <h4 className="text-xl font-bold text-white">
-                                            {tier === 'pro' ? 'Pro Plan' : 'Free Plan'}
+                                            {isPro ? 'Pro Plan' : 'Free Plan'}
                                         </h4>
                                         <p className="text-sm text-silver">
-                                            {tier === 'pro'
+                                            {isPro
                                                 ? '$2.99/month — Unlimited access'
                                                 : 'Limited usage — Upgrade for full access'}
                                         </p>
                                     </div>
                                 </div>
                                 <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                                    tier === 'pro'
+                                    isPro
                                         ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                                         : 'bg-slate-500/20 text-slate-400 border border-slate-500/30'
                                 }`}>
-                                    {tier === 'pro' ? '✓ Active' : 'Free Tier'}
+                                    {isPro ? '✓ Active' : 'Free Tier'}
                                 </span>
                             </div>
                         </div>

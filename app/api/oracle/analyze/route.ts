@@ -7,6 +7,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { guardApiRoute } from '@/lib/api-auth';
 import { groqJSONCompletion } from '@/lib/ai/groq-client';
 import { geminiJSONCompletion } from '@/lib/ai/gemini-client';
+import { validateBody } from '@/lib/validate';
+import { OracleAnalyzeSchema } from '@/lib/schemas';
+import { sanitizeForAI } from '@/lib/sanitize';
 
 interface GPTAnalysis {
   resumeSkills: string[];
@@ -47,11 +50,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { resumeText, jdText, targetRole, location } = await req.json();
-
-    if (!resumeText?.trim()) {
-      return NextResponse.json({ error: 'Resume text is required' }, { status: 400 });
-    }
+    const validated = await validateBody(req, OracleAnalyzeSchema);
+    if (!validated.success) return validated.error;
+    const { resumeText, jdText, targetRole, location } = validated.data;
 
     // ═══ STAGE 1: GPT — Extract & Analyze ═══
     const gptAnalysis = await groqJSONCompletion<GPTAnalysis>(
@@ -92,10 +93,10 @@ Hidden requirement detection:
 - "Nice to have" items that appear first = actually required`,
 
       `RESUME:
-${resumeText.substring(0, 4000)}
+${sanitizeForAI(resumeText, 4000)}
 
 ${jdText ? `JOB DESCRIPTION:
-${jdText.substring(0, 3000)}` : `TARGET ROLE: ${targetRole || 'Software Engineer'}`}
+${sanitizeForAI(jdText, 3000)}` : `TARGET ROLE: ${targetRole || 'Software Engineer'}`}
 
 LOCATION: ${location || 'United States'}
 
@@ -131,10 +132,10 @@ Be critical but fair. If GPT overestimated the fit score, correct it. If they mi
 ${JSON.stringify(gptAnalysis, null, 2)}
 
 ORIGINAL RESUME (first 2000 chars):
-${resumeText.substring(0, 2000)}
+${sanitizeForAI(resumeText, 2000)}
 
 ${jdText ? `ORIGINAL JD (first 1500 chars):
-${jdText.substring(0, 1500)}` : ''}
+${sanitizeForAI(jdText, 1500)}` : ''}
 
 Cross-validate GPT's analysis. Refine the salary estimates for ${location || 'US market'}. Add any red flags or hidden requirements GPT missed. Provide your independent fit score.`,
       { temperature: 0.2, maxTokens: 2000 }
@@ -179,10 +180,10 @@ Cross-validate GPT's analysis. Refine the salary estimates for ${location || 'US
       },
       pipeline: { stage1: 'GPT-OSS 120B', stage2: 'Gemini 3 Flash' },
     });
-  } catch (error: any) {
-    console.error('Oracle analysis error:', error);
+  } catch (error: unknown) {
+    console.error('[api/oracle/analyze] Error:', error);
     return NextResponse.json(
-      { error: 'Failed to analyze. Please try again.', details: error.message },
+      { error: 'Failed to analyze. Please try again.' },
       { status: 500 }
     );
   }

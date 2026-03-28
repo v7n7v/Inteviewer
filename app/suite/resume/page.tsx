@@ -15,6 +15,8 @@ import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Bord
 import { saveAs } from 'file-saver';
 import { authFetch } from '@/lib/auth-fetch';
 import FileUploadDropzone from '@/components/FileUploadDropzone';
+import SkillGapWarningModal from '@/components/modals/SkillGapWarningModal';
+import UpgradeModal from '@/components/UpgradeModal';
 
 // Set up PDF.js worker
 if (typeof window !== 'undefined') {
@@ -480,6 +482,7 @@ export default function LiquidResumePage() {
   const [mode, setMode] = useState<'choose' | 'morph' | 'create'>('choose');
   const [step, setStep] = useState<'upload' | 'jd' | 'enhance' | 'template' | 'preview'>('upload');
   const [isLoading, setIsLoading] = useState(false);
+  const [invalidDocumentError, setInvalidDocumentError] = useState(false);
 
   // Resume data
   const [originalResume, setOriginalResume] = useState<ResumeData | null>(null);
@@ -491,9 +494,16 @@ export default function LiquidResumePage() {
   const [morphPercentage, setMorphPercentage] = useState(75);
   const [targetPageCount, setTargetPageCount] = useState<number | 'auto'>('auto');
   const [matchScore, setMatchScore] = useState<number | null>(null);
+  const [acceptedRisk, setAcceptedRisk] = useState(false);
+  const [flashWarning, setFlashWarning] = useState(false);
+
+  // Day-Zero Blueprint
+  const [blueprintContent, setBlueprintContent] = useState<string | null>(null);
+  const [isBlueprintLoading, setIsBlueprintLoading] = useState(false);
+  const [showBlueprintModal, setShowBlueprintModal] = useState(false);
 
   // Tier awareness
-  const { tier, canUse, remaining, refetch: refetchUsage } = useUserTier();
+  const { tier, isPro, canUse, remaining, refetch: refetchUsage } = useUserTier();
 
   // UI state
   const [selectedTemplate, setSelectedTemplate] = useState(TEMPLATES[0]);
@@ -512,11 +522,17 @@ export default function LiquidResumePage() {
   // Modals
   const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [saveVersionName, setSaveVersionName] = useState('');
   const [saveCompanyName, setSaveCompanyName] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [applicationData, setApplicationData] = useState({ companyName: '', jobTitle: '', notes: '' });
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  // Skill gap detection
+  const [showSkillGapModal, setShowSkillGapModal] = useState(false);
+  const [detectedNewSkills, setDetectedNewSkills] = useState<{ skill: string; category: 'technical' | 'soft' | 'domain' }[]>([]);
+  const [lastMatchScore, setLastMatchScore] = useState<number | undefined>(undefined);
 
   // ===== DERIVED STATE =====
   // This is the KEY fix - always compute which resume to display
@@ -537,6 +553,14 @@ export default function LiquidResumePage() {
 
   // ===== EFFECTS =====
   useEffect(() => { if (user) loadVersions(); }, [user]);
+
+  useEffect(() => {
+    if (morphPercentage >= 80) {
+      setFlashWarning(true);
+      const timer = setTimeout(() => setFlashWarning(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [morphPercentage]);
 
   // ===== DATA LOADING =====
   const loadVersions = async () => {
@@ -608,6 +632,7 @@ export default function LiquidResumePage() {
   // ===== HANDLERS =====
   const handleFileExtracted = async (text: string) => {
     setIsLoading(true);
+    setInvalidDocumentError(false);
     setProcessingStage('extracting');
     try {
       // Brief pause so user sees the "extracting" stage
@@ -620,10 +645,45 @@ export default function LiquidResumePage() {
       setStep('jd');
     } catch (error: any) {
       console.error('AI parsing error:', error);
-      showToast(error.message || 'Failed to process resume with AI', '❌');
+      if (error.message?.includes('INVALID_DOCUMENT') || error.message?.includes('look like a resume')) {
+        setInvalidDocumentError(true);
+      } else {
+        showToast(error.message || 'Failed to process resume with AI', '❌');
+      }
     } finally {
       setIsLoading(false);
       setProcessingStage(null);
+    }
+  };
+
+  // ── Day-Zero Blueprint ──
+  const handleBlueprint = async () => {
+    if (!originalResume || !jobDescription.trim()) return;
+    setIsBlueprintLoading(true);
+    try {
+      showToast('Generating your Day-Zero Blueprint...', '📋');
+      const res = await authFetch('/api/resume/blueprint', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resume: originalResume, jobDescription }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Blueprint generation failed' }));
+        if (err.upgrade) {
+          showToast('Day-Zero Blueprint is a Pro feature ✨', '🔒');
+          return;
+        }
+        throw new Error(err.error || 'Failed to generate blueprint');
+      }
+      const data = await res.json();
+      setBlueprintContent(data.blueprint);
+      setShowBlueprintModal(true);
+      showToast('Day-Zero Blueprint ready!', '✅');
+    } catch (error) {
+      console.error('Blueprint error:', error);
+      showToast('Failed to generate blueprint', '❌');
+    } finally {
+      setIsBlueprintLoading(false);
     }
   };
 
@@ -639,8 +699,40 @@ export default function LiquidResumePage() {
 
       setMorphedResume(validResume);
       setMatchScore(score);
-      setStep(tier === 'pro' ? 'enhance' : 'template');
+      setStep(isPro ? 'enhance' : 'template');
       showToast(`Resume morphed! ${score}% match`, '✅');
+
+      // ── Skill Gap Detection ──
+      try {
+        const originalSkills = (originalResume.skills || []).flatMap(s => s.items || []).map(s => s.toLowerCase().trim()).filter(Boolean);
+        const morphedSkills = (validResume.skills || []).flatMap(s => s.items || []).map(s => s.toLowerCase().trim()).filter(Boolean);
+        const originalSet = new Set(originalSkills);
+        const newSkills = [...new Set(morphedSkills.filter(s => !originalSet.has(s)))];
+
+        if (newSkills.length > 0) {
+          // Classify skills (simple heuristic)
+          const softSkills = new Set(['leadership', 'communication', 'teamwork', 'problem-solving', 'time management', 'adaptability', 'collaboration', 'critical thinking', 'mentoring', 'negotiation', 'presentation', 'conflict resolution', 'decision making', 'emotional intelligence']);
+          const classified = newSkills.map(skill => ({
+            skill: morphedSkills.find(ms => ms === skill) ? (validResume.skills || []).flatMap(s => s.items || []).find(item => item.toLowerCase().trim() === skill) || skill : skill,
+            category: (softSkills.has(skill) ? 'soft' : 'technical') as 'technical' | 'soft' | 'domain',
+          }));
+
+          setDetectedNewSkills(classified);
+          setLastMatchScore(score);
+
+          // Save to localStorage for Skill Bridge
+          localStorage.setItem('tc_skill_gaps', JSON.stringify({
+            gaps: classified.map(c => ({ skill: c.skill, confidence: 'ai-added', category: c.category })),
+            jdTitle: applicationData.jobTitle || 'Target Role',
+            timestamp: Date.now(),
+          }));
+
+          // Show warning modal after a brief delay
+          setTimeout(() => setShowSkillGapModal(true), 800);
+        }
+      } catch (diffErr) {
+        console.warn('Skill diff error (non-critical):', diffErr);
+      }
 
       // Extract company name (non-blocking)
       try {
@@ -1244,7 +1336,10 @@ export default function LiquidResumePage() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      if (!res.ok) {
+        if (data.upgrade || res.status === 403) setShowUpgradeModal(true);
+        throw new Error(data.error || 'Failed to auto-fix resume');
+      }
 
       setEnhancePipelineStage(3);
       // Apply improved resume data
@@ -1266,8 +1361,8 @@ export default function LiquidResumePage() {
 
         // Save skill gap analysis for Skill Bridge
         try {
-          const originalSkills = (currentResume.skills || []).map((s: string) => s.toLowerCase().trim());
-          const improvedSkills = (improved.skills || []).map((s: string) => s.toLowerCase().trim());
+          const originalSkills = (currentResume.skills || []).flatMap((s: any) => s.items || []).map((s: string) => s.toLowerCase().trim());
+          const improvedSkills = (improved.skills || []).flatMap((s: any) => s.items || []).map((s: string) => s.toLowerCase().trim());
           const aiAddedSkills = improvedSkills.filter((s: string) => !originalSkills.includes(s));
           const existingSkills = improvedSkills.filter((s: string) => originalSkills.includes(s));
           const gaps = [
@@ -1296,7 +1391,11 @@ export default function LiquidResumePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'generate_summary', text: `Role: ${buildResume.title}\nExperience: ${buildResume.experience.map(e => e.role).join(', ') || 'Entry level'}` }),
       });
-      if (!res.ok) throw new Error('Failed');
+      if (!res.ok) {
+        const errData = await res.json();
+        if (errData.upgrade || res.status === 403) setShowUpgradeModal(true);
+        throw new Error(errData.error || 'Failed');
+      }
       const data = await res.json();
       setBuildResume(prev => ({ ...prev, summary: data.summary }));
       showToast('Summary generated!', '✅');
@@ -1314,7 +1413,11 @@ export default function LiquidResumePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'generate_achievements', text: `Role: ${exp.role}\nCompany: ${exp.company}` }),
       });
-      if (!res.ok) throw new Error('Failed');
+      if (!res.ok) {
+        const errData = await res.json();
+        if (errData.upgrade || res.status === 403) setShowUpgradeModal(true);
+        throw new Error(errData.error || 'Failed');
+      }
       const data = await res.json();
       const newExp = [...buildResume.experience];
       newExp[expIndex] = { ...exp, achievements: data.achievements };
@@ -1333,7 +1436,11 @@ export default function LiquidResumePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'suggest_skills', text: `Role: ${buildResume.title}` }),
       });
-      if (!res.ok) throw new Error('Failed');
+      if (!res.ok) {
+        const errData = await res.json();
+        if (errData.upgrade || res.status === 403) setShowUpgradeModal(true);
+        throw new Error(errData.error || 'Failed');
+      }
       const data = await res.json();
       setBuildResume(prev => ({ ...prev, skills: data.skills || [] }));
       showToast('Skills suggested!', '✅');
@@ -1622,8 +1729,8 @@ export default function LiquidResumePage() {
     const displayResume = getDisplayResume();
 
     return (
-      <div className="min-h-screen p-4 md:p-8">
-        <div className="max-w-6xl mx-auto">
+      <div className="min-h-screen p-4 md:p-8 relative">
+        <div className="max-w-6xl mx-auto z-10 relative">
           {/* Header with Reset */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 md:mb-8 gap-3 pl-12 lg:pl-0">
             <div>
@@ -1648,7 +1755,7 @@ export default function LiquidResumePage() {
                 const isEnhanceLocked = s.id === 'enhance' && tier !== 'pro';
                 const canNavigate = s.id === 'upload'
                   || (s.id === 'jd' && hasResumeData(originalResume))
-                  || (s.id === 'enhance' && tier === 'pro' && displayResume)
+                  || (s.id === 'enhance' && isPro && displayResume)
                   || ((s.id === 'template' || s.id === 'preview') && displayResume);
                 return (
                 <div key={s.id} className="flex items-center">
@@ -1666,9 +1773,9 @@ export default function LiquidResumePage() {
                   >
                     <span>{isEnhanceLocked ? '🔒' : s.icon}</span>
                     <span className="hidden md:inline">{s.label}</span>
-                    {s.pro && <span className={`hidden md:inline text-[8px] px-1 py-0.5 rounded ${tier === 'pro' ? 'bg-emerald-500/15 border border-emerald-500/25 text-emerald-400' : 'bg-white/5 border border-white/10 text-slate-500'} font-bold`}>PRO</span>}
+                    {s.pro && <span className={`hidden md:inline text-[8px] px-1 py-0.5 rounded ${isPro ? 'bg-emerald-500/15 border border-emerald-500/25 text-emerald-400' : 'bg-white/5 border border-white/10 text-slate-500'} font-bold`}>PRO</span>}
                   </button>
-                  {i < 4 && <div className={`w-4 md:w-10 h-px mx-1 ${s.id === 'enhance' || (s.id === 'jd' && tier === 'pro') ? 'bg-emerald-500/20' : 'bg-white/20'}`} />}
+                  {i < 4 && <div className={`w-4 md:w-10 h-px mx-1 ${s.id === 'enhance' || (s.id === 'jd' && isPro) ? 'bg-emerald-500/20' : 'bg-white/20'}`} />}
                 </div>
                 );
               })}
@@ -1680,16 +1787,40 @@ export default function LiquidResumePage() {
             {/* Step 1: Upload */}
             {step === 'upload' && (
               <motion.div key="upload" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
-                  <FileUploadDropzone 
-                    onUploadSuccess={(text) => handleFileExtracted(text)}
-                    isUploading={isLoading}
-                    setIsUploading={(state) => {
-                      setIsLoading(state);
-                      if (state) setProcessingStage('uploading');
-                    }}
-                    processingStage={processingStage}
-                    variant="large"
-                  />
+                  <AnimatePresence mode="wait">
+                    {invalidDocumentError ? (
+                      <motion.div key="error" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="w-full max-w-2xl mx-auto p-8 rounded-2xl bg-red-500/[0.05] border border-red-500/20 text-center space-y-5 backdrop-blur-md">
+                        <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center text-3xl mx-auto border border-red-500/20">📄❌</div>
+                        <div>
+                          <h3 className="text-xl font-bold text-white mb-2">This doesn't look like a resume</h3>
+                          <p className="text-slate-400 text-sm max-w-md mx-auto leading-relaxed">
+                            Our AI parser couldn't detect standard structural elements like Work Experience, Education, or Skills in the uploaded file.
+                          </p>
+                        </div>
+                        <div className="flex flex-col sm:flex-row justify-center items-center gap-3 pt-4">
+                          <button onClick={() => setInvalidDocumentError(false)} className="w-full sm:w-auto px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 active:bg-white/5 transition-all font-medium text-slate-300 border border-white/10">
+                            Try Another File
+                          </button>
+                          <button onClick={() => { setInvalidDocumentError(false); setMode('create'); }} className="w-full sm:w-auto px-6 py-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 transition-all font-bold text-white shadow-[0_4px_15px_rgba(6,182,212,0.3)]">
+                            Build from the ground up ✨
+                          </button>
+                        </div>
+                      </motion.div>
+                    ) : (
+                      <motion.div key="dropzone" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                        <FileUploadDropzone 
+                          onUploadSuccess={(text) => handleFileExtracted(text)}
+                          isUploading={isLoading}
+                          setIsUploading={(state) => {
+                            setIsLoading(state);
+                            if (state) setProcessingStage('uploading');
+                          }}
+                          processingStage={processingStage}
+                          variant="large"
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
               </motion.div>
             )}
 
@@ -1737,7 +1868,7 @@ export default function LiquidResumePage() {
                     <div className="p-4 rounded-xl glass-card">
                       <div className="flex items-center gap-2 mb-3">
                         <span className="text-xl">💼</span>
-                        <label className="text-white font-semibold">Job Description</label>
+                        <label className={`font-semibold ${isLight ? 'text-slate-800' : 'text-white'}`}>Job Description</label>
                       </div>
                       <textarea
                         value={jobDescription}
@@ -1750,10 +1881,13 @@ export default function LiquidResumePage() {
                     {/* Morph Intensity */}
                     <div className="p-4 rounded-xl glass-card">
                       <div className="flex justify-between items-center mb-3">
-                        <label className="text-white font-semibold">Morph Intensity</label>
-                        <span className={`text-lg font-bold px-3 py-1 rounded-lg ${morphPercentage < 50 ? 'bg-green-500/20 text-green-400' :
-                          morphPercentage < 75 ? 'bg-yellow-500/20 text-yellow-400' :
-                            'bg-red-500/20 text-red-400'
+                        <label className={`font-semibold ${isLight ? 'text-slate-800' : 'text-white'}`}>Morph Intensity</label>
+                        <span className={`text-lg font-bold px-3 py-1 rounded-lg ${
+                          morphPercentage < 50 
+                            ? (isLight ? 'bg-green-100 text-green-700' : 'bg-green-500/20 text-green-400')
+                            : morphPercentage < 75 
+                              ? (isLight ? 'bg-amber-100 text-amber-700' : 'bg-yellow-500/20 text-yellow-400')
+                              : (isLight ? 'bg-red-100 text-red-700' : 'bg-red-500/20 text-red-400')
                           }`}>{morphPercentage}%</span>
                       </div>
                       <div className="relative">
@@ -1763,7 +1897,11 @@ export default function LiquidResumePage() {
                           min="25"
                           max="100"
                           value={morphPercentage}
-                          onChange={(e) => setMorphPercentage(Number(e.target.value))}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setMorphPercentage(val);
+                            if (val < 80) setAcceptedRisk(false);
+                          }}
                           className="relative w-full h-3 rounded-full appearance-none cursor-pointer"
                           style={{
                             background: `linear-gradient(to right, #22c55e ${0}%, #22c55e ${((morphPercentage - 25) / 75) * 33}%, #eab308 ${((morphPercentage - 25) / 75) * 66}%, #ef4444 ${((morphPercentage - 25) / 75) * 100}%)`,
@@ -1771,15 +1909,99 @@ export default function LiquidResumePage() {
                         />
                       </div>
                       <div className="flex justify-between text-xs mt-2">
-                        <span className="text-green-400 font-medium">🌱 Light Touch</span>
-                        <span className="text-yellow-400 font-medium">⚡ Moderate</span>
-                        <span className="text-red-400 font-medium">🔥 Aggressive</span>
+                        <span className={`font-medium ${isLight ? 'text-green-700' : 'text-green-400'}`}>🌱 Light Touch</span>
+                        <span className={`font-medium ${isLight ? 'text-amber-700' : 'text-yellow-400'}`}>⚡ Moderate</span>
+                        <span className={`font-medium ${isLight ? 'text-red-700' : 'text-red-400'}`}>🔥 Aggressive</span>
                       </div>
+
+                      {/* AI Detection Warning at 80%+ */}
+                      <AnimatePresence>
+                        {morphPercentage >= 80 && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0, y: -5 }}
+                            animate={{ opacity: 1, height: 'auto', y: 0 }}
+                            exit={{ opacity: 0, height: 0, y: -5 }}
+                            transition={{ duration: 0.2 }}
+                            className="mt-3"
+                          >
+                            <style>{`
+                              @keyframes flash-warning-box {
+                                0%, 100% { box-shadow: 0 0 0px rgba(220, 38, 38, 0); }
+                                50% { box-shadow: 0 0 40px rgba(239, 68, 68, 0.8); background-color: rgba(220, 38, 38, 0.4); }
+                              }
+                              @keyframes persistent-red-glow {
+                                0%, 100% { box-shadow: 0 0 8px rgba(239, 68, 68, 0.3), 0 0 20px rgba(239, 68, 68, 0.15); }
+                                50% { box-shadow: 0 0 16px rgba(239, 68, 68, 0.5), 0 0 35px rgba(239, 68, 68, 0.25); }
+                              }
+                              .flashing-warning {
+                                animation: flash-warning-box 1s ease-in-out 3;
+                              }
+                              .persistent-glow {
+                                animation: persistent-red-glow 2s ease-in-out infinite;
+                              }
+                            `}</style>
+                            <div 
+                              className={`p-3 rounded-xl border transition-colors duration-300 ${flashWarning ? 'flashing-warning' : ''} ${!acceptedRisk ? 'persistent-glow' : ''}`}
+                              style={
+                                isLight ? { 
+                                  backgroundColor: `rgba(254, 226, 226, ${0.4 + ((morphPercentage - 80) / 20) * 0.6})`,
+                                  borderColor: `rgba(220, 38, 38, ${0.5 + ((morphPercentage - 80) / 20) * 0.5})`,
+                                  boxShadow: !acceptedRisk ? undefined : (morphPercentage >= 95 ? `0 4px 14px 0 rgba(220,38,38,0.2)` : 'none')
+                                } : { 
+                                  backgroundColor: `rgba(239, 68, 68, ${0.1 + ((morphPercentage - 80) / 20) * 0.4})`,
+                                  borderColor: `rgba(220, 38, 38, ${0.5 + ((morphPercentage - 80) / 20) * 0.5})`,
+                                  boxShadow: !acceptedRisk ? undefined : (morphPercentage >= 95 ? `0 0 ${((morphPercentage - 90) / 10) * 15}px rgba(239,68,68,0.5)` : 'none')
+                                }
+                              }
+                            >
+                              <div className="flex items-start gap-2.5">
+                                <span className="text-lg mt-0.5">⚠️</span>
+                                <div>
+                                  <p className={`text-xs font-bold transition-colors ${
+                                    isLight ? (morphPercentage >= 95 ? 'text-red-800' : 'text-red-700') : (morphPercentage >= 95 ? 'text-white' : 'text-red-400')
+                                  }`}>AI Detection Risk — High Intensity</p>
+                                  <p className={`text-[11px] mt-1 leading-relaxed transition-colors ${
+                                    isLight ? 'text-red-900/80' : (morphPercentage >= 95 ? 'text-red-50' : 'text-red-300/80')
+                                  }`}>
+                                    At {morphPercentage}% morph, your resume may trigger AI-detection systems used by recruiters. 
+                                    Many companies now flag heavily AI-rewritten applications. We recommend <strong className="text-amber-400">60–75%</strong> for the best balance of keyword alignment and authentic voice.
+                                  </p>
+                                  {morphPercentage >= 90 && (
+                                    <p className={`text-[10px] mt-1.5 font-bold transition-colors ${
+                                      isLight ? 'text-red-800' : (morphPercentage >= 95 ? 'text-white' : 'text-red-400/90')
+                                    }`}>
+                                      🚨 Above 90% — Your original voice will be almost entirely replaced. Proceed only if you understand the risk.
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                              <div className={`mt-4 flex items-center gap-2 p-2.5 rounded-lg border ${
+                                isLight ? 'bg-red-200/50 border-red-300 shadow-sm' : 'bg-red-900/40 border-red-500/50 shadow-inner'
+                              }`}>
+                                <input 
+                                  type="checkbox" 
+                                  id="acceptRisk" 
+                                  checked={acceptedRisk} 
+                                  onChange={e => setAcceptedRisk(e.target.checked)} 
+                                  className={`w-4 h-4 rounded cursor-pointer ${
+                                    isLight ? 'accent-red-600' : 'accent-red-500 bg-red-500/10 border-red-500/50 focus:ring-red-500'
+                                  }`} 
+                                />
+                                <label htmlFor="acceptRisk" className={`text-xs font-bold cursor-pointer leading-snug transition-colors ${
+                                  isLight ? 'text-red-900' : 'text-white'
+                                }`}>
+                                  I accept to proceed
+                                </label>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
 
                     {/* Page Count */}
                     <div>
-                      <label className="block text-white font-semibold mb-2">Target Length</label>
+                      <label className={`block font-semibold mb-2 ${isLight ? 'text-slate-800' : 'text-white'}`}>Target Length</label>
                       <div className="flex gap-2">
                         {(['auto', 1, 2] as const).map((pc) => (
                           <button
@@ -1796,10 +2018,45 @@ export default function LiquidResumePage() {
 
                     <button
                       onClick={handleMorph}
-                      disabled={isLoading || !jobDescription.trim()}
-                      className="w-full py-3 rounded-xl font-semibold text-sm bg-cyan-500/[0.08] border border-cyan-500/[0.15] text-cyan-400 hover:bg-cyan-500/[0.12] disabled:opacity-50 transition-all"
+                      disabled={isLoading || !jobDescription.trim() || (morphPercentage >= 80 && !acceptedRisk)}
+                      className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all text-center ${
+                        !jobDescription.trim()
+                          ? (isLight 
+                              ? 'bg-slate-200 border border-slate-300 text-slate-500 cursor-not-allowed shadow-none'
+                              : 'bg-slate-800/50 border border-slate-700 text-slate-500 cursor-not-allowed shadow-none')
+                          : morphPercentage >= 80 && !acceptedRisk
+                          ? (isLight 
+                              ? 'bg-red-600 border-2 border-red-700 text-white shadow-[0_2px_10px_rgba(220,38,38,0.3)] cursor-not-allowed'
+                              : 'bg-red-600 border-2 border-red-500 text-white shadow-[0_2px_15px_rgba(239,68,68,0.4)] cursor-not-allowed')
+                          : (isLight
+                              ? 'bg-cyan-600 border border-cyan-700 text-white hover:bg-cyan-700 shadow-[0_2px_8px_rgba(6,182,212,0.3)] disabled:opacity-50'
+                              : 'bg-cyan-600 border border-cyan-500 text-white hover:bg-cyan-500 shadow-[0_2px_12px_rgba(6,182,212,0.3)] disabled:opacity-50')
+                      }`}
                     >
-                      {isLoading ? '🧠 AI is Rewriting...' : '🧠 Morph Resume to Match JD'}
+                      {isLoading ? '🧠 AI is Rewriting...' : !jobDescription.trim() ? '⚠️ Paste Job Description First' : (morphPercentage >= 80 && !acceptedRisk) ? '🚨 Check "I accept" to Proceed' : '🧠 Morph Resume to Match JD'}
+                    </button>
+
+                    {/* Day-Zero Blueprint */}
+                    <button
+                      onClick={handleBlueprint}
+                      disabled={isBlueprintLoading || !jobDescription.trim() || isLoading}
+                      className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
+                        !jobDescription.trim()
+                          ? (isLight 
+                              ? 'bg-slate-200 border border-slate-300 text-slate-500 cursor-not-allowed shadow-none'
+                              : 'bg-slate-800/50 border border-slate-700 text-slate-500 cursor-not-allowed shadow-none')
+                          : isLight
+                          ? 'bg-gradient-to-r from-amber-500 to-orange-500 border border-amber-600 text-white shadow-[0_2px_10px_rgba(245,158,11,0.3)] hover:from-amber-600 hover:to-orange-600 disabled:opacity-50'
+                          : 'bg-gradient-to-r from-amber-600 to-orange-600 border border-amber-500 text-white shadow-[0_2px_15px_rgba(245,158,11,0.25)] hover:from-amber-500 hover:to-orange-500 disabled:opacity-50'
+                      }`}
+                    >
+                      {!jobDescription.trim() ? (
+                        <><span>⚠️</span> Paste JD for Blueprint{tier !== 'pro' && <span className="ml-1 text-[9px] px-1.5 py-0.5 rounded-full bg-slate-400/20 border border-slate-400/30 font-bold opacity-50">PRO</span>}</>
+                      ) : isBlueprintLoading ? (
+                        <><span className="animate-spin">⏳</span> Generating Blueprint...</>
+                      ) : (
+                        <><span>📋</span> Generate Day-Zero Blueprint{tier !== 'pro' && <span className="ml-1 text-[9px] px-1.5 py-0.5 rounded-full bg-white/20 border border-white/30 font-bold">PRO</span>}</>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -1949,7 +2206,7 @@ export default function LiquidResumePage() {
                             {/* Skill Bridge CTA */}
                             {resumeCheckResult && !autoFixing && (
                               <button
-                                onClick={() => router.push('/suite/skill-bridge')}
+                                onClick={() => router.push(`/suite/skill-bridge`)}
                                 className="w-full py-2.5 rounded-xl text-[11px] font-semibold bg-gradient-to-r from-cyan-500/[0.06] to-emerald-500/[0.06] border border-cyan-500/[0.12] text-cyan-400 hover:from-cyan-500/[0.1] hover:to-emerald-500/[0.1] transition-all flex items-center justify-center gap-2"
                               >
                                 <span>🌉</span> Bridge Your Gaps — Learn the Skills AI Enhanced
@@ -2151,7 +2408,7 @@ export default function LiquidResumePage() {
                     </div>
                     <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
                       {TEMPLATES.map((template) => {
-                        const isLocked = template.tier === 'pro' && tier !== 'pro';
+                        const isLocked = template.tier === 'pro' && !isPro;
                         return (
                         <motion.button
                           key={template.id}
@@ -2286,7 +2543,82 @@ export default function LiquidResumePage() {
           </AnimatePresence>
         </div>
 
-        {/* Application Modal */}
+        {/* Upgrade Modal */}
+        <UpgradeModal
+          isOpen={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+          onSuccess={() => {
+            setShowUpgradeModal(false);
+            showToast('Upgrade successful! Features unlocked.', '🎉');
+            // Hard reload to refresh user tier
+            window.location.reload();
+          }}
+        />
+
+        {/* Skill Gap Warning Modal */}
+        <SkillGapWarningModal
+          isOpen={showSkillGapModal}
+          onClose={() => setShowSkillGapModal(false)}
+          newSkills={detectedNewSkills}
+          matchScore={lastMatchScore}
+        />
+
+        {/* Day-Zero Blueprint Modal */}
+        <AnimatePresence>
+          {showBlueprintModal && blueprintContent && (
+            <>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowBlueprintModal(false)} className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50" />
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative w-full max-w-2xl max-h-[85vh] rounded-3xl overflow-hidden" style={{ background: 'var(--theme-bg-card, #111827)', border: '1px solid rgba(245, 158, 11, 0.15)' }}>
+                  {/* Header */}
+                  <div className="relative p-6 border-b border-white/10">
+                    <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-orange-500/10" />
+                    <div className="relative flex items-center justify-between">
+                      <div>
+                        <h2 className="text-xl font-bold text-white flex items-center gap-2">📋 Day-Zero Blueprint</h2>
+                        <p className="text-sm text-amber-400/80 mt-1">Your strategic "First 90 Days" proposal</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(blueprintContent);
+                            showToast('Blueprint copied to clipboard!', '📋');
+                          }}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 transition-all"
+                        >
+                          Copy
+                        </button>
+                        <button onClick={() => setShowBlueprintModal(false)} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-silver hover:text-white hover:bg-white/20 transition-all">✕</button>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Content */}
+                  <div className="p-6 overflow-y-auto max-h-[65vh]">
+                    <div className="prose prose-invert prose-sm max-w-none">
+                      {blueprintContent.split('\n').map((line, i) => {
+                        if (line.startsWith('# ')) return <h1 key={i} className="text-xl font-bold text-white mt-2 mb-3">{line.slice(2)}</h1>;
+                        if (line.startsWith('## ')) return <h2 key={i} className="text-lg font-semibold text-amber-400 mt-4 mb-2">{line.slice(3)}</h2>;
+                        if (line.startsWith('### ')) return <h3 key={i} className="text-base font-semibold text-cyan-400 mt-4 mb-2">{line.slice(4)}</h3>;
+                        if (line.startsWith('**') && line.endsWith('**')) return <p key={i} className="font-semibold text-white/90 mt-2">{line.slice(2, -2)}</p>;
+                        if (line.startsWith('- ')) return <li key={i} className="text-silver ml-4 mb-1 list-disc">{line.slice(2)}</li>;
+                        if (line.trim() === '') return <div key={i} className="h-2" />;
+                        return <p key={i} className="text-silver mb-1">{line}</p>;
+                      })}
+                    </div>
+                  </div>
+                  {/* Footer */}
+                  <div className="p-4 border-t border-white/10 bg-black/20 flex justify-between items-center">
+                    <span className="text-[10px] text-silver/50">Generated by TalentConsulting.io</span>
+                    <button onClick={() => setShowBlueprintModal(false)} className="px-4 py-2 rounded-xl text-sm font-medium bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 transition-all">
+                      Done
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            </>
+          )}
+        </AnimatePresence>
+
         <AnimatePresence>
           {showApplicationModal && displayResume && (
             <>
@@ -2462,7 +2794,7 @@ export default function LiquidResumePage() {
                 </div>
                 <div className="flex justify-between">
                   <button onClick={() => setStep('upload')} className="px-4 py-2 rounded-xl glass-card text-slate-500 hover:border-white/[0.12] text-sm">← Back</button>
-                  <button onClick={() => setStep(tier === 'pro' ? 'enhance' : 'template')} className="px-4 py-2 rounded-xl font-medium text-sm bg-cyan-500/[0.08] border border-cyan-500/[0.15] text-cyan-400 hover:bg-cyan-500/[0.12] transition-all">{tier === 'pro' ? '✨ AI Enhance →' : 'Choose Template →'}</button>
+                  <button onClick={() => setStep(isPro ? 'enhance' : 'template')} className="px-4 py-2 rounded-xl font-medium text-sm bg-cyan-500/[0.08] border border-cyan-500/[0.15] text-cyan-400 hover:bg-cyan-500/[0.12] transition-all">{isPro ? '✨ AI Enhance →' : 'Choose Template →'}</button>
                 </div>
               </motion.div>
             )}
@@ -2476,7 +2808,7 @@ export default function LiquidResumePage() {
                         <h3 className="text-xl font-bold text-white">Choose Template</h3>
                         <div className="grid grid-cols-2 gap-3">
                           {TEMPLATES.map((t) => {
-                            const isLocked = t.tier === 'pro' && tier !== 'pro';
+                            const isLocked = t.tier === 'pro' && !isPro;
                             return (
                             <button key={t.id} onClick={() => { if (isLocked) { showToast('Upgrade to Pro — $2.99/mo', 'info'); return; } setSelectedTemplate(t); }} className={`p-3 rounded-xl border text-left text-sm relative ${isLocked ? 'border-white/[0.04] bg-[var(--theme-bg-card)] opacity-60' : selectedTemplate.id === t.id ? 'border-cyan-500/[0.2] bg-cyan-500/[0.03]' : 'border-white/[0.06] bg-[var(--theme-bg-card)] hover:border-white/[0.12]'}`}>
                               {isLocked && <span className="absolute top-1 right-1 text-[8px] px-1 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 font-bold">PRO</span>}
@@ -3291,10 +3623,10 @@ function ResumeTemplate({ resume, template }: { resume: ResumeData; template: ty
           ))}
         </div>
       )}
-      {template.id === 'federal' && resume.certifications && resume.certifications.length > 0 && (
+      {template.id === 'federal' && resume.certifications && (resume.certifications as any[]).length > 0 && (
         <div className="mt-6">
           <h2 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: primary }}>Certifications & Clearances</h2>
-          <ul className="space-y-1">{resume.certifications.map((c, i) => <li key={i} className="text-sm text-gray-700">✓ {c}</li>)}</ul>
+          <ul className="space-y-1">{(resume.certifications || []).map((c, i) => <li key={i} className="text-sm text-gray-700">✓ {c}</li>)}</ul>
         </div>
       )}
     </div>

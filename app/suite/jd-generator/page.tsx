@@ -297,7 +297,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
     <div className="min-h-screen p-6 lg:p-8">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-3xl glass-card p-8 mb-8"
+        className="max-w-5xl mx-auto relative overflow-hidden rounded-2xl glass-card p-6 mb-6"
       >
         <div className="absolute inset-0 opacity-20">
           <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/30 rounded-full blur-3xl" />
@@ -309,12 +309,12 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
               <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
               <span className="text-xs font-medium text-white/80">Persona-JD Engine</span>
             </motion.div>
-            <h1 className="text-4xl lg:text-5xl font-bold mb-3">
+            <h1 className="text-2xl lg:text-3xl font-bold mb-2">
               <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent">
                 Mission Blueprint Generator
               </span>
             </h1>
-            <p className="text-silver text-lg max-w-2xl">
+            <p className="text-silver text-sm max-w-2xl">
               Create compelling job descriptions that attract exceptional talent with AI-powered bias detection
             </p>
           </div>

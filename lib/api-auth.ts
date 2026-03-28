@@ -5,13 +5,14 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyIdToken } from './firebase-admin';
+import { getAuth } from 'firebase-admin/auth';
 import { checkRateLimit } from './rate-limit';
-import { getUserTier, getRateLimit as getTierRateLimit } from './pricing-tiers';
+import { getUserTier, getRateLimit as getTierRateLimit, isMasterAccount, type PlanTier } from './pricing-tiers';
 
 interface AuthResult {
   uid: string;
   email?: string;
-  tier: 'free' | 'pro';
+  tier: PlanTier;
 }
 
 /**
@@ -38,10 +39,7 @@ export async function authenticateRequest(req: NextRequest): Promise<Omit<AuthRe
 
 /**
  * Guard an API route — checks auth, determines tier, applies tier-aware rate limits.
- * Usage:
- *   const guard = await guardApiRoute(req);
- *   if (guard.error) return guard.error;
- *   const { user } = guard; // user.tier is 'free' or 'pro'
+ * Master accounts (MASTER_EMAILS) bypass rate limits entirely.
  */
 export async function guardApiRoute(
   req: NextRequest,
@@ -61,6 +59,11 @@ export async function guardApiRoute(
 
   // Get user tier from Firestore (master emails auto-promoted)
   const tier = await getUserTier(authUser.uid, authUser.email);
+
+  // Master accounts bypass rate limiting entirely
+  if (isMasterAccount(authUser.email)) {
+    return { user: { ...authUser, tier } };
+  }
 
   // Determine rate limit: use tier-aware config or fallback to explicit options
   const pathname = new URL(req.url).pathname;

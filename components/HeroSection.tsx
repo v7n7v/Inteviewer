@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform, useInView, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/components/ThemeProvider';
 import { AnimatedShimmerBackground } from './AnimatedShimmerBackground';
+import ThemeToggle from '@/components/ThemeToggle';
 
 interface HeroSectionProps {
   onGetStarted: () => void;
@@ -548,21 +549,23 @@ function ProcessCarousel() {
 // TALENT CONSTELLATION — Orbital Animation
 // ═══════════════════════════════════════
 const orbitNodes = [
-  { label: 'React', angle: 0, ring: 1, color: '#61DAFB' },
-  { label: 'Python', angle: 45, ring: 1, color: '#3776AB' },
-  { label: 'AWS', angle: 90, ring: 1, color: '#FF9900' },
-  { label: 'SQL', angle: 135, ring: 1, color: '#00758F' },
-  { label: 'Next.js', angle: 180, ring: 1, color: '#FFFFFF' },
-  { label: 'Docker', angle: 225, ring: 1, color: '#2496ED' },
-  { label: 'ML', angle: 30, ring: 2, color: '#22C55E' },
-  { label: 'GraphQL', angle: 100, ring: 2, color: '#E535AB' },
-  { label: 'K8s', angle: 170, ring: 2, color: '#326CE5' },
-  { label: 'Rust', angle: 240, ring: 2, color: '#DEA584' },
-  { label: 'TF', angle: 310, ring: 2, color: '#FF6F00' },
-  { label: 'Go', angle: 270, ring: 1, color: '#00ADD8' },
+  { label: 'Leadership', angle: 0, ring: 1, color: '#10B981' },
+  { label: 'Finance', angle: 45, ring: 1, color: '#3B82F6' },
+  { label: 'Marketing', angle: 90, ring: 1, color: '#F59E0B' },
+  { label: 'Design', angle: 135, ring: 1, color: '#EC4899' },
+  { label: 'Analytics', angle: 180, ring: 1, color: '#8B5CF6' },
+  { label: 'Strategy', angle: 225, ring: 1, color: '#06B6D4' },
+  { label: 'Sales', angle: 30, ring: 2, color: '#22C55E' },
+  { label: 'Healthcare', angle: 100, ring: 2, color: '#EF4444' },
+  { label: 'Engineering', angle: 170, ring: 2, color: '#2563EB' },
+  { label: 'Legal', angle: 240, ring: 2, color: '#D97706' },
+  { label: 'Education', angle: 310, ring: 2, color: '#7C3AED' },
+  { label: 'Operations', angle: 270, ring: 1, color: '#0EA5E9' },
 ];
 
 function TalentConstellation() {
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
   const [score, setScore] = useState(0);
   const [phase, setPhase] = useState(0);
   const [time, setTime] = useState(0);
@@ -601,13 +604,13 @@ function TalentConstellation() {
   return (
     <div className="relative w-full aspect-square max-w-[420px] mx-auto">
       {/* Ambient glow */}
-      <div className="absolute inset-0 rounded-full" style={{ background: 'radial-gradient(circle at 50% 50%, rgba(16,185,129,0.06) 0%, transparent 70%)' }} />
+      <div className="absolute inset-0 rounded-full" style={{ background: isLight ? 'radial-gradient(circle at 50% 50%, rgba(16,185,129,0.12) 0%, transparent 70%)' : 'radial-gradient(circle at 50% 50%, rgba(16,185,129,0.06) 0%, transparent 70%)' }} />
 
       {/* Orbit rings */}
       {[0.65, 0.88].map((pct, i) => (
         <motion.div
           key={i}
-          className="absolute rounded-full border border-white/[0.03]"
+          className={`absolute rounded-full border ${isLight ? 'border-gray-300/60' : 'border-white/[0.03]'}`}
           style={{
             width: `${pct * 100}%`,
             height: `${pct * 100}%`,
@@ -637,16 +640,17 @@ function TalentConstellation() {
               top: `${top}%`,
               transform: 'translate(-50%, -50%)',
               zIndex: 10,
-              opacity: 0.7,
+              opacity: isLight ? 1 : 0.7,
             }}
           >
             <span
-              className="px-2 py-0.5 rounded-md text-[9px] font-medium backdrop-blur-sm border whitespace-nowrap"
+              className="px-2 py-0.5 rounded-md text-[9px] font-semibold backdrop-blur-sm border whitespace-nowrap"
               style={{
-                backgroundColor: `${node.color}10`,
-                color: node.color,
-                borderColor: `${node.color}25`,
-                boxShadow: `0 0 12px ${node.color}15`,
+                backgroundColor: isLight ? `${node.color}18` : `${node.color}10`,
+                color: isLight ? node.color : node.color,
+                borderColor: isLight ? `${node.color}50` : `${node.color}25`,
+                boxShadow: isLight ? `0 1px 6px ${node.color}20` : `0 0 12px ${node.color}15`,
+                fontWeight: isLight ? 600 : 500,
               }}
             >
               {node.label}
@@ -666,11 +670,11 @@ function TalentConstellation() {
             ]
           }}
           transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-          className="w-28 h-28 rounded-full bg-[var(--theme-bg-elevated)] border border-emerald-500/20 flex flex-col items-center justify-center"
+          className={`w-28 h-28 rounded-full bg-[var(--theme-bg-elevated)] border flex flex-col items-center justify-center ${isLight ? 'border-emerald-500/30 shadow-lg shadow-emerald-500/10' : 'border-emerald-500/20'}`}
         >
-          <span className="text-[8px] text-white/25 uppercase tracking-widest mb-0.5">Density</span>
-          <motion.span className="text-2xl font-bold text-emerald-400" key={phase}>{score}</motion.span>
-          <span className="text-[8px] text-white/15">/ 100</span>
+          <span className={`text-[8px] uppercase tracking-widest mb-0.5 ${isLight ? 'text-gray-500' : 'text-white/25'}`}>Density</span>
+          <motion.span className="text-2xl font-bold text-emerald-500" key={phase}>{score}</motion.span>
+          <span className={`text-[8px] ${isLight ? 'text-gray-400' : 'text-white/15'}`}>/ 100</span>
         </motion.div>
       </div>
 
@@ -678,7 +682,7 @@ function TalentConstellation() {
       {[0, 1, 2].map(i => (
         <motion.div
           key={`pulse-${i}`}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-emerald-500/10"
+          className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border ${isLight ? 'border-emerald-500/20' : 'border-emerald-500/10'}`}
           initial={{ width: 112, height: 112, opacity: 0.5 }}
           animate={{ width: 280, height: 280, opacity: 0 }}
           transition={{ duration: 3, repeat: Infinity, delay: i * 1, ease: 'easeOut' }}
@@ -1219,7 +1223,7 @@ function ProFeatureList() {
 
 // ─── MAIN ───
 export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, isAuthenticated }: HeroSectionProps) {
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const isLight = theme === 'light';
   const [activeFeature, setActiveFeature] = useState(0);
   const [activeQuote, setActiveQuote] = useState(0);
@@ -1270,26 +1274,7 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
           </div>
           <div className="flex items-center gap-2">
             {/* Theme Toggle */}
-            <button
-              onClick={toggleTheme}
-              className={`relative w-8 h-8 rounded-lg flex items-center justify-center transition-all ${isLight
-                ? 'hover:bg-black/[0.06] text-gray-900'
-                : 'hover:bg-white/[0.06] text-white/50 hover:text-white/80'
-              }`}
-              title={`Switch to ${isLight ? 'dark' : 'light'} mode`}
-            >
-              <AnimatePresence mode="wait">
-                {isLight ? (
-                  <motion.svg key="moon" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.2 }} className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                  </motion.svg>
-                ) : (
-                  <motion.svg key="sun" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.2 }} className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </motion.svg>
-                )}
-              </AnimatePresence>
-            </button>
+            <ThemeToggle size="sm" />
 
             {isAuthenticated ? (
               <button onClick={onGetStarted} className={`text-[13px] font-medium px-3 py-1 rounded-md transition-all ${isLight ? 'font-bold text-gray-900 hover:text-gray-900 hover:bg-black/[0.04]' : 'text-white/70 hover:text-white hover:bg-white/[0.04]'}`}>Dashboard →</button>
@@ -1376,31 +1361,113 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
             </motion.div>
           </div>
 
-          {/* ── Mission Statement Callout ── */}
+          {/* ── Mission Statement Callout — Animated Selling Point ── */}
           <Reveal delay={0.3}>
-            <div className="relative my-12 py-8 px-6 rounded-2xl overflow-hidden">
-              {/* Gradient border glow */}
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-cyan-500/10 via-emerald-500/5 to-blue-500/10" />
+            <div className="relative my-12 py-10 px-8 rounded-2xl overflow-hidden group">
+              {/* Animated gradient border glow — pulses softly */}
+              <motion.div
+                className="absolute inset-0 rounded-2xl"
+                style={{
+                  background: isLight
+                    ? 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(6,182,212,0.1), rgba(59,130,246,0.15))'
+                    : 'linear-gradient(135deg, rgba(6,182,212,0.2), rgba(16,185,129,0.15), rgba(59,130,246,0.2))',
+                }}
+                animate={{
+                  opacity: [0.5, 1, 0.5],
+                }}
+                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+              />
               <div className="absolute inset-[1px] rounded-2xl bg-[var(--theme-bg-card)] transition-colors" />
+              
+              {/* Decorative corner accents */}
+              <motion.div
+                className="absolute top-3 left-3 w-8 h-8 border-t-2 border-l-2 rounded-tl-lg"
+                style={{ borderColor: isLight ? 'rgba(16,185,129,0.3)' : 'rgba(6,182,212,0.3)' }}
+                initial={{ opacity: 0, scale: 0.5 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.5, duration: 0.6 }}
+              />
+              <motion.div
+                className="absolute bottom-3 right-3 w-8 h-8 border-b-2 border-r-2 rounded-br-lg"
+                style={{ borderColor: isLight ? 'rgba(16,185,129,0.3)' : 'rgba(6,182,212,0.3)' }}
+                initial={{ opacity: 0, scale: 0.5 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.7, duration: 0.6 }}
+              />
+
               <div className="relative text-center">
-                <motion.p
-                  initial={{ opacity: 0, y: 10 }}
+                {/* Opening quote mark */}
+                <motion.span
+                  className={`block text-4xl leading-none mb-2 ${isLight ? 'text-emerald-500/30' : 'text-cyan-400/20'}`}
+                  initial={{ opacity: 0, y: -10 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ duration: 0.8, delay: 0.2 }}
-                  className={`text-lg md:text-xl font-light italic leading-relaxed max-w-2xl mx-auto ${isLight ? 'font-bold text-gray-900' : 'text-[var(--theme-text-secondary)]'}`}
+                  transition={{ delay: 0.3 }}
                 >
-                  &ldquo;We don&apos;t just dress up your resume.{' '}
-                  <span className={`font-medium not-italic ${isLight ? 'text-emerald-700' : 'text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-emerald-400'}`}>
+                  &ldquo;
+                </motion.span>
+
+                {/* First line — word-by-word stagger */}
+                <div className={`text-lg md:text-xl font-light italic leading-relaxed max-w-2xl mx-auto ${isLight ? 'text-gray-800' : 'text-[var(--theme-text-secondary)]'}`}>
+                  {['We', "don't", 'just', 'dress', 'up', 'your', 'resume.'].map((word, i) => (
+                    <motion.span
+                      key={i}
+                      className="inline-block mr-[0.3em]"
+                      initial={{ opacity: 0, y: 15, filter: 'blur(4px)' }}
+                      whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.4 + i * 0.08, duration: 0.5, ease: 'easeOut' }}
+                    >
+                      {word}
+                    </motion.span>
+                  ))}
+                </div>
+
+                {/* Punchline — shimmering gradient reveal */}
+                <motion.div
+                  className="mt-2"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 1.0, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  <span
+                    className="text-xl md:text-2xl font-bold not-italic inline-block"
+                    style={{
+                      background: isLight
+                        ? 'linear-gradient(135deg, #059669, #0d9488, #0284c7)'
+                        : 'linear-gradient(135deg, #22d3ee, #10b981, #3b82f6)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      backgroundClip: 'text',
+                      backgroundSize: '200% 100%',
+                      animation: 'shimmer-text 3s ease-in-out infinite',
+                    }}
+                  >
                     We make you the candidate it says you are.
-                  </span>&rdquo;
-                </motion.p>
-                <motion.p
+                  </span>
+                </motion.div>
+
+                {/* Closing quote + blinking cursor */}
+                <motion.span
+                  className={`inline-block text-4xl leading-none mt-1 ${isLight ? 'text-emerald-500/30' : 'text-cyan-400/20'}`}
                   initial={{ opacity: 0 }}
                   whileInView={{ opacity: 1 }}
                   viewport={{ once: true }}
-                  transition={{ delay: 0.6 }}
-                  className={`mt-3 text-[11px] font-medium tracking-widest uppercase ${isLight ? 'font-bold text-gray-900' : 'text-[var(--theme-text-muted)]'}`}
+                  transition={{ delay: 1.5 }}
+                >
+                  &rdquo;
+                </motion.span>
+
+                {/* Subtitle — tracking animation */}
+                <motion.p
+                  initial={{ opacity: 0, letterSpacing: '0.3em' }}
+                  whileInView={{ opacity: 1, letterSpacing: '0.15em' }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 1.7, duration: 0.8 }}
+                  className={`mt-4 text-[11px] font-semibold uppercase ${isLight ? 'text-emerald-700/70' : 'text-cyan-400/50'}`}
                 >
                   Your AI Career Co-Pilot
                 </motion.p>

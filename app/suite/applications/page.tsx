@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/lib/store';
 import {
     getJobApplications, updateApplicationStatus, deleteJobApplication,
-    getResumeVersions, type JobApplication, type ResumeVersion
+    getResumeVersions, getAllStudyProgress, type JobApplication, type ResumeVersion, type StudyProgress
 } from '@/lib/database-suite';
 import { downloadResumePDF } from '@/lib/pdf-templates';
 import { showToast } from '@/components/Toast';
@@ -29,6 +29,7 @@ type ViewMode = 'grid' | 'list';
 export default function ApplicationsPage() {
     const { user } = useStore();
     const [applications, setApplications] = useState<JobApplication[]>([]);
+    const [allProgress, setAllProgress] = useState<StudyProgress[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -48,11 +49,34 @@ export default function ApplicationsPage() {
 
     const loadApplications = async () => {
         setIsLoading(true);
-        const result = await getJobApplications();
-        if (result.success && result.data) {
-            setApplications(result.data);
+        const [appResult, progResult] = await Promise.all([
+            getJobApplications(),
+            getAllStudyProgress()
+        ]);
+        if (appResult.success && appResult.data) {
+            setApplications(appResult.data);
+        }
+        if (progResult.success && progResult.data) {
+            setAllProgress(progResult.data);
         }
         setIsLoading(false);
+    };
+
+    const getApplicationProgress = (appId: string) => {
+        const appProgresses = allProgress.filter(p => p.application_ids?.includes(appId));
+        if (appProgresses.length === 0) return null;
+
+        let totalCompleted = 0;
+        let totalPossible = 0;
+
+        appProgresses.forEach(p => {
+            const expectedDays = p.total_days || 7;
+            totalCompleted += p.completed_days.length;
+            totalPossible += expectedDays;
+        });
+
+        if (totalPossible === 0) return 0;
+        return Math.round((totalCompleted / totalPossible) * 100);
     };
 
     const handleStatusUpdate = async (app: JobApplication, newStatus: JobApplication['status']) => {
@@ -319,6 +343,7 @@ export default function ApplicationsPage() {
                             onStatusUpdate={handleStatusUpdate}
                             onDelete={handleDelete}
                             onOpenDetail={openDetailModal}
+                            skillProgress={getApplicationProgress(app.id)}
                         />
                     ))}
                 </div>
@@ -331,6 +356,7 @@ export default function ApplicationsPage() {
                                 <th className="text-left p-4 text-silver font-medium">Position</th>
                                 <th className="text-left p-4 text-silver font-medium">Status</th>
                                 <th className="text-left p-4 text-silver font-medium">Match</th>
+                                <th className="text-left p-4 text-silver font-medium">Skill Bridge</th>
                                 <th className="text-left p-4 text-silver font-medium">Date</th>
                                 <th className="text-right p-4 text-silver font-medium">Actions</th>
                             </tr>
@@ -392,6 +418,20 @@ export default function ApplicationsPage() {
                                                 {app.talent_density_score}%
                                             </span>
                                         ) : '-'}
+                                    </td>
+                                    <td className="p-4">
+                                        {(() => {
+                                            const prog = getApplicationProgress(app.id);
+                                            if (prog === null) return <span className="text-silver">-</span>;
+                                            return (
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`text-xs font-bold ${prog >= 100 ? 'text-indigo-400' : 'text-cyan-400'}`}>{prog}%</span>
+                                                    <div className="w-12 h-1.5 bg-white/10 rounded-full overflow-hidden shrink-0">
+                                                        <div className={`h-full ${prog >= 100 ? 'bg-indigo-500' : 'bg-cyan-500'}`} style={{ width: `${prog}%` }} />
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
                                     </td>
                                     <td className="p-4 text-silver text-sm">
                                         {new Date(app.created_at).toLocaleDateString()}
@@ -598,9 +638,14 @@ export default function ApplicationsPage() {
                                 </div>
 
                                 {/* Timeline */}
-                                <div className="p-4 flex items-center gap-4 text-xs text-silver">
-                                    <span>📝 Created {new Date(selectedApp.created_at).toLocaleDateString()}</span>
-                                    {selectedApp.applied_at && <span>🚀 Applied {new Date(selectedApp.applied_at).toLocaleDateString()}</span>}
+                                <div className="p-4 flex items-center justify-between text-xs text-silver border-b border-white/10">
+                                    <div className="flex items-center gap-4">
+                                        <span>📝 Created {new Date(selectedApp.created_at).toLocaleDateString()}</span>
+                                        {selectedApp.applied_at && <span>🚀 Applied {new Date(selectedApp.applied_at).toLocaleDateString()}</span>}
+                                    </div>
+                                    <a href={`/suite/skill-bridge?applicationId=${selectedApp.id}`} className="px-3 py-1.5 rounded-lg bg-indigo-500/20 text-indigo-400 font-medium hover:bg-indigo-500/30 transition-colors">
+                                        🌉 Open Skill Bridge
+                                    </a>
                                 </div>
 
                                 {/* Footer */}
@@ -719,13 +764,14 @@ function ResumePreviewCard({ resume }: { resume: any }) {
 
 // ===== APPLICATION CARD =====
 function ApplicationCard({
-    app, index, onStatusUpdate, onDelete, onOpenDetail
+    app, index, onStatusUpdate, onDelete, onOpenDetail, skillProgress
 }: {
     app: JobApplication;
     index: number;
     onStatusUpdate: (app: JobApplication, status: JobApplication['status']) => void;
     onDelete: (id: string) => void;
     onOpenDetail: (app: JobApplication) => void;
+    skillProgress?: number | null;
 }) {
     const [showQuickStatus, setShowQuickStatus] = useState(false);
 
@@ -758,25 +804,46 @@ function ApplicationCard({
                     </button>
                 </div>
 
-                {/* Match Score */}
-                {app.talent_density_score && (
-                    <div className="mb-4">
-                        <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs text-silver">Match Score</span>
-                            <span className={`text-sm font-bold ${app.talent_density_score >= 80 ? 'text-green-400' : app.talent_density_score >= 60 ? 'text-cyan-400' : 'text-yellow-400'}`}>
-                                {app.talent_density_score}%
-                            </span>
+                {/* Metrics */}
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                    {app.talent_density_score && (
+                        <div>
+                            <div className="flex items-center justify-between mb-1">
+                                <span className="text-xs text-silver">Match Score</span>
+                                <span className={`text-sm font-bold ${app.talent_density_score >= 80 ? 'text-green-400' : app.talent_density_score >= 60 ? 'text-cyan-400' : 'text-yellow-400'}`}>
+                                    {app.talent_density_score}%
+                                </span>
+                            </div>
+                            <div className="w-full h-1.5 bg-[var(--theme-bg-elevated)] rounded-full overflow-hidden">
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${app.talent_density_score}%` }}
+                                    transition={{ duration: 1, delay: index * 0.1 }}
+                                    className={`h-full ${app.talent_density_score >= 80 ? 'bg-gradient-to-r from-green-500 to-emerald-500' : app.talent_density_score >= 60 ? 'bg-gradient-to-r from-cyan-500 to-blue-500' : 'bg-gradient-to-r from-yellow-500 to-orange-500'}`}
+                                />
+                            </div>
                         </div>
-                        <div className="w-full h-2 bg-[var(--theme-bg-elevated)] rounded-full overflow-hidden">
-                            <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${app.talent_density_score}%` }}
-                                transition={{ duration: 1, delay: index * 0.1 }}
-                                className={`h-full ${app.talent_density_score >= 80 ? 'bg-gradient-to-r from-green-500 to-emerald-500' : app.talent_density_score >= 60 ? 'bg-gradient-to-r from-cyan-500 to-blue-500' : 'bg-gradient-to-r from-yellow-500 to-orange-500'}`}
-                            />
+                    )}
+
+                    {skillProgress !== null && typeof skillProgress === 'number' && (
+                        <div>
+                            <div className="flex items-center justify-between mb-1">
+                                <span className="text-xs text-silver">Skill Bridge</span>
+                                <span className={`text-sm font-bold ${skillProgress >= 100 ? 'text-indigo-400' : 'text-cyan-400'}`}>
+                                    {skillProgress}%
+                                </span>
+                            </div>
+                            <div className="w-full h-1.5 bg-[var(--theme-bg-elevated)] rounded-full overflow-hidden">
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${skillProgress}%` }}
+                                    transition={{ duration: 1, delay: index * 0.1 }}
+                                    className={`h-full ${skillProgress >= 100 ? 'bg-gradient-to-r from-indigo-500 to-violet-500' : 'bg-gradient-to-r from-cyan-500 to-blue-500'}`}
+                                />
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
 
                 {/* Status Badge */}
                 <div className="relative mb-4">

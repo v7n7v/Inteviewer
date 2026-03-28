@@ -2,18 +2,20 @@
 
 /**
  * useUserTier — Client-side hook for tier + usage awareness
- * Fetches from /api/usage on mount and exposes tier, usage, and helper methods
+ * Fetches from /api/usage on mount and exposes tier, usage, and helper methods.
+ * Auto-detects upgrade success from URL params and refetches.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { authFetch } from '@/lib/auth-fetch';
 import { useStore } from '@/lib/store';
 import type { UsageData } from '@/lib/usage-tracker';
 
-export type PlanTier = 'free' | 'pro';
+export type PlanTier = 'free' | 'pro' | 'god';
 
 interface TierState {
   tier: PlanTier;
+  isPro: boolean; // true for 'pro' OR 'god'
   usage: UsageData;
   caps: Record<string, number> | null;
   loading: boolean;
@@ -23,7 +25,7 @@ interface TierState {
   remaining: (feature: keyof UsageData) => number;
 }
 
-const DEFAULT_USAGE: UsageData = { morphs: 0, gauntlets: 0, flashcards: 0, jdGenerations: 0 };
+const DEFAULT_USAGE: UsageData = { morphs: 0, gauntlets: 0, flashcards: 0, jdGenerations: 0, coverLetters: 0, resumeChecks: 0, linkedinProfiles: 0 };
 const DEFAULT_CAPS: Record<string, number> = { morphs: 3, gauntlets: 3, flashcards: 2, jdGenerations: 3 };
 
 export function useUserTier(): TierState {
@@ -44,9 +46,10 @@ export function useUserTier(): TierState {
       const res = await authFetch('/api/usage');
       if (res.ok) {
         const data = await res.json();
-        setTier(data.tier || 'free');
+        const serverTier = data.tier || 'free';
+        setTier(serverTier);
         setUsage(data.usage || DEFAULT_USAGE);
-        setCaps(data.caps || null);
+        setCaps(serverTier === 'free' ? (data.caps || DEFAULT_CAPS) : null);
         setError(null);
       }
     } catch (err: any) {
@@ -60,23 +63,39 @@ export function useUserTier(): TierState {
     fetchUsage();
   }, [fetchUsage]);
 
+  // Auto-detect upgrade success from URL params and refetch
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('upgrade') === 'success') {
+      // Clean the URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+      // Wait a moment for webhook to fire, then refetch
+      const timer = setTimeout(() => fetchUsage(), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [fetchUsage]);
+
+  const isPro = useMemo(() => tier === 'pro' || tier === 'god', [tier]);
+
   const canUse = useCallback(
     (feature: keyof UsageData): boolean => {
-      if (tier === 'pro') return true;
+      if (isPro) return true;
       if (!caps) return true;
       return (usage[feature] ?? 0) < (caps[feature] ?? Infinity);
     },
-    [tier, usage, caps]
+    [isPro, usage, caps]
   );
 
   const remaining = useCallback(
     (feature: keyof UsageData): number => {
-      if (tier === 'pro') return Infinity;
+      if (isPro) return Infinity;
       if (!caps) return Infinity;
       return Math.max(0, (caps[feature] ?? 0) - (usage[feature] ?? 0));
     },
-    [tier, usage, caps]
+    [isPro, usage, caps]
   );
 
-  return { tier, usage, caps, loading, error, refetch: fetchUsage, canUse, remaining };
+  return { tier, isPro, usage, caps, loading, error, refetch: fetchUsage, canUse, remaining };
 }

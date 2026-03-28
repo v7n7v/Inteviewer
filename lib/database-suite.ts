@@ -414,3 +414,241 @@ export async function getJDTemplates(): Promise<{
   }
 }
 
+// ============================================
+// STUDY PROGRESS (Skill Bridge)
+// ============================================
+
+export interface StudyProgress {
+  id: string;
+  user_id: string;
+  skill: string;
+  skill_id: string;
+  category: 'technical' | 'soft' | 'domain';
+  total_days: number;
+  completed_days: number[];
+  plan_data?: any;
+  email_reminders: boolean;
+  application_ids?: string[];
+  started_at: string;
+  last_activity_at: string;
+  completed_at?: string;
+}
+
+/** Generate a URL-safe skill ID */
+function toSkillId(skill: string): string {
+  return skill.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
+
+export async function saveStudyProgress(
+  skill: string,
+  category: 'technical' | 'soft' | 'domain',
+  planData?: any,
+  applicationId?: string
+): Promise<{ success: boolean; data?: StudyProgress; error?: string }> {
+  try {
+    const userId = getUserId();
+    const skillId = toSkillId(skill);
+    const now = new Date().toISOString();
+    const docRef = doc(db, 'users', userId, 'study_progress', skillId);
+
+    // Check if progress already exists
+    const existing = await withTimeout(getDoc(docRef));
+    if (existing.exists()) {
+      const data = existing.data() as StudyProgress;
+      // Tag the existing study progress with the new applicationId if provided
+      let appIds = data.application_ids || [];
+      if (applicationId && !appIds.includes(applicationId)) {
+        appIds.push(applicationId);
+        await withTimeout(updateDoc(docRef, { application_ids: appIds, last_activity_at: now }));
+      }
+      return { success: true, data: { ...data, id: existing.id, application_ids: appIds } as StudyProgress };
+    }
+
+    const docData = {
+      user_id: userId,
+      skill,
+      skill_id: skillId,
+      category,
+      total_days: 7,
+      completed_days: [],
+      plan_data: planData || null,
+      email_reminders: false,
+      application_ids: applicationId ? [applicationId] : [],
+      started_at: now,
+      last_activity_at: now,
+    };
+    await withTimeout(setDoc(docRef, docData));
+    return { success: true, data: { id: skillId, ...docData } as StudyProgress };
+  } catch (error: any) {
+    console.error('saveStudyProgress error:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getStudyProgress(
+  skill: string
+): Promise<{ success: boolean; data?: StudyProgress; error?: string }> {
+  try {
+    const userId = getUserId();
+    const skillId = toSkillId(skill);
+    const docRef = doc(db, 'users', userId, 'study_progress', skillId);
+    const snap = await withTimeout(getDoc(docRef));
+    if (!snap.exists()) return { success: true, data: undefined };
+    return { success: true, data: { id: snap.id, ...snap.data() } as StudyProgress };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function markDayComplete(
+  skill: string,
+  day: number
+): Promise<{ success: boolean; data?: StudyProgress; error?: string }> {
+  try {
+    const userId = getUserId();
+    const skillId = toSkillId(skill);
+    const docRef = doc(db, 'users', userId, 'study_progress', skillId);
+    const snap = await withTimeout(getDoc(docRef));
+
+    if (!snap.exists()) {
+      return { success: false, error: 'No study progress found for this skill' };
+    }
+
+    const current = snap.data();
+    const completedDays: number[] = current.completed_days || [];
+
+    if (!completedDays.includes(day)) {
+      completedDays.push(day);
+      completedDays.sort((a, b) => a - b);
+    }
+
+    const now = new Date().toISOString();
+    const updates: any = {
+      completed_days: completedDays,
+      last_activity_at: now,
+    };
+
+    // Mark as completed if all 7 days done
+    if (completedDays.length >= 7) {
+      updates.completed_at = now;
+    }
+
+    await withTimeout(updateDoc(docRef, updates));
+    const updated = await withTimeout(getDoc(docRef));
+    return { success: true, data: { id: updated.id, ...updated.data() } as StudyProgress };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getAllStudyProgress(): Promise<{
+  success: boolean;
+  data?: StudyProgress[];
+  error?: string;
+}> {
+  try {
+    const userId = getUserId();
+    const colRef = collection(db, 'users', userId, 'study_progress');
+    const snapshot = await withTimeout(getDocs(colRef));
+    const data = snapshot.docs
+      .map(d => ({ id: d.id, ...d.data() } as StudyProgress))
+      .sort((a, b) => new Date(b.last_activity_at).getTime() - new Date(a.last_activity_at).getTime());
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, data: [], error: error.message };
+  }
+}
+
+export async function toggleEmailReminders(
+  skill: string,
+  enabled: boolean
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const userId = getUserId();
+    const skillId = toSkillId(skill);
+    const docRef = doc(db, 'users', userId, 'study_progress', skillId);
+    await withTimeout(updateDoc(docRef, { email_reminders: enabled }));
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/** Remove a day from completed_days (toggle back to incomplete) */
+export async function unmarkDayComplete(
+  skill: string,
+  day: number
+): Promise<{ success: boolean; data?: StudyProgress; error?: string }> {
+  try {
+    const userId = getUserId();
+    const skillId = toSkillId(skill);
+    const docRef = doc(db, 'users', userId, 'study_progress', skillId);
+    const snap = await withTimeout(getDoc(docRef));
+    if (!snap.exists()) return { success: false, error: 'No study progress found' };
+
+    const current = snap.data();
+    const completedDays: number[] = (current.completed_days || []).filter((d: number) => d !== day);
+    const now = new Date().toISOString();
+
+    await withTimeout(updateDoc(docRef, {
+      completed_days: completedDays,
+      last_activity_at: now,
+      completed_at: null, // un-complete the course if a day is removed
+    }));
+    const updated = await withTimeout(getDoc(docRef));
+    return { success: true, data: { id: updated.id, ...updated.data() } as StudyProgress };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/** Mark all days as complete at once */
+export async function markCourseComplete(
+  skill: string,
+  totalDays: number = 7
+): Promise<{ success: boolean; data?: StudyProgress; error?: string }> {
+  try {
+    const userId = getUserId();
+    const skillId = toSkillId(skill);
+    const docRef = doc(db, 'users', userId, 'study_progress', skillId);
+    const snap = await withTimeout(getDoc(docRef));
+    if (!snap.exists()) return { success: false, error: 'No study progress found' };
+
+    const now = new Date().toISOString();
+    const allDays = Array.from({ length: totalDays }, (_, i) => i + 1);
+    await withTimeout(updateDoc(docRef, {
+      completed_days: allDays,
+      total_days: totalDays,
+      last_activity_at: now,
+      completed_at: now,
+    }));
+    const updated = await withTimeout(getDoc(docRef));
+    return { success: true, data: { id: updated.id, ...updated.data() } as StudyProgress };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/** Reset all progress (mark course as incomplete) */
+export async function markCourseIncomplete(
+  skill: string
+): Promise<{ success: boolean; data?: StudyProgress; error?: string }> {
+  try {
+    const userId = getUserId();
+    const skillId = toSkillId(skill);
+    const docRef = doc(db, 'users', userId, 'study_progress', skillId);
+    const snap = await withTimeout(getDoc(docRef));
+    if (!snap.exists()) return { success: false, error: 'No study progress found' };
+
+    const now = new Date().toISOString();
+    await withTimeout(updateDoc(docRef, {
+      completed_days: [],
+      last_activity_at: now,
+      completed_at: null,
+    }));
+    const updated = await withTimeout(getDoc(docRef));
+    return { success: true, data: { id: updated.id, ...updated.data() } as StudyProgress };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}

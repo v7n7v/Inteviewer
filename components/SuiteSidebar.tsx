@@ -9,6 +9,7 @@ import LogoutModal from './modals/LogoutModal';
 import UpgradeBanner from '@/components/UpgradeBanner';
 import { useUserTier } from '@/hooks/use-user-tier';
 import { useTheme } from '@/components/ThemeProvider';
+import ThemeToggle from '@/components/ThemeToggle';
 
 interface NavigationItem {
   id: string;
@@ -23,8 +24,9 @@ const talentSuiteItems: NavigationItem[] = [
   { id: 'resume', label: 'Liquid Resume', icon: '📄', description: 'Resume Builder', path: '/suite/resume' },
   { id: 'applications', label: 'Applications', icon: '📊', description: 'Track Jobs', path: '/suite/applications' },
   { id: 'flashcards', label: 'The Gauntlet', icon: '⚔️', description: 'Interview Simulator', path: '/suite/flashcards' },
-  { id: 'oracle', label: 'Market Oracle', icon: '🔮', description: 'Career Intelligence', path: '/suite/market-oracle' },
+  { id: 'vault', label: 'Study Vault', icon: '📚', description: 'Saved Practice Notes', path: '/suite/vault' },
   { id: 'skill-bridge', label: 'Skill Bridge', icon: '🌉', description: 'From Resume to Ready', path: '/suite/skill-bridge', badge: 'PRO' },
+  { id: 'oracle', label: 'Market Oracle', icon: '🔮', description: 'Career Intelligence', path: '/suite/market-oracle' },
   { id: 'job-search', label: 'Job Search', icon: '🔍', description: 'Find Jobs', path: '/suite/job-search', badge: 'Soon' },
 ];
 
@@ -50,8 +52,8 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const { tier } = useUserTier();
-  const { theme, toggleTheme } = useTheme();
+  const { tier, isPro } = useUserTier();
+  const { theme } = useTheme();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   useEffect(() => {
@@ -279,6 +281,39 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
             </div>
           )}
 
+          {/* Admin Panel (master only) */}
+          {user?.email && ['alula2006@gmail.com'].includes(user.email.toLowerCase()) && (
+            <div className="px-3 pb-1">
+              <motion.button
+                onClick={() => handleNavigation('/suite/admin')}
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${
+                  isActive('/suite/admin')
+                    ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-400'
+                    : 'text-slate-400 hover:bg-white/5 hover:text-amber-400'
+                } ${isCollapsed ? 'justify-center' : ''}`}
+                title="Admin Panel"
+              >
+                <span className="text-xl">🛡️</span>
+                <AnimatePresence mode="wait">
+                  {!isCollapsed && (
+                    <motion.div
+                      initial={{ opacity: 0, width: 0 }}
+                      animate={{ opacity: 1, width: 'auto' }}
+                      exit={{ opacity: 0, width: 0 }}
+                      className="flex-1 text-left overflow-hidden"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm">Admin</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400">Master</span>
+                      </div>
+                      <span className="text-xs text-slate-500">User Management</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.button>
+            </div>
+          )}
+
           {/* Help & Support */}
           <div className="px-3 pb-1 flex items-center gap-1">
             <motion.button
@@ -301,31 +336,7 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
             </motion.button>
 
             {/* Theme Toggle */}
-            <motion.button
-              onClick={toggleTheme}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              className="p-2.5 rounded-xl transition-all duration-200 text-slate-400 hover:bg-white/5 hover:text-white flex-shrink-0"
-              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            >
-              <motion.div
-                key={theme}
-                initial={{ rotate: -90, opacity: 0 }}
-                animate={{ rotate: 0, opacity: 1 }}
-                exit={{ rotate: 90, opacity: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                {theme === 'dark' ? (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                  </svg>
-                )}
-              </motion.div>
-            </motion.button>
+            <ThemeToggle size="sm" />
           </div>
 
           {/* User Section */}
@@ -346,7 +357,14 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
                       exit={{ opacity: 0 }}
                       className="flex-1 text-left overflow-hidden"
                     >
-                      <p className="text-sm font-medium text-white truncate">{user?.email?.split('@')[0]}</p>
+                      <p className="text-sm font-medium text-white truncate flex items-center gap-1.5">
+                        {user?.email?.split('@')[0]}
+                        {isPro && (
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${tier === 'god' ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-400 border border-amber-500/30' : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'}`}>
+                            {tier === 'god' ? '👑 GOD' : '⚡ PRO'}
+                          </span>
+                        )}
+                      </p>
                       <p className="text-xs text-slate-500 truncate">{user?.email}</p>
                     </motion.div>
                   )}

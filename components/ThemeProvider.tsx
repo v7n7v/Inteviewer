@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 
 type Theme = 'dark' | 'light';
 
@@ -21,7 +21,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Check localStorage first, then system preference
     const stored = localStorage.getItem('tc_theme') as Theme | null;
     if (stored && (stored === 'dark' || stored === 'light')) {
       setThemeState(stored);
@@ -35,17 +34,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setMounted(true);
   }, []);
 
-  const setTheme = (newTheme: Theme) => {
+  const setTheme = useCallback((newTheme: Theme) => {
     setThemeState(newTheme);
     localStorage.setItem('tc_theme', newTheme);
     document.documentElement.setAttribute('data-theme', newTheme);
-  };
+  }, []);
 
-  const toggleTheme = () => {
+  const toggleTheme = useCallback(() => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
-  };
+  }, [theme, setTheme]);
 
-  // Prevent flash of wrong theme
   if (!mounted) {
     return <>{children}</>;
   }

@@ -1,17 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { groqJSONCompletion } from '@/lib/ai/groq-client';
+import { guardApiRoute } from '@/lib/api-auth';
+import { validateBody } from '@/lib/validate';
+import { ResumeParseSchema } from '@/lib/schemas';
+import { sanitizeForAI } from '@/lib/sanitize';
 
 export async function POST(req: NextRequest) {
   try {
-    const { text } = await req.json();
+    const guard = await guardApiRoute(req, { rateLimit: 5, rateLimitWindow: 60_000 });
+    if (guard.error) return guard.error;
 
-    if (!text || typeof text !== 'string') {
-      return NextResponse.json({ error: 'Missing resume text' }, { status: 400 });
-    }
+    const validated = await validateBody(req, ResumeParseSchema);
+    if (!validated.success) return validated.error;
+    const { text } = validated.data;
 
-    const systemPrompt = `You are a resume parser. Extract structured data from resume text.
+    const safeText = sanitizeForAI(text, 100_000);
+
+    const systemPrompt = `You are a strict resume parser and validator. First, verify if the provided text structurally resembles a resume or CV.
+A resume typically contains contact info, work experience, education, and skills. 
+If the document is a syllabus, recipe, random article, or clearly NOT a resume, you MUST set "isResume": false and leave the rest empty.
+
 Return JSON matching this exact structure:
 {
+  "isResume": true,  // Set to false if the text is clearly not a resume
   "name": "Full Name",
   "title": "Job Title",
   "email": "email@example.com",
@@ -23,18 +34,22 @@ Return JSON matching this exact structure:
   "skills": [{"category": "Category Name", "items": ["Skill1", "Skill2"]}],
   "certifications": ["Certification 1"]
 }
-Extract as much detail as possible. For achievements, focus on quantifiable results.`;
+If isResume is true, extract as much detail as possible. For achievements, focus on quantifiable results.`;
 
-    const parsed = await groqJSONCompletion(systemPrompt, `Parse this resume:\n\n${text}`, {
-      temperature: 0.3,
+    const parsed = await groqJSONCompletion(systemPrompt, `Parse and validate this document:\n\n${safeText}`, {
+      temperature: 0.1,
       maxTokens: 4096,
     });
 
+    if (parsed.isResume === false) {
+      return NextResponse.json({ error: 'INVALID_DOCUMENT', message: "This document doesn't look like a resume. Please upload a valid resume." }, { status: 400 });
+    }
+
     return NextResponse.json({ resume: parsed });
-  } catch (error: any) {
-    console.error('Resume parse error:', error);
+  } catch (error: unknown) {
+    console.error('[api/resume/parse] Error:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to parse resume' },
+      { error: 'Failed to parse resume' },
       { status: 500 }
     );
   }

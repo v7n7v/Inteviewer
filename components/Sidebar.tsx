@@ -6,6 +6,7 @@ import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { authHelpers } from '@/lib/firebase';
 import { useStore } from '@/lib/store';
 import UpgradeBanner from '@/components/UpgradeBanner';
+import UsageCounter from '@/components/UsageCounter';
 import { useUserTier } from '@/hooks/use-user-tier';
 
 interface NavigationItem {
@@ -21,11 +22,12 @@ const navigationSections = [
   {
     title: 'Talent Suite',
     items: [
-      { id: 'resume', label: 'Resume Builder', icon: '📄', description: 'Liquid Resume', path: '/suite/resume', badge: 'New' },
+      { id: 'resume', label: 'Resume Builder', icon: '📄', description: 'Liquid Resume', path: '/suite/resume' },
       { id: 'jd-generator', label: 'JD Generator', icon: '💼', description: 'Persona-JD Engine', path: '/suite/jd-generator' },
-      { id: 'flashcards', label: 'Study Cards', icon: '🎴', description: 'Flash Cards', path: '/suite/flashcards', badge: 'New' },
-      { id: 'oracle', label: 'Market Oracle', icon: '🔮', description: 'Career Intelligence', path: '/suite/market-oracle', badge: 'New' },
+      { id: 'flashcards', label: 'The Gauntlet', icon: '⚔️', description: 'Interview Simulator', path: '/suite/flashcards' },
+      { id: 'vault', label: 'Study Vault', icon: '📚', description: 'Saved Practice Notes', path: '/suite/vault' },
       { id: 'skill-bridge', label: 'Skill Bridge', icon: '🌉', description: 'From Resume to Ready', path: '/suite/skill-bridge', badge: 'PRO' },
+      { id: 'oracle', label: 'Market Oracle', icon: '🔮', description: 'Career Intelligence', path: '/suite/market-oracle' },
     ],
   },
 ];
@@ -205,7 +207,7 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
                         </button>
 
                         {/* User Menu - Show after last item */}
-                        {item.id === 'skill-bridge' && (
+                        {item.id === 'oracle' && (
                           <>
                             {/* Upgrade / Pro Status Banner */}
                             <AnimatePresence>
@@ -215,9 +217,10 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
                                   animate={{ opacity: 1, height: 'auto' }}
                                   exit={{ opacity: 0, height: 0 }}
                                   transition={{ duration: 0.15 }}
-                                  className="mx-3 mt-2"
+                                  className="mx-3 mt-2 flex flex-col gap-2"
                                 >
                                   <UpgradeBanner currentTier={tier} compact />
+                                  <UsageCounter />
                                 </motion.div>
                               )}
                             </AnimatePresence>

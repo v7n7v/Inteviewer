@@ -7,14 +7,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { guardApiRoute } from '@/lib/api-auth';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2026-02-25.clover',
-});
-
 export async function POST(req: NextRequest) {
   try {
     const guard = await guardApiRoute(req, { rateLimit: 5, rateLimitWindow: 60_000 });
     if (guard.error) return guard.error;
+
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return NextResponse.json({ error: 'Stripe is not configured' }, { status: 500 });
+    }
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2026-02-25.clover',
+    });
 
     const { uid, email } = guard.user;
 

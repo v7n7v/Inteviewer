@@ -54,14 +54,27 @@ export default function FileUploadDropzone({
 
     setIsUploading(true);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const res = await authFetch('/api/gauntlet/parse-resume', { method: 'POST', body: formData });
-      
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Parse failed' }));
-        throw new Error(err.error || 'Failed to extract text from file');
-      }
+      const fileData = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          const base64 = result.split(',')[1]; // remove data:mime/type;base64,
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const payload = {
+        fileName: file.name,
+        fileData
+      };
+
+      const res = await authFetch('/api/gauntlet/parse-resume', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload) 
+      });
       
       const { text, fileName } = await res.json();
 

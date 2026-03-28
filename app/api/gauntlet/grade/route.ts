@@ -1,22 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
 import { guardApiRoute } from '@/lib/api-auth';
+import { validateBody } from '@/lib/validate';
+import { GauntletGradeSchema } from '@/lib/schemas';
+import { sanitizeForAI } from '@/lib/sanitize';
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+function getGroqClient() {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) throw new Error('GROQ_API_KEY not configured');
+  return new Groq({ apiKey });
+}
 
 export async function POST(req: NextRequest) {
     try {
         const guard = await guardApiRoute(req, { rateLimit: 7, rateLimitWindow: 60_000 });
         if (guard.error) return guard.error;
 
-        const { question, answer, jobDescription, resumeText, questionType } = await req.json();
+        const validated = await validateBody(req, GauntletGradeSchema);
+        if (!validated.success) return validated.error;
+        const { question, answer, jobDescription, resumeText, questionType, persona } = validated.data;
 
-        if (!question || !answer) {
-            return NextResponse.json({ error: 'Question and answer are required' }, { status: 400 });
-        }
+        const groq = getGroqClient();
+
+        // Persona-specific grading voice
+        const GRADING_VOICES: Record<string, string> = {
+            'faang-lead': 'Grade like a FAANG Staff Engineer who has seen 500+ interviews. Be surgical, direct, and brutally honest. If they gave a generic answer, call it out. If they impressed you, acknowledge it with restrained respect — you don\'t give praise easily.',
+            'friendly-hr': 'Grade like a supportive HR manager. Be constructive and encouraging, but still honest. Highlight what they did well before addressing gaps. Frame improvements as opportunities, not failures. End with genuine encouragement.',
+            'startup-cto': 'Grade like a pragmatic startup CTO. Focus on whether they can actually EXECUTE, not just talk. Dock points for over-engineering or buzzword-heavy answers. Reward scrappy, practical thinking. Be casual but direct.',
+            'vp-engineering': 'Grade like a VP of Engineering evaluating leadership potential. Focus on strategic thinking, cross-functional awareness, and communication clarity. Look for org-level thinking beyond individual contribution.',
+            'consulting-partner': 'Grade like a McKinsey partner. Evaluate structure, MECE thinking, and "so what" conclusions. Dock points for rambling or unstructured answers. Reward crisp frameworks and decisive recommendations.',
+            'behavioral-specialist': 'Grade with clinical precision on STAR method. Check each component (Situation, Task, Action, Result) individually. Demand specifics: who, what, when, how many. Flag vague language like "we" when "I" is needed.',
+        };
+
+        const gradingVoice = persona ? (GRADING_VOICES[persona] || '') : '';
 
         const systemPrompt = `You are a ruthlessly honest interview coach with 20 years of experience preparing candidates for FAANG-level interviews. You grade answers with surgical precision.
 
+${gradingVoice ? `GRADING PERSONALITY:\n${gradingVoice}\n` : ''}
 Your job is to analyze the candidate's spoken/typed answer to an interview question and return a structured evaluation.
 
 GRADING CRITERIA:
@@ -88,10 +108,10 @@ You MUST respond with valid JSON matching this exact schema:
         const grading = JSON.parse(content);
         return NextResponse.json(grading);
 
-    } catch (error: any) {
-        console.error('Gauntlet grading error:', error);
+    } catch (error: unknown) {
+        console.error('[api/gauntlet/grade] Error:', error);
         return NextResponse.json(
-            { error: error.message || 'Failed to grade answer' },
+            { error: 'Failed to grade answer' },
             { status: 500 }
         );
     }

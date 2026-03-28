@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/lib/store';
 import { showToast } from '@/components/Toast';
@@ -8,6 +9,7 @@ import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 import { authFetch } from '@/lib/auth-fetch';
 import FileUploadDropzone from '@/components/FileUploadDropzone';
+import { getResumeVersions, type ResumeVersion } from '@/lib/database-suite';
 
 // ============================================
 // TYPES
@@ -62,6 +64,16 @@ type ViewMode = 'setup' | 'gauntlet' | 'scorecard' | 'debrief' | 'flashcards';
 type InterviewType = 'mock-interview' | 'quick-drill' | 'study-cards';
 type DrillCategory = 'behavioral' | 'technical' | 'system-design' | 'leadership';
 type InterviewStyle = 'friendly' | 'tough';
+type InterviewerPersona = 'faang-lead' | 'friendly-hr' | 'startup-cto' | 'vp-engineering' | 'consulting-partner' | 'behavioral-specialist';
+
+const PERSONA_OPTIONS: { id: InterviewerPersona; icon: string; label: string; subtitle: string; activeClass: string }[] = [
+    { id: 'faang-lead', icon: '🎯', label: 'FAANG Tech Lead', subtitle: 'Surgical. Probing. No fluff.', activeClass: 'bg-red-500/20 border-red-500/50 shadow-lg shadow-red-500/10' },
+    { id: 'friendly-hr', icon: '😊', label: 'Friendly HR', subtitle: 'Warm but thorough.', activeClass: 'bg-emerald-500/20 border-emerald-500/50 shadow-lg shadow-emerald-500/10' },
+    { id: 'startup-cto', icon: '🚀', label: 'Startup CTO', subtitle: 'Ship it. Be scrappy.', activeClass: 'bg-amber-500/20 border-amber-500/50 shadow-lg shadow-amber-500/10' },
+    { id: 'vp-engineering', icon: '📊', label: 'VP of Engineering', subtitle: 'Strategic. Big-picture.', activeClass: 'bg-blue-500/20 border-blue-500/50 shadow-lg shadow-blue-500/10' },
+    { id: 'consulting-partner', icon: '💼', label: 'Consulting Partner', subtitle: 'Structured. MECE.', activeClass: 'bg-violet-500/20 border-violet-500/50 shadow-lg shadow-violet-500/10' },
+    { id: 'behavioral-specialist', icon: '🔬', label: 'STAR Specialist', subtitle: 'Deep behavioral probing.', activeClass: 'bg-cyan-500/20 border-cyan-500/50 shadow-lg shadow-cyan-500/10' },
+];
 
 const QUESTION_TYPE_CONFIG: Record<string, { icon: string; label: string; color: string }> = {
     behavioral: { icon: '🧠', label: 'Behavioral', color: 'from-blue-500/20 to-cyan-500/20' },
@@ -76,6 +88,7 @@ const QUESTION_TYPE_CONFIG: Record<string, { icon: string; label: string; color:
 // ============================================
 export default function GauntletPage() {
     const { user } = useStore();
+    const router = useRouter();
 
     // View state
     const [viewMode, setViewMode] = useState<ViewMode>('setup');
@@ -88,11 +101,73 @@ export default function GauntletPage() {
     const [resumeText, setResumeText] = useState('');
     const [questionCount, setQuestionCount] = useState(5);
     const [interviewStyle, setInterviewStyle] = useState<InterviewStyle>('tough');
+    const [selectedPersona, setSelectedPersona] = useState<InterviewerPersona>('faang-lead');
 
     // Resume upload state
     const [uploadedFileName, setUploadedFileName] = useState('');
     const [isUploadingResume, setIsUploadingResume] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Saved Resumes integration
+    const [savedResumes, setSavedResumes] = useState<ResumeVersion[]>([]);
+    const [isLoadingResumes, setIsLoadingResumes] = useState(true);
+
+    useEffect(() => {
+        const loadSavedResumes = async () => {
+            setIsLoadingResumes(true);
+            const res = await getResumeVersions();
+            if (res.success && res.data) {
+                setSavedResumes(res.data);
+            }
+            setIsLoadingResumes(false);
+        };
+        loadSavedResumes();
+    }, []);
+
+    const formatResumeToText = (content: any) => {
+        if (!content) return '';
+        const parts = [];
+        if (content.name) parts.push(content.name);
+        if (content.title) parts.push(content.title);
+        if (content.summary) parts.push(content.summary);
+        if (content.skills?.length) parts.push(`Skills: ${content.skills.join(', ')}`);
+        if (content.experience?.length) {
+            parts.push('Experience:');
+            content.experience.forEach((e: any) => {
+                parts.push(`${e.title} at ${e.company} (${e.date || ''})`);
+                if (e.description) parts.push(e.description);
+            });
+        }
+        if (content.education?.length) {
+            parts.push('Education:');
+            content.education.forEach((e: any) => {
+                parts.push(`${e.degree} from ${e.school} (${e.date || ''})`);
+            });
+        }
+        if (content.projects?.length) {
+            parts.push('Projects:');
+            content.projects.forEach((p: any) => {
+                parts.push(`${p.name}`);
+                if (p.description) parts.push(p.description);
+            });
+        }
+        return parts.join('\n\n');
+    };
+
+    const handleSelectSavedResume = (resumeId: string) => {
+        if (!resumeId) {
+            setResumeText('');
+            setUploadedFileName('');
+            return;
+        }
+        const resume = savedResumes.find(r => r.id === resumeId);
+        if (resume) {
+            const text = formatResumeToText(resume.content);
+            setResumeText(text);
+            setUploadedFileName(resume.version_name || (resume.content as any)?.name || 'Saved Resume');
+            showToast('Saved resume loaded!', '📄');
+        }
+    };
 
     // Audio mode state
     const [voiceEnabled, setVoiceEnabled] = useState(false);
@@ -190,6 +265,50 @@ export default function GauntletPage() {
     };
 
     // ============================================
+    // STUDY VAULT — Generate Study Notes
+    // ============================================
+    const [isGeneratingNotes, setIsGeneratingNotes] = useState(false);
+    
+    const handleGenerateVaultNotes = async (type: 'flashcards' | 'interview') => {
+        setIsGeneratingNotes(true);
+        let itemsToSave = [];
+        
+        if (type === 'flashcards') {
+            itemsToSave = flashcards.filter((f, i) => flashcardRatings[i] === 'needs-work');
+            if (itemsToSave.length === 0) {
+                showToast('No cards marked "Needs Work" to summarize! You aced it.', '✅');
+                setIsGeneratingNotes(false);
+                return;
+            }
+        } else {
+            itemsToSave = results.map(r => ({ question: r.question.text, userAnswer: r.answer, feedback: r.grading.coaching_tip || r.grading.rewritten_answer })) || [];
+            if (itemsToSave.length === 0) {
+                showToast('No interview data to save.', '❌');
+                setIsGeneratingNotes(false);
+                return;
+            }
+        }
+
+        try {
+            showToast('Generating Study Notes & saving to Vault...', '📚');
+            const res = await authFetch('/api/vault/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type, topic: jobDescription ? jobDescription.substring(0, 100) + '...' : 'General Practice', items: itemsToSave })
+            });
+            
+            if (!res.ok) throw new Error('Failed to generate vault notes');
+            showToast('Saved to your Study Vault!', '✅');
+            router.push('/suite/vault');
+        } catch (e: any) {
+            console.error('Vault error:', e);
+            showToast(e.message || 'Failed to save to Vault', '❌');
+        } finally {
+            setIsGeneratingNotes(false);
+        }
+    };
+
+    // ============================================
     // TTS — Speak Question Aloud
     // ============================================
     const speakQuestion = async (text: string) => {
@@ -263,6 +382,7 @@ export default function GauntletPage() {
                     jobDescription: jobDescription || undefined,
                     resumeText: resumeText || undefined,
                     interviewStyle,
+                    persona: selectedPersona,
                     questionCount,
                     interviewType,
                     drillCategory,
@@ -329,6 +449,7 @@ export default function GauntletPage() {
                     jobDescription: jobDescription || undefined,
                     resumeText: resumeText || undefined,
                     questionType: questions[currentIndex].type,
+                    persona: selectedPersona,
                 }),
             });
 
@@ -413,7 +534,7 @@ export default function GauntletPage() {
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="relative overflow-hidden rounded-3xl glass-card p-8 mb-8"
+                className="max-w-5xl mx-auto relative overflow-hidden rounded-2xl glass-card p-6 mb-6"
             >
                 <div className="absolute inset-0 overflow-hidden">
                     <motion.div
@@ -439,12 +560,12 @@ export default function GauntletPage() {
                             <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }} className="w-2 h-2 rounded-full bg-red-400" />
                             <span className="text-xs font-medium text-red-400">AI Interview Simulator</span>
                         </motion.div>
-                        <h1 className="text-4xl lg:text-5xl font-bold mb-3">
+                        <h1 className="text-2xl lg:text-3xl font-bold mb-2">
                             <span className="bg-gradient-to-r from-red-400 via-orange-400 to-amber-400 bg-clip-text text-transparent">
                                 The Gauntlet
                             </span>
                         </h1>
-                        <p className="text-silver text-lg max-w-xl">
+                        <p className="text-silver text-sm max-w-xl">
                             {viewMode === 'setup' && 'Train like you fight. AI-powered interview simulation with real-time grading.'}
                             {viewMode === 'gauntlet' && `Question ${currentIndex + 1} of ${questions.length}`}
                             {viewMode === 'scorecard' && 'Answer graded. Review your performance.'}
@@ -481,22 +602,22 @@ export default function GauntletPage() {
                 {viewMode === 'setup' && (
                     <motion.div key="setup" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-5xl mx-auto">
                         {/* Interview Type Selection */}
-                        <div className="grid md:grid-cols-3 gap-6 mb-8">
+                        <div className="grid md:grid-cols-3 gap-4 mb-6">
                             <motion.button
                                 whileHover={{ scale: 1.02, y: -4 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => setInterviewType('mock-interview')}
-                                className={`group relative p-8 rounded-3xl glass-card text-left transition-all overflow-hidden ${interviewType === 'mock-interview' ? 'border-red-500/50 shadow-lg shadow-red-500/10' : 'border-white/10 hover:border-white/20'}`}
+                                className={`group relative p-5 rounded-2xl glass-card text-left transition-all overflow-hidden ${interviewType === 'mock-interview' ? 'border-red-500/50 shadow-lg shadow-red-500/10' : 'border-white/10 hover:border-white/20'}`}
                             >
                                 <div className={`absolute inset-0 bg-gradient-to-br from-red-500/10 to-orange-500/10 ${interviewType === 'mock-interview' ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'} transition-opacity`} />
                                 <div className="relative">
-                                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center mb-4 border border-white/10">
-                                        <span className="text-3xl">🎯</span>
+                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center mb-3 border border-white/10">
+                                        <span className="text-lg">🎯</span>
                                     </div>
-                                    <h3 className="text-xl font-bold text-white mb-2">Mock Interview</h3>
-                                    <p className="text-silver text-sm">Paste a JD + your resume. AI generates targeted questions that probe your weaknesses against the role's exact requirements.</p>
+                                    <h3 className="text-sm font-bold text-white mb-1">Mock Interview</h3>
+                                    <p className="text-silver text-xs leading-relaxed">Paste a JD + resume. AI generates targeted questions against the role's requirements.</p>
                                     {interviewType === 'mock-interview' && (
-                                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute top-4 right-4 w-6 h-6 rounded-full bg-red-500 flex items-center justify-center">
+                                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute top-3 right-3 w-5 h-5 rounded-full bg-red-500 flex items-center justify-center">
                                             <span className="text-white text-xs">✓</span>
                                         </motion.div>
                                     )}
@@ -507,17 +628,17 @@ export default function GauntletPage() {
                                 whileHover={{ scale: 1.02, y: -4 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => setInterviewType('quick-drill')}
-                                className={`group relative p-8 rounded-3xl glass-card text-left transition-all overflow-hidden ${interviewType === 'quick-drill' ? 'border-amber-500/50 shadow-lg shadow-amber-500/10' : 'border-white/10 hover:border-white/20'}`}
+                                className={`group relative p-5 rounded-2xl glass-card text-left transition-all overflow-hidden ${interviewType === 'quick-drill' ? 'border-amber-500/50 shadow-lg shadow-amber-500/10' : 'border-white/10 hover:border-white/20'}`}
                             >
                                 <div className={`absolute inset-0 bg-gradient-to-br from-amber-500/10 to-yellow-500/10 ${interviewType === 'quick-drill' ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'} transition-opacity`} />
                                 <div className="relative">
-                                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500/20 to-yellow-500/20 flex items-center justify-center mb-4 border border-white/10">
-                                        <span className="text-3xl">⚡</span>
+                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-yellow-500/20 flex items-center justify-center mb-3 border border-white/10">
+                                        <span className="text-lg">⚡</span>
                                     </div>
-                                    <h3 className="text-xl font-bold text-white mb-2">Quick Drill</h3>
-                                    <p className="text-silver text-sm">Pick a category and practice. Rapid-fire questions to sharpen specific skills without needing a JD.</p>
+                                    <h3 className="text-sm font-bold text-white mb-1">Quick Drill</h3>
+                                    <p className="text-silver text-xs leading-relaxed">Pick a category and practice. Rapid-fire questions to sharpen specific skills.</p>
                                     {interviewType === 'quick-drill' && (
-                                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute top-4 right-4 w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center">
+                                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute top-3 right-3 w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center">
                                             <span className="text-white text-xs">✓</span>
                                         </motion.div>
                                     )}
@@ -528,17 +649,17 @@ export default function GauntletPage() {
                                 whileHover={{ scale: 1.02, y: -4 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => setInterviewType('study-cards')}
-                                className={`group relative p-8 rounded-3xl glass-card text-left transition-all overflow-hidden ${interviewType === 'study-cards' ? 'border-cyan-500/50 shadow-lg shadow-cyan-500/10' : 'border-white/10 hover:border-white/20'}`}
+                                className={`group relative p-5 rounded-2xl glass-card text-left transition-all overflow-hidden ${interviewType === 'study-cards' ? 'border-cyan-500/50 shadow-lg shadow-cyan-500/10' : 'border-white/10 hover:border-white/20'}`}
                             >
                                 <div className={`absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 ${interviewType === 'study-cards' ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'} transition-opacity`} />
                                 <div className="relative">
-                                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center mb-4 border border-white/10">
-                                        <span className="text-3xl">📚</span>
+                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center mb-3 border border-white/10">
+                                        <span className="text-lg">📚</span>
                                     </div>
-                                    <h3 className="text-xl font-bold text-white mb-2">Study Cards</h3>
-                                    <p className="text-silver text-sm">AI generates flashcards from your JD + resume. Flip cards, rate yourself, and drill key concepts.</p>
+                                    <h3 className="text-sm font-bold text-white mb-1">Study Cards</h3>
+                                    <p className="text-silver text-xs leading-relaxed">AI flashcards from your JD + resume. Flip, rate yourself, and drill key concepts.</p>
                                     {interviewType === 'study-cards' && (
-                                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute top-4 right-4 w-6 h-6 rounded-full bg-cyan-500 flex items-center justify-center">
+                                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute top-3 right-3 w-5 h-5 rounded-full bg-cyan-500 flex items-center justify-center">
                                             <span className="text-white text-xs">✓</span>
                                         </motion.div>
                                     )}
@@ -547,7 +668,7 @@ export default function GauntletPage() {
                         </div>
 
                         {/* Configuration Panel */}
-                        <div className="rounded-3xl glass-card p-8">
+                        <div className="rounded-2xl glass-card p-5">
                             {interviewType === 'study-cards' ? (
                                 <div className="space-y-6">
                                     <div>
@@ -561,9 +682,22 @@ export default function GauntletPage() {
                                         />
                                     </div>
                                     <div>
-                                        <label className="flex items-center gap-2 text-white font-medium mb-2">
-                                            Your Resume <span className="text-silver text-xs font-normal">(optional — makes cards more targeted)</span>
-                                        </label>
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
+                                            <label className="flex items-center gap-2 text-white font-medium">
+                                                Your Resume <span className="text-silver text-xs font-normal">(optional — makes cards more targeted)</span>
+                                            </label>
+                                            {savedResumes.length > 0 && (
+                                                <select
+                                                    onChange={(e) => handleSelectSavedResume(e.target.value)}
+                                                    className="px-3 py-1.5 bg-[#111] border border-white/10 rounded-lg text-xs text-silver outline-none focus:border-cyan-500/50 max-w-[200px]"
+                                                >
+                                                    <option value="">-- Load Saved Resume --</option>
+                                                    {savedResumes.map(r => (
+                                                        <option key={r.id} value={r.id}>{r.version_name || (r.content as any)?.name}</option>
+                                                    ))}
+                                                </select>
+                                            )}
+                                        </div>
                                         <div className="relative">
                                             <FileUploadDropzone 
                                                 variant="compact"
@@ -582,8 +716,8 @@ export default function GauntletPage() {
                                             />
                                         </div>
                                         {uploadedFileName && (
-                                            <div className="mt-2 flex items-center gap-2 text-xs text-cyan-400">
-                                                <span>📄</span> {uploadedFileName}
+                                            <div className="mt-2 flex items-center gap-2 text-xs text-emerald-400">
+                                                <span>📄 {uploadedFileName}</span>
                                                 <button onClick={() => { setUploadedFileName(''); setResumeText(''); }} className="text-silver hover:text-red-400 transition-colors">✕</button>
                                             </div>
                                         )}
@@ -602,9 +736,22 @@ export default function GauntletPage() {
                                         />
                                     </div>
                                     <div>
-                                        <label className="flex items-center gap-2 text-white font-medium mb-2">
-                                            Your Resume <span className="text-silver text-xs font-normal">(optional — enables gap analysis)</span>
-                                        </label>
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
+                                            <label className="flex items-center gap-2 text-white font-medium">
+                                                Your Resume <span className="text-silver text-xs font-normal">(optional — enables gap analysis)</span>
+                                            </label>
+                                            {savedResumes.length > 0 && (
+                                                <select
+                                                    onChange={(e) => handleSelectSavedResume(e.target.value)}
+                                                    className="px-3 py-1.5 bg-[#111] border border-white/10 rounded-lg text-xs text-silver outline-none focus:border-red-500/50 max-w-[200px]"
+                                                >
+                                                    <option value="">-- Load Saved Resume --</option>
+                                                    {savedResumes.map(r => (
+                                                        <option key={r.id} value={r.id}>{r.version_name || (r.content as any)?.name}</option>
+                                                    ))}
+                                                </select>
+                                            )}
+                                        </div>
                                         <div className="relative">
                                             <FileUploadDropzone 
                                                 variant="compact"
@@ -624,7 +771,7 @@ export default function GauntletPage() {
                                         </div>
                                         {uploadedFileName && (
                                             <div className="mt-2 flex items-center gap-2 text-xs text-emerald-400">
-                                                <span>📄</span> {uploadedFileName}
+                                                <span>📄 {uploadedFileName}</span>
                                                 <button onClick={() => { setUploadedFileName(''); setResumeText(''); }} className="text-silver hover:text-red-400 transition-colors">✕</button>
                                             </div>
                                         )}
@@ -686,9 +833,22 @@ export default function GauntletPage() {
 
                                     {/* Resume Upload for Quick Drill */}
                                     <div>
-                                        <label className="block text-white font-medium mb-3">
-                                            Your Resume <span className="text-silver text-xs font-normal">(optional — personalizes questions to your background)</span>
-                                        </label>
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
+                                            <label className="block text-white font-medium">
+                                                Your Resume <span className="text-silver text-xs font-normal">(optional — personalizes questions to your background)</span>
+                                            </label>
+                                            {savedResumes.length > 0 && (
+                                                <select
+                                                    onChange={(e) => handleSelectSavedResume(e.target.value)}
+                                                    className="px-3 py-1.5 bg-[#111] border border-white/10 rounded-lg text-xs text-silver outline-none focus:border-amber-500/50 max-w-[200px]"
+                                                >
+                                                    <option value="">-- Load Saved Resume --</option>
+                                                    {savedResumes.map(r => (
+                                                        <option key={r.id} value={r.id}>{r.version_name || (r.content as any)?.name}</option>
+                                                    ))}
+                                                </select>
+                                            )}
+                                        </div>
                                         <div className="relative">
                                             <FileUploadDropzone 
                                                 variant="compact"
@@ -733,22 +893,27 @@ export default function GauntletPage() {
                                     </div>
                                 </div>
 
-                                {/* Interview Style */}
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-2">Interviewer Style</label>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => setInterviewStyle('friendly')}
-                                            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${interviewStyle === 'friendly' ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-400' : 'bg-white/5 border border-white/10 text-silver'}`}
-                                        >
-                                            😊 Friendly
-                                        </button>
-                                        <button
-                                            onClick={() => setInterviewStyle('tough')}
-                                            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${interviewStyle === 'tough' ? 'bg-red-500/20 border border-red-500/50 text-red-400' : 'bg-white/5 border border-white/10 text-silver'}`}
-                                        >
-                                            😤 Tough
-                                        </button>
+                                {/* Interviewer Persona */}
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium text-slate-300 mb-3">Choose Your Interviewer</label>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                        {PERSONA_OPTIONS.map((p) => (
+                                            <button
+                                                key={p.id}
+                                                onClick={() => setSelectedPersona(p.id)}
+                                                className={`p-3 rounded-xl border text-left transition-all ${
+                                                    selectedPersona === p.id
+                                                        ? p.activeClass
+                                                        : 'bg-white/5 border-white/10 hover:bg-white/10'
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="text-lg">{p.icon}</span>
+                                                    <span className={`text-xs font-bold ${selectedPersona === p.id ? 'text-white' : 'text-silver'}`}>{p.label}</span>
+                                                </div>
+                                                <p className={`text-[10px] ${selectedPersona === p.id ? 'text-white/60' : 'text-silver/50'}`}>{p.subtitle}</p>
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
 
@@ -776,7 +941,7 @@ export default function GauntletPage() {
                                 whileTap={{ scale: 0.98 }}
                                 onClick={interviewType === 'study-cards' ? generateFlashcards : startGauntlet}
                                 disabled={isGenerating}
-                                className={`w-full mt-8 py-5 rounded-2xl text-white font-bold text-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 ${interviewType === 'study-cards' ? 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:shadow-cyan-500/25' : 'bg-gradient-to-r from-red-500 to-orange-500 hover:shadow-red-500/25'}`}
+                                className={`w-full mt-5 py-3 rounded-xl text-white font-bold text-sm hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${interviewType === 'study-cards' ? 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:shadow-cyan-500/25' : 'bg-gradient-to-r from-red-500 to-orange-500 hover:shadow-red-500/25'}`}
                             >
                                 {isGenerating ? (
                                     <>
@@ -1332,6 +1497,17 @@ export default function GauntletPage() {
                                 <span className="text-3xl mb-2 block">🔁</span>
                                 <h4 className="text-lg font-bold text-white">Redo Same Questions</h4>
                                 <p className="text-silver text-sm">Practice the exact same questions again</p>
+                            </motion.button>
+                            <motion.button
+                                whileHover={{ scale: 1.02, y: -2 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => handleGenerateVaultNotes('interview')}
+                                disabled={isGeneratingNotes}
+                                className="p-6 rounded-2xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 border border-violet-500/30 text-left transition-all disabled:opacity-50"
+                            >
+                                <span className="text-3xl mb-2 block">📚</span>
+                                <h4 className="text-lg font-bold text-white">{isGeneratingNotes ? 'Saving...' : 'Save Study Notes'}</h4>
+                                <p className="text-silver text-sm">Save a summarized study guide of your mistakes</p>
                             </motion.button>
                         </div>
                     </motion.div>

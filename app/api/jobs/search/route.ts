@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { searchJobs, searchJobsRemotive, type JobSearchParams } from '@/lib/job-search-api';
+import { guardApiRoute } from '@/lib/api-auth';
+import { validateBody } from '@/lib/validate';
+import { JobSearchSchema } from '@/lib/schemas';
 
 export async function GET(request: NextRequest) {
     try {
+        const guard = await guardApiRoute(request, { rateLimit: 10, rateLimitWindow: 60_000 });
+        if (guard.error) return guard.error;
+
         const { searchParams } = new URL(request.url);
 
         const query = searchParams.get('query') || 'software engineer';
@@ -17,7 +23,6 @@ export async function GET(request: NextRequest) {
             remote: searchParams.get('remote') === 'true'
         };
 
-        // Search for jobs
         const result = await searchJobs(params);
 
         return NextResponse.json({
@@ -39,14 +44,18 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        const body = await request.json();
+        const guard = await guardApiRoute(request, { rateLimit: 10, rateLimitWindow: 60_000 });
+        if (guard.error) return guard.error;
+
+        const validated = await validateBody(request, JobSearchSchema);
+        if (!validated.success) return validated.error;
 
         const params: JobSearchParams = {
-            query: body.query || 'software engineer',
-            location: body.location,
-            page: body.page || 1,
-            numPages: body.numPages || 1,
-            remote: body.remote
+            query: validated.data.query || 'software engineer',
+            location: validated.data.location,
+            page: validated.data.page || 1,
+            numPages: validated.data.numPages || 1,
+            remote: validated.data.remote,
         };
 
         const result = await searchJobs(params);

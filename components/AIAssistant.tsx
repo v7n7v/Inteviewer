@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/lib/store';
 import { useTheme } from '@/components/ThemeProvider';
 import { getJobApplications, getResumeVersions, getUserProfile } from '@/lib/database-suite';
+import { authFetch } from '@/lib/auth-fetch';
 
 interface Message {
   id: string;
@@ -149,7 +150,7 @@ export default function AIAssistant() {
       // Fetch user context (cached)
       const userContext = await buildUserContext();
 
-      const response = await fetch('/api/chat', {
+      const response = await authFetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -247,7 +248,7 @@ export default function AIAssistant() {
               animate={{ opacity: 1, x: 0, scale: 1 }}
               exit={{ opacity: 0, x: 10, scale: 0.95 }}
               transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-              className="absolute bottom-20 right-6 pointer-events-auto"
+              className="absolute bottom-20 right-4 sm:right-6 pointer-events-auto max-w-[calc(100vw-2rem)]"
             >
               <div
                 onClick={() => { setShowHint(false); setIsOpen(true); }}
@@ -282,12 +283,12 @@ export default function AIAssistant() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.95 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="absolute bottom-[76px] right-6 w-[400px] h-[520px] pointer-events-auto"
+              className="fixed sm:absolute inset-0 sm:inset-auto sm:bottom-[76px] sm:right-6 w-full sm:w-[400px] h-full sm:h-[520px] pointer-events-auto"
               style={{ backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)' }}
             >
-              <div className={`glass-card h-full flex flex-col rounded-2xl shadow-2xl overflow-hidden`}>
+              <div className={`glass-card h-full flex flex-col rounded-none sm:rounded-2xl shadow-2xl overflow-hidden`}>
                 {/* Header */}
-                <div className="flex items-center justify-between p-3 border-b border-[var(--theme-border)] bg-[var(--theme-bg-input)]">
+                <div className="flex items-center justify-between p-3 pt-[max(0.75rem,env(safe-area-inset-top))] border-b border-[var(--theme-border)] bg-[var(--theme-bg-input)]">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full overflow-hidden border border-cyan-500/30">
                       <img src="/sona-avatar.png" alt="Sona" className="w-full h-full object-cover" />
@@ -312,7 +313,7 @@ export default function AIAssistant() {
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                <div className="flex-1 overflow-y-auto p-3 sm:p-3 space-y-3">
                   {messages.map((message) => (
                     <motion.div
                       key={message.id}
@@ -371,7 +372,7 @@ export default function AIAssistant() {
                 )}
 
                 {/* Input */}
-                <div className="p-3 border-t border-[var(--theme-border)] bg-[var(--theme-bg-input)]">
+                <div className="p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-[var(--theme-border)] bg-[var(--theme-bg-input)]">
                   <div className="flex gap-2">
                     <input
                       ref={inputRef}
@@ -381,12 +382,12 @@ export default function AIAssistant() {
                       onKeyPress={handleKeyPress}
                       placeholder="Ask about your applications, interviews..."
                       disabled={isLoading}
-                      className={`flex-1 rounded-lg px-3 py-2 text-xs outline-none transition-colors disabled:opacity-50 bg-[var(--theme-bg-card)] border border-[var(--theme-border)] text-[var(--theme-text)] placeholder-[var(--theme-text-muted)] focus:border-blue-500`}
+                      className={`flex-1 rounded-lg px-3 py-2.5 sm:py-2 text-sm sm:text-xs outline-none transition-colors disabled:opacity-50 bg-[var(--theme-bg-card)] border border-[var(--theme-border)] text-[var(--theme-text)] placeholder-[var(--theme-text-muted)] focus:border-blue-500`}
                     />
                     <button
                       onClick={handleSend}
                       disabled={!input.trim() || isLoading}
-                      className="px-3 py-2 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                      className="px-3.5 sm:px-3 py-2.5 sm:py-2 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                       <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
@@ -406,7 +407,7 @@ export default function AIAssistant() {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setIsOpen(!isOpen)}
-          className="absolute bottom-6 right-6 w-14 h-14 rounded-full overflow-hidden shadow-lg hover:shadow-2xl transition-all flex items-center justify-center pointer-events-auto border-2 border-cyan-500/50"
+          className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden shadow-lg hover:shadow-2xl transition-all flex items-center justify-center pointer-events-auto border-2 border-cyan-500/50"
           style={{ boxShadow: '0 0 40px rgba(0, 245, 255, 0.3)' }}
         >
           <AnimatePresence mode="wait">

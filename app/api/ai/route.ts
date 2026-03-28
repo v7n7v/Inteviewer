@@ -8,6 +8,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
 import { guardApiRoute } from '@/lib/api-auth';
 import { checkUsageAllowed, incrementUsage, type UsageFeature } from '@/lib/usage-tracker';
+import { validateBody } from '@/lib/validate';
+import { AICompletionSchema } from '@/lib/schemas';
+import { sanitizeForAI } from '@/lib/sanitize';
 
 const MODEL = 'openai/gpt-oss-120b';
 
@@ -24,8 +27,13 @@ export async function POST(request: NextRequest) {
     const guard = await guardApiRoute(request, { rateLimit: 10, rateLimitWindow: 60_000 });
     if (guard.error) return guard.error;
 
-    const body = await request.json();
-    const { action, prompt, systemPrompt, options = {}, usageFeature } = body;
+    const validated = await validateBody(request, AICompletionSchema);
+    if (!validated.success) return validated.error;
+    const { action, prompt, systemPrompt, options, usageFeature } = validated.data;
+
+    // Sanitize user-supplied prompt text
+    const safePrompt = sanitizeForAI(prompt);
+    const safeSystemPrompt = systemPrompt ? sanitizeForAI(systemPrompt) : undefined;
 
     // Optional lifetime usage cap (e.g., JD generator passes 'jdGenerations')
     if (usageFeature) {
@@ -43,20 +51,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (!prompt) {
-      return NextResponse.json({ error: 'prompt is required' }, { status: 400 });
-    }
-
     const groq = getGroqClient();
 
     if (action === 'json') {
-      const enhancedSystem = `${systemPrompt || 'You are a helpful AI assistant. Always respond with valid JSON.'}\n\nIMPORTANT: You must respond with valid JSON only. Do not include any markdown formatting or explanations.`;
+      const enhancedSystem = `${safeSystemPrompt || 'You are a helpful AI assistant. Always respond with valid JSON.'}\n\nIMPORTANT: You must respond with valid JSON only. Do not include any markdown formatting or explanations.`;
 
       const response = await groq.chat.completions.create({
         model: MODEL,
         messages: [
           { role: 'system', content: enhancedSystem },
-          { role: 'user', content: prompt },
+          { role: 'user', content: safePrompt },
         ],
         temperature: options.temperature ?? 0.3,
         max_tokens: options.maxTokens ?? 4096,
@@ -81,8 +85,8 @@ export async function POST(request: NextRequest) {
       const stream = await groq.chat.completions.create({
         model: MODEL,
         messages: [
-          { role: 'system', content: systemPrompt || 'You are a helpful AI assistant.' },
-          { role: 'user', content: prompt },
+          { role: 'system', content: safeSystemPrompt || 'You are a helpful AI assistant.' },
+          { role: 'user', content: safePrompt },
         ],
         temperature: options.temperature ?? 0.7,
         max_tokens: options.maxTokens ?? 2048,
@@ -116,8 +120,8 @@ export async function POST(request: NextRequest) {
     const response = await groq.chat.completions.create({
       model: MODEL,
       messages: [
-        { role: 'system', content: systemPrompt || 'You are a helpful AI assistant specializing in talent assessment and career development.' },
-        { role: 'user', content: prompt },
+        { role: 'system', content: safeSystemPrompt || 'You are a helpful AI assistant specializing in talent assessment and career development.' },
+        { role: 'user', content: safePrompt },
       ],
       temperature: options.temperature ?? 0.7,
       max_tokens: options.maxTokens ?? 4096,
@@ -131,18 +135,10 @@ export async function POST(request: NextRequest) {
 
     if (usageFeature) await incrementUsage(guard.user.uid, usageFeature as UsageFeature);
     return NextResponse.json({ result: content });
-  } catch (error: any) {
-    console.error('AI API route error:', error);
-
-    if (error.status === 401) {
-      return NextResponse.json({ error: 'Invalid Groq API key' }, { status: 401 });
-    }
-    if (error.status === 403) {
-      return NextResponse.json({ error: 'Model access denied. Check Groq console.' }, { status: 403 });
-    }
-
+  } catch (error: unknown) {
+    console.error('[api/ai] Error:', error);
     return NextResponse.json(
-      { error: error.message || 'AI request failed' },
+      { error: 'AI request failed' },
       { status: 500 }
     );
   }

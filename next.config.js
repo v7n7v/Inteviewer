@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true,
+  serverExternalPackages: ['firebase-admin', 'mammoth', 'pdf-parse'],
   images: {
     domains: [],
   },
@@ -11,6 +11,7 @@ const nextConfig = {
     config.resolve.alias.encoding = false;
     return config;
   },
+  turbopack: {},
   async headers() {
     return [
       {
@@ -30,7 +31,7 @@ const nextConfig = {
           },
           {
             key: 'X-Frame-Options',
-            value: 'SAMEORIGIN'
+            value: 'DENY'
           },
           {
             key: 'X-Content-Type-Options',
@@ -38,15 +39,15 @@ const nextConfig = {
           },
           {
             key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin'
+            value: 'strict-origin-when-cross-origin'
           },
           {
             key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(self), geolocation=()'
+            value: 'camera=(), microphone=(self), geolocation=(), payment=(self)'
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com https://www.gstatic.com https://*.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://api.groq.com https://api.deepgram.com https://api.elevenlabs.io https://generativelanguage.googleapis.com wss://*.firebaseio.com; media-src 'self' blob:; frame-src 'self' https://*.firebaseapp.com https://accounts.google.com https://apis.google.com;"
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com https://www.gstatic.com https://*.google.com https://js.stripe.com https://cdnjs.cloudflare.com; worker-src 'self' blob: https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://api.groq.com https://api.deepgram.com https://api.elevenlabs.io https://generativelanguage.googleapis.com wss://*.firebaseio.com https://api.stripe.com https://cdnjs.cloudflare.com; media-src 'self' blob:; frame-src 'self' https://*.firebaseapp.com https://accounts.google.com https://apis.google.com https://js.stripe.com;"
           }
         ]
       }

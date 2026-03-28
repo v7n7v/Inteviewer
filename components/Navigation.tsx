@@ -9,7 +9,7 @@ export default function Navigation() {
   const tabs: { id: TabType; label: string; icon: string; description: string }[] = [
     { id: 'detective', label: 'Resume', icon: '📄', description: 'Liquid Resume' },
     { id: 'copilot', label: 'JD Generator', icon: '💼', description: 'Job Descriptions' },
-    { id: 'calibration', label: 'Study Cards', icon: '🎴', description: 'Flash Cards' },
+    { id: 'calibration', label: 'The Gauntlet', icon: '⚔️', description: 'Interview Simulator' },
     { id: 'analytics', label: 'Market Oracle', icon: '🔮', description: 'Career Intelligence' },
   ];
 
