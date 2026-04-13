@@ -153,7 +153,7 @@ export const TeamInterestSchema = z.object({
 // ──────────────────────────────────────────────
 
 export const AdminActionSchema = z.object({
-  action: z.enum(['set_pro', 'set_free', 'disable', 'enable']),
+  action: z.enum(['set_max', 'set_pro', 'set_free', 'disable', 'enable']),
   uid: z.string().min(1).max(128),
   email: z.string().max(320).optional(),
 });
@@ -183,6 +183,7 @@ export const DashboardInsightsSchema = z.object({
 
 export const StripeSubscribeSchema = z.object({
   interval: z.enum(['month', 'year']).optional().default('month'),
+  plan: z.enum(['pro', 'studio']).optional().default('pro'),
 });
 
 // ──────────────────────────────────────────────
@@ -229,3 +230,36 @@ export const JobSearchSchema = z.object({
   numPages: z.number().int().min(1).max(5).optional(),
   remote: z.boolean().optional(),
 });
+
+// ──────────────────────────────────────────────
+// /api/writing/humanize
+// ──────────────────────────────────────────────
+
+export const HumanizeSchema = z.object({
+  text: SafeText(50_000),
+  domain: z.enum(['general', 'academic', 'resume', 'marketing', 'creative']).optional().default('general'),
+  paragraphIndices: z.array(z.number().int().min(0).max(200)).optional(),
+});
+
+// ──────────────────────────────────────────────
+// /api/writing/uniqueness
+// ──────────────────────────────────────────────
+
+export const UniquenessSchema = z.object({
+  text: SafeText(50_000),
+});
+
+// ──────────────────────────────────────────────
+// /api/gallery/run
+// ──────────────────────────────────────────────
+
+export const GalleryToolSchema = z.object({
+  tool: z.enum([
+    'grammar-checker', 'citation-machine', 'paraphraser',
+    'tone-analyzer', 'summarizer', 'email-composer',
+    'word-counter', 'thesis-generator',
+  ]),
+  input: SafeText(30_000),
+  options: z.record(z.string(), z.unknown()).optional(),
+});
+

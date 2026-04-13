@@ -139,7 +139,7 @@ function SubscriptionTab() {
                                             ? 'bg-gradient-to-br from-emerald-500 to-teal-500'
                                             : 'bg-[var(--theme-surface-active)]'
                                     }`}>
-                                        {isPro ? 'workspace_premium' : 'local_activity'}
+                                        <span className="material-symbols-rounded text-2xl text-white">{isPro ? 'workspace_premium' : 'local_activity'}</span>
                                     </div>
                                     <div>
                                         <h4 className="text-xl font-bold text-[var(--text-primary)]">
@@ -495,7 +495,7 @@ function SecurityTab({ user }: { user: any }) {
                                 <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">New Password</label>
                                 <div className="relative">
                                     <input type={showPasswords ? 'text' : 'password'} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Enter new password" className="w-full px-4 py-3 pr-12 rounded-xl bg-[var(--theme-surface-hover)] border border-[var(--theme-border)] text-[var(--text-primary)] placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20" />
-                                    <button type="button" onClick={() => setShowPasswords(!showPasswords)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] text-sm">{showPasswords ? 'visibility_off' : 'visibility'}</button>
+                                    <button type="button" onClick={() => setShowPasswords(!showPasswords)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] text-sm"><span className="material-symbols-rounded text-lg">{showPasswords ? 'visibility_off' : 'visibility'}</span></button>
                                 </div>
                                 {newPassword && (
                                     <div className="mt-2">

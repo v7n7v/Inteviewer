@@ -480,6 +480,57 @@ canvas {
 }
 
 /* ============================================
+   SHIMMER BORDER — Google Assistant style
+   Rotating conic gradient on pseudo-element
+   ============================================ */
+@keyframes shimmer-rotate {
+  0% { --shimmer-angle: 0deg; }
+  100% { --shimmer-angle: 360deg; }
+}
+
+@property --shimmer-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.shimmer-border {
+  position: relative;
+  border: 1px solid transparent !important;
+  background-clip: padding-box;
+  isolation: isolate;
+}
+
+.shimmer-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--shimmer-angle, 0deg),
+    transparent 0%,
+    var(--shimmer-color-1, rgba(168,199,250,0.4)) 10%,
+    var(--shimmer-color-2, rgba(129,201,149,0.3)) 20%,
+    transparent 30%,
+    transparent 70%,
+    var(--shimmer-color-3, rgba(253,214,99,0.3)) 80%,
+    var(--shimmer-color-1, rgba(168,199,250,0.4)) 90%,
+    transparent 100%
+  );
+  animation: shimmer-rotate 4s linear infinite;
+}
+
+.shimmer-border::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--bg-deep);
+}
+
+/* ============================================
    RESPONSIVE
    ============================================ */
 @media (max-width: 768px) {

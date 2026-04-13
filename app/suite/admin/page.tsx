@@ -16,7 +16,7 @@ interface UserRecord {
   createdAt: string;
   lastSignIn: string;
   disabled: boolean;
-  tier: 'free' | 'pro' | 'admin';
+  tier: 'free' | 'pro' | 'max' | 'admin';
 }
 
 export default function AdminPage() {
@@ -30,7 +30,7 @@ export default function AdminPage() {
   const [search, setSearch] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
-  const [stats, setStats] = useState({ total: 0, pro: 0, free: 0, disabled: 0 });
+  const [stats, setStats] = useState({ total: 0, max: 0, pro: 0, free: 0, disabled: 0 });
 
   const isAdmin = user?.email && MASTER_EMAILS.includes(user.email.toLowerCase());
 
@@ -61,7 +61,8 @@ export default function AdminPage() {
       const allUsers = data.users || [];
       setStats({
         total: allUsers.length,
-        pro: allUsers.filter((u: UserRecord) => u.tier === 'pro' || u.tier === 'admin').length,
+        max: allUsers.filter((u: UserRecord) => u.tier === 'max' || u.tier === 'admin').length,
+        pro: allUsers.filter((u: UserRecord) => u.tier === 'pro').length,
         free: allUsers.filter((u: UserRecord) => u.tier === 'free').length,
         disabled: allUsers.filter((u: UserRecord) => u.disabled).length,
       });
@@ -142,10 +143,8 @@ export default function AdminPage() {
               <span className="material-symbols-rounded text-3xl">admin_panel_settings</span>
             </div>
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold">
-                <span className={`bg-gradient-to-r ${isLight ? 'from-slate-900 to-slate-600' : 'from-white to-slate-400'} bg-clip-text text-transparent`}>
+              <h1 className="text-2xl font-semibold text-[var(--text-primary)]">
                   Admin Panel
-                </span>
               </h1>
               <p className={`${isLight ? 'text-slate-500' : 'text-slate-400'}`}>User management & platform controls</p>
             </div>
@@ -157,11 +156,12 @@ export default function AdminPage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
+          className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8"
         >
           {[
             { label: 'Total Users', value: stats.total, icon: 'group', color: 'cyan' },
-            { label: 'Pro Users', value: stats.pro, icon: 'verified_user', color: 'amber' },
+            { label: 'Max Users', value: stats.max, icon: 'diamond', color: 'amber' },
+            { label: 'Pro Users', value: stats.pro, icon: 'verified_user', color: 'emerald' },
             { label: 'Free Users', value: stats.free, icon: 'person', color: 'slate' },
             { label: 'Disabled', value: stats.disabled, icon: 'block', color: 'red' },
           ].map((stat) => (
@@ -270,6 +270,7 @@ export default function AdminPage() {
                 <div className="col-span-4 flex items-center gap-3 min-w-0">
                   <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
                     u.tier === 'admin' ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-white'
+                    : u.tier === 'max' ? 'bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white'
                     : u.tier === 'pro' ? 'bg-gradient-to-br from-cyan-500 to-blue-500 text-white'
                     : isLight ? 'bg-slate-200 text-slate-600' : 'bg-white/10 text-slate-400'
                   }`}>
@@ -287,11 +288,13 @@ export default function AdminPage() {
                 <div className="col-span-2">
                   <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
                     u.tier === 'admin' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                    : u.tier === 'max' ? 'bg-violet-500/20 text-violet-400 border border-violet-500/30'
                     : u.tier === 'pro' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                     : isLight ? 'bg-slate-100 text-slate-600 border border-slate-200' : 'bg-slate-500/20 text-slate-400 border border-slate-500/30'
                   }`}>
-                    {u.tier === 'admin' ? <><span className="material-symbols-rounded text-[14px]">shield_person</span> Admin</> 
-                     : u.tier === 'pro' ? <><span className="material-symbols-rounded text-[14px]">star</span> Pro</> 
+                    {u.tier === 'admin' ? <><span className="material-symbols-rounded text-[14px]">shield_person</span> Admin</>
+                     : u.tier === 'max' ? <><span className="material-symbols-rounded text-[14px]">diamond</span> Max</>
+                     : u.tier === 'pro' ? <><span className="material-symbols-rounded text-[14px]">star</span> Pro</>
                      : <><span className="material-symbols-rounded text-[14px]">person</span> Free</>}
                   </span>
                   {u.disabled && (
@@ -319,25 +322,39 @@ export default function AdminPage() {
                     <span className="text-[10px] text-amber-400 font-medium">Master</span>
                   ) : (
                     <>
-                      {u.tier === 'free' ? (
-                        <button
-                          onClick={() => handleAction(u.uid, u.email, 'set_pro')}
-                          disabled={actionLoading === `${u.uid}:set_pro`}
-                          className="px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-medium hover:bg-emerald-500/20 transition-all disabled:opacity-50"
-                          title="Upgrade to Pro"
-                        >
-                          {actionLoading === `${u.uid}:set_pro` ? '...' : '↑ Pro'}
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleAction(u.uid, u.email, 'set_free')}
-                          disabled={actionLoading === `${u.uid}:set_free`}
-                          className="px-2.5 py-1.5 rounded-lg bg-slate-500/10 border border-slate-500/20 text-slate-400 text-[11px] font-medium hover:bg-slate-500/20 transition-all disabled:opacity-50"
-                          title="Downgrade to Free"
-                        >
-                          {actionLoading === `${u.uid}:set_free` ? '...' : '↓ Free'}
-                        </button>
-                      )}
+                      {/* Tier action buttons */}
+                      <div className="flex items-center gap-1">
+                        {u.tier !== 'max' && (
+                          <button
+                            onClick={() => handleAction(u.uid, u.email, 'set_max')}
+                            disabled={actionLoading === `${u.uid}:set_max`}
+                            className="px-2.5 py-1.5 rounded-lg bg-violet-500/10 border border-violet-500/20 text-violet-400 text-[11px] font-medium hover:bg-violet-500/20 transition-all disabled:opacity-50"
+                            title="Upgrade to Max"
+                          >
+                            {actionLoading === `${u.uid}:set_max` ? '...' : '↑ Max'}
+                          </button>
+                        )}
+                        {u.tier !== 'pro' && (
+                          <button
+                            onClick={() => handleAction(u.uid, u.email, 'set_pro')}
+                            disabled={actionLoading === `${u.uid}:set_pro`}
+                            className="px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-medium hover:bg-emerald-500/20 transition-all disabled:opacity-50"
+                            title="Set to Pro"
+                          >
+                            {actionLoading === `${u.uid}:set_pro` ? '...' : u.tier === 'max' ? '↓ Pro' : '↑ Pro'}
+                          </button>
+                        )}
+                        {u.tier !== 'free' && (
+                          <button
+                            onClick={() => handleAction(u.uid, u.email, 'set_free')}
+                            disabled={actionLoading === `${u.uid}:set_free`}
+                            className="px-2.5 py-1.5 rounded-lg bg-slate-500/10 border border-slate-500/20 text-slate-400 text-[11px] font-medium hover:bg-slate-500/20 transition-all disabled:opacity-50"
+                            title="Downgrade to Free"
+                          >
+                            {actionLoading === `${u.uid}:set_free` ? '...' : '↓ Free'}
+                          </button>
+                        )}
+                      </div>
                       <button
                         onClick={() => handleAction(u.uid, u.email, u.disabled ? 'enable' : 'disable')}
                         disabled={actionLoading === `${u.uid}:${u.disabled ? 'enable' : 'disable'}`}

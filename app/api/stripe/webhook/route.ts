@@ -58,19 +58,27 @@ export async function POST(req: NextRequest) {
         const uid = session.client_reference_id;
         if (!uid) break;
 
+        // Determine plan from metadata or price ID
+        const sessionPlan = session.metadata?.plan;
+        let plan: 'pro' | 'studio' = 'pro';
+        if (sessionPlan === 'studio') {
+          plan = 'studio';
+        }
+
+        const amount = plan === 'studio' ? 999 : 499; // cents
+
         await setDoc(doc(db, 'users', uid, 'subscription', 'current'), {
-          plan: 'pro',
+          plan,
           status: 'active',
           stripeCustomerId: session.customer as string,
           stripeSubscriptionId: session.subscription as string,
-          priceId: process.env.STRIPE_PRO_PRICE_ID,
-          amount: 499, // cents ($4.99)
+          amount,
           currency: 'usd',
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
 
-        console.log(`[stripe] checkout.completed uid=${uid.slice(0, 8)}…`);
+        console.log(`[stripe] checkout.completed uid=${uid.slice(0, 8)}… plan=${plan}`);
         break;
       }
 
@@ -84,12 +92,17 @@ export async function POST(req: NextRequest) {
         const uid = customer.metadata?.firebaseUid;
         if (!uid) break;
 
-        // Get subscription to read interval from metadata
+        // Get subscription to read interval and plan from metadata
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
         const interval = subscription.metadata?.interval || 'month';
 
+        // Detect plan from subscription metadata or price ID
+        const studioPrices = [process.env.STRIPE_STUDIO_PRICE_ID, process.env.STRIPE_STUDIO_ANNUAL_PRICE_ID].filter(Boolean);
+        const invoicePriceId = (invoice as any).lines?.data?.[0]?.price?.id;
+        const subPlan = subscription.metadata?.plan || (studioPrices.includes(invoicePriceId) ? 'studio' : 'pro');
+
         await setDoc(doc(db, 'users', uid, 'subscription', 'current'), {
-          plan: 'pro',
+          plan: subPlan,
           status: 'active',
           stripeCustomerId: invoice.customer as string,
           stripeSubscriptionId: subscriptionId,
@@ -100,7 +113,7 @@ export async function POST(req: NextRequest) {
           updatedAt: serverTimestamp(),
         }, { merge: true });
 
-        console.log(`[stripe] invoice.paid uid=${uid.slice(0, 8)}… interval=${interval}`);
+        console.log(`[stripe] invoice.paid uid=${uid.slice(0, 8)}… plan=${subPlan} interval=${interval}`);
         break;
       }
 
@@ -115,14 +128,19 @@ export async function POST(req: NextRequest) {
 
         const status = subscription.status; // active, past_due, canceled, etc.
 
+        // Detect plan from metadata or price ID
+        const studioPrices2 = [process.env.STRIPE_STUDIO_PRICE_ID, process.env.STRIPE_STUDIO_ANNUAL_PRICE_ID].filter(Boolean);
+        const subPriceId = subscription.items?.data?.[0]?.price?.id;
+        const updPlan = subscription.metadata?.plan || (studioPrices2.includes(subPriceId) ? 'studio' : 'pro');
+
         await setDoc(doc(db, 'users', uid, 'subscription', 'current'), {
-          plan: status === 'active' ? 'pro' : 'free',
+          plan: status === 'active' ? updPlan : 'free',
           status,
           stripeSubscriptionId: subscription.id,
           updatedAt: serverTimestamp(),
         }, { merge: true });
 
-        console.log(`[stripe] subscription.updated uid=${uid.slice(0, 8)}… status=${status}`);
+        console.log(`[stripe] subscription.updated uid=${uid.slice(0, 8)}… plan=${updPlan} status=${status}`);
         break;
       }
 

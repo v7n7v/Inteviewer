@@ -11,7 +11,7 @@ import { authFetch } from '@/lib/auth-fetch';
 import { useStore } from '@/lib/store';
 import type { UsageData } from '@/lib/usage-tracker';
 
-export type PlanTier = 'free' | 'pro' | 'god';
+export type PlanTier = 'free' | 'pro' | 'studio' | 'god';
 
 interface TierState {
   tier: PlanTier;
@@ -25,7 +25,7 @@ interface TierState {
   remaining: (feature: keyof UsageData) => number;
 }
 
-const DEFAULT_USAGE: UsageData = { morphs: 0, gauntlets: 0, flashcards: 0, jdGenerations: 0, coverLetters: 0, resumeChecks: 0, linkedinProfiles: 0 };
+const DEFAULT_USAGE: UsageData = { morphs: 0, gauntlets: 0, flashcards: 0, jdGenerations: 0, coverLetters: 0, resumeChecks: 0, linkedinProfiles: 0, writingTools: 0, galleryTools: 0 };
 const DEFAULT_CAPS: Record<string, number> = { morphs: 3, gauntlets: 3, flashcards: 2, jdGenerations: 3 };
 
 export function useUserTier(): TierState {
@@ -77,7 +77,7 @@ export function useUserTier(): TierState {
     }
   }, [fetchUsage]);
 
-  const isPro = useMemo(() => tier === 'pro' || tier === 'god', [tier]);
+  const isPro = useMemo(() => tier === 'pro' || tier === 'studio' || tier === 'god', [tier]);
 
   const canUse = useCallback(
     (feature: keyof UsageData): boolean => {

@@ -10,6 +10,25 @@ import AuthModal from './modals/AuthModal';
 import { useUserTier } from '@/hooks/use-user-tier';
 import UsageCounter from '@/components/UsageCounter';
 
+// Dynamic job count hook for sidebar badge
+function useJobCount() {
+  const [count, setCount] = useState<number>(0);
+  useEffect(() => {
+    const read = () => {
+      const c = localStorage.getItem('talent-job-curated-count');
+      if (c) setCount(parseInt(c) || 0);
+    };
+    read();
+    window.addEventListener('job-count-updated', read);
+    window.addEventListener('storage', read);
+    return () => {
+      window.removeEventListener('job-count-updated', read);
+      window.removeEventListener('storage', read);
+    };
+  }, []);
+  return count;
+}
+
 interface NavigationItem {
   id: string;
   label: string;
@@ -73,19 +92,28 @@ const navItems: NavigationItem[] = [
   {
     id: 'job-search',
     label: 'Job Search',
-    description: 'Find Jobs',
+    description: 'Opportunity Radar',
     path: '/suite/job-search',
-    badge: 'Soon',
-    iconName: 'search',
+    badge: 'PRO',
+    iconName: 'radar',
     color: { iconColor: '#06b6d4' },
   },
   {
+    id: 'writing-tools',
+    label: 'Inkwell Writing',
+    description: 'AI Humanizer Pipeline',
+    path: '/suite/writing-tools',
+    badge: 'PRO',
+    iconName: 'ink_pen',
+    color: { iconColor: '#f43f5e' },
+  },
+  {
     id: 'gallery',
-    label: 'Product Gallery',
-    description: 'Archived Animations',
+    label: 'Tools Gallery',
+    description: 'One-Click Utilities',
     path: '/suite/gallery',
-    iconName: 'grid_view',
-    color: { iconColor: '#94a3b8' },
+    iconName: 'build',
+    color: { iconColor: '#8b5cf6' },
   },
 ];
 
@@ -190,6 +218,7 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
   const { tier, isPro } = useUserTier();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState<'login' | 'signup' | null>(null);
+  const jobCount = useJobCount();
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 1024);
@@ -335,6 +364,11 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
                     {item.badge}
                   </span>
                 )}
+                {!isCollapsed && item.id === 'job-search' && jobCount > 0 && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-cyan-500/15 text-cyan-500 border border-cyan-500/20 tabular-nums">
+                    {jobCount}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -415,9 +449,9 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
                     {user.displayName || user.email?.split('@')[0] || 'User'}
                     {isPro && (
                       <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${
-                        tier === 'god' ? 'bg-[rgba(253,214,99,0.1)] text-[var(--warning)]' : 'bg-[rgba(129,201,149,0.1)] text-[var(--success)]'
+                        (tier === 'god' || tier === 'studio') ? 'bg-[rgba(139,92,246,0.1)] text-violet-400' : 'bg-[rgba(129,201,149,0.1)] text-[var(--success)]'
                       }`}>
-                        {tier === 'god' ? 'GOD' : 'PRO'}
+                        {(tier === 'god' || tier === 'studio') ? 'MAX' : 'PRO'}
                       </span>
                     )}
                   </p>

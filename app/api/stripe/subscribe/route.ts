@@ -26,18 +26,30 @@ export async function POST(req: NextRequest) {
     const { uid, email } = guard.user;
 
     let interval = 'month';
+    let plan = 'pro';
     const validated = await validateBody(req, StripeSubscribeSchema);
     if (validated.success) {
       interval = validated.data.interval;
+      plan = validated.data.plan;
     }
 
-    const priceId = interval === 'year'
-      ? process.env.STRIPE_PRO_ANNUAL_PRICE_ID
-      : process.env.STRIPE_PRO_PRICE_ID;
+    // Resolve price ID based on plan + interval
+    const PRICE_MAP: Record<string, Record<string, string | undefined>> = {
+      pro: {
+        month: process.env.STRIPE_PRO_PRICE_ID,
+        year: process.env.STRIPE_PRO_ANNUAL_PRICE_ID,
+      },
+      studio: {
+        month: process.env.STRIPE_STUDIO_PRICE_ID,
+        year: process.env.STRIPE_STUDIO_ANNUAL_PRICE_ID,
+      },
+    };
+
+    const priceId = PRICE_MAP[plan]?.[interval];
 
     if (!priceId) {
       return NextResponse.json(
-        { error: `Stripe ${interval}ly price not configured. Contact support.` },
+        { error: `Stripe ${plan} ${interval}ly price not configured. Contact support.` },
         { status: 500 }
       );
     }
@@ -71,7 +83,7 @@ export async function POST(req: NextRequest) {
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
       return_url: `${origin}/suite?upgrade=success&session_id={CHECKOUT_SESSION_ID}`,
-      metadata: { firebaseUid: uid, interval },
+      metadata: { firebaseUid: uid, interval, plan },
     });
 
     return NextResponse.json({

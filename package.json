@@ -24,7 +24,7 @@
     "canvas-confetti": "^1.9.4",
     "chart.js": "^4.4.1",
     "d3": "^7.8.5",
-    "docx": "^9.5.1",
+    "docx": "^9.6.1",
     "file-saver": "^2.0.5",
     "firebase": "^12.10.0",
     "firebase-admin": "^13.7.0",
@@ -64,7 +64,7 @@
     "typescript": "^5.3.3"
   },
   "engines": {
-    "node": ">=20",
+    "node": "22",
     "npm": ">=9.0.0"
   }
 }

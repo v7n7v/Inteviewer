@@ -51,9 +51,14 @@ export async function GET(req: NextRequest) {
       users.map(async (u) => {
         try {
           const subDoc = await db.collection('users').doc(u.uid).collection('subscription').doc('current').get();
-          const tier = isMasterAccount(u.email) ? 'admin'
-            : (subDoc.exists && subDoc.data()?.status === 'active' && subDoc.data()?.plan === 'pro') ? 'pro'
-            : 'free';
+          let tier: string = 'free';
+          if (isMasterAccount(u.email)) {
+            tier = 'admin';
+          } else if (subDoc.exists && subDoc.data()?.status === 'active') {
+            const plan = subDoc.data()?.plan;
+            if (plan === 'studio') tier = 'max';
+            else if (plan === 'pro') tier = 'pro';
+          }
           return { ...u, tier };
         } catch {
           return { ...u, tier: isMasterAccount(u.email) ? 'admin' : 'free' };
@@ -88,6 +93,17 @@ export async function POST(req: NextRequest) {
     const auth = getAdminAuth();
 
     switch (action) {
+      case 'set_max': {
+        await db.collection('users').doc(uid).collection('subscription').doc('current').set({
+          plan: 'studio',
+          status: 'active',
+          grantedBy: guard.user.email,
+          grantedAt: new Date().toISOString(),
+          source: 'admin',
+        }, { merge: true });
+        return NextResponse.json({ success: true, message: `User ${email || uid} upgraded to Max` });
+      }
+
       case 'set_pro': {
         await db.collection('users').doc(uid).collection('subscription').doc('current').set({
           plan: 'pro',

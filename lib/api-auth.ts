@@ -175,8 +175,8 @@ export async function guardApiRoute(
     }
   }
 
-  // ── PRO TIER: Per-minute rate limit (speed/abuse protection) ──
-  if (tier === 'pro') {
+  // ── PRO/STUDIO TIER: Per-minute rate limit (speed/abuse protection) ──
+  if (tier === 'pro' || tier === 'studio') {
     const limit = options?.rateLimit ?? getTierRateLimit(pathname, tier);
     const rateLimitKey = `${ip}:${authUser.uid}`;
     const { allowed, remaining, resetIn } = checkRateLimit(rateLimitKey, limit, options?.rateLimitWindow ?? 60_000);

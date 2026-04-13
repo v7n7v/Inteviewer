@@ -1539,9 +1539,30 @@ export default function LiquidResumePage() {
       <div className="min-h-screen pt-10 md:pt-16 p-4 md:p-8 flex flex-col items-center">
         <div className="w-full max-w-xl">
           {/* Header */}
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8 pl-10 lg:pl-0">
-            <h1 className="text-2xl font-semibold text-[var(--text-primary)]">Resume Studio</h1>
-            <p className="text-[13px] text-[var(--text-secondary)] mt-1.5">AI-powered resume optimization</p>
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10 pl-10 lg:pl-0">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold tracking-wide mb-4"
+              style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.12) 0%, rgba(251,146,60,0.08) 100%)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.2)' }}>
+              <span className="material-symbols-rounded text-[14px]">auto_awesome</span>
+              AI-Powered Engine
+            </div>
+            <h1 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)] tracking-tight">
+              Resume Morph Studio
+            </h1>
+            <p className="text-[14px] text-[var(--text-secondary)] mt-2 max-w-md mx-auto leading-relaxed">
+              Upload your resume — our dual-AI rewrites every bullet point to match any job description. One resume, infinite morphs.
+            </p>
+            <div className="flex items-center justify-center gap-4 mt-4">
+              {[
+                { icon: 'psychology', label: 'Dual-AI Rewrite' },
+                { icon: 'target', label: 'ATS Optimized' },
+                { icon: 'download', label: '1-Click Export' },
+              ].map(f => (
+                <div key={f.label} className="flex items-center gap-1.5 text-[11px] text-[var(--text-muted)]">
+                  <span className="material-symbols-rounded text-[14px]" style={{ color: '#f59e0b' }}>{f.icon}</span>
+                  {f.label}
+                </div>
+              ))}
+            </div>
           </motion.div>
 
           {/* Primary: Dropzone */}
@@ -1563,28 +1584,39 @@ export default function LiquidResumePage() {
             />
           </motion.div>
 
-          {/* Secondary: Build from scratch */}
+          {/* Secondary: Build from scratch — Premium Card */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
-            className="mt-4 flex items-center justify-center"
+            className="mt-5"
           >
             <button
               onClick={() => setMode('create')}
-              className="group flex items-center gap-2.5 px-5 py-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] hover:border-[var(--border)] transition-all duration-150"
+              className="group shimmer-border w-full flex items-center gap-4 px-6 py-5 rounded-2xl bg-[var(--bg-card)] transition-all duration-200 hover:scale-[1.01]"
+              style={{
+                '--shimmer-color-1': 'rgba(168,85,247,0.45)',
+                '--shimmer-color-2': 'rgba(236,72,153,0.3)',
+                '--shimmer-color-3': 'rgba(99,102,241,0.35)',
+              } as React.CSSProperties}
             >
               <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center transition-transform duration-150 group-hover:scale-105"
-                style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)' }}
+                className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform duration-150 group-hover:scale-110"
+                style={{ background: 'linear-gradient(135deg, rgba(168,85,247,0.15) 0%, rgba(236,72,153,0.1) 100%)', border: '1px solid rgba(168,85,247,0.25)' }}
               >
-                <span className="material-symbols-rounded text-[18px]" style={{ color: '#a855f7' }}>draw</span>
+                <span className="material-symbols-rounded text-[22px]" style={{ color: '#a855f7' }}>draw</span>
               </div>
-              <div className="text-left">
-                <p className="text-[13px] font-medium text-[var(--text-primary)] leading-tight">Start from scratch</p>
-                <p className="text-[11px] text-[var(--text-muted)]">Build a new resume with AI</p>
+              <div className="text-left flex-1">
+                <p className="text-[14px] font-semibold text-[var(--text-primary)] leading-tight">
+                  Start from Scratch
+                </p>
+                <p className="text-[12px] text-[var(--text-secondary)] mt-0.5">
+                  Build a professional resume step-by-step with AI suggestions
+                </p>
               </div>
-              <span className="material-symbols-rounded text-[16px] text-[var(--text-muted)] group-hover:text-[var(--text-secondary)] transition-colors ml-2">arrow_forward</span>
+              <div className="flex items-center gap-1 text-[var(--text-muted)] group-hover:text-[var(--text-primary)] transition-colors">
+                <span className="material-symbols-rounded text-[20px]">arrow_forward</span>
+              </div>
             </button>
           </motion.div>
 
@@ -2138,146 +2170,67 @@ export default function LiquidResumePage() {
                         )}
                       </div>
 
-                      {/* LinkedIn Builder */}
-                      <div className="rounded-xl bg-[var(--theme-bg-card)] border border-blue-500/[0.1] p-5">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-white"><span className="material-symbols-rounded text-inherit align-middle">work</span> LinkedIn Builder</span>
-                            <span className="text-[8px] px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono">Dual-AI</span>
-                          </div>
-                          <button onClick={() => { setEnhancePhase('linkedin'); setEnhancePipelineStage(1); generateLinkedIn(); }} disabled={linkedinLoading} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/15 transition-all disabled:opacity-50">
-                            {linkedinLoading ? <><span className="material-symbols-rounded text-[14px] align-middle mr-1">work</span> Generating...</> : linkedinResult ? <><span className="material-symbols-rounded text-[14px] align-middle mr-1">sync</span> Regenerate</> : <><span className="material-symbols-rounded text-[14px] align-middle mr-1">play_arrow</span> Generate</>}
+                      {/* ── Gallery CTAs: Cover Letter & LinkedIn ── */}
+                      <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5">
+                        <div className="text-xs font-semibold text-[var(--text-muted)] mb-3 uppercase tracking-wider">Continue in Tools Gallery</div>
+                        <div className="space-y-2.5">
+                          <button
+                            onClick={() => {
+                              // Save context for Gallery to pick up
+                              const displayResume = getDisplayResume();
+                              if (displayResume) {
+                                sessionStorage.setItem('talent-resume-draft', JSON.stringify({
+                                  morphedResume: displayResume,
+                                  originalResume: originalResume,
+                                  jobDescription: jobDescription,
+                                }));
+                              }
+                              router.push('/suite/gallery?tool=cover-letter');
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] hover:border-[var(--border)] transition-all group text-left"
+                          >
+                            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                              <span className="material-symbols-rounded text-[18px]" style={{ color: '#10b981' }}>mail</span>
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-[13px] font-semibold text-[var(--text-primary)]">Generate Cover Letter</p>
+                              <p className="text-[11px] text-[var(--text-muted)]">Dual-AI powered, auto-filled with your resume + JD</p>
+                            </div>
+                            <span className="material-symbols-rounded text-[16px] text-[var(--text-muted)] group-hover:text-[var(--text-primary)] transition-colors">arrow_forward</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              const displayResume = getDisplayResume();
+                              if (displayResume) {
+                                sessionStorage.setItem('talent-resume-draft', JSON.stringify({
+                                  morphedResume: displayResume,
+                                  originalResume: originalResume,
+                                  jobDescription: jobDescription,
+                                }));
+                              }
+                              router.push('/suite/gallery?tool=linkedin');
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] hover:border-[var(--border)] transition-all group text-left"
+                          >
+                            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)' }}>
+                              <span className="material-symbols-rounded text-[18px]" style={{ color: '#3b82f6' }}>work</span>
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-[13px] font-semibold text-[var(--text-primary)]">Optimize LinkedIn Profile</p>
+                              <p className="text-[11px] text-[var(--text-muted)]">Headline, about, skills — optimized for recruiter search</p>
+                            </div>
+                            <span className="material-symbols-rounded text-[16px] text-[var(--text-muted)] group-hover:text-[var(--text-primary)] transition-colors">arrow_forward</span>
                           </button>
                         </div>
-
-                        {linkedinLoading && (
-                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2 py-4">
-                            {['Analyzing career trajectory...', 'Optimizing for LinkedIn algorithm...', 'Crafting headline & summary...'].map((t, i) => (
-                              <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 1 }} className="flex items-center gap-2">
-                                <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="w-3 h-3 border-2 border-blue-400/30 border-t-blue-400 rounded-full" />
-                                <span className="text-xs text-blue-400/70">{t}</span>
-                              </motion.div>
-                            ))}
-                          </motion.div>
-                        )}
-
-                        {linkedinResult && !linkedinLoading && (
-                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
-                            {linkedinResult.headline && (
-                              <div>
-                                <div className="text-[10px] font-semibold text-white/40 mb-1">Headline</div>
-                                <div className="text-xs text-white/80 p-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">{linkedinResult.headline}</div>
-                              </div>
-                            )}
-                            {linkedinResult.summary && (
-                              <div>
-                                <div className="text-[10px] font-semibold text-white/40 mb-1">About</div>
-                                <div className="text-xs text-white/70 p-2 rounded-lg bg-white/[0.02] border border-white/[0.04] max-h-24 overflow-y-auto whitespace-pre-wrap">{linkedinResult.summary}</div>
-                              </div>
-                            )}
-                            {linkedinResult.skills?.length > 0 && (
-                              <div className="flex flex-wrap gap-1">
-                                {linkedinResult.skills.map((s: string) => (
-                                  <span key={s} className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/15 text-blue-300">{s}</span>
-                                ))}
-                              </div>
-                            )}
-                            <button
-                              onClick={() => {
-                                const text = `Headline: ${linkedinResult.headline || ''}\n\nAbout:\n${linkedinResult.summary || ''}\n\nSkills: ${(linkedinResult.skills || []).join(', ')}`;
-                                navigator.clipboard.writeText(text);
-                                showToast('LinkedIn content copied!', 'check_circle');
-                              }}
-                              className="w-full py-2 rounded-lg text-xs font-medium bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/15 transition-all"
-                            >
-                              <span className="material-symbols-rounded text-[14px] align-middle mr-1">content_paste</span> Copy All to Clipboard
-                            </button>
-                          </motion.div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Right: Cover Letter */}
-                    <div className="space-y-4">
-                      <div className="rounded-xl bg-[var(--theme-bg-card)] border border-emerald-500/[0.1] p-5">
-                        <div className="flex items-center gap-2 mb-4">
-                          <span className="text-sm font-bold text-white"><span className="material-symbols-rounded text-inherit align-middle">mail</span> Cover Letter Generator</span>
-                          <span className="text-[8px] px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono">Dual-AI</span>
-                        </div>
-
-                        {/* Tone & Company */}
-                        <div className="grid grid-cols-3 gap-2 mb-3">
-                          {(['professional', 'friendly', 'bold'] as const).map(t => (
-                            <button key={t} onClick={() => setCoverLetterTone(t)} className={`py-1.5 rounded-lg text-xs font-medium capitalize transition-all ${coverLetterTone === t ? 'bg-emerald-500/15 border border-emerald-500/25 text-emerald-400' : 'bg-white/[0.02] border border-white/[0.06] text-slate-400 hover:border-white/[0.12]'}`}>
-                              {t === 'professional' ? 'domain' : t === 'friendly' ? 'sentiment_satisfied' : 'local_fire_department'} {t}
-                            </button>
-                          ))}
-                        </div>
-                        <input type="text" value={coverLetterCompany} onChange={e => setCoverLetterCompany(e.target.value)} placeholder="Company name (optional)" className="w-full mb-3 px-3 py-2 rounded-lg bg-white/[0.02] border border-white/[0.06] text-white text-sm placeholder-slate-500 focus:border-emerald-500/30 focus:outline-none" />
-
-                        <button onClick={() => { setEnhancePhase('cover-letter'); setEnhancePipelineStage(1); generateCoverLetter(); }} disabled={coverLetterLoading} className="w-full py-2.5 rounded-xl font-semibold text-sm bg-emerald-500/[0.08] border border-emerald-500/[0.15] text-emerald-400 hover:bg-emerald-500/[0.12] transition-all disabled:opacity-50">
-                          {coverLetterLoading ? <><span className="material-symbols-rounded text-[14px] align-middle mr-1">edit</span> Generating...</> : coverLetterResult ? <><span className="material-symbols-rounded text-[14px] align-middle mr-1">sync</span> Regenerate</> : <><span className="material-symbols-rounded text-[14px] align-middle mr-1">play_arrow</span> Generate Cover Letter</>}
-                        </button>
-
-                        {/* Cover Letter Loading Animation */}
-                        {coverLetterLoading && (
-                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2 py-4">
-                            {['GPT drafting your cover letter...', 'Gemini reviewing quality...', 'Refining for perfection...'].map((t, i) => (
-                              <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 1.5 }} className="flex items-center gap-2">
-                                <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="w-3 h-3 border-2 border-emerald-400/30 border-t-emerald-400 rounded-full" />
-                                <span className="text-xs text-emerald-400/70">{t}</span>
-                              </motion.div>
-                            ))}
-                          </motion.div>
-                        )}
-
-                        {/* Cover Letter Result */}
-                        {coverLetterResult && !coverLetterLoading && (
-                          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4 space-y-3">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono">Score: {coverLetterResult.score}/100</span>
-                              {coverLetterResult.refined && <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">Dual-AI Refined <span className="material-symbols-rounded text-inherit align-middle">auto_awesome</span></span>}
-                            </div>
-                            <div className="text-xs text-white/70 whitespace-pre-wrap max-h-48 overflow-y-auto bg-white/[0.02] rounded-lg p-3 border border-white/[0.04]">
-                              {coverLetterResult.coverLetter}
-                            </div>
-                            <div className="grid grid-cols-2 gap-2">
-                              <button onClick={() => { navigator.clipboard.writeText(coverLetterResult.coverLetter); showToast('Copied!', 'check_circle'); }} className="py-2 rounded-lg text-xs font-medium bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/15 transition-all">
-                                <span className="material-symbols-rounded text-[14px] align-middle mr-1">content_paste</span> Copy
-                              </button>
-                              <button
-                                onClick={() => {
-                                  const currentResume = getDisplayResume();
-                                  if (!currentResume) return;
-                                  const updated = { ...currentResume, coverLetter: coverLetterResult.coverLetter };
-                                  if (mode === 'morph') setMorphedResume(updated);
-                                  else setBuildResume(updated);
-                                  showToast('Cover letter attached to resume! It will appear in your download.', 'check_circle');
-                                }}
-                                className="py-2 rounded-lg text-xs font-medium bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/15 transition-all"
-                              >
-                                <span className="material-symbols-rounded text-[14px] align-middle mr-1">attach_file</span> Attach to Resume
-                              </button>
-                            </div>
-                          </motion.div>
-                        )}
                       </div>
 
                       {/* Quick Stats */}
                       <div className="rounded-xl glass-card p-4">
                         <div className="text-xs font-semibold text-white/40 mb-3">Session Summary</div>
-                        <div className="grid grid-cols-3 gap-3 text-center">
+                        <div className="grid grid-cols-1 gap-3 text-center">
                           <div className="p-2 rounded-lg bg-white/[0.02]">
                             <div className="text-lg font-bold text-white">{resumeCheckResult?.atsScore || '—'}</div>
                             <div className="text-[9px] text-white/40">ATS Score</div>
-                          </div>
-                          <div className="p-2 rounded-lg bg-white/[0.02]">
-                            <div className="text-lg font-bold text-white">{coverLetterResult ? 'check_circle' : '—'}</div>
-                            <div className="text-[9px] text-white/40">Cover Letter</div>
-                          </div>
-                          <div className="p-2 rounded-lg bg-white/[0.02]">
-                            <div className="text-lg font-bold text-white">{linkedinResult ? 'check_circle' : '—'}</div>
-                            <div className="text-[9px] text-white/40">LinkedIn</div>
                           </div>
                         </div>
                       </div>

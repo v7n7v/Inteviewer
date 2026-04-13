@@ -229,7 +229,7 @@ export default function ApplicationsPage() {
                             <span className="material-symbols-rounded text-3xl">bar_chart</span>
                         </div>
                         <div>
-                            <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)]">
+                            <h1 className="text-2xl font-semibold text-[var(--text-primary)]">
                                 Application Tracker
                             </h1>
                             <p className="text-[var(--text-secondary)] text-sm">Track and manage your job applications</p>

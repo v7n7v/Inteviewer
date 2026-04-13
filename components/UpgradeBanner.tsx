@@ -11,7 +11,7 @@ import { getAuth } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 
 interface UpgradeBannerProps {
-  currentTier?: 'free' | 'pro' | 'god';
+  currentTier?: 'free' | 'pro' | 'studio' | 'god';
   compact?: boolean;
 }
 

@@ -331,7 +331,7 @@ export default function MarketOraclePage() {
                   <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
                   <span className="text-xs font-medium text-indigo-400">Career Intelligence Engine</span>
                 </motion.div>
-                <h1 className="text-2xl lg:text-3xl font-bold mb-2 text-[var(--text-primary)]">
+                <h1 className="text-2xl font-semibold mb-2 text-[var(--text-primary)]">
                   Market Oracle
                 </h1>
                 <p className="text-silver text-sm max-w-2xl">

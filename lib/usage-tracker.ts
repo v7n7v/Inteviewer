@@ -10,7 +10,7 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import type { PlanTier } from './pricing-tiers';
 
 // ── Feature Keys ──
-export type UsageFeature = 'morphs' | 'gauntlets' | 'flashcards' | 'jdGenerations' | 'coverLetters' | 'resumeChecks' | 'linkedinProfiles';
+export type UsageFeature = 'morphs' | 'gauntlets' | 'flashcards' | 'jdGenerations' | 'coverLetters' | 'resumeChecks' | 'linkedinProfiles' | 'writingTools' | 'galleryTools';
 
 // ── Free Tier Lifetime Caps ──
 /** 3 forever — no resets, no exceptions for free tier */
@@ -22,6 +22,8 @@ export const FREE_CAPS: Record<UsageFeature, number> = {
   coverLetters: 3,
   resumeChecks: 3,
   linkedinProfiles: 3,
+  writingTools: 3,
+  galleryTools: 5,
 };
 
 // ── Anonymous (No Account) Caps ──
@@ -34,12 +36,22 @@ export const ANON_CAPS: Record<UsageFeature, number> = {
   coverLetters: 1,
   resumeChecks: 1,
   linkedinProfiles: 1,
+  writingTools: 1,
+  galleryTools: 1,
 };
 
 // ── Voice Minute Caps (per month) ──
 export const VOICE_MINUTE_CAPS: Record<Exclude<PlanTier, 'god'>, number> = {
-  free: 0,    // Free users get no voice
-  pro: 15,    // 15 minutes/month for Pro
+  free: 0,
+  pro: 15,
+  studio: 15,
+};
+
+// ── Writing Word Caps (per month) ──
+export const WRITING_WORD_CAPS: Record<Exclude<PlanTier, 'god'>, number> = {
+  free: 500,     // Free users: 500 words/month taste — enough for 1-2 short texts
+  pro: 4_000,    // 4K words/month for humanization
+  studio: 50_000, // 50K words/month for humanization
 };
 
 // ── Usage Data Shape ──
@@ -51,11 +63,18 @@ export interface UsageData {
   coverLetters: number;
   resumeChecks: number;
   linkedinProfiles: number;
+  writingTools: number;
+  galleryTools: number;
 }
 
 export interface VoiceUsageData {
   usedSeconds: number;
   month: string; // "2026-03" format for monthly reset
+}
+
+export interface WritingWordUsage {
+  usedWords: number;
+  month: string;
 }
 
 const DEFAULT_USAGE: UsageData = {
@@ -66,6 +85,8 @@ const DEFAULT_USAGE: UsageData = {
   coverLetters: 0,
   resumeChecks: 0,
   linkedinProfiles: 0,
+  writingTools: 0,
+  galleryTools: 0,
 };
 
 // ── Firebase Client (server-side) ──
@@ -88,6 +109,10 @@ function voiceDocRef(uid: string) {
   return doc(getDb(), 'users', uid, 'usage', 'voice_monthly');
 }
 
+function writingDocRef(uid: string) {
+  return doc(getDb(), 'users', uid, 'usage', 'writing_monthly');
+}
+
 /** Current month key for reset detection */
 function currentMonthKey(): string {
   const now = new Date();
@@ -108,6 +133,8 @@ export async function getUsage(uid: string): Promise<UsageData> {
         coverLetters: data.coverLetters ?? 0,
         resumeChecks: data.resumeChecks ?? 0,
         linkedinProfiles: data.linkedinProfiles ?? 0,
+        writingTools: data.writingTools ?? 0,
+        galleryTools: data.galleryTools ?? 0,
       };
     }
     return { ...DEFAULT_USAGE };
@@ -139,8 +166,8 @@ export async function checkUsageAllowed(
   feature: UsageFeature,
   tier: PlanTier
 ): Promise<{ allowed: boolean; used: number; cap: number; remaining: number }> {
-  // Pro & GOD users: unlimited
-  if (tier === 'pro' || tier === 'god') {
+  // Pro, Studio & GOD users: unlimited lifetime uses
+  if (tier === 'pro' || tier === 'studio' || tier === 'god') {
     return { allowed: true, used: 0, cap: Infinity, remaining: Infinity };
   }
 
@@ -258,3 +285,86 @@ export function estimateTTSSeconds(text: string): number {
 export function estimateSTTSeconds(fileSizeBytes: number): number {
   return Math.max(1, Math.ceil(fileSizeBytes / 4000));
 }
+
+// ═══════════════════════════════════════════════
+// WRITING WORD TRACKING (Monthly Reset)
+// ═══════════════════════════════════════════════
+
+/** Count words in text */
+export function countWords(text: string): number {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+/** Get current month's writing word usage */
+export async function getWritingWordUsage(uid: string): Promise<WritingWordUsage> {
+  try {
+    const snap = await getDoc(writingDocRef(uid));
+    if (snap.exists()) {
+      const data = snap.data();
+      const storedMonth = data.month || '';
+      const thisMonth = currentMonthKey();
+      if (storedMonth !== thisMonth) {
+        return { usedWords: 0, month: thisMonth };
+      }
+      return { usedWords: data.usedWords ?? 0, month: thisMonth };
+    }
+    return { usedWords: 0, month: currentMonthKey() };
+  } catch {
+    return { usedWords: 0, month: currentMonthKey() };
+  }
+}
+
+/** Check if user has writing words remaining for humanization */
+export async function checkWritingWordsAllowed(
+  uid: string,
+  tier: PlanTier,
+  wordCount: number
+): Promise<{ allowed: boolean; usedWords: number; capWords: number; remainingWords: number }> {
+  if (tier === 'god') {
+    return { allowed: true, usedWords: 0, capWords: Infinity, remainingWords: Infinity };
+  }
+
+  const capWords = WRITING_WORD_CAPS[tier as Exclude<PlanTier, 'god'>] || 0;
+  if (capWords === 0) {
+    return { allowed: false, usedWords: 0, capWords: 0, remainingWords: 0 };
+  }
+
+  const writing = await getWritingWordUsage(uid);
+  const remainingWords = Math.max(0, capWords - writing.usedWords);
+
+  return {
+    allowed: writing.usedWords + wordCount <= capWords,
+    usedWords: writing.usedWords,
+    capWords,
+    remainingWords,
+  };
+}
+
+/** Record word usage after successful humanization */
+export async function recordWritingWords(uid: string, words: number): Promise<void> {
+  try {
+    const thisMonth = currentMonthKey();
+    const current = await getWritingWordUsage(uid);
+
+    if (current.month !== thisMonth) {
+      await setDoc(writingDocRef(uid), {
+        usedWords: words,
+        month: thisMonth,
+        lastUsed: new Date().toISOString(),
+      });
+    } else {
+      await setDoc(
+        writingDocRef(uid),
+        {
+          usedWords: increment(words),
+          month: thisMonth,
+          lastUsed: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+    }
+  } catch (err) {
+    console.error(`Failed to record writing word usage for ${uid}`, err);
+  }
+}
+

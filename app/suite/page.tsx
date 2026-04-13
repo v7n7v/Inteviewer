@@ -63,6 +63,15 @@ const tools = [
     iconColor: '#10b981',   // emerald
     accentRgb: '16,185,129',
   },
+  {
+    id: 'writing',
+    name: 'Detect & Humanize AI',
+    description: 'Detect AI patterns in your writing, humanize text, and verify uniqueness.',
+    path: '/suite/writing-tools',
+    iconName: 'radar',
+    iconColor: '#f43f5e',   // rose
+    accentRgb: '244,63,94',
+  },
 ];
 
 export default function DashboardPage() {
@@ -119,7 +128,7 @@ export default function DashboardPage() {
           </div>
           <div>
             <h1 className="text-[28px] font-semibold tracking-tight text-[var(--text-primary)]">
-              {greeting}, {firstName} 👋
+              {greeting}, {firstName}
             </h1>
             <p className="text-[14px] text-[var(--text-secondary)] mt-1">
               Your career intelligence hub. Every tool, one place.
@@ -137,18 +146,18 @@ export default function DashboardPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, delay: i * 0.05 }}
             onClick={() => router.push(tool.path)}
-            className="group flex flex-col text-left p-5 rounded-2xl border transition-all duration-150 min-h-[140px] relative overflow-hidden"
+            className="group shimmer-border flex flex-col text-left p-5 rounded-2xl transition-all duration-150 min-h-[140px] relative overflow-hidden"
             style={{
-              background: `linear-gradient(135deg, rgba(${tool.accentRgb},0.055) 0%, var(--bg-card) 55%)`,
-              borderColor: `rgba(${tool.accentRgb},0.18)`,
-            }}
+              '--shimmer-color-1': `rgba(${tool.accentRgb},0.5)`,
+              '--shimmer-color-2': `rgba(${tool.accentRgb},0.3)`,
+              '--shimmer-color-3': `rgba(${tool.accentRgb},0.4)`,
+              animationDelay: `${i * -0.6}s`,
+            } as React.CSSProperties}
             onMouseEnter={e => {
-              (e.currentTarget as HTMLElement).style.borderColor = `rgba(${tool.accentRgb},0.4)`;
               (e.currentTarget as HTMLElement).style.background = `linear-gradient(135deg, rgba(${tool.accentRgb},0.09) 0%, var(--bg-card) 55%)`;
             }}
             onMouseLeave={e => {
-              (e.currentTarget as HTMLElement).style.borderColor = `rgba(${tool.accentRgb},0.18)`;
-              (e.currentTarget as HTMLElement).style.background = `linear-gradient(135deg, rgba(${tool.accentRgb},0.055) 0%, var(--bg-card) 55%)`;
+              (e.currentTarget as HTMLElement).style.background = '';
             }}
           >
             {/* Faint accent circle in top-right corner for depth */}

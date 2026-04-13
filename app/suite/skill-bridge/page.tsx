@@ -631,9 +631,9 @@ function SkillCard({ gap, completedDays, totalDays, onDayToggle, onCourseToggle,
             className={`p-1.5 rounded-lg transition-all ${
               isLight ? 'hover:bg-amber-50 text-amber-600' : 'hover:bg-amber-500/10 text-amber-400/60 hover:text-amber-400'
             }`}
-            title={`Practice "${gap.skill}" in The Gauntlet`}
+            title={`Practice "${gap.skill}"`}
           >
-            <span className="material-symbols-rounded text-[14px] align-middle">swords</span>
+            <span className="material-symbols-rounded text-[14px] align-middle">exercise</span>
           </button>
         </div>
       </div>
@@ -967,11 +967,9 @@ function SkillBridgePageInner() {
           <div className="relative z-10 flex items-center justify-between pl-12 lg:pl-0">
             <div>
               <div className="flex items-center gap-3 mb-1">
-                <span className="material-symbols-rounded text-3xl align-middle">route</span>
-                <h1 className="text-3xl font-extrabold">
-                  <span className={`bg-gradient-to-r ${isLight ? 'from-slate-900 to-slate-600' : 'from-white to-slate-400'} bg-clip-text text-transparent`}>
+                <span className="material-symbols-rounded text-2xl align-middle" style={{ color: 'var(--text-secondary)' }}>route</span>
+                <h1 className="text-2xl font-semibold text-[var(--text-primary)]">
                     Skill Bridge
-                  </span>
                 </h1>
                 <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold ${
                   isLight ? 'bg-teal-100 text-teal-800 border border-teal-400 shadow-sm' : 'bg-teal-500/10 text-teal-400 border border-teal-500/20'
@@ -1056,10 +1054,10 @@ function SkillBridgePageInner() {
               className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
                 filter === f.key
                   ? isLight
-                    ? 'bg-slate-900 text-white shadow-sm'
+                    ? 'bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border)] shadow-sm'
                     : 'bg-white/10 text-white border border-white/15'
                   : isLight
-                    ? 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+                    ? 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-secondary)]'
                     : 'text-white/30 hover:text-white/50 hover:bg-white/[0.04]'
               }`}
             >

@@ -61,7 +61,7 @@ export default function ProGate({ feature, description, children }: ProGateProps
           {feature} is Pro only
         </h2>
         <p className="text-[var(--text-secondary)] text-sm mb-8 leading-relaxed">
-          {description || `Upgrade to Talent Studio Pro to unlock ${feature} and every other AI-powered tool with no limits.`}
+          {description || `Upgrade to Talent Pro to unlock ${feature} and every other AI-powered tool with no limits.`}
         </p>
 
         {/* Benefits */}

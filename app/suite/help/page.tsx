@@ -332,10 +332,8 @@ export default function HelpPage() {
                             <span className="material-symbols-rounded text-3xl">library_books</span>
                         </div>
                         <div>
-                            <h1 className="text-4xl font-bold">
-                                <span className="text-[var(--text-muted)]">
+                            <h1 className="text-2xl font-semibold text-[var(--text-primary)]">
                                     Help & How-To
-                                </span>
                             </h1>
                             <p className="text-[var(--text-secondary)]">Everything you need to master the Talent Suite</p>
                         </div>
