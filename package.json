@@ -26,7 +26,7 @@
     "d3": "^7.8.5",
     "docx": "^9.6.1",
     "file-saver": "^2.0.5",
-    "firebase": "^12.10.0",
+    "firebase": "^12.12.0",
     "firebase-admin": "^13.7.0",
     "firebase-admin-a14c8a5423a75469": "npm:firebase-admin@^13.7.0",
     "framer-motion": "^11.0.3",
