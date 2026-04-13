@@ -455,13 +455,30 @@ export async function saveStudyProgress(
     const existing = await withTimeout(getDoc(docRef));
     if (existing.exists()) {
       const data = existing.data() as StudyProgress;
-      // Tag the existing study progress with the new applicationId if provided
+      const updates: any = { last_activity_at: now };
+
+      // Always update plan_data if a new AI plan was generated
+      if (planData) updates.plan_data = planData;
+
       let appIds = data.application_ids || [];
       if (applicationId && !appIds.includes(applicationId)) {
         appIds.push(applicationId);
-        await withTimeout(updateDoc(docRef, { application_ids: appIds, last_activity_at: now }));
+        updates.application_ids = appIds;
       }
-      return { success: true, data: { ...data, id: existing.id, application_ids: appIds } as StudyProgress };
+
+      if (Object.keys(updates).length > 1 || appIds !== (data.application_ids || [])) {
+        await withTimeout(updateDoc(docRef, updates));
+      }
+
+      return {
+        success: true,
+        data: {
+          ...data,
+          id: existing.id,
+          plan_data: planData || data.plan_data,
+          application_ids: appIds,
+        } as StudyProgress,
+      };
     }
 
     const docData = {

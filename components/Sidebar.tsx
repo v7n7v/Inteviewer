@@ -22,10 +22,10 @@ const navigationSections = [
   {
     title: 'Talent Suite',
     items: [
-      { id: 'resume', label: 'Resume Builder', icon: '📄', description: 'Liquid Resume', path: '/suite/resume' },
-      { id: 'jd-generator', label: 'JD Generator', icon: '💼', description: 'Persona-JD Engine', path: '/suite/jd-generator' },
+      { id: 'resume', label: 'Resume Builder', icon: 'description', description: 'Liquid Resume', path: '/suite/resume' },
+      { id: 'jd-generator', label: 'JD Generator', icon: 'work', description: 'Persona-JD Engine', path: '/suite/jd-generator' },
       { id: 'flashcards', label: 'The Gauntlet', icon: '⚔️', description: 'Interview Simulator', path: '/suite/flashcards' },
-      { id: 'vault', label: 'Study Vault', icon: '📚', description: 'Saved Practice Notes', path: '/suite/vault' },
+      { id: 'vault', label: 'Study Vault', icon: 'menu_book', description: 'Saved Practice Notes', path: '/suite/vault' },
       { id: 'skill-bridge', label: 'Skill Bridge', icon: '🌉', description: 'From Resume to Ready', path: '/suite/skill-bridge', badge: 'PRO' },
       { id: 'oracle', label: 'Market Oracle', icon: '🔮', description: 'Career Intelligence', path: '/suite/market-oracle' },
     ],

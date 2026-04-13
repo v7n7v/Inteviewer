@@ -11,13 +11,13 @@ interface Shortcut {
 
 const shortcuts: Shortcut[] = [
     // Navigation
-    { keys: ['⌘', 'K'], description: 'Open Quick Jump', category: 'Navigation' },
+    { keys: ['keyboard_command_key', 'K'], description: 'Open Quick Jump', category: 'Navigation' },
     { keys: ['?'], description: 'Show this help', category: 'Navigation' },
     { keys: ['Esc'], description: 'Close modal / Cancel', category: 'Navigation' },
 
     // Actions
-    { keys: ['⌘', 'S'], description: 'Save current work', category: 'Actions' },
-    { keys: ['⌘', 'Enter'], description: 'Submit / Confirm', category: 'Actions' },
+    { keys: ['keyboard_command_key', 'S'], description: 'Save current work', category: 'Actions' },
+    { keys: ['keyboard_command_key', 'Enter'], description: 'Submit / Confirm', category: 'Actions' },
 
     // Talent Suite
     { keys: ['G', 'R'], description: 'Go to Resume Builder', category: 'Quick Navigation' },
@@ -76,7 +76,7 @@ export default function KeyboardShortcuts() {
                             <div className="flex items-center justify-between p-6 border-b border-white/10">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center">
-                                        <span className="text-xl">⌨️</span>
+                                        <span className="text-xl"><span className="material-symbols-rounded">keyboard</span></span>
                                     </div>
                                     <div>
                                         <h2 className="text-lg font-bold text-white">Keyboard Shortcuts</h2>

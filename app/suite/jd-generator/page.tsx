@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { authFetch } from '@/lib/auth-fetch';
+import { useAuthGate } from '@/hooks/useAuthGate';
 import { saveJDTemplate, getJDTemplates, type JDTemplate } from '@/lib/database-suite';
 import { useStore } from '@/lib/store';
 import { showToast } from '@/components/Toast';
@@ -43,10 +44,10 @@ const BIAS_PATTERNS = [
 
 // JD Styles
 const JD_STYLES = [
-  { id: 'startup', name: 'Startup Vibe', icon: '🚀', description: 'Energetic, mission-driven' },
-  { id: 'corporate', name: 'Corporate Pro', icon: '🏢', description: 'Formal, structured' },
-  { id: 'technical', name: 'Tech-Forward', icon: '💻', description: 'Skills-focused, detailed' },
-  { id: 'creative', name: 'Creative Agency', icon: '🎨', description: 'Bold, inspiring' },
+  { id: 'startup', name: 'Startup Vibe', icon: <span className="material-symbols-rounded">rocket_launch</span>, description: 'Energetic, mission-driven' },
+  { id: 'corporate', name: 'Corporate Pro', icon: <span className="material-symbols-rounded">business</span>, description: 'Formal, structured' },
+  { id: 'technical', name: 'Tech-Forward', icon: <span className="material-symbols-rounded">terminal</span>, description: 'Skills-focused, detailed' },
+  { id: 'creative', name: 'Creative Agency', icon: <span className="material-symbols-rounded">palette</span>, description: 'Bold, inspiring' },
 ];
 
 // Seniority levels
@@ -57,6 +58,7 @@ const DEPARTMENTS = ['Engineering', 'Product', 'Design', 'Marketing', 'Sales', '
 
 export default function JDGeneratorPage() {
   const { user } = useStore();
+  const { handleApiError, renderAuthModal } = useAuthGate();
   const [step, setStep] = useState<'input' | 'generating' | 'result'>('input');
   
   // Input state
@@ -106,7 +108,7 @@ export default function JDGeneratorPage() {
   // Generate JD with AI
   const generateJD = async () => {
     if (!roleTitle.trim()) {
-      showToast('Enter a role title', '❌');
+      showToast('Enter a role title', 'cancel');
       return;
     }
 
@@ -163,6 +165,7 @@ Generate a professional, compelling job description that would attract top-tier 
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({ error: 'Request failed' }));
+        if (handleApiError(err)) { setIsLoading(false); setStep('input'); return; }
         throw new Error(err.error || `Server error ${response.status}`);
       }
 
@@ -181,11 +184,11 @@ Generate a professional, compelling job description that would attract top-tier 
       // Detect initial bias
       setBiasFlags(detectBias(formatJDToText(result)));
 
-      showToast('JD Generated!', '✅');
+      showToast('JD Generated!', 'check_circle');
       setStep('result');
     } catch (error) {
       console.error('Generation error:', error);
-      showToast('Failed to generate JD', '❌');
+      showToast('Failed to generate JD', 'cancel');
       setStep('input');
     } finally {
       setIsLoading(false);
@@ -234,7 +237,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
   // Copy to clipboard
   const copyToClipboard = () => {
     navigator.clipboard.writeText(editableJD);
-    showToast('Copied to clipboard!', '📋');
+    showToast('Copied to clipboard!', 'content_paste');
   };
 
   // Download as PDF
@@ -242,8 +245,8 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
     setIsLoading(true);
     try {
       await downloadJDPDF(generatedJD || undefined, editableJD);
-      showToast('PDF downloaded!', '✅');
-    } catch { showToast('Failed to generate PDF', '❌'); }
+      showToast('PDF downloaded!', 'check_circle');
+    } catch { showToast('Failed to generate PDF', 'cancel'); }
     finally { setIsLoading(false); }
   };
 
@@ -260,17 +263,17 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
         bias_flags: biasFlags,
       });
       if (result.success) {
-        showToast('Template saved!', '✅');
+        showToast('Template saved!', 'check_circle');
         loadTemplates();
       }
-    } catch { showToast('Failed to save', '❌'); }
+    } catch { showToast('Failed to save', 'cancel'); }
   };
 
   // Fix bias
   const fixBias = (biasItem: { text: string; suggestion: string }) => {
     const newText = editableJD.replace(new RegExp(biasItem.text, 'gi'), biasItem.suggestion);
     setEditableJD(newText);
-    showToast('Bias fixed!', '✅');
+    showToast('Bias fixed!', 'check_circle');
   };
 
   // Fix all bias
@@ -280,18 +283,9 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
       newText = newText.replace(new RegExp(flag.text, 'gi'), flag.suggestion);
     });
     setEditableJD(newText);
-    showToast('All bias fixed!', '✅');
+    showToast('All bias fixed!', 'check_circle');
   };
 
-  if (!user) return (
-    <div className="min-h-screen flex items-center justify-center p-8">
-      <div className="glass-card p-12 text-center max-w-md">
-        <span className="text-6xl mb-4 block">🔒</span>
-        <h2 className="text-2xl font-bold text-white mb-3">Sign In Required</h2>
-        <p className="text-silver">Please sign in to access the JD Generator</p>
-      </div>
-    </div>
-  );
 
   return (
     <div className="min-h-screen p-6 lg:p-8">
@@ -406,7 +400,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
                           selectedStyle.id === style.id ? 'border-cyan-400 bg-cyan-500/10' : 'border-white/10 hover:border-white/30'
                         }`}
                       >
-                        <span className="text-2xl block mb-2">{style.icon}</span>
+                        <span className="w-10 h-10 rounded-lg flex items-center justify-center bg-[var(--tag-cyan-bg)] text-[var(--tag-cyan-text)] mb-3">{style.icon}</span>
                         <p className="font-semibold text-white text-sm">{style.name}</p>
                         <p className="text-xs text-silver">{style.description}</p>
                       </button>
@@ -416,9 +410,10 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
 
                 {/* Generate Button */}
                 <button onClick={generateJD} disabled={isLoading || !roleTitle.trim()}
-                  className="w-full py-5 rounded-2xl font-bold text-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:shadow-lg hover:shadow-cyan-500/25 transition-all disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-2 py-5 rounded-2xl font-bold text-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:shadow-lg hover:shadow-cyan-500/25 transition-all disabled:opacity-50"
                 >
-                  {isLoading ? '🧠 Generating Mission Blueprint...' : '✨ Generate Mission Blueprint'}
+                  <span className="material-symbols-rounded">{isLoading ? 'psychology' : 'flare'}</span>
+                  {isLoading ? 'Generating Mission Blueprint...' : 'Generate Mission Blueprint'}
                 </button>
               </div>
 
@@ -426,19 +421,19 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
               <div className="space-y-4">
                 {/* What You Get */}
                 <div className="rounded-2xl glass-card p-6">
-                  <h3 className="font-bold text-white mb-4">✨ What You'll Get</h3>
+                  <h3 className="font-bold text-white mb-4 flex items-center gap-2"><span className="material-symbols-rounded text-cyan-400">auto_awesome</span> What You'll Get</h3>
                   <ul className="space-y-3">
                     {[
-                      { icon: '🎯', text: 'Mission Statement' },
-                      { icon: '📅', text: 'First 90 Days Roadmap' },
-                      { icon: '✅', text: 'Core Requirements' },
-                      { icon: '💎', text: 'Nice-to-Have Skills' },
-                      { icon: '💜', text: 'Culture Pulse Section' },
-                      { icon: '🚀', text: 'Growth Path' },
-                      { icon: '⚖️', text: 'Bias-Free Language' },
+                      { icon: <span className="material-symbols-rounded text-[16px]">my_location</span>, text: 'Mission Statement' },
+                      { icon: <span className="material-symbols-rounded text-[16px]">calendar_month</span>, text: 'First 90 Days Roadmap' },
+                      { icon: <span className="material-symbols-rounded text-[16px]">check_circle</span>, text: 'Core Requirements' },
+                      { icon: <span className="material-symbols-rounded text-[16px]">diamond</span>, text: 'Nice-to-Have Skills' },
+                      { icon: <span className="material-symbols-rounded text-[16px]">favorite</span>, text: 'Culture Pulse Section' },
+                      { icon: <span className="material-symbols-rounded text-[16px]">rocket_launch</span>, text: 'Growth Path' },
+                      { icon: <span className="material-symbols-rounded text-[16px]">balance</span>, text: 'Bias-Free Language' },
                     ].map((item, i) => (
                       <li key={i} className="flex items-center gap-3 text-sm text-silver">
-                        <span>{item.icon}</span>{item.text}
+                        <span className="flex items-center justify-center w-6 h-6 rounded bg-white/5">{item.icon}</span>{item.text}
                       </li>
                     ))}
                   </ul>
@@ -447,7 +442,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
                 {/* Saved Templates */}
                 {savedTemplates.length > 0 && (
                   <div className="rounded-2xl glass-card p-6">
-                    <h3 className="font-bold text-white mb-3">📁 Saved Templates</h3>
+                    <h3 className="font-bold text-white mb-3 flex items-center gap-2"><span className="material-symbols-rounded text-indigo-400">folder</span> Saved Templates</h3>
                     <div className="space-y-2 max-h-48 overflow-y-auto">
                       {savedTemplates.slice(0, 5).map((t) => (
                         <button key={t.id} onClick={() => {
@@ -478,8 +473,8 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
             <div className="w-32 h-32 mx-auto mb-8 relative">
               <div className="absolute inset-0 rounded-full border-4 border-cyan-500/20" />
               <div className="absolute inset-0 rounded-full border-4 border-cyan-400 border-t-transparent animate-spin" />
-              <div className="absolute inset-4 rounded-full bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center">
-                <span className="text-4xl">✨</span>
+              <div className="absolute inset-4 rounded-full bg-[var(--tag-cyan-bg)] flex items-center justify-center">
+                <span className="material-symbols-rounded text-4xl text-[var(--tag-cyan-text)] animate-pulse">model_training</span>
               </div>
             </div>
             <h2 className="text-2xl font-bold text-white mb-4">Crafting Your Mission Blueprint</h2>
@@ -535,9 +530,9 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
                     />
                   </div>
                   <div className="flex justify-between mt-2 text-xs text-silver">
-                    <span>🟢 Common</span>
-                    <span>🟡 Competitive</span>
-                    <span>🔴 Unicorn</span>
+                    <span><span className="material-symbols-rounded text-green-500">check_circle</span> Common</span>
+                    <span><span className="material-symbols-rounded text-yellow-500">pending</span> Competitive</span>
+                    <span><span className="material-symbols-rounded text-red-500">cancel</span> Unicorn</span>
                   </div>
                 </div>
 
@@ -546,9 +541,9 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
                   <div className="p-6 border-b border-white/10 flex items-center justify-between">
                     <h3 className="text-xl font-bold text-white">Generated Job Description</h3>
                     <div className="flex gap-2">
-                      <button onClick={copyToClipboard} className="px-3 py-1.5 rounded-lg bg-white/10 text-sm text-white hover:bg-white/20">📋 Copy</button>
-                      <button onClick={downloadPDF} disabled={isLoading} className="px-3 py-1.5 rounded-lg bg-white/10 text-sm text-white hover:bg-white/20">📄 PDF</button>
-                      <button onClick={saveTemplate} className="px-3 py-1.5 rounded-lg bg-cyan-500/20 text-sm text-cyan-300 hover:bg-cyan-500/30">💾 Save</button>
+                      <button onClick={copyToClipboard} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--tag-cyan-bg)] text-[var(--tag-cyan-text)] text-sm hover:opacity-80 transition-opacity"><span className="material-symbols-rounded text-[16px]">content_copy</span> Copy</button>
+                      <button onClick={downloadPDF} disabled={isLoading} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 text-white text-sm hover:bg-white/20 transition-colors disabled:opacity-50"><span className="material-symbols-rounded text-[16px]">picture_as_pdf</span> PDF</button>
+                      <button onClick={saveTemplate} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--tag-blue-bg)] text-[var(--tag-blue-text)] text-sm hover:opacity-80 transition-opacity"><span className="material-symbols-rounded text-[16px]">save</span> Save</button>
                     </div>
                   </div>
                   <div className="p-6">
@@ -573,9 +568,9 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
                   <div className="p-5 border-b border-white/10 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                        biasFlags.length > 0 ? 'bg-orange-500/20' : 'bg-green-500/20'
+                        biasFlags.length > 0 ? 'bg-orange-500/20 text-orange-400' : 'bg-green-500/20 text-green-400'
                       }`}>
-                        <span className="text-xl">{biasFlags.length > 0 ? '⚠️' : '✅'}</span>
+                        <span className="material-symbols-rounded">{biasFlags.length > 0 ? 'warning' : 'check_circle'}</span>
                       </div>
                       <div>
                         <h3 className="font-bold text-white">Bias Detector</h3>
@@ -614,28 +609,27 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
                   </div>
                 </div>
 
-                {/* Quick Actions */}
                 <div className="rounded-2xl glass-card p-5">
-                  <h3 className="font-bold text-white mb-4">Quick Actions</h3>
+                  <h3 className="font-bold text-white mb-4 flex items-center gap-2"><span className="material-symbols-rounded text-[var(--text-muted)]">bolt</span> Quick Actions</h3>
                   <div className="space-y-2">
                     <button onClick={copyToClipboard}
-                      className="w-full py-3 rounded-xl font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:shadow-lg transition-all"
-                    >📋 Copy to Clipboard</button>
+                      className="w-full py-3 rounded-xl font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                    ><span className="material-symbols-rounded">content_copy</span> Copy to Clipboard</button>
                     <button onClick={downloadPDF} disabled={isLoading}
-                      className="w-full py-3 rounded-xl font-semibold bg-white/10 text-white hover:bg-white/20 transition-all disabled:opacity-50"
-                    >📄 Download PDF</button>
+                      className="w-full py-3 rounded-xl font-semibold bg-white/10 text-white hover:bg-white/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    ><span className="material-symbols-rounded">picture_as_pdf</span> Download PDF</button>
                     <button onClick={saveTemplate}
-                      className="w-full py-3 rounded-xl font-semibold bg-white/10 text-white hover:bg-white/20 transition-all"
-                    >💾 Save to Library</button>
+                      className="w-full py-3 rounded-xl font-semibold bg-[var(--tag-cyan-bg)] text-[var(--tag-cyan-text)] transition-all flex items-center justify-center gap-2"
+                    ><span className="material-symbols-rounded">save</span> Save to Library</button>
                     <button onClick={() => setStep('input')}
-                      className="w-full py-3 rounded-xl font-semibold bg-[var(--theme-bg-elevated)] text-silver hover:bg-white/10 transition-all"
-                    >✨ Generate New JD</button>
+                      className="w-full py-3 rounded-xl font-semibold bg-[var(--theme-bg-elevated)] border border-white/10 text-silver hover:text-white hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+                    ><span className="material-symbols-rounded">add_circle</span> Generate New JD</button>
                   </div>
                 </div>
 
                 {/* Tips */}
                 <div className="rounded-2xl glass-card p-5">
-                  <h3 className="font-bold text-white mb-3">💡 Pro Tips</h3>
+                  <h3 className="font-bold text-white mb-3 flex items-center gap-2"><span className="material-symbols-rounded text-yellow-400">lightbulb</span> Pro Tips</h3>
                   <ul className="space-y-2 text-sm text-silver">
                     <li>• Keep requirements focused (5-7 core items)</li>
                     <li>• Use inclusive, bias-free language</li>
@@ -648,6 +642,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
           </motion.div>
         )}
       </AnimatePresence>
+      {renderAuthModal()}
     </div>
   );
 }

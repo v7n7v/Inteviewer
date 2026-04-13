@@ -8,20 +8,24 @@ import { sanitizeForAI } from '@/lib/sanitize';
 
 export async function POST(req: NextRequest) {
   try {
-    const guard = await guardApiRoute(req, { rateLimit: 1, rateLimitWindow: 60_000 });
+    const guard = await guardApiRoute(req, { rateLimit: 1, rateLimitWindow: 60_000, allowAnonymous: true });
     if (guard.error) return guard.error;
 
-    const usageCheck = await checkUsageAllowed(guard.user.uid, 'morphs', guard.user.tier);
-    if (!usageCheck.allowed) {
-      return NextResponse.json(
-        {
-          error: `Free tier limit reached (${usageCheck.cap} morphs). Upgrade to Pro for unlimited morphs.`,
-          upgrade: true,
-          used: usageCheck.used,
-          cap: usageCheck.cap,
-        },
-        { status: 403 }
-      );
+    // Skip Firestore usage tracking for anonymous users
+    const isAnon = guard.user.uid.startsWith('anon:');
+    if (!isAnon) {
+      const usageCheck = await checkUsageAllowed(guard.user.uid, 'morphs', guard.user.tier);
+      if (!usageCheck.allowed) {
+        return NextResponse.json(
+          {
+            error: `Free tier limit reached (${usageCheck.cap} morphs). Upgrade to Pro for unlimited morphs.`,
+            upgrade: true,
+            used: usageCheck.used,
+            cap: usageCheck.cap,
+          },
+          { status: 403 }
+        );
+      }
     }
 
     const validated = await validateBody(req, ResumeMorphSchema);
@@ -74,7 +78,9 @@ Return JSON:
       morphedData = { ...resume, summary: (resume as any).summary + ' [Optimized for target role]' };
     }
 
-    await incrementUsage(guard.user.uid, 'morphs');
+    if (!isAnon) {
+      await incrementUsage(guard.user.uid, 'morphs');
+    }
 
     return NextResponse.json({
       morphedResume: morphedData,

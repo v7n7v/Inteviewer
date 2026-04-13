@@ -11,13 +11,13 @@ import { useUserTier } from '@/hooks/use-user-tier';
 
 type SettingsTab = 'profile' | 'subscription' | 'security' | 'notifications' | 'sessions' | 'danger';
 
-const TABS: { id: SettingsTab; label: string; icon: string; description: string }[] = [
-    { id: 'profile', label: 'Profile', icon: '👤', description: 'Personal info & avatar' },
-    { id: 'subscription', label: 'Subscription', icon: '💎', description: 'Plan & billing' },
-    { id: 'security', label: 'Security', icon: '🛡️', description: 'Password, 2FA & login' },
-    { id: 'notifications', label: 'Notifications', icon: '🔔', description: 'Email & push alerts' },
-    { id: 'sessions', label: 'Sessions', icon: '💻', description: 'Active devices' },
-    { id: 'danger', label: 'Danger Zone', icon: '⚠️', description: 'Delete account' },
+const TABS: { id: SettingsTab; label: string; icon: string; description: string; color: string }[] = [
+    { id: 'profile', label: 'Profile', icon: 'person', description: 'Personal info & avatar', color: 'text-cyan-500' },
+    { id: 'subscription', label: 'Subscription', icon: 'diamond', description: 'Plan & billing', color: 'text-amber-500' },
+    { id: 'security', label: 'Security', icon: 'shield_person', description: 'Password, 2FA & login', color: 'text-emerald-500' },
+    { id: 'notifications', label: 'Notifications', icon: 'notifications', description: 'Email & push alerts', color: 'text-purple-500' },
+    { id: 'sessions', label: 'Sessions', icon: 'computer', description: 'Active devices', color: 'text-indigo-500' },
+    { id: 'danger', label: 'Danger Zone', icon: 'warning', description: 'Delete account', color: 'text-red-500' },
 ];
 
 export default function SettingsPage() {
@@ -31,15 +31,15 @@ export default function SettingsPage() {
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="relative overflow-hidden rounded-3xl glass-card p-8 mb-8"
+                className="relative overflow-hidden rounded-3xl bg-[var(--theme-bg-card)] border border-[var(--theme-border)] shadow-[var(--theme-shadow)] p-8 mb-8"
             >
                 <div className="absolute inset-0 opacity-20">
-                    <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/30 rounded-full blur-3xl" />
+                    <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/30 rounded-full blur-3xl" />
                     <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl" />
                 </div>
                 <div className="relative z-10 flex items-center gap-4">
                     <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-500 to-slate-700 flex items-center justify-center shadow-lg">
-                        <span className="text-3xl">⚙️</span>
+                        <span className="text-3xl"><span className="material-symbols-rounded align-middle">settings</span></span>
                     </div>
                     <div>
                         <h1 className="text-4xl font-bold">
@@ -47,7 +47,7 @@ export default function SettingsPage() {
                                 Account Settings
                             </span>
                         </h1>
-                        <p className="text-silver">Manage your profile, security, and preferences</p>
+                        <p className="text-[var(--text-secondary)]">Manage your profile, security, and preferences</p>
                     </div>
                 </div>
             </motion.div>
@@ -60,25 +60,25 @@ export default function SettingsPage() {
                     animate={{ opacity: 1, x: 0 }}
                     className="lg:w-64 flex-shrink-0"
                 >
-                    <div className="lg:sticky lg:top-8 space-y-1.5 p-2 rounded-2xl glass-card">
+                    <div className="lg:sticky lg:top-8 space-y-1.5 p-2 rounded-2xl bg-[var(--theme-bg-card)] border border-[var(--theme-border)] shadow-[var(--theme-shadow)]">
                         {TABS.map((tab) => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all ${activeTab === tab.id
-                                    ? 'bg-white/10 text-white border border-white/10 shadow-lg'
-                                    : 'text-silver hover:bg-white/5 hover:text-white border border-transparent'
+                                    ? 'bg-[var(--theme-surface-active)] text-[var(--text-primary)] border border-[var(--theme-border)] shadow-lg'
+                                    : 'text-[var(--text-secondary)] hover:bg-[var(--theme-surface-hover)] hover:text-[var(--text-primary)] border border-transparent'
                                     }`}
                             >
-                                <span className="text-xl">{tab.icon}</span>
+                                <span className="text-2xl mr-2 material-symbols-rounded align-middle">{tab.icon}</span>
                                 <div className="flex-1 min-w-0">
-                                    <p className={`text-sm font-medium ${activeTab === tab.id ? 'text-white' : ''}`}>{tab.label}</p>
-                                    <p className="text-xs text-slate-500 truncate">{tab.description}</p>
+                                    <p className={`text-sm font-medium ${activeTab === tab.id ? 'text-[var(--text-primary)]' : ''}`}>{tab.label}</p>
+                                    <p className="text-xs text-[var(--text-tertiary)] truncate">{tab.description}</p>
                                 </div>
                                 {activeTab === tab.id && (
                                     <motion.div
                                         layoutId="activeTab"
-                                        className="w-1.5 h-8 rounded-full bg-cyan-500"
+                                        className="w-1.5 h-8 rounded-full bg-emerald-500"
                                     />
                                 )}
                             </button>
@@ -114,15 +114,15 @@ function SubscriptionTab() {
             className="space-y-6"
         >
             {/* Current Plan */}
-            <div className="rounded-2xl glass-card p-6">
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                    <span>💎</span> Your Plan
+            <div className="rounded-2xl bg-[var(--theme-bg-card)] border border-[var(--theme-border)] shadow-[var(--theme-shadow)] p-6">
+                <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2">
+                    <span className="material-symbols-rounded align-middle">diamond</span> Your Plan
                 </h3>
 
                 {loading ? (
                     <div className="animate-pulse space-y-3">
-                        <div className="h-6 bg-white/5 rounded-lg w-1/3" />
-                        <div className="h-4 bg-white/5 rounded-lg w-1/2" />
+                        <div className="h-6 bg-[var(--theme-surface-hover)] rounded-lg w-1/3" />
+                        <div className="h-4 bg-[var(--theme-surface-hover)] rounded-lg w-1/2" />
                     </div>
                 ) : (
                     <div className="space-y-4">
@@ -130,24 +130,24 @@ function SubscriptionTab() {
                         <div className={`p-5 rounded-xl border ${
                             isPro
                                 ? 'bg-gradient-to-br from-emerald-500/10 to-teal-500/5 border-emerald-500/30'
-                                : 'bg-white/5 border-white/10'
+                                : 'bg-[var(--theme-surface-hover)] border-[var(--theme-border)]'
                         }`}>
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${
                                         isPro
                                             ? 'bg-gradient-to-br from-emerald-500 to-teal-500'
-                                            : 'bg-white/10'
+                                            : 'bg-[var(--theme-surface-active)]'
                                     }`}>
-                                        {isPro ? '👑' : '🆓'}
+                                        {isPro ? 'workspace_premium' : 'local_activity'}
                                     </div>
                                     <div>
-                                        <h4 className="text-xl font-bold text-white">
+                                        <h4 className="text-xl font-bold text-[var(--text-primary)]">
                                             {isPro ? 'Pro Plan' : 'Free Plan'}
                                         </h4>
-                                        <p className="text-sm text-silver">
+                                        <p className="text-sm text-[var(--text-secondary)]">
                                             {isPro
-                                                ? '$2.99/month — Unlimited access'
+                                                ? '$4.99/month — Unlimited access'
                                                 : 'Limited usage — Upgrade for full access'}
                                         </p>
                                     </div>
@@ -155,7 +155,7 @@ function SubscriptionTab() {
                                 <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                                     isPro
                                         ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                                        : 'bg-slate-500/20 text-slate-400 border border-slate-500/30'
+                                        : 'bg-slate-500/20 text-[var(--text-tertiary)] border border-slate-500/30'
                                 }`}>
                                     {isPro ? '✓ Active' : 'Free Tier'}
                                 </span>
@@ -170,26 +170,26 @@ function SubscriptionTab() {
 
             {/* What's Included */}
             {tier === 'free' && (
-                <div className="rounded-2xl glass-card p-6">
-                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                        <span>✨</span> What you get with Pro
+                <div className="rounded-2xl bg-[var(--theme-bg-card)] border border-[var(--theme-border)] shadow-[var(--theme-shadow)] p-6">
+                    <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2">
+                        <span><span className="material-symbols-rounded text-inherit align-middle">auto_awesome</span></span> What you get with Pro
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {[
-                            { icon: '♾️', label: 'Unlimited Resume Morphs', desc: 'No limits on AI-powered resume tailoring' },
-                            { icon: '⚔️', label: 'Unlimited Gauntlet Sessions', desc: 'Practice interviews without caps' },
-                            { icon: '🎴', label: 'Unlimited Flashcards', desc: 'Study decks with no restrictions' },
-                            { icon: '💼', label: 'Unlimited JD Analysis', desc: 'Analyze as many job descriptions as you want' },
-                            { icon: '🎙️', label: 'Voice Interview Mode', desc: 'Speak naturally with AI interviewer' },
-                            { icon: '🌉', label: 'Skill Bridge', desc: 'Curated learning to close skill gaps' },
-                            { icon: '🔮', label: 'Market Oracle', desc: 'Real-time career intelligence' },
-                            { icon: '🤖', label: 'Dual-AI Enhance', desc: 'GPT + Gemini working together' },
+                            { icon: 'recycling', label: 'Unlimited Resume Morphs', desc: 'No limits on AI-powered resume tailoring' },
+                            { icon: 'school', label: 'Unlimited Gauntlet Sessions', desc: 'Practice interviews without caps' },
+                            { icon: 'style', label: 'Unlimited Flashcards', desc: 'Study decks with no restrictions' },
+                            { icon: 'work', label: 'Unlimited JD Analysis', desc: 'Analyze as many job descriptions as you want' },
+                            { icon: 'mic', label: 'Voice Interview Mode', desc: 'Speak naturally with AI interviewer' },
+                            { icon: 'route', label: 'Skill Bridge', desc: 'Curated learning to close skill gaps' },
+                            { icon: 'magic_button', label: 'Market Oracle', desc: 'Real-time career intelligence' },
+                            { icon: 'smart_toy', label: 'Dual-AI Enhance', desc: 'GPT + Gemini working together' },
                         ].map((feature, i) => (
-                            <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/5">
-                                <span className="text-lg mt-0.5">{feature.icon}</span>
+                            <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.03] border border-[var(--theme-border)]">
+                                <span className="text-lg mt-0.5 material-symbols-rounded text-emerald-400">{feature.icon}</span>
                                 <div>
-                                    <p className="text-sm font-medium text-white">{feature.label}</p>
-                                    <p className="text-xs text-slate-500">{feature.desc}</p>
+                                    <p className="text-sm font-medium text-[var(--text-primary)]">{feature.label}</p>
+                                    <p className="text-xs text-[var(--text-tertiary)]">{feature.desc}</p>
                                 </div>
                             </div>
                         ))}
@@ -213,14 +213,14 @@ function ProfileTab({ user, setUser }: { user: any; setUser: any }) {
         try {
             const { success, error } = await authHelpers.updateProfile({ displayName });
             if (success) {
-                showToast('Profile updated!', '✅');
+                showToast('Profile updated!', 'check_circle');
                 setEditing(false);
                 setUser({ ...user, displayName });
             } else {
-                showToast(error?.message || 'Failed to update', '❌');
+                showToast(error?.message || 'Failed to update', 'cancel');
             }
         } catch (e: any) {
-            showToast(e.message || 'Error', '❌');
+            showToast(e.message || 'Error', 'cancel');
         }
         setSaving(false);
     };
@@ -233,10 +233,10 @@ function ProfileTab({ user, setUser }: { user: any; setUser: any }) {
             className="space-y-6"
         >
             {/* Avatar & Name */}
-            <div className="rounded-2xl glass-card overflow-hidden">
-                <div className="h-24 bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-purple-500/20 relative">
+            <div className="rounded-2xl bg-[var(--theme-bg-card)] border border-[var(--theme-border)] shadow-[var(--theme-shadow)] overflow-hidden">
+                <div className="h-24 bg-emerald-500/10 border-b border-emerald-500/20 relative">
                     <div className="absolute -bottom-10 left-6">
-                        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-3xl font-bold text-white border-4 border-[#0A0A0A] shadow-xl">
+                        <div className="w-20 h-20 rounded-2xl bg-[var(--theme-surface)] flex items-center justify-center text-3xl font-bold text-[var(--text-primary)] border-4 border-[var(--theme-bg)] shadow-xl">
                             {user?.email?.[0]?.toUpperCase() || '?'}
                         </div>
                     </div>
@@ -244,14 +244,14 @@ function ProfileTab({ user, setUser }: { user: any; setUser: any }) {
                 <div className="pt-14 px-6 pb-6">
                     <div className="flex items-start justify-between mb-6">
                         <div>
-                            <h2 className="text-xl font-bold text-white">{user?.displayName || user?.email?.split('@')[0] || 'User'}</h2>
-                            <p className="text-sm text-silver">{user?.email || 'dev@talentconsulting.io'}</p>
+                            <h2 className="text-xl font-bold text-[var(--text-primary)]">{user?.displayName || user?.email?.split('@')[0] || 'User'}</h2>
+                            <p className="text-sm text-[var(--text-secondary)]">{user?.email || 'dev@talentconsulting.io'}</p>
                         </div>
                         <button
                             onClick={() => setEditing(!editing)}
-                            className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm text-silver hover:text-white hover:bg-white/10 transition-all"
+                            className="px-4 py-2 rounded-xl bg-[var(--theme-surface-hover)] border border-[var(--theme-border)] text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--theme-surface-active)] transition-all"
                         >
-                            {editing ? 'Cancel' : '✏️ Edit Profile'}
+                            {editing ? 'Cancel' : <><span className="material-symbols-rounded align-middle mr-1">edit</span> Edit Profile</>}
                         </button>
                     </div>
 
@@ -264,33 +264,33 @@ function ProfileTab({ user, setUser }: { user: any; setUser: any }) {
                                 className="space-y-4 overflow-hidden"
                             >
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-2">Display Name</label>
+                                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Display Name</label>
                                     <input
                                         type="text"
                                         value={displayName}
                                         onChange={(e) => setDisplayName(e.target.value)}
                                         placeholder="Your full name"
-                                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20"
+                                        className="w-full px-4 py-3 rounded-xl bg-[var(--theme-surface-hover)] border border-[var(--theme-border)] text-[var(--text-primary)] placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-2">Phone Number</label>
+                                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Phone Number</label>
                                     <input
                                         type="tel"
                                         value={phone}
                                         onChange={(e) => setPhone(e.target.value)}
                                         placeholder="+1 (555) 000-0000"
-                                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20"
+                                        className="w-full px-4 py-3 rounded-xl bg-[var(--theme-surface-hover)] border border-[var(--theme-border)] text-[var(--text-primary)] placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-2">Bio</label>
+                                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Bio</label>
                                     <textarea
                                         value={bio}
                                         onChange={(e) => setBio(e.target.value)}
                                         placeholder="Tell us about yourself..."
                                         rows={3}
-                                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 resize-none"
+                                        className="w-full px-4 py-3 rounded-xl bg-[var(--theme-surface-hover)] border border-[var(--theme-border)] text-[var(--text-primary)] placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 resize-none"
                                     />
                                 </div>
                                 <motion.button
@@ -298,9 +298,9 @@ function ProfileTab({ user, setUser }: { user: any; setUser: any }) {
                                     whileTap={{ scale: 0.98 }}
                                     onClick={handleSaveProfile}
                                     disabled={saving}
-                                    className="w-full px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-medium hover:shadow-lg hover:shadow-cyan-500/25 transition-all disabled:opacity-50"
+                                    className="w-full px-6 py-3 rounded-xl bg-emerald-500/10 border border-cyan-500/20 text-cyan-400 font-medium hover:bg-emerald-500/20 hover:border-cyan-500/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                                 >
-                                    {saving ? 'Saving...' : '💾 Save Profile'}
+                                    {saving ? 'Saving...' : <><span className="material-symbols-rounded align-middle mr-1">save</span> Save Profile</>}
                                 </motion.button>
                             </motion.div>
                         )}
@@ -309,23 +309,23 @@ function ProfileTab({ user, setUser }: { user: any; setUser: any }) {
             </div>
 
             {/* Account Details Card */}
-            <div className="rounded-2xl glass-card p-6">
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                    <span>📋</span> Account Details
+            <div className="rounded-2xl bg-[var(--theme-bg-card)] border border-[var(--theme-border)] shadow-[var(--theme-shadow)] p-6">
+                <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2">
+                    <span><span className="text-xl align-middle"><span className="material-symbols-rounded">edit_document</span></span></span> Account Details
                 </h3>
                 <div className="space-y-3">
                     {[
-                        { label: 'Email', value: user?.email || 'dev@talentconsulting.io', icon: '📧' },
-                        { label: 'User ID', value: user?.uid || user?.id || 'dev-user', icon: '🆔' },
-                        { label: 'Member Since', value: user?.metadata?.creationTime ? new Date(user.metadata.creationTime).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Development Mode', icon: '📅' },
-                        { label: 'Auth Provider', value: user?.providerData?.[0]?.providerId || 'Email/Password', icon: '🔑' },
+                        { label: 'Email', value: user?.email || 'dev@talentconsulting.io', icon: 'mail' },
+                        { label: 'User ID', value: user?.uid || user?.id || 'dev-user', icon: 'badge' },
+                        { label: 'Member Since', value: user?.metadata?.creationTime ? new Date(user.metadata.creationTime).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Development Mode', icon: 'calendar_month' },
+                        { label: 'Auth Provider', value: user?.providerData?.[0]?.providerId || 'Email/Password', icon: 'key' },
                     ].map((item, i) => (
-                        <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">
+                        <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-[var(--theme-surface-hover)] border border-[var(--theme-border)]">
                             <div className="flex items-center gap-3">
-                                <span className="text-lg">{item.icon}</span>
-                                <span className="text-sm text-silver">{item.label}</span>
+                                <span className="text-xl mr-1 material-symbols-rounded align-middle">{item.icon}</span>
+                                <span className="text-sm text-[var(--text-secondary)]">{item.label}</span>
                             </div>
-                            <span className="text-sm text-white font-medium truncate max-w-[200px]">{item.value}</span>
+                            <span className="text-sm text-[var(--text-primary)] font-medium truncate max-w-[200px]">{item.value}</span>
                         </div>
                     ))}
                 </div>
@@ -379,32 +379,32 @@ function SecurityTab({ user }: { user: any }) {
 
     const handlePasswordChange = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!currentPassword || !newPassword || !confirmPassword) return showToast('Fill all fields', '❌');
-        if (newPassword !== confirmPassword) return showToast('Passwords don\'t match', '❌');
-        if (newPassword.length < 8) return showToast('Min 8 characters', '❌');
+        if (!currentPassword || !newPassword || !confirmPassword) return showToast('Fill all fields', 'cancel');
+        if (newPassword !== confirmPassword) return showToast('Passwords don\'t match', 'cancel');
+        if (newPassword.length < 8) return showToast('Min 8 characters', 'cancel');
 
         setIsUpdatingPassword(true);
         try {
             const { isValid } = await authHelpers.verifyPassword(user?.email || '', currentPassword);
-            if (!isValid) { showToast('Current password incorrect', '❌'); setIsUpdatingPassword(false); return; }
+            if (!isValid) { showToast('Current password incorrect', 'cancel'); setIsUpdatingPassword(false); return; }
             const { error } = await authHelpers.updatePassword(newPassword);
-            if (error) { showToast(error.message || 'Failed', '❌'); }
-            else { showToast('Password updated!', '✅'); setCurrentPassword(''); setNewPassword(''); setConfirmPassword(''); }
-        } catch (e: any) { showToast(e.message, '❌'); }
+            if (error) { showToast(error.message || 'Failed', 'cancel'); }
+            else { showToast('Password updated!', 'check_circle'); setCurrentPassword(''); setNewPassword(''); setConfirmPassword(''); }
+        } catch (e: any) { showToast(e.message, 'cancel'); }
         setIsUpdatingPassword(false);
     };
 
     const handleEmailChange = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) return showToast('Invalid email', '❌');
-        if (newEmail === user?.email) return showToast('Already your email', 'ℹ️');
+        if (!newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) return showToast('Invalid email', 'cancel');
+        if (newEmail === user?.email) return showToast('Already your email', 'info');
 
         setIsUpdatingEmail(true);
         try {
             const { error } = await authHelpers.updateEmail(newEmail);
-            if (error) showToast(error.message || 'Failed', '❌');
-            else { showToast(`Verification sent to ${newEmail}`, '✅'); setNewEmail(''); }
-        } catch (e: any) { showToast(e.message, '❌'); }
+            if (error) showToast(error.message || 'Failed', 'cancel');
+            else { showToast(`Verification sent to ${newEmail}`, 'check_circle'); setNewEmail(''); }
+        } catch (e: any) { showToast(e.message, 'cancel'); }
         setIsUpdatingEmail(false);
     };
 
@@ -431,7 +431,7 @@ function SecurityTab({ user }: { user: any }) {
         try {
             const { success, error } = await authHelpers.completeTOTPEnrollment(totpSecret, verifyCode, 'Google Authenticator');
             if (error) throw error;
-            if (success) { showToast('2FA enabled!', '✅'); setMfaStatus({ enrolled: true, hints: [] }); setMfaStep('idle'); setVerifyCode(''); }
+            if (success) { showToast('2FA enabled!', 'check_circle'); setMfaStatus({ enrolled: true, hints: [] }); setMfaStep('idle'); setVerifyCode(''); }
         } catch (err: any) { setMfaError(err.message || 'Invalid code'); }
         setMfaLoading(false);
     };
@@ -441,7 +441,7 @@ function SecurityTab({ user }: { user: any }) {
         try {
             const { success, error } = await authHelpers.unenrollMFA();
             if (error) throw error;
-            if (success) { showToast('2FA disabled', '✅'); setMfaStatus({ enrolled: false, hints: [] }); }
+            if (success) { showToast('2FA disabled', 'check_circle'); setMfaStatus({ enrolled: false, hints: [] }); }
         } catch (err: any) { setMfaError(err.message || 'Failed'); }
         setMfaLoading(false); setMfaStep('idle');
     };
@@ -451,19 +451,19 @@ function SecurityTab({ user }: { user: any }) {
     return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-6">
             {/* Security Overview */}
-            <div className="rounded-2xl glass-card p-6">
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">🔒 Security Overview</h3>
+            <div className="rounded-2xl bg-[var(--theme-bg-card)] border border-[var(--theme-border)] shadow-[var(--theme-shadow)] p-6">
+                <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2"><span className="text-xl align-middle"><span className="material-symbols-rounded">lock</span></span> Security Overview</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {[
-                        { label: 'Password', status: 'Set', icon: '🔑', color: 'text-green-400', bg: 'bg-green-500/10' },
-                        { label: '2FA', status: mfaStatus.enrolled ? 'Enabled' : 'Disabled', icon: '🛡️', color: mfaStatus.enrolled ? 'text-green-400' : 'text-yellow-400', bg: mfaStatus.enrolled ? 'bg-green-500/10' : 'bg-yellow-500/10' },
-                        { label: 'Last Login', status: user?.metadata?.lastSignInTime ? new Date(user.metadata.lastSignInTime).toLocaleDateString() : 'Recently', icon: '🕐', color: 'text-cyan-400', bg: 'bg-cyan-500/10' },
+                        { label: 'Password', status: 'Set', icon: 'key', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+                        { label: '2FA', status: mfaStatus.enrolled ? 'Enabled' : 'Disabled', icon: 'shield_person', color: mfaStatus.enrolled ? 'text-emerald-400' : 'text-amber-400', bg: mfaStatus.enrolled ? 'bg-emerald-500/10' : 'bg-amber-500/10' },
+                        { label: 'Last Login', status: user?.metadata?.lastSignInTime ? new Date(user.metadata.lastSignInTime).toLocaleDateString() : 'Recently', icon: 'history', color: 'text-indigo-400', bg: 'bg-indigo-500/10' },
                     ].map((item, i) => (
-                        <div key={i} className={`p-4 rounded-xl ${item.bg} border border-white/5`}>
+                        <div key={i} className={`p-4 rounded-xl ${item.bg} border border-[var(--theme-border)]`}>
                             <div className="flex items-center gap-3">
-                                <span className="text-2xl">{item.icon}</span>
+                                <span className="text-2xl material-symbols-rounded">{item.icon}</span>
                                 <div>
-                                    <p className="text-sm text-silver">{item.label}</p>
+                                    <p className="text-sm text-[var(--text-secondary)]">{item.label}</p>
                                     <p className={`text-sm font-semibold ${item.color}`}>{item.status}</p>
                                 </div>
                             </div>
@@ -473,48 +473,48 @@ function SecurityTab({ user }: { user: any }) {
             </div>
 
             {/* Change Password */}
-            <div className="rounded-2xl glass-card overflow-hidden">
+            <div className="rounded-2xl bg-[var(--theme-bg-card)] border border-[var(--theme-border)] shadow-[var(--theme-shadow)] overflow-hidden">
                 <button onClick={() => setIsPasswordOpen(!isPasswordOpen)} className="w-full p-6 flex items-center justify-between group">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center"><span className="text-xl">🔒</span></div>
+                        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center"><span className="text-xl"><span className="material-symbols-rounded">lock</span></span></div>
                         <div className="text-left">
-                            <h3 className="text-lg font-semibold text-white">Change Password</h3>
-                            <p className="text-sm text-silver">Update your account password</p>
+                            <h3 className="text-lg font-semibold text-[var(--text-primary)]">Change Password</h3>
+                            <p className="text-sm text-[var(--text-secondary)]">Update your account password</p>
                         </div>
                     </div>
-                    <motion.svg animate={{ rotate: isPasswordOpen ? 180 : 0 }} className="w-5 h-5 text-silver" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></motion.svg>
+                    <motion.svg animate={{ rotate: isPasswordOpen ? 180 : 0 }} className="w-5 h-5 text-[var(--text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></motion.svg>
                 </button>
                 <AnimatePresence>
                     {isPasswordOpen && (
                         <motion.form initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} onSubmit={handlePasswordChange} className="px-6 pb-6 space-y-4 overflow-hidden">
                             <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-2">Current Password</label>
-                                <input type={showPasswords ? 'text' : 'password'} value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="Enter current password" className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20" />
+                                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Current Password</label>
+                                <input type={showPasswords ? 'text' : 'password'} value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="Enter current password" className="w-full px-4 py-3 rounded-xl bg-[var(--theme-surface-hover)] border border-[var(--theme-border)] text-[var(--text-primary)] placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20" />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-2">New Password</label>
+                                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">New Password</label>
                                 <div className="relative">
-                                    <input type={showPasswords ? 'text' : 'password'} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Enter new password" className="w-full px-4 py-3 pr-12 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20" />
-                                    <button type="button" onClick={() => setShowPasswords(!showPasswords)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-sm">{showPasswords ? '🙈' : '👁️'}</button>
+                                    <input type={showPasswords ? 'text' : 'password'} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Enter new password" className="w-full px-4 py-3 pr-12 rounded-xl bg-[var(--theme-surface-hover)] border border-[var(--theme-border)] text-[var(--text-primary)] placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20" />
+                                    <button type="button" onClick={() => setShowPasswords(!showPasswords)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] text-sm">{showPasswords ? 'visibility_off' : 'visibility'}</button>
                                 </div>
                                 {newPassword && (
                                     <div className="mt-2">
                                         <div className="flex items-center justify-between mb-1">
-                                            <span className="text-xs text-slate-500">Strength:</span>
+                                            <span className="text-xs text-[var(--text-tertiary)]">Strength:</span>
                                             <span className={`text-xs font-medium ${pwStrength.label === 'Weak' ? 'text-red-400' : pwStrength.label === 'Medium' ? 'text-yellow-400' : 'text-green-400'}`}>{pwStrength.label}</span>
                                         </div>
-                                        <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                        <div className="w-full h-1.5 bg-[var(--theme-surface-hover)] rounded-full overflow-hidden">
                                             <motion.div initial={{ width: 0 }} animate={{ width: `${(pwStrength.strength / 5) * 100}%` }} className={`h-full ${pwStrength.color}`} />
                                         </div>
                                     </div>
                                 )}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-2">Confirm Password</label>
-                                <input type={showPasswords ? 'text' : 'password'} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirm new password" className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20" />
-                                {confirmPassword && newPassword !== confirmPassword && <p className="mt-1 text-xs text-red-400">⚠️ Passwords don't match</p>}
+                                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Confirm Password</label>
+                                <input type={showPasswords ? 'text' : 'password'} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirm new password" className="w-full px-4 py-3 rounded-xl bg-[var(--theme-surface-hover)] border border-[var(--theme-border)] text-[var(--text-primary)] placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20" />
+                                {confirmPassword && newPassword !== confirmPassword && <p className="mt-1 text-xs text-red-400"><span className="material-symbols-rounded">warning</span> Passwords don't match</p>}
                             </div>
-                            <button type="submit" disabled={isUpdatingPassword} className="w-full px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium hover:shadow-lg hover:shadow-emerald-500/25 transition-all disabled:opacity-50">
+                            <button type="submit" disabled={isUpdatingPassword} className="w-full px-6 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-medium hover:bg-emerald-500/20 hover:border-emerald-500/30 transition-all disabled:opacity-50">
                                 {isUpdatingPassword ? 'Updating...' : 'Update Password'}
                             </button>
                         </motion.form>
@@ -523,26 +523,26 @@ function SecurityTab({ user }: { user: any }) {
             </div>
 
             {/* Change Email */}
-            <div className="rounded-2xl glass-card overflow-hidden">
+            <div className="rounded-2xl bg-[var(--theme-bg-card)] border border-[var(--theme-border)] shadow-[var(--theme-shadow)] overflow-hidden">
                 <button onClick={() => setIsEmailOpen(!isEmailOpen)} className="w-full p-6 flex items-center justify-between group">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center"><span className="text-xl">📧</span></div>
+                        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center"><span className="text-xl"><span className="material-symbols-rounded">mail</span></span></div>
                         <div className="text-left">
-                            <h3 className="text-lg font-semibold text-white">Change Email</h3>
-                            <p className="text-sm text-silver">Update your email address</p>
+                            <h3 className="text-lg font-semibold text-[var(--text-primary)]">Change Email</h3>
+                            <p className="text-sm text-[var(--text-secondary)]">Update your email address</p>
                         </div>
                     </div>
-                    <motion.svg animate={{ rotate: isEmailOpen ? 180 : 0 }} className="w-5 h-5 text-silver" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></motion.svg>
+                    <motion.svg animate={{ rotate: isEmailOpen ? 180 : 0 }} className="w-5 h-5 text-[var(--text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></motion.svg>
                 </button>
                 <AnimatePresence>
                     {isEmailOpen && (
                         <motion.form initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} onSubmit={handleEmailChange} className="px-6 pb-6 space-y-4 overflow-hidden">
                             <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-2">New Email Address</label>
-                                <input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="Enter new email" className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20" />
-                                <p className="mt-2 text-xs text-slate-500">🔐 A verification link will be sent to confirm.</p>
+                                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">New Email Address</label>
+                                <input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="Enter new email" className="w-full px-4 py-3 rounded-xl bg-[var(--theme-surface-hover)] border border-[var(--theme-border)] text-[var(--text-primary)] placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20" />
+                                <p className="mt-2 text-xs text-[var(--text-tertiary)]"><span className="material-symbols-rounded text-sm align-middle mr-1">lock</span> A verification link will be sent to confirm.</p>
                             </div>
-                            <button type="submit" disabled={isUpdatingEmail} className="w-full px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-medium hover:shadow-lg hover:shadow-cyan-500/25 transition-all disabled:opacity-50">
+                            <button type="submit" disabled={isUpdatingEmail} className="w-full px-6 py-3 rounded-xl bg-emerald-500/10 border border-cyan-500/20 text-cyan-400 font-medium hover:bg-emerald-500/20 hover:border-cyan-500/30 transition-all disabled:opacity-50">
                                 {isUpdatingEmail ? 'Sending...' : 'Update Email'}
                             </button>
                         </motion.form>
@@ -551,16 +551,16 @@ function SecurityTab({ user }: { user: any }) {
             </div>
 
             {/* Two-Factor Authentication */}
-            <div className="rounded-2xl glass-card p-6">
+            <div className="rounded-2xl bg-[var(--theme-bg-card)] border border-[var(--theme-border)] shadow-[var(--theme-shadow)] p-6">
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center"><span className="text-xl">🔐</span></div>
+                        <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center"><span className="text-xl material-symbols-rounded">lock</span></div>
                         <div>
-                            <h3 className="text-lg font-semibold text-white">Two-Factor Authentication</h3>
-                            <p className="text-sm text-silver">Google Authenticator / TOTP</p>
+                            <h3 className="text-lg font-semibold text-[var(--text-primary)]">Two-Factor Authentication</h3>
+                            <p className="text-sm text-[var(--text-secondary)]">Google Authenticator / TOTP</p>
                         </div>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${mfaStatus.enrolled ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-slate-500/20 text-slate-400 border-slate-500/30'}`}>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${mfaStatus.enrolled ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-slate-500/20 text-[var(--text-tertiary)] border-slate-500/30'}`}>
                         {mfaStatus.enrolled ? '✓ Enabled' : 'Not Enrolled'}
                     </span>
                 </div>
@@ -568,47 +568,47 @@ function SecurityTab({ user }: { user: any }) {
                 {mfaStatus.enrolled ? (
                     <div className="space-y-3">
                         <div className="p-4 rounded-xl bg-green-500/5 border border-green-500/20 flex items-center gap-3">
-                            <span className="text-lg">🛡️</span>
+                            <span className="text-xl"><span className="material-symbols-rounded">shield_person</span></span>
                             <div>
-                                <p className="text-white font-medium">Authenticator Active</p>
-                                <p className="text-sm text-silver">{mfaStatus.hints[0]?.displayName || 'Google Authenticator'}</p>
+                                <p className="text-[var(--text-primary)] font-medium">Authenticator Active</p>
+                                <p className="text-sm text-[var(--text-secondary)]">{mfaStatus.hints[0]?.displayName || 'Google Authenticator'}</p>
                             </div>
                         </div>
                         <button onClick={handleRemoveMFA} disabled={mfaLoading} className="w-full px-6 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 font-medium hover:bg-red-500/20 transition-all disabled:opacity-50">
-                            {mfaLoading && mfaStep === 'unenrolling' ? 'Removing...' : '🗑️ Remove 2FA'}
+                            {mfaLoading && mfaStep === 'unenrolling' ? 'Removing...' : <><span className="material-symbols-rounded align-middle mr-1">delete</span> Remove 2FA</>}
                         </button>
                     </div>
                 ) : mfaStep === 'qr' ? (
                     <div className="space-y-4">
                         {qrDataUrl && (
                             <div className="flex flex-col items-center">
-                                <p className="text-silver text-sm mb-3 text-center">Scan with <strong className="text-amber-400">Google Authenticator</strong></p>
-                                <div className="p-4 rounded-2xl bg-white/5 border border-white/10"><img src={qrDataUrl} alt="QR" className="w-48 h-48" /></div>
+                                <p className="text-[var(--text-secondary)] text-sm mb-3 text-center">Scan with <strong className="text-amber-400">Google Authenticator</strong></p>
+                                <div className="p-4 rounded-2xl bg-[var(--theme-surface-hover)] border border-[var(--theme-border)]"><img src={qrDataUrl} alt="QR" className="w-48 h-48" /></div>
                             </div>
                         )}
-                        <div className="p-3 rounded-xl bg-white/5 border border-white/10">
-                            <p className="text-xs text-slate-500 mb-1">Manual key:</p>
+                        <div className="p-3 rounded-xl bg-[var(--theme-surface-hover)] border border-[var(--theme-border)]">
+                            <p className="text-xs text-[var(--text-tertiary)] mb-1">Manual key:</p>
                             <div className="flex items-center gap-2">
                                 <code className="flex-1 text-sm text-amber-400 font-mono break-all">{secretKey}</code>
-                                <button onClick={() => { navigator.clipboard.writeText(secretKey); showToast('Copied!', '📋'); }} className="px-2 py-1 rounded-lg bg-white/5 text-slate-400 hover:text-white text-xs">Copy</button>
+                                <button onClick={() => { navigator.clipboard.writeText(secretKey); showToast('Copied!', 'content_paste'); }} className="px-2 py-1 rounded-lg bg-[var(--theme-surface-hover)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] text-xs">Copy</button>
                             </div>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">6-digit code</label>
-                            <input type="text" value={verifyCode} onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 6))} className="w-full px-4 py-4 rounded-xl bg-white/5 border border-white/10 text-white text-center text-2xl tracking-[0.3em] font-mono focus:outline-none focus:border-amber-500/50" placeholder="000000" maxLength={6} autoFocus />
+                            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">6-digit code</label>
+                            <input type="text" value={verifyCode} onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 6))} className="w-full px-4 py-4 rounded-xl bg-[var(--theme-surface-hover)] border border-[var(--theme-border)] text-[var(--text-primary)] text-center text-2xl tracking-[0.3em] font-mono focus:outline-none focus:border-amber-500/50" placeholder="000000" maxLength={6} autoFocus />
                         </div>
                         {mfaError && <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30"><p className="text-sm text-red-300">{mfaError}</p></div>}
                         <div className="flex gap-3">
-                            <button onClick={handleVerifyMFA} disabled={mfaLoading || verifyCode.length < 6} className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium hover:shadow-lg hover:shadow-amber-500/25 disabled:opacity-50">{mfaLoading ? 'Verifying...' : 'Verify & Enable'}</button>
-                            <button onClick={() => { setMfaStep('idle'); setVerifyCode(''); setMfaError(''); }} className="px-4 py-3 rounded-xl border border-white/10 text-silver hover:text-white">Cancel</button>
+                            <button onClick={handleVerifyMFA} disabled={mfaLoading || verifyCode.length < 6} className="flex-1 px-6 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 font-medium hover:bg-amber-500/20 transition-all disabled:opacity-50">{mfaLoading ? 'Verifying...' : 'Verify & Enable'}</button>
+                            <button onClick={() => { setMfaStep('idle'); setVerifyCode(''); setMfaError(''); }} className="px-4 py-3 rounded-xl border border-[var(--theme-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]">Cancel</button>
                         </div>
                     </div>
                 ) : (
                     <div className="space-y-3">
-                        <p className="text-xs text-slate-500">Use Google Authenticator, Authy, or any TOTP-compatible app for extra security.</p>
+                        <p className="text-xs text-[var(--text-tertiary)]">Use Google Authenticator, Authy, or any TOTP-compatible app for extra security.</p>
                         {mfaError && <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30"><p className="text-sm text-red-300">{mfaError}</p></div>}
-                        <button onClick={handleStartMFA} disabled={mfaLoading} className="w-full px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium hover:shadow-lg hover:shadow-amber-500/25 disabled:opacity-50">
-                            {mfaLoading ? 'Setting up...' : '🔐 Set Up Authenticator'}
+                        <button onClick={handleStartMFA} disabled={mfaLoading} className="w-full px-6 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 font-medium hover:bg-amber-500/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                            {mfaLoading ? 'Setting up...' : <><span className="material-symbols-rounded align-middle mr-1">lock</span> Set Up Authenticator</>}
                         </button>
                     </div>
                 )}
@@ -631,11 +631,11 @@ function NotificationsTab() {
 
     const toggle = (key: keyof typeof settings) => {
         setSettings(prev => ({ ...prev, [key]: !prev[key] }));
-        showToast('Preference saved', '✅');
+        showToast('Preference saved', 'check_circle');
     };
 
     const ToggleSwitch = ({ enabled, onChange }: { enabled: boolean; onChange: () => void }) => (
-        <button onClick={onChange} className={`relative w-12 h-7 rounded-full transition-colors ${enabled ? 'bg-cyan-500' : 'bg-white/10'}`}>
+        <button onClick={onChange} className={`relative w-12 h-7 rounded-full transition-colors ${enabled ? 'bg-emerald-500' : 'bg-[var(--theme-surface-active)]'}`}>
             <motion.div
                 animate={{ x: enabled ? 22 : 2 }}
                 transition={{ type: 'spring', stiffness: 500, damping: 30 }}
@@ -647,8 +647,8 @@ function NotificationsTab() {
     return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-6">
             {/* Email Notifications */}
-            <div className="rounded-2xl glass-card p-6">
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2"><span>📧</span> Email Notifications</h3>
+            <div className="rounded-2xl bg-[var(--theme-bg-card)] border border-[var(--theme-border)] shadow-[var(--theme-shadow)] p-6">
+                <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2"><span><span className="text-xl align-middle material-symbols-rounded">mail</span></span> Email Notifications</h3>
                 <div className="space-y-4">
                     {[
                         { key: 'emailApplications' as const, label: 'Application Updates', desc: 'Status changes on your job applications' },
@@ -656,10 +656,10 @@ function NotificationsTab() {
                         { key: 'emailOffers' as const, label: 'Offer Notifications', desc: 'When you receive an offer' },
                         { key: 'emailNewsletter' as const, label: 'Weekly Newsletter', desc: 'Job market insights and career tips' },
                     ].map((item) => (
-                        <div key={item.key} className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">
+                        <div key={item.key} className="flex items-center justify-between p-4 rounded-xl bg-[var(--theme-surface-hover)] border border-[var(--theme-border)]">
                             <div>
-                                <p className="text-sm font-medium text-white">{item.label}</p>
-                                <p className="text-xs text-silver">{item.desc}</p>
+                                <p className="text-sm font-medium text-[var(--text-primary)]">{item.label}</p>
+                                <p className="text-xs text-[var(--text-secondary)]">{item.desc}</p>
                             </div>
                             <ToggleSwitch enabled={settings[item.key]} onChange={() => toggle(item.key)} />
                         </div>
@@ -668,18 +668,18 @@ function NotificationsTab() {
             </div>
 
             {/* Push Notifications */}
-            <div className="rounded-2xl glass-card p-6">
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2"><span>📱</span> Push Notifications</h3>
+            <div className="rounded-2xl bg-[var(--theme-bg-card)] border border-[var(--theme-border)] shadow-[var(--theme-shadow)] p-6">
+                <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2"><span><span className="material-symbols-rounded text-inherit align-middle">smartphone</span></span> Push Notifications</h3>
                 <div className="space-y-4">
                     {[
                         { key: 'pushNewJobs' as const, label: 'New Job Matches', desc: 'Jobs matching your resume profile' },
                         { key: 'pushStatusUpdates' as const, label: 'Status Updates', desc: 'Real-time application status changes' },
                         { key: 'pushReminders' as const, label: 'Follow-up Reminders', desc: 'Reminders to follow up on applications' },
                     ].map((item) => (
-                        <div key={item.key} className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">
+                        <div key={item.key} className="flex items-center justify-between p-4 rounded-xl bg-[var(--theme-surface-hover)] border border-[var(--theme-border)]">
                             <div>
-                                <p className="text-sm font-medium text-white">{item.label}</p>
-                                <p className="text-xs text-silver">{item.desc}</p>
+                                <p className="text-sm font-medium text-[var(--text-primary)]">{item.label}</p>
+                                <p className="text-xs text-[var(--text-secondary)]">{item.desc}</p>
                             </div>
                             <ToggleSwitch enabled={settings[item.key]} onChange={() => toggle(item.key)} />
                         </div>
@@ -693,37 +693,37 @@ function NotificationsTab() {
 // ===== SESSIONS TAB =====
 function SessionsTab({ user }: { user: any }) {
     const sessions = [
-        { device: 'This Device', browser: 'Chrome on macOS', ip: '127.0.0.1', lastActive: 'Active now', current: true, icon: '💻' },
-        { device: 'iPhone 15', browser: 'Safari on iOS', ip: '192.168.1.x', lastActive: '2 hours ago', current: false, icon: '📱' },
+        { device: 'This Device', browser: 'Chrome on macOS', ip: '127.0.0.1', lastActive: 'Active now', current: true, icon: 'computer' },
+        { device: 'iPhone 15', browser: 'Safari on iOS', ip: '192.168.1.x', lastActive: '2 hours ago', current: false, icon: 'smartphone' },
     ];
 
     return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-6">
-            <div className="rounded-2xl glass-card p-6">
+            <div className="rounded-2xl bg-[var(--theme-bg-card)] border border-[var(--theme-border)] shadow-[var(--theme-shadow)] p-6">
                 <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-semibold text-white flex items-center gap-2"><span>💻</span> Active Sessions</h3>
-                    <button className="px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium hover:bg-red-500/20 transition-all" onClick={() => showToast('All other sessions will be signed out', 'ℹ️')}>
+                    <h3 className="text-lg font-semibold text-[var(--text-primary)] flex items-center gap-2"><span><span className="material-symbols-rounded text-inherit align-middle">computer</span></span> Active Sessions</h3>
+                    <button className="px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium hover:bg-red-500/20 transition-all" onClick={() => showToast('All other sessions will be signed out', 'info')}>
                         Sign Out All Others
                     </button>
                 </div>
                 <div className="space-y-3">
                     {sessions.map((session, i) => (
-                        <div key={i} className={`p-4 rounded-xl border ${session.current ? 'bg-cyan-500/5 border-cyan-500/20' : 'bg-white/5 border-white/5'}`}>
+                        <div key={i} className={`p-4 rounded-xl border ${session.current ? 'bg-emerald-500/5 border-cyan-500/20' : 'bg-[var(--theme-surface-hover)] border-[var(--theme-border)]'}`}>
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <span className="text-2xl">{session.icon}</span>
+                                    <span className="text-2xl material-symbols-rounded flex-shrink-0">{session.icon}</span>
                                     <div>
-                                        <p className="text-sm font-medium text-white flex items-center gap-2">
+                                        <p className="text-sm font-medium text-[var(--text-primary)] flex items-center gap-2">
                                             {session.device}
-                                            {session.current && <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 text-[10px]">Current</span>}
+                                            {session.current && <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-cyan-400 text-[10px]">Current</span>}
                                         </p>
-                                        <p className="text-xs text-silver">{session.browser} • {session.ip}</p>
+                                        <p className="text-xs text-[var(--text-secondary)]">{session.browser} • {session.ip}</p>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <p className={`text-xs font-medium ${session.current ? 'text-green-400' : 'text-silver'}`}>{session.lastActive}</p>
+                                    <p className={`text-xs font-medium ${session.current ? 'text-green-400' : 'text-[var(--text-secondary)]'}`}>{session.lastActive}</p>
                                     {!session.current && (
-                                        <button className="text-xs text-red-400 hover:underline mt-1" onClick={() => showToast('Session revoked', '✅')}>Revoke</button>
+                                        <button className="text-xs text-red-400 hover:underline mt-1" onClick={() => showToast('Session revoked', 'check_circle')}>Revoke</button>
                                     )}
                                 </div>
                             </div>
@@ -733,24 +733,24 @@ function SessionsTab({ user }: { user: any }) {
             </div>
 
             {/* Login History */}
-            <div className="rounded-2xl glass-card p-6">
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2"><span>📋</span> Login History</h3>
+            <div className="rounded-2xl bg-[var(--theme-bg-card)] border border-[var(--theme-border)] shadow-[var(--theme-shadow)] p-6">
+                <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2"><span><span className="text-xl align-middle"><span className="material-symbols-rounded">content_paste</span></span></span> Login History</h3>
                 <div className="space-y-2">
                     {[
                         { time: 'Today, 10:45 PM', method: 'Email/Password', location: 'Atlanta, GA', status: 'success' },
                         { time: 'Today, 8:12 AM', method: 'Email/Password', location: 'Atlanta, GA', status: 'success' },
                         { time: 'Yesterday, 11:30 PM', method: 'Email/Password', location: 'Atlanta, GA', status: 'success' },
                     ].map((entry, i) => (
-                        <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white/5">
+                        <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-[var(--theme-surface-hover)]">
                             <div className="flex items-center gap-3">
                                 <span className={`w-2 h-2 rounded-full ${entry.status === 'success' ? 'bg-green-400' : 'bg-red-400'}`} />
                                 <div>
-                                    <p className="text-sm text-white">{entry.time}</p>
-                                    <p className="text-xs text-silver">{entry.method} • {entry.location}</p>
+                                    <p className="text-sm text-[var(--text-primary)]">{entry.time}</p>
+                                    <p className="text-xs text-[var(--text-secondary)]">{entry.method} • {entry.location}</p>
                                 </div>
                             </div>
                             <span className={`text-xs ${entry.status === 'success' ? 'text-green-400' : 'text-red-400'}`}>
-                                {entry.status === 'success' ? '✓ Success' : '✕ Failed'}
+                                {entry.status === 'success' ? '✓ Success' : <><span className="material-symbols-rounded align-middle mr-1">close</span> Failed</>}
                             </span>
                         </div>
                     ))}
@@ -769,21 +769,21 @@ function DangerTab({ user }: { user: any }) {
     return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-6">
             {/* Export Data */}
-            <div className="rounded-2xl glass-card p-6">
-                <h3 className="text-lg font-semibold text-white mb-2 flex items-center gap-2"><span>📦</span> Export Your Data</h3>
-                <p className="text-sm text-silver mb-4">Download all your data including resumes, applications, and profile information.</p>
+            <div className="rounded-2xl bg-[var(--theme-bg-card)] border border-[var(--theme-border)] shadow-[var(--theme-shadow)] p-6">
+                <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2 flex items-center gap-2"><span><span className="material-symbols-rounded text-inherit align-middle">inventory_2</span></span> Export Your Data</h3>
+                <p className="text-sm text-[var(--text-secondary)] mb-4">Download all your data including resumes, applications, and profile information.</p>
                 <button
-                    onClick={() => showToast('Data export will be emailed to you', 'ℹ️')}
-                    className="px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-medium hover:bg-white/10 transition-all"
+                    onClick={() => showToast('Data export will be emailed to you', 'info')}
+                    className="px-6 py-3 rounded-xl bg-emerald-500/10 border border-cyan-500/20 text-cyan-400 font-medium hover:bg-emerald-500/20 hover:border-cyan-500/30 transition-all flex items-center gap-2"
                 >
-                    📥 Request Data Export
+                    <span className="material-symbols-rounded">inventory_2</span> Request Data Export
                 </button>
             </div>
 
             {/* Delete Account */}
             <div className="rounded-2xl bg-[var(--theme-bg-card)] border border-red-500/20 p-6">
-                <h3 className="text-lg font-semibold text-red-400 mb-2 flex items-center gap-2"><span>⚠️</span> Delete Account</h3>
-                <p className="text-sm text-silver mb-4">
+                <h3 className="text-lg font-semibold text-red-400 mb-2 flex items-center gap-2"><span><span className="material-symbols-rounded">warning</span></span> Delete Account</h3>
+                <p className="text-sm text-[var(--text-secondary)] mb-4">
                     Permanently delete your account and all associated data. This action cannot be undone.
                 </p>
                 <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/20 mb-4">
@@ -799,9 +799,9 @@ function DangerTab({ user }: { user: any }) {
                 {!confirmDelete ? (
                     <button
                         onClick={() => setConfirmDelete(true)}
-                        className="px-6 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 font-medium hover:bg-red-500/20 transition-all"
+                        className="px-6 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 font-medium hover:bg-red-500/20 hover:border-red-500/30 transition-all flex items-center gap-2"
                     >
-                        🗑️ Delete My Account
+                        <span className="material-symbols-rounded">warning</span> Delete My Account
                     </button>
                 ) : (
                     <div className="space-y-3">
@@ -811,20 +811,20 @@ function DangerTab({ user }: { user: any }) {
                             value={deleteConfirmText}
                             onChange={(e) => setDeleteConfirmText(e.target.value)}
                             placeholder="Type DELETE"
-                            className="w-full px-4 py-3 rounded-xl bg-red-500/5 border border-red-500/30 text-white placeholder-red-300/50 focus:outline-none focus:border-red-500 text-center font-bold tracking-wider"
+                            className="w-full px-4 py-3 rounded-xl bg-red-500/5 border border-red-500/30 text-[var(--text-primary)] placeholder-red-300/50 focus:outline-none focus:border-red-500 text-center font-bold tracking-wider"
                         />
                         <div className="flex gap-3">
                             <button
                                 disabled={deleteConfirmText !== 'DELETE'}
                                 onClick={() => {
-                                    showToast('Account deletion initiated...', '⚠️');
+                                    showToast('Account deletion initiated...', 'warning');
                                     // Would call authHelpers.deleteAccount() here
                                 }}
-                                className="flex-1 px-6 py-3 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                                className="flex-1 px-6 py-3 rounded-xl bg-red-500/20 border border-red-500/30 text-red-400 font-medium hover:bg-red-500/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                             >
                                 Permanently Delete
                             </button>
-                            <button onClick={() => { setConfirmDelete(false); setDeleteConfirmText(''); }} className="px-4 py-3 rounded-xl border border-white/10 text-silver hover:text-white">
+                            <button onClick={() => { setConfirmDelete(false); setDeleteConfirmText(''); }} className="px-4 py-3 rounded-xl border border-[var(--theme-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
                                 Cancel
                             </button>
                         </div>

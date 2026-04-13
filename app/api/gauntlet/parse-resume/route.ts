@@ -3,7 +3,7 @@ import { guardApiRoute } from '@/lib/api-auth';
 
 export async function POST(req: NextRequest) {
     try {
-        const guard = await guardApiRoute(req, { rateLimit: 5, rateLimitWindow: 60_000 });
+        const guard = await guardApiRoute(req, { rateLimit: 5, rateLimitWindow: 60_000, allowAnonymous: true });
         if (guard.error) return guard.error;
 
         // Check if we received JSON (from our updated client) or formData (old fallback)

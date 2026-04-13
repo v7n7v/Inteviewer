@@ -17,6 +17,7 @@ import { authFetch } from '@/lib/auth-fetch';
 import FileUploadDropzone from '@/components/FileUploadDropzone';
 import SkillGapWarningModal from '@/components/modals/SkillGapWarningModal';
 import UpgradeModal from '@/components/UpgradeModal';
+import AuthModal from '@/components/modals/AuthModal';
 
 // Set up PDF.js worker
 if (typeof window !== 'undefined') {
@@ -55,25 +56,25 @@ const EMPTY_RESUME: ResumeData = {
 
 const TEMPLATES = [
   // ── FREE TEMPLATES (4) ──
-  { id: 'executive', name: 'Executive', description: 'Clean, professional design for senior roles', preview: '📊', tier: 'free' as const, colors: { primary: '#1a365d', accent: '#2b6cb0', text: '#1a202c' } },
-  { id: 'modern', name: 'Modern', description: 'Contemporary style with bold headers', preview: '✨', tier: 'free' as const, colors: { primary: '#0d9488', accent: '#14b8a6', text: '#1e293b' } },
-  { id: 'minimal', name: 'Minimal', description: 'Simple and elegant, ATS-friendly', preview: '🎯', tier: 'free' as const, colors: { primary: '#374151', accent: '#6b7280', text: '#111827' } },
-  { id: 'compact', name: 'Compact', description: 'Dense, ATS-optimized one-page format', preview: '📋', tier: 'free' as const, colors: { primary: '#15803d', accent: '#16a34a', text: '#14532d' } },
+  { id: 'executive', name: 'Executive', description: 'Clean, professional design for senior roles', preview: 'bar_chart', tier: 'free' as const, colors: { primary: '#1a365d', accent: '#2b6cb0', text: '#1a202c' } },
+  { id: 'modern', name: 'Modern', description: 'Contemporary style with bold headers', preview: 'auto_awesome', tier: 'free' as const, colors: { primary: '#0d9488', accent: '#14b8a6', text: '#1e293b' } },
+  { id: 'minimal', name: 'Minimal', description: 'Simple and elegant, ATS-friendly', preview: 'my_location', tier: 'free' as const, colors: { primary: '#374151', accent: '#6b7280', text: '#111827' } },
+  { id: 'compact', name: 'Compact', description: 'Dense, ATS-optimized one-page format', preview: 'content_paste', tier: 'free' as const, colors: { primary: '#15803d', accent: '#16a34a', text: '#14532d' } },
   // ── PRO TEMPLATES (14) ──
-  { id: 'creative', name: 'Creative', description: 'Stand out with unique layout', preview: '🎨', tier: 'pro' as const, colors: { primary: '#7c3aed', accent: '#8b5cf6', text: '#1f2937' } },
-  { id: 'technical', name: 'Technical', description: 'Optimized for tech roles', preview: '💻', tier: 'pro' as const, colors: { primary: '#0369a1', accent: '#0284c7', text: '#0f172a' } },
-  { id: 'harvard', name: 'Harvard', description: 'Traditional achievement-focused format', preview: '🎓', tier: 'pro' as const, colors: { primary: '#991b1b', accent: '#b91c1c', text: '#1c1917' } },
-  { id: 'cascade', name: 'Cascade', description: 'Spacious sidebar with skill showcase', preview: '📐', tier: 'pro' as const, colors: { primary: '#1e3a5f', accent: '#3b82f6', text: '#1e293b' } },
-  { id: 'elegant', name: 'Elegant', description: 'Serif typography, refined and luxurious', preview: '🖋️', tier: 'pro' as const, colors: { primary: '#44403c', accent: '#78716c', text: '#292524' } },
-  { id: 'nordic', name: 'Nordic', description: 'Clean Scandinavian-inspired minimal design', preview: '❄️', tier: 'pro' as const, colors: { primary: '#475569', accent: '#94a3b8', text: '#334155' } },
-  { id: 'ats-optimized', name: 'ATS Ultra', description: 'Maximum ATS compatibility, zero formatting risk', preview: '🤖', tier: 'pro' as const, colors: { primary: '#0f766e', accent: '#14b8a6', text: '#134e4a' } },
-  { id: 'double-column', name: 'Double Column', description: 'Two-column layout with sidebar skills panel', preview: '📰', tier: 'pro' as const, colors: { primary: '#1e40af', accent: '#3b82f6', text: '#1e293b' } },
-  { id: 'infographic', name: 'Infographic', description: 'Visual skill bars, charts, and timeline layout', preview: '📈', tier: 'pro' as const, colors: { primary: '#c026d3', accent: '#e879f9', text: '#1f2937' } },
-  { id: 'deloitte', name: 'Deloitte', description: 'Consulting-style format with impact metrics', preview: '🏢', tier: 'pro' as const, colors: { primary: '#86bc25', accent: '#0076a8', text: '#1a1a2e' } },
-  { id: 'faang', name: 'FAANG', description: 'Big Tech format with project highlights', preview: '🚀', tier: 'pro' as const, colors: { primary: '#4285f4', accent: '#34a853', text: '#202124' } },
-  { id: 'startup', name: 'Startup', description: 'Dynamic layout for fast-paced environments', preview: '⚡', tier: 'pro' as const, colors: { primary: '#f97316', accent: '#fb923c', text: '#1c1917' } },
-  { id: 'federal', name: 'Federal', description: 'Government & defense format with clearance section', preview: '🏛️', tier: 'pro' as const, colors: { primary: '#1e3a5f', accent: '#1d4ed8', text: '#111827' } },
-  { id: 'academic', name: 'Academic', description: 'Research-focused with publications & grants', preview: '🎓', tier: 'pro' as const, colors: { primary: '#7c2d12', accent: '#c2410c', text: '#1c1917' } },
+  { id: 'creative', name: 'Creative', description: 'Stand out with unique layout', preview: 'palette', tier: 'pro' as const, colors: { primary: '#7c3aed', accent: '#8b5cf6', text: '#1f2937' } },
+  { id: 'technical', name: 'Technical', description: 'Optimized for tech roles', preview: 'computer', tier: 'pro' as const, colors: { primary: '#0369a1', accent: '#0284c7', text: '#0f172a' } },
+  { id: 'harvard', name: 'Harvard', description: 'Traditional achievement-focused format', preview: 'school', tier: 'pro' as const, colors: { primary: '#991b1b', accent: '#b91c1c', text: '#1c1917' } },
+  { id: 'cascade', name: 'Cascade', description: 'Spacious sidebar with skill showcase', preview: 'straighten', tier: 'pro' as const, colors: { primary: '#1e3a5f', accent: '#3b82f6', text: '#1e293b' } },
+  { id: 'elegant', name: 'Elegant', description: 'Serif typography, refined and luxurious', preview: 'edit', tier: 'pro' as const, colors: { primary: '#44403c', accent: '#78716c', text: '#292524' } },
+  { id: 'nordic', name: 'Nordic', description: 'Clean Scandinavian-inspired minimal design', preview: 'ac_unit', tier: 'pro' as const, colors: { primary: '#475569', accent: '#94a3b8', text: '#334155' } },
+  { id: 'ats-optimized', name: 'ATS Ultra', description: 'Maximum ATS compatibility, zero formatting risk', preview: 'smart_toy', tier: 'pro' as const, colors: { primary: '#0f766e', accent: '#14b8a6', text: '#134e4a' } },
+  { id: 'double-column', name: 'Double Column', description: 'Two-column layout with sidebar skills panel', preview: 'article', tier: 'pro' as const, colors: { primary: '#1e40af', accent: '#3b82f6', text: '#1e293b' } },
+  { id: 'infographic', name: 'Infographic', description: 'Visual skill bars, charts, and timeline layout', preview: 'trending_up', tier: 'pro' as const, colors: { primary: '#c026d3', accent: '#e879f9', text: '#1f2937' } },
+  { id: 'deloitte', name: 'Deloitte', description: 'Consulting-style format with impact metrics', preview: 'domain', tier: 'pro' as const, colors: { primary: '#86bc25', accent: '#0076a8', text: '#1a1a2e' } },
+  { id: 'faang', name: 'FAANG', description: 'Big Tech format with project highlights', preview: 'rocket_launch', tier: 'pro' as const, colors: { primary: '#4285f4', accent: '#34a853', text: '#202124' } },
+  { id: 'startup', name: 'Startup', description: 'Dynamic layout for fast-paced environments', preview: 'bolt', tier: 'pro' as const, colors: { primary: '#f97316', accent: '#fb923c', text: '#1c1917' } },
+  { id: 'federal', name: 'Federal', description: 'Government & defense format with clearance section', preview: 'account_balance', tier: 'pro' as const, colors: { primary: '#1e3a5f', accent: '#1d4ed8', text: '#111827' } },
+  { id: 'academic', name: 'Academic', description: 'Research-focused with publications & grants', preview: 'school', tier: 'pro' as const, colors: { primary: '#7c2d12', accent: '#c2410c', text: '#1c1917' } },
 ];
 
 const SKILL_CATEGORIES = [
@@ -144,7 +145,7 @@ function ResumeMorphDemo() {
         {/* Center: Arrow + JD */}
         <div className="flex md:flex-col items-center justify-center gap-2 py-2">
           <div className="w-8 h-8 rounded-full bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
-            <span className="text-xs">🧠</span>
+            <span className="text-xs"><span className="material-symbols-rounded text-inherit align-middle">psychology</span></span>
           </div>
           <div className="h-px md:h-8 w-8 md:w-px bg-gradient-to-r md:bg-gradient-to-b from-transparent via-cyan-500/30 to-transparent" />
           <AnimatePresence mode="wait">
@@ -219,10 +220,10 @@ function ResumeMorphDemo() {
 }
 // ============ WORKFLOW ANIMATION ============
 const workflowSteps = [
-  { id: 'upload', step: '01', icon: '📤', title: 'Upload Resume', desc: 'PDF, Word, or text' },
-  { id: 'paste', step: '02', icon: '📋', title: 'Paste JD', desc: 'Target job description' },
-  { id: 'morph', step: '03', icon: '🧠', title: 'AI Morph', desc: 'Smart rewrite engine' },
-  { id: 'download', step: '04', icon: '⬇️', title: 'Download', desc: 'ATS-safe export' },
+  { id: 'upload', step: '01', icon: 'outbox', title: 'Upload Resume', desc: 'PDF, Word, or text' },
+  { id: 'paste', step: '02', icon: 'content_paste', title: 'Paste JD', desc: 'Target job description' },
+  { id: 'morph', step: '03', icon: 'psychology', title: 'AI Morph', desc: 'Smart rewrite engine' },
+  { id: 'download', step: '04', icon: 'arrow_downward', title: 'Download', desc: 'ATS-safe export' },
 ];
 
 function WorkflowAnimation() {
@@ -333,7 +334,7 @@ function WorkflowAnimation() {
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
                 className="text-4xl mb-3"
-              >📄</motion.div>
+              ><span className="material-symbols-rounded text-inherit align-middle">description</span></motion.div>
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
@@ -454,10 +455,10 @@ function WorkflowAnimation() {
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="text-sm font-semibold text-white mb-1">Resume Ready</motion.div>
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }} className="flex items-center gap-3">
                 <button className="px-3 py-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-[10px] font-medium text-cyan-400 flex items-center gap-1">
-                  📄 PDF
+                  <span className="material-symbols-rounded align-middle mr-1">description</span> PDF
                 </button>
                 <button className="px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-[10px] font-medium text-blue-400 flex items-center gap-1">
-                  📝 Word
+                  <span className="material-symbols-rounded align-middle mr-1">edit_document</span> Word
                 </button>
                 <span className="text-[10px] text-green-400 font-bold">92% Match</span>
               </motion.div>
@@ -503,7 +504,7 @@ export default function LiquidResumePage() {
   const [showBlueprintModal, setShowBlueprintModal] = useState(false);
 
   // Tier awareness
-  const { tier, isPro, canUse, remaining, refetch: refetchUsage } = useUserTier();
+  const { tier, isPro, canUse, remaining, caps, refetch: refetchUsage } = useUserTier();
 
   // UI state
   const [selectedTemplate, setSelectedTemplate] = useState(TEMPLATES[0]);
@@ -551,6 +552,57 @@ export default function LiquidResumePage() {
     return null;
   };
 
+  // ===== SESSION PERSISTENCE =====
+  // Persist in-progress work so navigating away doesn't lose progress
+  const SESSION_KEY = 'talent-resume-draft';
+
+  // Restore draft on mount
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(SESSION_KEY);
+      if (!saved) return;
+      const draft = JSON.parse(saved);
+      if (draft.originalResume) setOriginalResume(draft.originalResume);
+      if (draft.morphedResume) setMorphedResume(draft.morphedResume);
+      if (draft.jobDescription) setJobDescription(draft.jobDescription);
+      if (draft.morphPercentage) setMorphPercentage(draft.morphPercentage);
+      if (draft.matchScore) setMatchScore(draft.matchScore);
+      if (draft.selectedTemplateId) {
+        const tmpl = TEMPLATES.find(t => t.id === draft.selectedTemplateId);
+        if (tmpl) setSelectedTemplate(tmpl);
+      }
+      if (draft.mode && draft.mode !== 'choose') setMode(draft.mode);
+      if (draft.step) setStep(draft.step);
+      if (draft.buildResume) setBuildResume(draft.buildResume);
+    } catch { /* ignore corrupt storage */ }
+  }, []);
+
+  // Auto-save draft when key state changes
+  useEffect(() => {
+    // Don't save if user hasn't started anything
+    if (mode === 'choose' && !originalResume && !buildResume?.name) return;
+    try {
+      const draft = {
+        originalResume,
+        morphedResume,
+        jobDescription,
+        morphPercentage,
+        matchScore,
+        selectedTemplateId: selectedTemplate.id,
+        mode,
+        step,
+        buildResume: mode === 'create' ? buildResume : undefined,
+        savedAt: Date.now(),
+      };
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(draft));
+    } catch { /* quota exceeded — ignore */ }
+  }, [originalResume, morphedResume, jobDescription, morphPercentage, matchScore, selectedTemplate, mode, step, buildResume]);
+
+  // Clear draft when workflow completes (save/download)
+  const clearDraft = () => {
+    try { sessionStorage.removeItem(SESSION_KEY); } catch {}
+  };
+
   // ===== EFFECTS =====
   useEffect(() => { if (user) loadVersions(); }, [user]);
 
@@ -596,6 +648,7 @@ export default function LiquidResumePage() {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: 'Parse failed' }));
+      if (err.requiresAuth) { setShowDownloadAuth('signup'); throw new Error('Sign in to continue'); }
       throw new Error(err.error || 'Failed to parse resume');
     }
     const data = await res.json();
@@ -610,6 +663,8 @@ export default function LiquidResumePage() {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: 'Morph failed' }));
+      if (err.requiresAuth) { setShowDownloadAuth('signup'); throw new Error('Sign in to continue'); }
+      if (err.limitReached) { setShowDownloadAuth('signup'); throw new Error(err.error || 'Free tier limit reached'); }
       throw new Error(err.error || 'Failed to morph resume');
     }
     const data = await res.json();
@@ -638,17 +693,17 @@ export default function LiquidResumePage() {
       // Brief pause so user sees the "extracting" stage
       await new Promise(r => setTimeout(r, 800));
       setProcessingStage('parsing');
-      showToast('Parsing resume with AI...', '🧠');
+      showToast('Parsing resume with AI...', 'psychology');
       const parsed = await parseResumeWithAI(text);
       setOriginalResume(parsed);
-      showToast('Resume parsed successfully!', '✅');
+      showToast('Resume parsed successfully!', 'check_circle');
       setStep('jd');
     } catch (error: any) {
       console.error('AI parsing error:', error);
       if (error.message?.includes('INVALID_DOCUMENT') || error.message?.includes('look like a resume')) {
         setInvalidDocumentError(true);
       } else {
-        showToast(error.message || 'Failed to process resume with AI', '❌');
+        showToast(error.message || 'Failed to process resume with AI', 'cancel');
       }
     } finally {
       setIsLoading(false);
@@ -661,7 +716,7 @@ export default function LiquidResumePage() {
     if (!originalResume || !jobDescription.trim()) return;
     setIsBlueprintLoading(true);
     try {
-      showToast('Generating your Day-Zero Blueprint...', '📋');
+      showToast('Generating your Day-Zero Blueprint...', 'content_paste');
       const res = await authFetch('/api/resume/blueprint', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -670,7 +725,7 @@ export default function LiquidResumePage() {
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: 'Blueprint generation failed' }));
         if (err.upgrade) {
-          showToast('Day-Zero Blueprint is a Pro feature ✨', '🔒');
+          showToast('Day-Zero Blueprint is a Pro feature <span className="material-symbols-rounded align-middle mr-1">auto_awesome</span>', 'lock');
           return;
         }
         throw new Error(err.error || 'Failed to generate blueprint');
@@ -678,10 +733,10 @@ export default function LiquidResumePage() {
       const data = await res.json();
       setBlueprintContent(data.blueprint);
       setShowBlueprintModal(true);
-      showToast('Day-Zero Blueprint ready!', '✅');
+      showToast('Day-Zero Blueprint ready!', 'check_circle');
     } catch (error) {
       console.error('Blueprint error:', error);
-      showToast('Failed to generate blueprint', '❌');
+      showToast('Failed to generate blueprint', 'cancel');
     } finally {
       setIsBlueprintLoading(false);
     }
@@ -691,7 +746,7 @@ export default function LiquidResumePage() {
     if (!originalResume || !jobDescription.trim()) return;
     setIsLoading(true);
     try {
-      showToast(`AI is morphing your resume at ${morphPercentage}% intensity...`, '🧠');
+      showToast(`AI is morphing your resume at ${morphPercentage}% intensity...`, 'psychology');
       const { morphed, score } = await morphResumeToJD(originalResume, jobDescription, morphPercentage, targetPageCount);
 
       // CRITICAL: Always ensure we have valid data before proceeding
@@ -700,7 +755,7 @@ export default function LiquidResumePage() {
       setMorphedResume(validResume);
       setMatchScore(score);
       setStep(isPro ? 'enhance' : 'template');
-      showToast(`Resume morphed! ${score}% match`, '✅');
+      showToast(`Resume morphed! ${score}% match`, 'check_circle');
 
       // ── Skill Gap Detection ──
       try {
@@ -743,7 +798,7 @@ export default function LiquidResumePage() {
       } catch { /* non-critical */ }
     } catch (error) {
       console.error('Morph error:', error);
-      showToast('Failed to morph resume', '❌');
+      showToast('Failed to morph resume', 'cancel');
     } finally {
       setIsLoading(false);
     }
@@ -762,7 +817,7 @@ export default function LiquidResumePage() {
     if (!saveVersionName.trim() || !saveCompanyName.trim()) return;
     const resume = getDisplayResume();
     if (!resume) {
-      showToast('No resume data to save', '❌');
+      showToast('No resume data to save', 'cancel');
       return;
     }
     setIsLoading(true);
@@ -775,7 +830,7 @@ export default function LiquidResumePage() {
         'technical'
       );
       if (!result.success) {
-        showToast(result.error || 'Save failed', '❌');
+        showToast(result.error || 'Save failed', 'cancel');
         setIsLoading(false);
         return;
       }
@@ -790,10 +845,11 @@ export default function LiquidResumePage() {
         talentDensityScore: matchScore || undefined,
       });
 
-      // 3. Show success state
+      // 3. Show success state & clear draft
+      clearDraft();
       setSaveSuccess(true);
       loadVersions();
-      showToast(`Saved & tracked for ${saveCompanyName}!`, '✅');
+      showToast(`Saved & tracked for ${saveCompanyName}!`, 'check_circle');
 
       // Auto-close after brief visual confirmation
       setTimeout(() => {
@@ -804,7 +860,7 @@ export default function LiquidResumePage() {
       }, 1500);
     } catch (error: any) {
       console.error('Save error:', error);
-      showToast(`Save failed: ${error.message || 'Unknown error'}`, '❌');
+      showToast(`Save failed: ${error.message || 'Unknown error'}`, 'cancel');
     } finally {
       setIsLoading(false);
     }
@@ -812,7 +868,7 @@ export default function LiquidResumePage() {
 
   const handleCreateApplication = async () => {
     if (!applicationData.companyName.trim()) {
-      showToast('Please enter a company name', '❌');
+      showToast('Please enter a company name', 'cancel');
       return;
     }
     setIsLoading(true);
@@ -825,15 +881,15 @@ export default function LiquidResumePage() {
         morphedResumeName: saveVersionName || resume?.name || 'Resume',
       });
       if (result.success) {
-        showToast('Application tracked! View in Applications tab.', '✅');
+        showToast('Application tracked! View in Applications tab.', 'check_circle');
         setShowApplicationModal(false);
         setApplicationData({ companyName: '', jobTitle: '', notes: '' });
       } else {
-        showToast(result.error || 'Failed to create application', '❌');
+        showToast(result.error || 'Failed to create application', 'cancel');
       }
     } catch (error: any) {
       console.error('Application error:', error);
-      showToast(`Failed: ${error.message || 'Unknown error'}`, '❌');
+      showToast(`Failed: ${error.message || 'Unknown error'}`, 'cancel');
     } finally {
       setIsLoading(false);
     }
@@ -848,7 +904,7 @@ export default function LiquidResumePage() {
     if (!deleteConfirmId) return;
     const result = await deleteResumeVersion(deleteConfirmId);
     if (result.success) {
-      showToast('Version deleted', '✅');
+      showToast('Version deleted', 'check_circle');
       loadVersions();
     }
     setDeleteConfirmId(null);
@@ -858,28 +914,42 @@ export default function LiquidResumePage() {
     setOriginalResume(version.content as unknown as ResumeData);
     setMode('morph');
     setStep('jd');
-    showToast('Resume loaded!', '✅');
+    showToast('Resume loaded!', 'check_circle');
   };
+
+  // ===== AUTH GATE FOR DOWNLOADS =====
+  const [showDownloadAuth, setShowDownloadAuth] = useState<'login' | 'signup' | null>(null);
 
   // ===== DOWNLOAD FUNCTIONS =====
   const downloadPDF = async () => {
+    // Gate: require sign-in before download
+    if (!user) {
+      setShowDownloadAuth('signup');
+      return;
+    }
     const resume = getDisplayResume();
     if (!resume) {
-      showToast('No resume data available', '❌');
+      showToast('No resume data available', 'cancel');
       return;
     }
     setIsLoading(true);
     try {
       await downloadResumePDF(resume, selectedTemplate.colors);
-      showToast('PDF downloaded!', '✅');
+      showToast('PDF downloaded!', 'check_circle');
+      clearDraft();
     } catch (error: any) {
       console.error('PDF download error:', error);
-      showToast(`PDF download failed: ${error.message || 'Unknown error'}`, '❌');
+      showToast(`PDF download failed: ${error.message || 'Unknown error'}`, 'cancel');
     }
     finally { setIsLoading(false); }
   };
 
   const downloadWord = async () => {
+    // Gate: require sign-in before download
+    if (!user) {
+      setShowDownloadAuth('signup');
+      return;
+    }
     const resume = getDisplayResume();
     if (!resume) return;
     setIsLoading(true);
@@ -990,11 +1060,11 @@ export default function LiquidResumePage() {
         children = [
           new Paragraph({ spacing: { after: 30 }, children: [new TextRun({ text: `[${initials}]  `, bold: true, size: 28, color: 'FFFFFF', highlight: 'blue' as any }), new TextRun({ text: resume.name, bold: true, size: 52, color: p })] }),
           new Paragraph({ spacing: { after: 40 }, children: [new TextRun({ text: resume.title, size: 28, color: '666666' })] }),
-          new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: contact.map((c, i) => (i === 0 ? '📧 ' : i === 1 ? '📱 ' : '📍 ') + c).join('    '), size: 18, color: '555555' })] }),
+          new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: contact.map((c, i) => (i === 0 ? '✉ ' : i === 1 ? '☎ ' : '📍 ') + c).join('    '), size: 18, color: '555555' })] }),
           ...(resume.summary ? [new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: resume.summary, size: 20, color: '555555' })] })] : []),
           ...(resume.experience?.length ? [
             new Paragraph({ spacing: { before: 200, after: 100 }, children: [new TextRun({ text: '💼  EXPERIENCE', bold: true, size: 24, color: p })] }),
-            ...resume.experience.flatMap(exp => expBlock(exp, { bullet: '▸' })),
+            ...resume.experience.flatMap(exp => expBlock(exp, { bullet: 'arrow_right' })),
           ] : []),
           ...(resume.education?.length ? [
             new Paragraph({ spacing: { before: 200, after: 100 }, children: [new TextRun({ text: '🎓  EDUCATION', bold: true, size: 24, color: p })] }),
@@ -1196,8 +1266,9 @@ export default function LiquidResumePage() {
       });
       const blob = await Packer.toBlob(doc);
       saveAs(blob, `${resume.name?.replace(/\s+/g, '_') || 'resume'}.docx`);
-      showToast('Word document downloaded!', '✅');
-    } catch (e) { console.error('Word download error:', e); showToast('Download failed', '❌'); }
+      showToast('Word document downloaded!', 'check_circle');
+      clearDraft();
+    } catch (e) { console.error('Word download error:', e); showToast('Download failed', 'cancel'); }
     finally { setIsLoading(false); }
   };
 
@@ -1219,7 +1290,7 @@ export default function LiquidResumePage() {
   // ===== DUAL-AI HANDLERS =====
   const generateCoverLetter = async () => {
     const displayResume = getDisplayResume();
-    if (!displayResume) return showToast('No resume data available', '❌');
+    if (!displayResume) return showToast('No resume data available', 'cancel');
     setCoverLetterLoading(true);
     setCoverLetterResult(null);
     setShowCoverLetterPanel(true);
@@ -1244,15 +1315,15 @@ export default function LiquidResumePage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setCoverLetterResult(data);
-      showToast(`Cover letter generated! Score: ${data.score}/100 ${data.refined ? '(Dual-AI refined ✨)' : ''}`, '✅');
+      showToast(`Cover letter generated! Score: ${data.score}/100 ${data.refined ? '(Dual-AI refined <span className="material-symbols-rounded align-middle mr-1">auto_awesome</span>)' : ''}`, 'check_circle');
     } catch (err: any) {
-      showToast(err.message || 'Failed to generate cover letter', '❌');
+      showToast(err.message || 'Failed to generate cover letter', 'cancel');
     } finally { setCoverLetterLoading(false); }
   };
 
   const checkResume = async () => {
     const displayResume = getDisplayResume();
-    if (!displayResume) return showToast('No resume data available', '❌');
+    if (!displayResume) return showToast('No resume data available', 'cancel');
     setResumeCheckLoading(true);
     setResumeCheckResult(null);
     setShowResumeCheckPanel(true);
@@ -1273,15 +1344,15 @@ export default function LiquidResumePage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setResumeCheckResult(data);
-      showToast(`Resume graded: ${data.overallGrade} (ATS: ${data.atsScore}/100)`, '✅');
+      showToast(`Resume graded: ${data.overallGrade} (ATS: ${data.atsScore}/100)`, 'check_circle');
     } catch (err: any) {
-      showToast(err.message || 'Failed to check resume', '❌');
+      showToast(err.message || 'Failed to check resume', 'cancel');
     } finally { setResumeCheckLoading(false); }
   };
 
   const generateLinkedIn = async () => {
     const displayResume = getDisplayResume();
-    if (!displayResume) return showToast('No resume data available', '❌');
+    if (!displayResume) return showToast('No resume data available', 'cancel');
     setLinkedinLoading(true);
     setLinkedinResult(null);
     setShowLinkedinPanel(true);
@@ -1302,14 +1373,14 @@ export default function LiquidResumePage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setLinkedinResult(data);
-      showToast(`LinkedIn profile generated! Score: ${data.score}/100 ${data.refined ? '(Dual-AI refined ✨)' : ''}`, '✅');
+      showToast(`LinkedIn profile generated! Score: ${data.score}/100 ${data.refined ? '(Dual-AI refined <span className="material-symbols-rounded align-middle mr-1">auto_awesome</span>)' : ''}`, 'check_circle');
     } catch (err: any) {
-      showToast(err.message || 'Failed to generate LinkedIn profile', '❌');
+      showToast(err.message || 'Failed to generate LinkedIn profile', 'cancel');
     } finally { setLinkedinLoading(false); setEnhancePhase('idle'); setEnhancePipelineStage(0); }
   };
 
   const autoFixResume = async () => {
-    if (!resumeCheckResult?.suggestions?.length) return showToast('Run Resume Check first', '❌');
+    if (!resumeCheckResult?.suggestions?.length) return showToast('Run Resume Check first', 'cancel');
     const currentResume = getDisplayResume();
     if (!currentResume) return;
     setAutoFixing(true);
@@ -1357,7 +1428,7 @@ export default function LiquidResumePage() {
         };
         if (mode === 'morph') setMorphedResume(improved);
         else setBuildResume(improved);
-        showToast(`Resume auto-fixed! Score: ${data.score}/100 ${data.refined ? '(Dual-AI refined ✨)' : ''}`, '✅');
+        showToast(`Resume auto-fixed! Score: ${data.score}/100 ${data.refined ? '(Dual-AI refined <span className="material-symbols-rounded align-middle mr-1">auto_awesome</span>)' : ''}`, 'check_circle');
 
         // Save skill gap analysis for Skill Bridge
         try {
@@ -1378,12 +1449,12 @@ export default function LiquidResumePage() {
         setTimeout(() => checkResume(), 500);
       }
     } catch (err: any) {
-      showToast(err.message || 'Failed to auto-fix resume', '❌');
+      showToast(err.message || 'Failed to auto-fix resume', 'cancel');
     } finally { setAutoFixing(false); setEnhancePhase('idle'); setEnhancePipelineStage(0); }
   };
 
   const generateSummary = async () => {
-    if (!buildResume.title) return showToast('Add a job title first', '❌');
+    if (!buildResume.title) return showToast('Add a job title first', 'cancel');
     setAiSuggesting(true);
     try {
       const res = await authFetch('/api/resume/ai', {
@@ -1398,8 +1469,8 @@ export default function LiquidResumePage() {
       }
       const data = await res.json();
       setBuildResume(prev => ({ ...prev, summary: data.summary }));
-      showToast('Summary generated!', '✅');
-    } catch { showToast('Failed to generate', '❌'); }
+      showToast('Summary generated!', 'check_circle');
+    } catch { showToast('Failed to generate', 'cancel'); }
     finally { setAiSuggesting(false); }
   };
 
@@ -1422,13 +1493,13 @@ export default function LiquidResumePage() {
       const newExp = [...buildResume.experience];
       newExp[expIndex] = { ...exp, achievements: data.achievements };
       setBuildResume(prev => ({ ...prev, experience: newExp }));
-      showToast('Achievements generated!', '✅');
-    } catch { showToast('Failed to generate', '❌'); }
+      showToast('Achievements generated!', 'check_circle');
+    } catch { showToast('Failed to generate', 'cancel'); }
     finally { setAiSuggesting(false); }
   };
 
   const suggestSkills = async () => {
-    if (!buildResume.title) return showToast('Add a job title first', '❌');
+    if (!buildResume.title) return showToast('Add a job title first', 'cancel');
     setAiSuggesting(true);
     try {
       const res = await authFetch('/api/resume/ai', {
@@ -1443,8 +1514,8 @@ export default function LiquidResumePage() {
       }
       const data = await res.json();
       setBuildResume(prev => ({ ...prev, skills: data.skills || [] }));
-      showToast('Skills suggested!', '✅');
-    } catch { showToast('Failed to suggest', '❌'); }
+      showToast('Skills suggested!', 'check_circle');
+    } catch { showToast('Failed to suggest', 'cancel'); }
     finally { setAiSuggesting(false); }
   };
 
@@ -1458,272 +1529,123 @@ export default function LiquidResumePage() {
     setMatchScore(null);
     setMorphPercentage(75);
     setBuildStep(0);
+    clearDraft();
   };
 
-  // ===== RENDER: Auth Check =====
-  if (!user) return (
-    <div className="min-h-screen flex items-center justify-center p-8">
-      <div className="glass-card p-12 text-center max-w-md">
-        <span className="text-6xl mb-4 block">🔒</span>
-        <h2 className="text-2xl font-bold text-white mb-3">Sign In Required</h2>
-        <p className="text-silver mb-6">Please sign in to access Liquid Resume</p>
-        <button onClick={() => router.push('/')} className="px-8 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold">
-          Go to Home
-        </button>
-      </div>
-    </div>
-  );
 
   // ===== RENDER: Mode Selection =====
   if (mode === 'choose') {
     return (
-      <div className="min-h-screen p-4 md:p-8">
-        <div className="max-w-6xl mx-auto">
-          {/* ═══ Hero Banner ═══ */}
+      <div className="min-h-screen pt-10 md:pt-16 p-4 md:p-8 flex flex-col items-center">
+        <div className="w-full max-w-xl">
+          {/* Header */}
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8 pl-10 lg:pl-0">
+            <h1 className="text-2xl font-semibold text-[var(--text-primary)]">Resume Studio</h1>
+            <p className="text-[13px] text-[var(--text-secondary)] mt-1.5">AI-powered resume optimization</p>
+          </motion.div>
+
+          {/* Primary: Dropzone */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
+            transition={{ delay: 0.08 }}
+            className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] overflow-hidden"
           >
-            <div className="relative rounded-2xl overflow-hidden p-6 md:p-8"
-              style={isLight
-                ? { background: 'linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 40%, #F8F9FC 100%)', border: '1px solid rgba(0,112,243,0.12)' }
-                : { background: 'linear-gradient(135deg, #0c1a2e 0%, #0a1628 40%, #091220 100%)', border: '1px solid rgba(0,245,255,0.1)' }
-              }
-            >
-              {/* Animated shimmer */}
-              <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute -inset-full animate-[shimmer_6s_ease-in-out_infinite]"
-                  style={{ background: 'linear-gradient(120deg, transparent 30%, rgba(0,245,255,0.03) 50%, transparent 70%)' }}
-                />
-              </div>
-              {/* Corner glow accent */}
-              <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(0,245,255,0.08) 0%, transparent 70%)' }} />
-              <div className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(0,112,243,0.06) 0%, transparent 70%)' }} />
-
-              <div className="relative flex flex-col sm:flex-row items-center gap-5 md:gap-6">
-                <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: 'linear-gradient(135deg, rgba(0,245,255,0.15), rgba(0,112,243,0.1))', border: '1px solid rgba(0,245,255,0.25)', boxShadow: '0 0 24px rgba(0,245,255,0.1)' }}
-                >
-                  <span className="text-3xl md:text-4xl">📄</span>
-                </div>
-                <div className="text-center sm:text-left flex-1">
-                  <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
-                    <span className="text-white">Liquid </span>
-                    <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">Resume</span>
-                  </h1>
-                  <p className="text-slate-400 text-sm md:text-base mt-1.5 max-w-xl leading-relaxed">
-                    Upload once, morph for every job. AI rewrites your resume to match any JD&mdash;keywords injected, skills reordered, ATS-optimized.
-                  </p>
-                  <div className="flex flex-wrap items-center gap-3 mt-4">
-                    {[
-                      { label: 'ATS-Ready', icon: '✓' },
-                      { label: '18 Templates', icon: '◆' },
-                      { label: '92% Match Avg', icon: '↗' },
-                    ].map(s => (
-                      <span key={s.label} className="flex items-center gap-1.5 text-[11px] font-medium text-cyan-300/80">
-                        <span className="text-cyan-500/60">{s.icon}</span>
-                        {s.label}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
+            <FileUploadDropzone
+              onUploadSuccess={(text) => {
+                setMode('morph');
+                handleFileExtracted(text);
+              }}
+              isUploading={isLoading}
+              setIsUploading={setIsLoading}
+              processingStage={processingStage}
+              variant="large"
+            />
           </motion.div>
 
-          {/* ═══ Primary Action Cards ═══ */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
-            {/* Morph Existing Resume */}
-            <motion.button
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.08 }}
-              whileHover={{ y: -4, scale: 1.01 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setMode('morph')}
-              className="relative p-6 md:p-8 rounded-2xl text-left transition-all group overflow-hidden"
-              style={isLight
-                ? { background: 'linear-gradient(135deg, rgba(0,112,243,0.06) 0%, rgba(99,102,241,0.04) 50%, rgba(255,255,255,1) 100%)', border: '1px solid rgba(0,112,243,0.12)' }
-                : { background: 'linear-gradient(135deg, rgba(0,245,255,0.06) 0%, rgba(0,112,243,0.04) 50%, rgba(10,10,10,1) 100%)', border: '1px solid rgba(0,245,255,0.15)' }
-              }
-            >
-              {/* Glow overlay on hover */}
-              <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ boxShadow: 'inset 0 0 60px rgba(0,245,255,0.06), 0 0 40px rgba(0,245,255,0.05)' }} />
-              {/* Top gradient line */}
-              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-500/60 to-transparent rounded-t-2xl" />
-
-              <div className="relative">
-                <div className="w-14 h-14 rounded-xl bg-cyan-500/[0.12] border border-cyan-500/[0.25] flex items-center justify-center mb-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                  <span className="text-2xl">🔄</span>
-                </div>
-                <h2 className="text-lg md:text-xl font-bold text-white group-hover:text-cyan-300 transition-colors mb-2">
-                  Morph Existing Resume
-                </h2>
-                <p className="text-sm text-slate-400 mb-4 leading-relaxed">
-                  Upload your resume, paste any job description, and get an ATS-optimized version in seconds.
-                </p>
-                <div className="flex flex-wrap gap-2 mb-5">
-                  {['Upload & Parse', 'JD Matching', 'ATS Score'].map(tag => (
-                    <span key={tag} className="px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-cyan-500/[0.08] text-cyan-400 border border-cyan-500/[0.15]">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                <div className="flex items-center gap-2 text-sm font-semibold text-cyan-400 group-hover:gap-3 transition-all">
-                  Start Morphing
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
-                </div>
-              </div>
-            </motion.button>
-
-            {/* Build From Scratch */}
-            <motion.button
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.14 }}
-              whileHover={{ y: -4, scale: 1.01 }}
-              whileTap={{ scale: 0.98 }}
+          {/* Secondary: Build from scratch */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.15 }}
+            className="mt-4 flex items-center justify-center"
+          >
+            <button
               onClick={() => setMode('create')}
-              className="relative p-6 md:p-8 rounded-2xl text-left transition-all group overflow-hidden"
-              style={isLight
-                ? { background: 'linear-gradient(135deg, rgba(34,197,94,0.06) 0%, rgba(16,185,129,0.04) 50%, rgba(255,255,255,1) 100%)', border: '1px solid rgba(34,197,94,0.12)' }
-                : { background: 'linear-gradient(135deg, rgba(34,197,94,0.06) 0%, rgba(16,185,129,0.04) 50%, rgba(10,10,10,1) 100%)', border: '1px solid rgba(34,197,94,0.15)' }
-              }
+              className="group flex items-center gap-2.5 px-5 py-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] hover:border-[var(--border)] transition-all duration-150"
             >
-              {/* Glow overlay on hover */}
-              <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ boxShadow: 'inset 0 0 60px rgba(34,197,94,0.06), 0 0 40px rgba(34,197,94,0.05)' }} />
-              {/* Top gradient line */}
-              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-green-500/60 to-transparent rounded-t-2xl" />
-
-              <div className="relative">
-                <div className="w-14 h-14 rounded-xl bg-green-500/[0.12] border border-green-500/[0.25] flex items-center justify-center mb-4 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300">
-                  <span className="text-2xl">✨</span>
-                </div>
-                <h2 className="text-lg md:text-xl font-bold text-white group-hover:text-green-300 transition-colors mb-2">
-                  Build From Scratch
-                </h2>
-                <p className="text-sm text-slate-400 mb-4 leading-relaxed">
-                  AI generates summaries, achievements, and skill suggestions — build a polished resume step-by-step.
-                </p>
-                <div className="flex flex-wrap gap-2 mb-5">
-                  {['AI Writer', 'Step-by-Step', '18 Templates'].map(tag => (
-                    <span key={tag} className="px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-green-500/[0.08] text-green-400 border border-green-500/[0.15]">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                <div className="flex items-center gap-2 text-sm font-semibold text-green-400 group-hover:gap-3 transition-all">
-                  Start Building
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
-                </div>
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center transition-transform duration-150 group-hover:scale-105"
+                style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)' }}
+              >
+                <span className="material-symbols-rounded text-[18px]" style={{ color: '#a855f7' }}>draw</span>
               </div>
-            </motion.button>
-          </div>
-
-
-          {/* Capabilities */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }} className="mb-10">
-            <div className="elevation-1 flex items-center justify-center gap-6 flex-wrap py-4 px-6 rounded-xl">
-              {[
-                { icon: '📄', label: 'ATS-Safe Export' },
-                { icon: '🔄', label: 'Smart Morph' },
-                { icon: '📁', label: 'Multi-Format' },
-                { icon: '🎯', label: 'Match Scoring' },
-              ].map((f, i) => (
-                <div key={i} className="flex items-center gap-1.5 text-silver text-sm">
-                  <span>{f.icon}</span>
-                  <span>{f.label}</span>
-                </div>
-              ))}
-            </div>
+              <div className="text-left">
+                <p className="text-[13px] font-medium text-[var(--text-primary)] leading-tight">Start from scratch</p>
+                <p className="text-[11px] text-[var(--text-muted)]">Build a new resume with AI</p>
+              </div>
+              <span className="material-symbols-rounded text-[16px] text-[var(--text-muted)] group-hover:text-[var(--text-secondary)] transition-colors ml-2">arrow_forward</span>
+            </button>
           </motion.div>
 
-          {/* Resume Vault - More Visual Appeal */}
+          {/* Resume Vault - Subdued */}
           {versions.length > 0 && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="elevation-1 p-6">
-              <div className="flex items-center gap-3 mb-5">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
-                  <span className="text-xl">📁</span>
-                </div>
-                <h3 className="text-lg font-bold text-white">My Resume Vault</h3>
-                <span className="text-xs px-2 py-1 rounded-full bg-white/10 text-silver">{versions.length} saved</span>
-              </div>
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
-                {versions.map((v, i) => {
-                  const morphScore = Math.floor(Math.random() * 30) + 70; // Simulated score 70-100
-                  const scoreColor = morphScore >= 90 ? 'green' : morphScore >= 80 ? 'cyan' : 'yellow';
-                  return (
-                    <motion.button
-                      key={v.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.05 }}
-                      whileHover={{ scale: 1.02, y: -2 }}
-                      onClick={() => loadVersionToMorph(v)}
-                      className="p-4 rounded-xl bg-white/5 border border-white/10 text-left hover:border-cyan-500/50 hover:bg-white/10 transition-all flex flex-col relative group"
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="mt-12">
+              <h3 className="text-[12px] font-medium text-[var(--text-muted)] mb-3 px-1 uppercase tracking-wider">Recent Resumes</h3>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                {versions.slice(0, 4).map((v) => (
+                  <div
+                    key={v.id}
+                    onClick={() => loadVersionToMorph(v)}
+                    className="p-3 rounded-[10px] border border-[var(--border-subtle)] bg-[var(--bg-surface)] hover:border-[var(--text-muted)] transition-all cursor-pointer relative group flex items-start gap-3"
+                  >
+                    <button
+                      onClick={(e) => handleDeleteVersion(e, v.id)}
+                      className="absolute top-1 right-1 p-1.5 rounded-md text-[var(--text-muted)] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
                     >
-                      <button
-                        onClick={(e) => handleDeleteVersion(e, v.id)}
-                        className="absolute top-2 right-2 w-7 h-7 rounded-lg bg-red-500/20 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-red-500/40 text-sm"
-                      >×</button>
-
-                      {/* Icon & Title */}
-                      <div className="flex items-start gap-3 mb-3">
-                        <div className={`w-10 h-10 rounded-lg bg-${scoreColor}-500/20 flex items-center justify-center flex-shrink-0`}>
-                          <span className="text-lg">📄</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-white truncate pr-6 text-sm">{v.version_name}</h4>
-                          <p className="text-xs text-silver truncate">{new Date(v.created_at).toLocaleDateString()}</p>
-                        </div>
-                      </div>
-
-                      {/* Match Score Bar */}
-                      <div className="mt-auto">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-xs text-silver">Match Score</span>
-                          <span className={`text-xs font-bold text-${scoreColor}-400`}>{morphScore}%</span>
-                        </div>
-                        <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${morphScore}%` }}
-                            transition={{ duration: 0.5, delay: i * 0.1 }}
-                            className={`h-full rounded-full bg-gradient-to-r from-${scoreColor}-500 to-${scoreColor}-400`}
-                          />
-                        </div>
-                      </div>
-                    </motion.button>
-                  );
-                })}
+                      <span className="material-symbols-rounded text-[14px]">close</span>
+                    </button>
+                    <div 
+                      className="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0"
+                      style={{
+                        backgroundColor: 'var(--tag-blue-bg)',
+                        color: 'var(--tag-blue-text)'
+                      }}
+                    >
+                      <span className="material-symbols-rounded text-[16px]">description</span>
+                    </div>
+                    <div className="flex-1 min-w-0 pt-0.5">
+                      <h4 className="font-medium text-[12px] text-[var(--text-primary)] truncate">{v.version_name}</h4>
+                      <p className="text-[10px] text-[var(--text-muted)] mt-0.5">{new Date(v.created_at).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </motion.div>
           )}
-        </div>
 
-        {/* Delete Confirmation Modal */}
-        <AnimatePresence>
-          {deleteConfirmId && (
-            <>
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setDeleteConfirmId(null)} className="fixed inset-0 bg-black/70 z-50" />
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="elevation-1 p-6 max-w-md">
-                  <h3 className="text-xl font-bold text-white mb-4">Delete Version?</h3>
-                  <p className="text-silver mb-6">This action cannot be undone.</p>
-                  <div className="flex gap-3">
-                    <button onClick={() => setDeleteConfirmId(null)} className="flex-1 py-3 rounded-xl bg-white/10 text-white">Cancel</button>
-                    <button onClick={confirmDelete} className="flex-1 py-3 rounded-xl bg-red-500 text-white font-bold">Delete</button>
-                  </div>
-                </motion.div>
-              </div>
-            </>
-          )}
-        </AnimatePresence>
+          {/* Delete Confirmation Modal */}
+          <AnimatePresence>
+            {deleteConfirmId && (
+              <>
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setDeleteConfirmId(null)} className="fixed inset-0 bg-[var(--bg-elevated)]/50 backdrop-blur-sm z-50 transition-all" />
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                  <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="w-full max-w-sm rounded-[12px] border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 shadow-2xl">
+                    <h3 className="text-[14px] font-medium text-[var(--text-primary)] mb-2">Delete Resume?</h3>
+                    <p className="text-[12px] text-[var(--text-secondary)] mb-6">This action cannot be undone.</p>
+                    <div className="flex justify-end gap-3">
+                      <button onClick={() => setDeleteConfirmId(null)} className="px-4 py-2 rounded-[6px] text-[12px] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all">Cancel</button>
+                      <button onClick={confirmDelete} className="px-4 py-2 rounded-[6px] text-[12px] font-medium bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all">Delete</button>
+                    </div>
+                  </motion.div>
+                </div>
+              </>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
     );
   }
-
   // ===== RENDER: Morph Flow =====
   if (mode === 'morph') {
     const displayResume = getDisplayResume();
@@ -1746,11 +1668,11 @@ export default function LiquidResumePage() {
           <div className="max-w-5xl mx-auto mb-8">
             <div className="flex items-center justify-between">
               {[
-                { id: 'upload', label: 'Upload', icon: '📄' },
-                { id: 'jd', label: 'Job Description', icon: '💼' },
-                { id: 'enhance', label: 'AI Enhance', icon: '✨', pro: true },
-                { id: 'template', label: 'Template', icon: '🎨' },
-                { id: 'preview', label: 'Download', icon: '⬇️' },
+                { id: 'upload', label: 'Upload', icon: 'description' },
+                { id: 'jd', label: 'Job Description', icon: 'work' },
+                { id: 'enhance', label: 'AI Enhance', icon: 'auto_awesome', pro: true },
+                { id: 'template', label: 'Template', icon: 'palette' },
+                { id: 'preview', label: 'Download', icon: 'arrow_downward' },
               ].map((s, i) => {
                 const isEnhanceLocked = s.id === 'enhance' && tier !== 'pro';
                 const canNavigate = s.id === 'upload'
@@ -1764,18 +1686,18 @@ export default function LiquidResumePage() {
                       if (isEnhanceLocked) { showToast('AI Enhancement is a Pro feature — $2.99/mo', 'info'); return; }
                       if (canNavigate) setStep(s.id as any);
                     }}
-                    className={`flex items-center gap-1 md:gap-2 px-2 md:px-3 py-2 rounded-lg md:rounded-xl transition-all text-xs md:text-sm ${
-                      step === s.id ? (s.pro ? 'bg-emerald-500/[0.08] text-emerald-400 border border-emerald-500/[0.15]' : 'bg-cyan-500/[0.08] text-cyan-400 border border-cyan-500/[0.15]') :
-                      isEnhanceLocked ? 'bg-[var(--theme-bg-card)] border border-white/[0.04] text-slate-600 cursor-not-allowed' :
-                      canNavigate ? 'glass-card text-white hover:border-white/[0.12]' :
-                      'bg-[var(--theme-bg-card)] border border-white/[0.04] text-slate-600 cursor-not-allowed'
+                    className={`flex items-center gap-1.5 md:gap-2.5 px-3 md:px-4 py-2.5 rounded-xl transition-all text-xs md:text-sm whitespace-nowrap shadow-sm ${
+                      step === s.id ? (s.pro ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20') :
+                      isEnhanceLocked ? 'bg-[var(--bg-surface)] opacity-60 border border-[var(--border-subtle)] text-[var(--text-muted)] cursor-not-allowed' :
+                      canNavigate ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] hover:border-[var(--text-secondary)] border border-[var(--border-subtle)]' :
+                      'bg-[var(--bg-surface)] opacity-60 border border-[var(--border-subtle)] text-[var(--text-muted)] cursor-not-allowed'
                     }`}
                   >
-                    <span>{isEnhanceLocked ? '🔒' : s.icon}</span>
-                    <span className="hidden md:inline">{s.label}</span>
-                    {s.pro && <span className={`hidden md:inline text-[8px] px-1 py-0.5 rounded ${isPro ? 'bg-emerald-500/15 border border-emerald-500/25 text-emerald-400' : 'bg-white/5 border border-white/10 text-slate-500'} font-bold`}>PRO</span>}
+                    <span className="material-symbols-rounded text-[18px] md:text-[20px]">{isEnhanceLocked ? 'lock' : s.icon}</span>
+                    <span className="hidden md:inline font-medium whitespace-nowrap">{s.label}</span>
+                    {s.pro && <span className={`hidden md:inline text-[8px] px-1.5 py-0.5 rounded-md ${isPro ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400' : 'bg-[var(--border-subtle)] border border-[var(--text-muted)] text-[var(--text-secondary)]'} font-black tracking-widest`}>PRO</span>}
                   </button>
-                  {i < 4 && <div className={`w-4 md:w-10 h-px mx-1 ${s.id === 'enhance' || (s.id === 'jd' && isPro) ? 'bg-emerald-500/20' : 'bg-white/20'}`} />}
+                  {i < 4 && <div className={`w-4 md:w-10 h-px mx-1 hidden sm:block ${s.id === 'enhance' || (s.id === 'jd' && isPro) ? 'bg-emerald-500/30' : 'bg-[var(--border-subtle)]'}`} />}
                 </div>
                 );
               })}
@@ -1790,7 +1712,7 @@ export default function LiquidResumePage() {
                   <AnimatePresence mode="wait">
                     {invalidDocumentError ? (
                       <motion.div key="error" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="w-full max-w-2xl mx-auto p-8 rounded-2xl bg-red-500/[0.05] border border-red-500/20 text-center space-y-5 backdrop-blur-md">
-                        <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center text-3xl mx-auto border border-red-500/20">📄❌</div>
+                        <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center text-3xl mx-auto border border-red-500/20"><span className="material-symbols-rounded align-middle mr-1">description</span><span className="material-symbols-rounded align-middle mr-1">cancel</span></div>
                         <div>
                           <h3 className="text-xl font-bold text-white mb-2">This doesn't look like a resume</h3>
                           <p className="text-slate-400 text-sm max-w-md mx-auto leading-relaxed">
@@ -1802,7 +1724,7 @@ export default function LiquidResumePage() {
                             Try Another File
                           </button>
                           <button onClick={() => { setInvalidDocumentError(false); setMode('create'); }} className="w-full sm:w-auto px-6 py-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 transition-all font-bold text-white shadow-[0_4px_15px_rgba(6,182,212,0.3)]">
-                            Build from the ground up ✨
+                            Build from the ground up <span className="material-symbols-rounded align-middle mr-1">auto_awesome</span>
                           </button>
                         </div>
                       </motion.div>
@@ -1832,7 +1754,7 @@ export default function LiquidResumePage() {
                   <div className="elevation-1 p-4 md:p-6">
                     <div>
                       <div className="flex items-center gap-3 mb-5">
-                        <div className="w-10 h-10 rounded-lg bg-cyan-500/[0.08] border border-cyan-500/[0.15] flex items-center justify-center text-xl">📄</div>
+                        <div className="w-10 h-10 rounded-lg bg-cyan-500/[0.08] border border-cyan-500/[0.15] flex items-center justify-center text-xl"><span className="material-symbols-rounded text-inherit align-middle">description</span></div>
                         <div>
                           <h3 className="text-base font-semibold text-white">Your Resume</h3>
                           <p className="text-xs text-slate-500">Ready for optimization</p>
@@ -1867,7 +1789,7 @@ export default function LiquidResumePage() {
                   <div className="space-y-4">
                     <div className="p-4 rounded-xl glass-card">
                       <div className="flex items-center gap-2 mb-3">
-                        <span className="text-xl">💼</span>
+                        <span className="text-xl"><span className="material-symbols-rounded text-inherit align-middle">work</span></span>
                         <label className={`font-semibold ${isLight ? 'text-slate-800' : 'text-white'}`}>Job Description</label>
                       </div>
                       <textarea
@@ -1909,9 +1831,9 @@ export default function LiquidResumePage() {
                         />
                       </div>
                       <div className="flex justify-between text-xs mt-2">
-                        <span className={`font-medium ${isLight ? 'text-green-700' : 'text-green-400'}`}>🌱 Light Touch</span>
-                        <span className={`font-medium ${isLight ? 'text-amber-700' : 'text-yellow-400'}`}>⚡ Moderate</span>
-                        <span className={`font-medium ${isLight ? 'text-red-700' : 'text-red-400'}`}>🔥 Aggressive</span>
+                        <span className={`font-medium ${isLight ? 'text-green-700' : 'text-green-400'}`}><span className="material-symbols-rounded text-inherit align-middle">psychiatry</span> Light Touch</span>
+                        <span className={`font-medium ${isLight ? 'text-amber-700' : 'text-yellow-400'}`}><span className="material-symbols-rounded text-inherit align-middle">bolt</span> Moderate</span>
+                        <span className={`font-medium ${isLight ? 'text-red-700' : 'text-red-400'}`}><span className="material-symbols-rounded text-inherit align-middle">local_fire_department</span> Aggressive</span>
                       </div>
 
                       {/* AI Detection Warning at 80%+ */}
@@ -1955,7 +1877,7 @@ export default function LiquidResumePage() {
                               }
                             >
                               <div className="flex items-start gap-2.5">
-                                <span className="text-lg mt-0.5">⚠️</span>
+                                <span className="text-lg mt-0.5"><span className="material-symbols-rounded text-inherit align-middle">warning</span></span>
                                 <div>
                                   <p className={`text-xs font-bold transition-colors ${
                                     isLight ? (morphPercentage >= 95 ? 'text-red-800' : 'text-red-700') : (morphPercentage >= 95 ? 'text-white' : 'text-red-400')
@@ -1970,7 +1892,7 @@ export default function LiquidResumePage() {
                                     <p className={`text-[10px] mt-1.5 font-bold transition-colors ${
                                       isLight ? 'text-red-800' : (morphPercentage >= 95 ? 'text-white' : 'text-red-400/90')
                                     }`}>
-                                      🚨 Above 90% — Your original voice will be almost entirely replaced. Proceed only if you understand the risk.
+                                      <span className="material-symbols-rounded align-middle mr-1">emergency</span> Above 90% — Your original voice will be almost entirely replaced. Proceed only if you understand the risk.
                                     </p>
                                   )}
                                 </div>
@@ -2033,7 +1955,7 @@ export default function LiquidResumePage() {
                               : 'bg-cyan-600 border border-cyan-500 text-white hover:bg-cyan-500 shadow-[0_2px_12px_rgba(6,182,212,0.3)] disabled:opacity-50')
                       }`}
                     >
-                      {isLoading ? '🧠 AI is Rewriting...' : !jobDescription.trim() ? '⚠️ Paste Job Description First' : (morphPercentage >= 80 && !acceptedRisk) ? '🚨 Check "I accept" to Proceed' : '🧠 Morph Resume to Match JD'}
+                      {isLoading ? <><span className="material-symbols-rounded align-middle mr-1">psychology</span> AI is Rewriting...</> : !jobDescription.trim() ? <><span className="material-symbols-rounded align-middle mr-1">warning</span> Paste Job Description First</> : (morphPercentage >= 80 && !acceptedRisk) ? <><span className="material-symbols-rounded align-middle mr-1">emergency</span> Check &quot;I accept&quot; to Proceed</> : <><span className="material-symbols-rounded align-middle mr-1">psychology</span> Morph Resume to Match JD</>}
                     </button>
 
                     {/* Day-Zero Blueprint */}
@@ -2051,11 +1973,11 @@ export default function LiquidResumePage() {
                       }`}
                     >
                       {!jobDescription.trim() ? (
-                        <><span>⚠️</span> Paste JD for Blueprint{tier !== 'pro' && <span className="ml-1 text-[9px] px-1.5 py-0.5 rounded-full bg-slate-400/20 border border-slate-400/30 font-bold opacity-50">PRO</span>}</>
+                        <><span><span className="material-symbols-rounded text-inherit align-middle">warning</span></span> Paste JD for Blueprint{tier !== 'pro' && <span className="ml-1 text-[9px] px-1.5 py-0.5 rounded-full bg-slate-400/20 border border-slate-400/30 font-bold opacity-50">PRO</span>}</>
                       ) : isBlueprintLoading ? (
-                        <><span className="animate-spin">⏳</span> Generating Blueprint...</>
+                        <><span className="animate-spin"><span className="material-symbols-rounded text-inherit align-middle">hourglass_top</span></span> Generating Blueprint...</>
                       ) : (
-                        <><span>📋</span> Generate Day-Zero Blueprint{tier !== 'pro' && <span className="ml-1 text-[9px] px-1.5 py-0.5 rounded-full bg-white/20 border border-white/30 font-bold">PRO</span>}</>
+                        <><span><span className="material-symbols-rounded text-inherit align-middle">content_paste</span></span> Generate Day-Zero Blueprint{tier !== 'pro' && <span className="ml-1 text-[9px] px-1.5 py-0.5 rounded-full bg-white/20 border border-white/30 font-bold">PRO</span>}</>
                       )}
                     </button>
                   </div>
@@ -2071,7 +1993,7 @@ export default function LiquidResumePage() {
                   <div className="flex items-center justify-between mb-6">
                     <div>
                       <div className="flex items-center gap-3">
-                        <h2 className="text-2xl font-bold text-white">✨ AI Enhancement</h2>
+                        <h2 className="text-2xl font-bold text-white"><span className="material-symbols-rounded text-inherit align-middle">auto_awesome</span> AI Enhancement</h2>
                         <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono font-bold">DUAL-AI: GPT × Gemini</span>
                       </div>
                       <p className="text-sm text-slate-400 mt-1">Check, fix, and generate — powered by two AI models</p>
@@ -2116,11 +2038,11 @@ export default function LiquidResumePage() {
                       <div className="rounded-xl bg-[var(--theme-bg-card)] border border-amber-500/[0.1] p-5">
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-white">🔍 Resume Quality Check</span>
+                            <span className="text-sm font-bold text-white"><span className="material-symbols-rounded text-inherit align-middle">search</span> Resume Quality Check</span>
                             <span className="text-[8px] px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-400 font-mono">Gemini Flash</span>
                           </div>
                           <button onClick={() => { setEnhancePhase('checking'); setEnhancePipelineStage(2); checkResume(); }} disabled={resumeCheckLoading} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/15 transition-all disabled:opacity-50">
-                            {resumeCheckLoading ? '🔍 Analyzing...' : resumeCheckResult ? '🔄 Re-check' : '▶ Run Check'}
+                            {resumeCheckLoading ? <><span className="material-symbols-rounded text-[14px] align-middle mr-1">search</span> Analyzing...</> : resumeCheckResult ? <><span className="material-symbols-rounded text-[14px] align-middle mr-1">sync</span> Re-check</> : <><span className="material-symbols-rounded text-[14px] align-middle mr-1">play_arrow</span> Run Check</>}
                           </button>
                         </div>
 
@@ -2177,7 +2099,7 @@ export default function LiquidResumePage() {
                             {/* Suggestions */}
                             {resumeCheckResult.suggestions?.length > 0 && (
                               <div className="space-y-1.5">
-                                <div className="text-xs font-semibold text-white/50">💡 Suggestions</div>
+                                <div className="text-xs font-semibold text-white/50"><span className="material-symbols-rounded text-inherit align-middle">lightbulb</span> Suggestions</div>
                                 {resumeCheckResult.suggestions.map((s: string, i: number) => (
                                   <motion.div key={i} initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }} className="text-[11px] text-white/60 flex gap-1.5 p-1.5 rounded bg-white/[0.01]">
                                     <span className="text-amber-400 shrink-0">→</span> {s}
@@ -2194,11 +2116,11 @@ export default function LiquidResumePage() {
                             >
                               {autoFixing ? (
                                 <span className="flex items-center justify-center gap-2">
-                                  <motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>🔄</motion.span>
+                                  <motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}><span className="material-symbols-rounded text-inherit align-middle">sync</span></motion.span>
                                   Auto-Fixing with Dual-AI...
                                 </span>
                               ) : (
-                                <>🔧 Auto-Fix Resume (Apply All Suggestions)</>
+                                <><span className="material-symbols-rounded text-inherit align-middle">build</span> Auto-Fix Resume (Apply All Suggestions)</>
                               )}
                               {autoFixing && <motion.div className="absolute bottom-0 left-0 h-0.5 bg-emerald-400" initial={{ width: '0%' }} animate={{ width: '100%' }} transition={{ duration: 15, ease: 'linear' }} />}
                             </button>
@@ -2209,7 +2131,7 @@ export default function LiquidResumePage() {
                                 onClick={() => router.push(`/suite/skill-bridge`)}
                                 className="w-full py-2.5 rounded-xl text-[11px] font-semibold bg-gradient-to-r from-cyan-500/[0.06] to-emerald-500/[0.06] border border-cyan-500/[0.12] text-cyan-400 hover:from-cyan-500/[0.1] hover:to-emerald-500/[0.1] transition-all flex items-center justify-center gap-2"
                               >
-                                <span>🌉</span> Bridge Your Gaps — Learn the Skills AI Enhanced
+                                <span className="material-symbols-rounded text-[16px]">bridge</span> Bridge Your Gaps — Learn the Skills AI Enhanced
                               </button>
                             )}
                           </motion.div>
@@ -2220,11 +2142,11 @@ export default function LiquidResumePage() {
                       <div className="rounded-xl bg-[var(--theme-bg-card)] border border-blue-500/[0.1] p-5">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-white">💼 LinkedIn Builder</span>
+                            <span className="text-sm font-bold text-white"><span className="material-symbols-rounded text-inherit align-middle">work</span> LinkedIn Builder</span>
                             <span className="text-[8px] px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono">Dual-AI</span>
                           </div>
                           <button onClick={() => { setEnhancePhase('linkedin'); setEnhancePipelineStage(1); generateLinkedIn(); }} disabled={linkedinLoading} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/15 transition-all disabled:opacity-50">
-                            {linkedinLoading ? '💼 Generating...' : linkedinResult ? '🔄 Regenerate' : '▶ Generate'}
+                            {linkedinLoading ? <><span className="material-symbols-rounded text-[14px] align-middle mr-1">work</span> Generating...</> : linkedinResult ? <><span className="material-symbols-rounded text-[14px] align-middle mr-1">sync</span> Regenerate</> : <><span className="material-symbols-rounded text-[14px] align-middle mr-1">play_arrow</span> Generate</>}
                           </button>
                         </div>
 
@@ -2264,11 +2186,11 @@ export default function LiquidResumePage() {
                               onClick={() => {
                                 const text = `Headline: ${linkedinResult.headline || ''}\n\nAbout:\n${linkedinResult.summary || ''}\n\nSkills: ${(linkedinResult.skills || []).join(', ')}`;
                                 navigator.clipboard.writeText(text);
-                                showToast('LinkedIn content copied!', '✅');
+                                showToast('LinkedIn content copied!', 'check_circle');
                               }}
                               className="w-full py-2 rounded-lg text-xs font-medium bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/15 transition-all"
                             >
-                              📋 Copy All to Clipboard
+                              <span className="material-symbols-rounded text-[14px] align-middle mr-1">content_paste</span> Copy All to Clipboard
                             </button>
                           </motion.div>
                         )}
@@ -2279,7 +2201,7 @@ export default function LiquidResumePage() {
                     <div className="space-y-4">
                       <div className="rounded-xl bg-[var(--theme-bg-card)] border border-emerald-500/[0.1] p-5">
                         <div className="flex items-center gap-2 mb-4">
-                          <span className="text-sm font-bold text-white">✉️ Cover Letter Generator</span>
+                          <span className="text-sm font-bold text-white"><span className="material-symbols-rounded text-inherit align-middle">mail</span> Cover Letter Generator</span>
                           <span className="text-[8px] px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono">Dual-AI</span>
                         </div>
 
@@ -2287,14 +2209,14 @@ export default function LiquidResumePage() {
                         <div className="grid grid-cols-3 gap-2 mb-3">
                           {(['professional', 'friendly', 'bold'] as const).map(t => (
                             <button key={t} onClick={() => setCoverLetterTone(t)} className={`py-1.5 rounded-lg text-xs font-medium capitalize transition-all ${coverLetterTone === t ? 'bg-emerald-500/15 border border-emerald-500/25 text-emerald-400' : 'bg-white/[0.02] border border-white/[0.06] text-slate-400 hover:border-white/[0.12]'}`}>
-                              {t === 'professional' ? '🏢' : t === 'friendly' ? '😊' : '🔥'} {t}
+                              {t === 'professional' ? 'domain' : t === 'friendly' ? 'sentiment_satisfied' : 'local_fire_department'} {t}
                             </button>
                           ))}
                         </div>
                         <input type="text" value={coverLetterCompany} onChange={e => setCoverLetterCompany(e.target.value)} placeholder="Company name (optional)" className="w-full mb-3 px-3 py-2 rounded-lg bg-white/[0.02] border border-white/[0.06] text-white text-sm placeholder-slate-500 focus:border-emerald-500/30 focus:outline-none" />
 
                         <button onClick={() => { setEnhancePhase('cover-letter'); setEnhancePipelineStage(1); generateCoverLetter(); }} disabled={coverLetterLoading} className="w-full py-2.5 rounded-xl font-semibold text-sm bg-emerald-500/[0.08] border border-emerald-500/[0.15] text-emerald-400 hover:bg-emerald-500/[0.12] transition-all disabled:opacity-50">
-                          {coverLetterLoading ? '✍️ Generating...' : coverLetterResult ? '🔄 Regenerate' : '▶ Generate Cover Letter'}
+                          {coverLetterLoading ? <><span className="material-symbols-rounded text-[14px] align-middle mr-1">edit</span> Generating...</> : coverLetterResult ? <><span className="material-symbols-rounded text-[14px] align-middle mr-1">sync</span> Regenerate</> : <><span className="material-symbols-rounded text-[14px] align-middle mr-1">play_arrow</span> Generate Cover Letter</>}
                         </button>
 
                         {/* Cover Letter Loading Animation */}
@@ -2314,14 +2236,14 @@ export default function LiquidResumePage() {
                           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4 space-y-3">
                             <div className="flex items-center gap-2">
                               <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono">Score: {coverLetterResult.score}/100</span>
-                              {coverLetterResult.refined && <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">Dual-AI Refined ✨</span>}
+                              {coverLetterResult.refined && <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">Dual-AI Refined <span className="material-symbols-rounded text-inherit align-middle">auto_awesome</span></span>}
                             </div>
                             <div className="text-xs text-white/70 whitespace-pre-wrap max-h-48 overflow-y-auto bg-white/[0.02] rounded-lg p-3 border border-white/[0.04]">
                               {coverLetterResult.coverLetter}
                             </div>
                             <div className="grid grid-cols-2 gap-2">
-                              <button onClick={() => { navigator.clipboard.writeText(coverLetterResult.coverLetter); showToast('Copied!', '✅'); }} className="py-2 rounded-lg text-xs font-medium bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/15 transition-all">
-                                📋 Copy
+                              <button onClick={() => { navigator.clipboard.writeText(coverLetterResult.coverLetter); showToast('Copied!', 'check_circle'); }} className="py-2 rounded-lg text-xs font-medium bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/15 transition-all">
+                                <span className="material-symbols-rounded text-[14px] align-middle mr-1">content_paste</span> Copy
                               </button>
                               <button
                                 onClick={() => {
@@ -2330,11 +2252,11 @@ export default function LiquidResumePage() {
                                   const updated = { ...currentResume, coverLetter: coverLetterResult.coverLetter };
                                   if (mode === 'morph') setMorphedResume(updated);
                                   else setBuildResume(updated);
-                                  showToast('Cover letter attached to resume! It will appear in your download.', '✅');
+                                  showToast('Cover letter attached to resume! It will appear in your download.', 'check_circle');
                                 }}
                                 className="py-2 rounded-lg text-xs font-medium bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/15 transition-all"
                               >
-                                📎 Attach to Resume
+                                <span className="material-symbols-rounded text-[14px] align-middle mr-1">attach_file</span> Attach to Resume
                               </button>
                             </div>
                           </motion.div>
@@ -2350,11 +2272,11 @@ export default function LiquidResumePage() {
                             <div className="text-[9px] text-white/40">ATS Score</div>
                           </div>
                           <div className="p-2 rounded-lg bg-white/[0.02]">
-                            <div className="text-lg font-bold text-white">{coverLetterResult ? '✅' : '—'}</div>
+                            <div className="text-lg font-bold text-white">{coverLetterResult ? 'check_circle' : '—'}</div>
                             <div className="text-[9px] text-white/40">Cover Letter</div>
                           </div>
                           <div className="p-2 rounded-lg bg-white/[0.02]">
-                            <div className="text-lg font-bold text-white">{linkedinResult ? '✅' : '—'}</div>
+                            <div className="text-lg font-bold text-white">{linkedinResult ? 'check_circle' : '—'}</div>
                             <div className="text-[9px] text-white/40">LinkedIn</div>
                           </div>
                         </div>
@@ -2400,13 +2322,13 @@ export default function LiquidResumePage() {
                     )}
 
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-xl font-bold text-white">Choose a Professional Template</h3>
+                      <h3 className="text-xl font-bold text-[var(--text-primary)]">Choose a Professional Template</h3>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.04] border border-white/[0.06] text-white/30">{TEMPLATES.filter(t => t.tier === 'free').length} Free</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">{TEMPLATES.filter(t => t.tier === 'pro').length} Pro</span>
+                        <span className="text-[10px] px-2.5 py-0.5 rounded-md font-semibold bg-[var(--border-subtle)] border border-[var(--border-subtle)] text-[var(--text-secondary)]">{TEMPLATES.filter(t => t.tier === 'free').length} Free</span>
+                        <span className="text-[10px] px-2.5 py-0.5 rounded-md font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 tracking-wide">{TEMPLATES.filter(t => t.tier === 'pro').length} Pro</span>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+                    <div className="grid grid-cols-2 xl:grid-cols-5 gap-4 mb-6">
                       {TEMPLATES.map((template) => {
                         const isLocked = template.tier === 'pro' && !isPro;
                         return (
@@ -2416,19 +2338,29 @@ export default function LiquidResumePage() {
                             if (isLocked) { showToast('Upgrade to Pro to unlock this template — $2.99/mo', 'info'); return; }
                             setSelectedTemplate(template);
                           }}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          className={`p-4 rounded-xl border transition-all text-left relative overflow-hidden ${isLocked ? 'border-white/[0.04] bg-[var(--theme-bg-card)] opacity-60' : selectedTemplate.id === template.id ? 'border-cyan-500/[0.2] bg-cyan-500/[0.03]' : 'border-white/[0.06] bg-[var(--theme-bg-card)] hover:border-white/[0.12]'
-                            }`}
+                          whileHover={!isLocked ? { scale: 1.02, y: -2 } : {}}
+                          whileTap={!isLocked ? { scale: 0.98 } : {}}
+                          className={`p-4 rounded-xl border transition-all text-left relative overflow-hidden flex flex-col group ${
+                            isLocked 
+                              ? 'border-[var(--border-subtle)] bg-[var(--bg-surface)] opacity-70 cursor-not-allowed' 
+                              : selectedTemplate.id === template.id 
+                                ? 'border-cyan-500/40 bg-cyan-500/5 shadow-md shadow-cyan-500/10' 
+                                : 'border-[var(--border-subtle)] bg-[var(--bg-surface)] hover:border-[var(--text-secondary)] hover:shadow-lg cursor-pointer'
+                          }`}
                         >
                           {isLocked && (
-                            <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/25 text-[8px] font-bold text-emerald-400 uppercase">PRO</div>
+                            <div className="absolute top-3 right-3 px-1.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/25 text-[8px] font-black text-emerald-700 dark:text-emerald-400 tracking-widest uppercase">PRO</div>
                           )}
-                          <div className="w-12 h-12 rounded-xl mb-3 flex items-center justify-center text-2xl" style={{ background: `linear-gradient(135deg, ${template.colors.primary}40, ${template.colors.accent}40)` }}>
-                            {isLocked ? '🔒' : template.preview}
+                          <div 
+                            className={`w-[46px] h-[46px] rounded-[14px] mb-3 flex items-center justify-center shadow-inner transition-colors duration-300 ${isLocked ? 'bg-[var(--border-subtle)] text-[var(--text-muted)] border border-[var(--border-subtle)]' : ''}`}
+                            style={!isLocked ? { backgroundColor: `${template.colors.primary}1A`, color: template.colors.primary, border: `1px solid ${template.colors.primary}33` } : {}}
+                          >
+                            <span className="material-symbols-rounded text-[26px]">
+                              {isLocked ? 'lock' : template.preview}
+                            </span>
                           </div>
-                          <h4 className="font-bold text-white">{template.name}</h4>
-                          <p className="text-xs text-slate-500">{template.description}</p>
+                          <h4 className="font-bold text-[14px] text-[var(--text-primary)] leading-tight mb-1">{template.name}</h4>
+                          <p className="text-[11px] text-[var(--text-muted)] leading-snug">{template.description}</p>
                         </motion.button>
                         );
                       })}
@@ -2460,11 +2392,11 @@ export default function LiquidResumePage() {
                 ) : (
                   <div className="max-w-lg mx-auto text-center py-12">
                     <div className="rounded-2xl bg-red-500/10 border border-red-500/30 p-8">
-                      <span className="text-5xl block mb-4">⚠️</span>
+                      <span className="text-5xl block mb-4"><span className="material-symbols-rounded text-inherit align-middle">warning</span></span>
                       <h3 className="text-xl font-bold text-white mb-2">Resume Data Missing</h3>
                       <p className="text-silver mb-6">Something went wrong loading your resume.</p>
                       <div className="flex gap-3 justify-center">
-                        <button onClick={() => setStep('jd')} className="px-6 py-3 rounded-xl bg-[var(--theme-bg-elevated)] text-white font-medium hover:bg-white/10">← Back to JD</button>
+                        <button onClick={() => setStep('jd')} className="px-6 py-3 rounded-xl bg-[var(--theme-bg-elevated)] text-white font-medium hover:bg-white/10"><span className="material-symbols-rounded text-[14px] align-middle mr-1">arrow_back</span> Back to JD</button>
                         <button onClick={() => { if (originalResume) setMorphedResume(originalResume); }} className="px-6 py-3 rounded-xl bg-cyan-500 text-white font-bold">Use Original Resume</button>
                       </div>
                     </div>
@@ -2481,20 +2413,35 @@ export default function LiquidResumePage() {
                     <div className="space-y-4">
                       <div className="rounded-xl glass-card p-5">
                         <h3 className="font-semibold text-white mb-4">Actions</h3>
+
+                        {/* Free-tier usage counter */}
+                        {!isPro && user && (
+                          <div className="mb-3 px-3 py-2 rounded-lg bg-amber-500/[0.08] border border-amber-500/[0.15] flex items-center gap-2">
+                            <span className="material-symbols-rounded text-[16px] text-amber-400">token</span>
+                            <span className="text-xs text-amber-300">{remaining('morphs')} of {caps?.morphs || 3} free uses left</span>
+                          </div>
+                        )}
+                        {!user && (
+                          <div className="mb-3 px-3 py-2 rounded-lg bg-cyan-500/[0.06] border border-cyan-500/[0.12] flex items-center gap-2">
+                            <span className="material-symbols-rounded text-[16px] text-cyan-400">lock_open</span>
+                            <span className="text-xs text-cyan-300">Sign in to download your resume</span>
+                          </div>
+                        )}
+
                         <div className="space-y-3">
                           <div className="grid grid-cols-2 gap-2">
                             <button onClick={downloadPDF} disabled={isLoading} className="py-2.5 rounded-xl font-semibold bg-cyan-500/[0.1] border border-cyan-500/[0.2] text-cyan-400 hover:bg-cyan-500/[0.15] transition-all disabled:opacity-50 text-sm">
-                              {isLoading ? '⏳...' : '📄 PDF'}
+                              {isLoading ? <><span className="material-symbols-rounded text-[14px] align-middle mr-1">hourglass_top</span>...</> : <><span className="material-symbols-rounded text-[14px] align-middle mr-1">description</span> PDF</>}
                             </button>
                             <button onClick={downloadWord} disabled={isLoading} className="py-2.5 rounded-xl font-semibold bg-blue-500/[0.08] border border-blue-500/[0.15] text-blue-400 hover:bg-blue-500/[0.12] transition-all disabled:opacity-50 text-sm">
-                              {isLoading ? '⏳...' : '📝 Word'}
+                              {isLoading ? <><span className="material-symbols-rounded text-[14px] align-middle mr-1">hourglass_top</span>...</> : <><span className="material-symbols-rounded text-[14px] align-middle mr-1">edit_document</span> Word</>}
                             </button>
                           </div>
                           <button onClick={() => setShowApplicationModal(true)} className="w-full py-3 rounded-xl font-semibold text-sm bg-green-500/[0.08] border border-green-500/[0.15] text-green-400 hover:bg-green-500/[0.12] transition-all">
-                            🎯 Track Application
+                            <span className="material-symbols-rounded align-middle mr-1">my_location</span> Track Application
                           </button>
-                          <button onClick={handleSave} className="w-full py-2.5 rounded-xl font-medium bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12] text-white transition-all text-sm">💾 Save Version</button>
-                          <button onClick={() => setStep('template')} className="w-full py-2.5 rounded-xl font-medium bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12] text-slate-500 transition-all text-sm">🎨 Change Template</button>
+                          <button onClick={handleSave} className="w-full py-2.5 rounded-xl font-medium bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12] text-white transition-all text-sm"><span className="material-symbols-rounded text-inherit align-middle">save</span> Save Version</button>
+                          <button onClick={() => setStep('template')} className="w-full py-2.5 rounded-xl font-medium bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12] text-slate-500 transition-all text-sm"><span className="material-symbols-rounded text-inherit align-middle">palette</span> Change Template</button>
                         </div>
                       </div>
 
@@ -2532,7 +2479,7 @@ export default function LiquidResumePage() {
                 ) : (
                   <div className="max-w-lg mx-auto text-center py-12">
                     <div className="rounded-2xl bg-red-500/10 border border-red-500/30 p-8">
-                      <span className="text-5xl block mb-4">⚠️</span>
+                      <span className="text-5xl block mb-4"><span className="material-symbols-rounded text-inherit align-middle">warning</span></span>
                       <h3 className="text-xl font-bold text-white mb-2">No Resume Data</h3>
                       <button onClick={() => setStep('upload')} className="px-6 py-3 rounded-xl bg-cyan-500 text-white font-bold">Start Over</button>
                     </div>
@@ -2549,11 +2496,20 @@ export default function LiquidResumePage() {
           onClose={() => setShowUpgradeModal(false)}
           onSuccess={() => {
             setShowUpgradeModal(false);
-            showToast('Upgrade successful! Features unlocked.', '🎉');
+            showToast('Upgrade successful! Features unlocked.', 'celebration');
             // Hard reload to refresh user tier
             window.location.reload();
           }}
         />
+
+        {/* Auth Gate Modal — appears when anonymous user tries to download */}
+        {showDownloadAuth && (
+          <AuthModal
+            mode={showDownloadAuth}
+            onClose={() => setShowDownloadAuth(null)}
+            onSwitchMode={() => setShowDownloadAuth(showDownloadAuth === 'login' ? 'signup' : 'login')}
+          />
+        )}
 
         {/* Skill Gap Warning Modal */}
         <SkillGapWarningModal
@@ -2575,20 +2531,20 @@ export default function LiquidResumePage() {
                     <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-orange-500/10" />
                     <div className="relative flex items-center justify-between">
                       <div>
-                        <h2 className="text-xl font-bold text-white flex items-center gap-2">📋 Day-Zero Blueprint</h2>
+                        <h2 className="text-xl font-bold text-white flex items-center gap-2"><span className="material-symbols-rounded text-inherit align-middle">content_paste</span> Day-Zero Blueprint</h2>
                         <p className="text-sm text-amber-400/80 mt-1">Your strategic "First 90 Days" proposal</p>
                       </div>
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => {
                             navigator.clipboard.writeText(blueprintContent);
-                            showToast('Blueprint copied to clipboard!', '📋');
+                            showToast('Blueprint copied to clipboard!', 'content_paste');
                           }}
                           className="px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 transition-all"
                         >
                           Copy
                         </button>
-                        <button onClick={() => setShowBlueprintModal(false)} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-silver hover:text-white hover:bg-white/20 transition-all">✕</button>
+                        <button onClick={() => setShowBlueprintModal(false)} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-silver hover:text-white hover:bg-white/20 transition-all"><span className="material-symbols-rounded">close</span></button>
                       </div>
                     </div>
                   </div>
@@ -2629,7 +2585,7 @@ export default function LiquidResumePage() {
                     <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-cyan-500/10" />
                     <div className="relative">
                       <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-20 h-20 mx-auto rounded-full bg-green-500/20 flex items-center justify-center mb-4">
-                        <span className="text-4xl">🎯</span>
+                        <span className="text-4xl"><span className="material-symbols-rounded text-inherit align-middle">my_location</span></span>
                       </motion.div>
                       <h2 className="text-2xl font-bold text-white">Track this Application?</h2>
                       <p className="text-silver mt-2">We'll save this morphed resume with your application</p>
@@ -2647,8 +2603,8 @@ export default function LiquidResumePage() {
                   </div>
                   <div className="p-6 pt-0 flex gap-3">
                     <button onClick={() => { setShowApplicationModal(false); setStep('preview'); }} className="flex-1 px-4 py-3 rounded-xl bg-[var(--theme-bg-elevated)] text-silver hover:bg-white/10 transition-colors font-medium">Skip & Preview Resume</button>
-                    <button onClick={handleCreateApplication} disabled={isLoading || !applicationData.companyName.trim()} className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-green-500 to-cyan-500 text-white font-bold disabled:opacity-50">
-                      {isLoading ? 'Creating...' : '🎯 Track Application'}
+                    <button onClick={handleCreateApplication} disabled={isLoading || !applicationData.companyName.trim()} className="flex-1 px-4 py-3 rounded-xl bg-[var(--theme-bg-elevated)] border border-[var(--theme-border)] text-[var(--theme-fg)] font-bold disabled:opacity-50 hover:bg-white/[0.05] transition-all">
+                      {isLoading ? 'Creating...' : <><span className="material-symbols-rounded text-[14px] align-middle mr-1">my_location</span> Track Application</>}
                     </button>
                   </div>
                 </motion.div>
@@ -2667,7 +2623,7 @@ export default function LiquidResumePage() {
                   {saveSuccess ? (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-12 text-center">
                       <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', damping: 10 }} className="w-20 h-20 mx-auto mb-4 rounded-full bg-green-500/20 border-2 border-green-500 flex items-center justify-center">
-                        <span className="text-4xl">✅</span>
+                        <span className="text-4xl"><span className="material-symbols-rounded text-inherit align-middle">check_circle</span></span>
                       </motion.div>
                       <h3 className="text-xl font-bold text-white">Saved & Tracked!</h3>
                       <p className="text-sm text-silver mt-2">Resume saved for <span className="text-cyan-400 font-semibold">{saveCompanyName}</span></p>
@@ -2678,7 +2634,7 @@ export default function LiquidResumePage() {
                       <div className="relative p-6 border-b border-white/10">
                         <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-blue-500/10" />
                         <div className="relative flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center"><span className="text-2xl">💾</span></div>
+                          <div className="w-12 h-12 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center"><span className="text-2xl"><span className="material-symbols-rounded text-inherit align-middle">save</span></span></div>
                           <div><h3 className="text-xl font-bold text-white">Save & Track</h3><p className="text-sm text-silver">Save this resume and track the application</p></div>
                         </div>
                       </div>
@@ -2692,13 +2648,13 @@ export default function LiquidResumePage() {
                           <input type="text" value={saveVersionName} onChange={(e) => setSaveVersionName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && saveCompanyName.trim() && saveVersionName.trim()) confirmSave(); }} placeholder="e.g., Senior PM Resume" className="w-full px-4 py-3 rounded-xl glass-card text-white placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none" />
                         </div>
                         <div className="rounded-xl bg-cyan-500/[0.06] border border-cyan-500/[0.12] p-3">
-                          <p className="text-xs text-cyan-400/80">💡 This will save your resume <strong>and</strong> create an application entry you can track in the Applications tab.</p>
+                          <p className="text-xs text-cyan-400/80"><span className="material-symbols-rounded text-inherit align-middle">lightbulb</span> This will save your resume <strong>and</strong> create an application entry you can track in the Applications tab.</p>
                         </div>
                       </div>
                       <div className="p-6 pt-0 flex gap-3">
                         <button onClick={() => { setShowSaveModal(false); setSaveVersionName(''); setSaveCompanyName(''); }} className="flex-1 px-4 py-3 rounded-xl bg-[var(--theme-bg-elevated)] text-silver hover:bg-white/10 transition-colors font-medium">Cancel</button>
-                        <button onClick={confirmSave} disabled={!saveVersionName.trim() || !saveCompanyName.trim() || isLoading} className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold disabled:opacity-50 transition-all">
-                          {isLoading ? '⏳ Saving...' : '💾 Save & Track'}
+                        <button onClick={confirmSave} disabled={!saveVersionName.trim() || !saveCompanyName.trim() || isLoading} className="flex-1 px-4 py-3 rounded-xl bg-[var(--theme-bg-elevated)] border border-[var(--theme-border)] text-[var(--theme-fg)] font-bold disabled:opacity-50 hover:bg-white/[0.05] transition-all">
+                          {isLoading ? <><span className="material-symbols-rounded text-[14px] align-middle mr-1">hourglass_top</span> Saving...</> : <><span className="material-symbols-rounded text-[14px] align-middle mr-1">save</span> Save & Track</>}
                         </button>
                       </div>
                     </>
@@ -2752,7 +2708,7 @@ export default function LiquidResumePage() {
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="text-base font-semibold text-white">Professional Summary</h3>
                       <button onClick={generateSummary} disabled={aiSuggesting} className="px-3 py-1 rounded-lg text-sm bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 disabled:opacity-50">
-                        {aiSuggesting ? '⏳ Generating...' : '✨ Generate with AI'}
+                        {aiSuggesting ? <><span className="material-symbols-rounded text-[14px] align-middle mr-1">hourglass_top</span> Generating...</> : <><span className="material-symbols-rounded text-[14px] align-middle mr-1">auto_awesome</span> Generate with AI</>}
                       </button>
                     </div>
                     <textarea value={buildResume.summary} onChange={(e) => setBuildResume(prev => ({ ...prev, summary: e.target.value }))} placeholder="Write a brief professional summary..." className="w-full h-48 px-4 py-3 rounded-xl glass-card text-white placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none resize-none" />
@@ -2780,7 +2736,7 @@ export default function LiquidResumePage() {
                       </div>
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-sm text-slate-500">Achievements</span>
-                        <button onClick={() => generateAchievements(i)} disabled={aiSuggesting} className="px-2 py-1 rounded text-xs bg-cyan-500/20 text-cyan-400">{aiSuggesting ? '⏳...' : '✨ Generate'}</button>
+                        <button onClick={() => generateAchievements(i)} disabled={aiSuggesting} className="px-2 py-1 rounded text-xs bg-cyan-500/20 text-cyan-400">{aiSuggesting ? <><span className="material-symbols-rounded text-[14px] align-middle mr-1">hourglass_top</span>...</> : <><span className="material-symbols-rounded text-[14px] align-middle mr-1">auto_awesome</span> Generate</>}</button>
                       </div>
                       {exp.achievements.map((a, j) => (
                         <input key={j} type="text" value={a} onChange={(e) => { const newExp = [...buildResume.experience]; newExp[i].achievements[j] = e.target.value; setBuildResume(prev => ({ ...prev, experience: newExp })); }} placeholder={`Achievement ${j + 1}`} className="w-full mb-2 px-3 py-2 rounded-lg glass-card text-white text-sm placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none" />
@@ -2793,8 +2749,8 @@ export default function LiquidResumePage() {
                   </button>
                 </div>
                 <div className="flex justify-between">
-                  <button onClick={() => setStep('upload')} className="px-4 py-2 rounded-xl glass-card text-slate-500 hover:border-white/[0.12] text-sm">← Back</button>
-                  <button onClick={() => setStep(isPro ? 'enhance' : 'template')} className="px-4 py-2 rounded-xl font-medium text-sm bg-cyan-500/[0.08] border border-cyan-500/[0.15] text-cyan-400 hover:bg-cyan-500/[0.12] transition-all">{isPro ? '✨ AI Enhance →' : 'Choose Template →'}</button>
+                  <button onClick={() => setStep('upload')} className="px-4 py-2 rounded-xl glass-card text-slate-500 hover:border-white/[0.12] text-sm"><span className="material-symbols-rounded text-[14px] align-middle mr-1">arrow_back</span> Back</button>
+                  <button onClick={() => setStep(isPro ? 'enhance' : 'template')} className="px-4 py-2 rounded-xl font-medium text-sm bg-cyan-500/[0.08] border border-cyan-500/[0.15] text-cyan-400 hover:bg-cyan-500/[0.12] transition-all">{isPro ? <><span className="material-symbols-rounded text-[14px] align-middle mr-1">auto_awesome</span> AI Enhance &rarr;</> : 'Choose Template →'}</button>
                 </div>
               </motion.div>
             )}
@@ -2812,7 +2768,7 @@ export default function LiquidResumePage() {
                             return (
                             <button key={t.id} onClick={() => { if (isLocked) { showToast('Upgrade to Pro — $2.99/mo', 'info'); return; } setSelectedTemplate(t); }} className={`p-3 rounded-xl border text-left text-sm relative ${isLocked ? 'border-white/[0.04] bg-[var(--theme-bg-card)] opacity-60' : selectedTemplate.id === t.id ? 'border-cyan-500/[0.2] bg-cyan-500/[0.03]' : 'border-white/[0.06] bg-[var(--theme-bg-card)] hover:border-white/[0.12]'}`}>
                               {isLocked && <span className="absolute top-1 right-1 text-[8px] px-1 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 font-bold">PRO</span>}
-                              <span className="text-xl block mb-1">{isLocked ? '🔒' : t.preview}</span>
+                              <span className="text-xl block mb-1">{isLocked ? 'lock' : t.preview}</span>
                               <span className="text-white font-medium">{t.name}</span>
                             </button>
                             );
@@ -2824,12 +2780,27 @@ export default function LiquidResumePage() {
                     {step === 'preview' && (
                       <div className="rounded-xl glass-card p-5 space-y-3">
                         <h3 className="font-semibold text-white mb-4">Actions</h3>
+
+                        {/* Free-tier usage counter */}
+                        {!isPro && user && (
+                          <div className="mb-1 px-3 py-2 rounded-lg bg-amber-500/[0.08] border border-amber-500/[0.15] flex items-center gap-2">
+                            <span className="material-symbols-rounded text-[16px] text-amber-400">token</span>
+                            <span className="text-xs text-amber-300">{remaining('morphs')} of {caps?.morphs || 3} free uses left</span>
+                          </div>
+                        )}
+                        {!user && (
+                          <div className="mb-1 px-3 py-2 rounded-lg bg-cyan-500/[0.06] border border-cyan-500/[0.12] flex items-center gap-2">
+                            <span className="material-symbols-rounded text-[16px] text-cyan-400">lock_open</span>
+                            <span className="text-xs text-cyan-300">Sign in to download your resume</span>
+                          </div>
+                        )}
+
                         <div className="grid grid-cols-2 gap-2">
-                          <button onClick={downloadPDF} disabled={isLoading} className="py-2.5 rounded-xl font-semibold bg-cyan-500/[0.1] border border-cyan-500/[0.2] text-cyan-400 hover:bg-cyan-500/[0.15] transition-all disabled:opacity-50 text-sm">{isLoading ? '⏳...' : '📄 PDF'}</button>
-                          <button onClick={downloadWord} disabled={isLoading} className="py-2.5 rounded-xl font-semibold bg-blue-500/[0.08] border border-blue-500/[0.15] text-blue-400 hover:bg-blue-500/[0.12] transition-all disabled:opacity-50 text-sm">{isLoading ? '⏳...' : '📝 Word'}</button>
+                          <button onClick={downloadPDF} disabled={isLoading} className="py-2.5 rounded-xl font-semibold bg-cyan-500/[0.1] border border-cyan-500/[0.2] text-cyan-400 hover:bg-cyan-500/[0.15] transition-all disabled:opacity-50 text-sm">{isLoading ? <><span className="material-symbols-rounded text-[14px] align-middle mr-1">hourglass_top</span>...</> : <><span className="material-symbols-rounded text-[14px] align-middle mr-1">description</span> PDF</>}</button>
+                          <button onClick={downloadWord} disabled={isLoading} className="py-2.5 rounded-xl font-semibold bg-blue-500/[0.08] border border-blue-500/[0.15] text-blue-400 hover:bg-blue-500/[0.12] transition-all disabled:opacity-50 text-sm">{isLoading ? <><span className="material-symbols-rounded text-[14px] align-middle mr-1">hourglass_top</span>...</> : <><span className="material-symbols-rounded text-[14px] align-middle mr-1">edit_document</span> Word</>}</button>
                         </div>
-                        <button onClick={handleSave} className="w-full py-2.5 rounded-xl font-medium bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12] text-white transition-all text-sm">💾 Save Version</button>
-                        <button onClick={() => setStep('template')} className="w-full py-2.5 rounded-xl font-medium bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12] text-slate-500 transition-all text-sm">🎨 Change Template</button>
+                        <button onClick={handleSave} className="w-full py-2.5 rounded-xl font-medium bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12] text-white transition-all text-sm"><span className="material-symbols-rounded text-inherit align-middle">save</span> Save Version</button>
+                        <button onClick={() => setStep('template')} className="w-full py-2.5 rounded-xl font-medium bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12] text-slate-500 transition-all text-sm"><span className="material-symbols-rounded text-inherit align-middle">palette</span> Change Template</button>
                       </div>
                     )}
                   </div>
@@ -2856,7 +2827,7 @@ export default function LiquidResumePage() {
                   {saveSuccess ? (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-12 text-center">
                       <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', damping: 10 }} className="w-20 h-20 mx-auto mb-4 rounded-full bg-green-500/20 border-2 border-green-500 flex items-center justify-center">
-                        <span className="text-4xl">✅</span>
+                        <span className="text-4xl"><span className="material-symbols-rounded text-inherit align-middle">check_circle</span></span>
                       </motion.div>
                       <h3 className="text-xl font-bold text-white">Saved & Tracked!</h3>
                       <p className="text-sm text-silver mt-2">Resume saved for <span className="text-cyan-400 font-semibold">{saveCompanyName}</span></p>
@@ -2867,7 +2838,7 @@ export default function LiquidResumePage() {
                       <div className="relative p-6 border-b border-white/10">
                         <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-blue-500/10" />
                         <div className="relative flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center"><span className="text-2xl">💾</span></div>
+                          <div className="w-12 h-12 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center"><span className="text-2xl"><span className="material-symbols-rounded text-inherit align-middle">save</span></span></div>
                           <div><h3 className="text-xl font-bold text-white">Save & Track</h3><p className="text-sm text-silver">Save this resume and track the application</p></div>
                         </div>
                       </div>
@@ -2881,13 +2852,13 @@ export default function LiquidResumePage() {
                           <input type="text" value={saveVersionName} onChange={(e) => setSaveVersionName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && saveCompanyName.trim() && saveVersionName.trim()) confirmSave(); }} placeholder="e.g., Senior PM Resume" className="w-full px-4 py-3 rounded-xl glass-card text-white placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none" />
                         </div>
                         <div className="rounded-xl bg-cyan-500/[0.06] border border-cyan-500/[0.12] p-3">
-                          <p className="text-xs text-cyan-400/80">💡 This will save your resume <strong>and</strong> create an application entry you can track in the Applications tab.</p>
+                          <p className="text-xs text-cyan-400/80"><span className="material-symbols-rounded text-inherit align-middle">lightbulb</span> This will save your resume <strong>and</strong> create an application entry you can track in the Applications tab.</p>
                         </div>
                       </div>
                       <div className="p-6 pt-0 flex gap-3">
                         <button onClick={() => { setShowSaveModal(false); setSaveVersionName(''); setSaveCompanyName(''); }} className="flex-1 px-4 py-3 rounded-xl bg-[var(--theme-bg-elevated)] text-silver hover:bg-white/10 transition-colors font-medium">Cancel</button>
-                        <button onClick={confirmSave} disabled={!saveVersionName.trim() || !saveCompanyName.trim() || isLoading} className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold disabled:opacity-50 transition-all">
-                          {isLoading ? '⏳ Saving...' : '💾 Save & Track'}
+                        <button onClick={confirmSave} disabled={!saveVersionName.trim() || !saveCompanyName.trim() || isLoading} className="flex-1 px-4 py-3 rounded-xl bg-[var(--theme-bg-elevated)] border border-[var(--theme-border)] text-[var(--theme-fg)] font-bold disabled:opacity-50 hover:bg-white/[0.05] transition-all">
+                          {isLoading ? <><span className="material-symbols-rounded text-[14px] align-middle mr-1">hourglass_top</span> Saving...</> : <><span className="material-symbols-rounded text-[14px] align-middle mr-1">save</span> Save & Track</>}
                         </button>
                       </div>
                     </>
@@ -3086,9 +3057,9 @@ function ResumeTemplate({ resume, template }: { resume: ResumeData; template: ty
             <h1 className="text-3xl font-bold" style={{ color: primary }}>{resume.name}</h1>
             <p className="text-xl text-gray-600">{resume.title}</p>
             <div className="flex gap-4 mt-2 text-sm text-gray-500">
-              {resume.email && <span>📧 {resume.email}</span>}
-              {resume.phone && <span>📱 {resume.phone}</span>}
-              {resume.location && <span>📍 {resume.location}</span>}
+              {resume.email && <span><span className="material-symbols-rounded text-inherit align-middle">email</span> {resume.email}</span>}
+              {resume.phone && <span><span className="material-symbols-rounded text-inherit align-middle">smartphone</span> {resume.phone}</span>}
+              {resume.location && <span><span className="material-symbols-rounded text-inherit align-middle">pin_drop</span> {resume.location}</span>}
             </div>
           </div>
         </div>
@@ -3096,12 +3067,12 @@ function ResumeTemplate({ resume, template }: { resume: ResumeData; template: ty
         {resume.experience?.length > 0 && (
           <div className="mb-6">
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2" style={{ color: primary }}>
-              <span className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm" style={{ backgroundColor: primary }}>💼</span>Experience
+              <span className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm" style={{ backgroundColor: primary }}><span className="material-symbols-rounded text-inherit align-middle">work</span></span>Experience
             </h2>
             {resume.experience.map((exp, i) => (
               <div key={i} className="mb-4 p-4 rounded-xl bg-gray-50">
                 <div className="flex justify-between"><div><h3 className="font-bold text-gray-900">{exp.role}</h3><p className="text-sm" style={{ color: accent }}>{exp.company}</p></div><span className="text-sm px-3 py-1 rounded-full bg-white text-gray-500">{exp.duration}</span></div>
-                <ul className="mt-3 space-y-1">{exp.achievements?.map((a, j) => <li key={j} className="text-sm text-gray-700 flex items-start gap-2"><span style={{ color: accent }}>▸</span>{a}</li>)}</ul>
+                <ul className="mt-3 space-y-1">{exp.achievements?.map((a, j) => <li key={j} className="text-sm text-gray-700 flex items-start gap-2"><span style={{ color: accent }}><span className="material-symbols-rounded text-inherit align-middle">arrow_right</span></span>{a}</li>)}</ul>
               </div>
             ))}
           </div>
@@ -3110,7 +3081,7 @@ function ResumeTemplate({ resume, template }: { resume: ResumeData; template: ty
           {resume.education?.length > 0 && (
             <div>
               <h2 className="text-lg font-bold mb-3 flex items-center gap-2" style={{ color: primary }}>
-                <span className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm" style={{ backgroundColor: primary }}>🎓</span>Education
+                <span className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm" style={{ backgroundColor: primary }}><span className="material-symbols-rounded text-inherit align-middle">school</span></span>Education
               </h2>
               {resume.education.map((edu, i) => <div key={i} className="mb-2 p-3 rounded-lg bg-gray-50"><p className="font-semibold">{edu.degree}</p><p className="text-sm text-gray-600">{edu.institution} • {edu.year}</p></div>)}
             </div>
@@ -3118,7 +3089,7 @@ function ResumeTemplate({ resume, template }: { resume: ResumeData; template: ty
           {resume.skills?.length > 0 && (
             <div>
               <h2 className="text-lg font-bold mb-3 flex items-center gap-2" style={{ color: primary }}>
-                <span className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm" style={{ backgroundColor: primary }}>⚡</span>Skills
+                <span className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm" style={{ backgroundColor: primary }}><span className="material-symbols-rounded text-inherit align-middle">bolt</span></span>Skills
               </h2>
               <div className="flex flex-wrap gap-2">{resume.skills.flatMap(s => s.items).map((skill, i) => <span key={i} className="px-3 py-1 rounded-full text-sm text-white" style={{ backgroundColor: accent }}>{skill}</span>)}</div>
             </div>
@@ -3504,9 +3475,9 @@ function ResumeTemplate({ resume, template }: { resume: ResumeData; template: ty
           <h1 className="text-xl font-bold mb-1">{resume.name}</h1>
           <p className="text-sm opacity-80 mb-4">{resume.title}</p>
           <div className="text-xs space-y-1 opacity-70 mb-6">
-            {resume.email && <p>✉ {resume.email}</p>}
-            {resume.phone && <p>✆ {resume.phone}</p>}
-            {resume.location && <p>📍 {resume.location}</p>}
+            {resume.email && <p><span className="material-symbols-rounded text-inherit align-middle">mail</span> {resume.email}</p>}
+            {resume.phone && <p><span className="material-symbols-rounded text-inherit align-middle">call</span> {resume.phone}</p>}
+            {resume.location && <p><span className="material-symbols-rounded text-inherit align-middle">pin_drop</span> {resume.location}</p>}
           </div>
           {resume.skills?.length > 0 && (
             <div>
@@ -3591,7 +3562,7 @@ function ResumeTemplate({ resume, template }: { resume: ResumeData; template: ty
                 <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: `${accent}15`, color: accent }}>{exp.duration}</span>
               </div>
               <p className="text-sm text-gray-500 mb-1">{exp.company}</p>
-              <ul className="space-y-1">{exp.achievements?.map((a, j) => <li key={j} className="text-sm text-gray-700 pl-3 relative before:content-['▸'] before:absolute before:left-0" style={{ '--tw-content': `'▸'` } as any}>{a}</li>)}</ul>
+              <ul className="space-y-1">{exp.achievements?.map((a, j) => <li key={j} className="text-sm text-gray-700 pl-3 relative before:content-['arrow_right'] before:absolute before:left-0" style={{ '--tw-content': `'arrow_right'` } as any}>{a}</li>)}</ul>
             </div>
           ))}
         </div>

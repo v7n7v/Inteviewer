@@ -1,6 +1,6 @@
 /**
  * Firebase Admin SDK — Server-side only
- * Used for verifying ID tokens in API routes and middleware.
+ * Authenticates via service account JSON stored in FIREBASE_SERVICE_ACCOUNT_JSON env var.
  */
 import { initializeApp, getApps, cert, type App } from 'firebase-admin/app';
 import { getAuth, type Auth } from 'firebase-admin/auth';
@@ -18,11 +18,22 @@ function getAdminApp(): App {
     return adminApp;
   }
 
-  // Initialize with project ID only (no service account needed for ID token verification
-  // when running in the same Firebase project)
-  adminApp = initializeApp({
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  });
+  const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+
+  if (serviceAccountJson) {
+    // Parse the inline JSON service account and initialise with full credentials
+    const serviceAccount = JSON.parse(serviceAccountJson);
+    adminApp = initializeApp({
+      credential: cert(serviceAccount),
+      projectId: serviceAccount.project_id,
+    });
+  } else {
+    // Fallback: projectId-only (works for token verification but NOT Firestore writes)
+    console.warn('[firebase-admin] FIREBASE_SERVICE_ACCOUNT_JSON not set — Firestore calls will fail.');
+    adminApp = initializeApp({
+      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    });
+  }
 
   return adminApp;
 }

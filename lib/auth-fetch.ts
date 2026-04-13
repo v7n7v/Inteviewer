@@ -6,7 +6,7 @@
  *   import { authFetch } from '@/lib/auth-fetch';
  *   const res = await authFetch('/api/resume/morph', { method: 'POST', body: JSON.stringify(data) });
  */
-import { getAuth } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 /**
  * Wrapper around fetch() that automatically injects the Firebase ID token
@@ -16,7 +16,6 @@ export async function authFetch(
   url: string,
   options: RequestInit = {}
 ): Promise<Response> {
-  const auth = getAuth();
   const user = auth.currentUser;
 
   const headers = new Headers(options.headers);

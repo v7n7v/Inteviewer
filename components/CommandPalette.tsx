@@ -17,16 +17,16 @@ interface Command {
 
 const commands: Command[] = [
   // Talent Suite
-  { id: 'resume', label: 'Resume Builder', icon: '📄', description: 'Liquid Resume Architect', path: '/suite/resume', category: 'navigation', keywords: ['build', 'create', 'cv', 'morph'] },
-  { id: 'flashcards', label: 'Study Cards', icon: '🎴', description: 'Flash Cards', path: '/suite/flashcards', category: 'navigation', keywords: ['study', 'flash', 'cards', 'learn'] },
-  { id: 'vault', label: 'Study Vault', icon: '📚', description: 'Saved Coach Notes', path: '/suite/vault', category: 'navigation', keywords: ['study', 'vault', 'notes', 'coach', 'feedback'] },
-  { id: 'oracle', label: 'Market Oracle', icon: '🔮', description: 'JD Decoder + Career Intelligence', path: '/suite/market-oracle', category: 'navigation', keywords: ['market', 'career', 'salary', 'trends', 'job', 'description', 'decode', 'fit'] },
-  { id: 'applications', label: 'Applications', icon: '📊', description: 'Track Your Jobs', path: '/suite/applications', category: 'navigation', keywords: ['track', 'apply', 'jobs', 'status'] },
-  { id: 'job-search', label: 'Job Search', icon: '🔍', description: 'Find Opportunities', path: '/suite/job-search', category: 'navigation', keywords: ['search', 'find', 'jobs', 'openings'] },
+  { id: 'resume', label: 'Resume Builder', icon: 'description', description: 'Liquid Resume Architect', path: '/suite/resume', category: 'navigation', keywords: ['build', 'create', 'cv', 'morph'] },
+  { id: 'flashcards', label: 'Study Cards', icon: 'view_carousel', description: 'Flash Cards', path: '/suite/flashcards', category: 'navigation', keywords: ['study', 'flash', 'cards', 'learn'] },
+  { id: 'vault', label: 'Study Vault', icon: 'menu_book', description: 'Saved Coach Notes', path: '/suite/vault', category: 'navigation', keywords: ['study', 'vault', 'notes', 'coach', 'feedback'] },
+  { id: 'oracle', label: 'Market Oracle', icon: 'hub', description: 'JD Decoder + Career Intelligence', path: '/suite/market-oracle', category: 'navigation', keywords: ['market', 'career', 'salary', 'trends', 'job', 'description', 'decode', 'fit'] },
+  { id: 'applications', label: 'Applications', icon: 'bar_chart', description: 'Track Your Jobs', path: '/suite/applications', category: 'navigation', keywords: ['track', 'apply', 'jobs', 'status'] },
+  { id: 'job-search', label: 'Job Search', icon: 'search', description: 'Find Opportunities', path: '/suite/job-search', category: 'navigation', keywords: ['search', 'find', 'jobs', 'openings'] },
 
   // Quick Links
-  { id: 'talent-suite', label: 'Talent Suite', icon: '✨', description: 'AI Career Intelligence', path: '/suite/resume', category: 'suite', keywords: ['job', 'seeker', 'candidate'] },
-  { id: 'dashboard', label: 'Dashboard', icon: '🏠', description: 'Return to Dashboard', path: '/suite', category: 'suite', keywords: ['home', 'main', 'dashboard'] },
+  { id: 'talent-suite', label: 'Talent Suite', icon: 'auto_awesome', description: 'AI Career Intelligence', path: '/suite/resume', category: 'suite', keywords: ['job', 'seeker', 'candidate'] },
+  { id: 'dashboard', label: 'Dashboard', icon: 'home', description: 'Return to Dashboard', path: '/suite', category: 'suite', keywords: ['home', 'main', 'dashboard'] },
 ];
 
 export default function CommandPalette() {
@@ -121,7 +121,7 @@ export default function CommandPalette() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <span className="text-xs text-silver">Quick Jump</span>
-          <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-[10px] text-silver font-mono">⌘K</kbd>
+          <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-[10px] text-silver font-mono"><span className="material-symbols-rounded align-middle mr-1">keyboard_command_key</span>K</kbd>
         </button>
       </div>
 
@@ -168,7 +168,7 @@ export default function CommandPalette() {
                 <div className="max-h-[400px] overflow-y-auto p-2">
                   {flatCommands.length === 0 ? (
                     <div className="p-8 text-center text-silver">
-                      <span className="text-3xl block mb-2">🔍</span>
+                      <span className="text-3xl block mb-2"><span className="material-symbols-rounded">search</span></span>
                       No results found
                     </div>
                   ) : (
@@ -252,7 +252,7 @@ function CommandItem({
       className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-colors ${isSelected ? 'bg-[var(--theme-bg-hover)] text-white border border-white/10' : 'text-silver hover:bg-[var(--theme-bg-elevated)]'
         }`}
     >
-      <span className="text-xl">{command.icon}</span>
+      <span className="text-xl material-symbols-rounded align-middle">{command.icon}</span>
       <div className="flex-1 min-w-0">
         <p className="font-medium truncate">{command.label}</p>
         <p className="text-sm text-silver truncate">{command.description}</p>

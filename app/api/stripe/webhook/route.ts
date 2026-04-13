@@ -64,13 +64,13 @@ export async function POST(req: NextRequest) {
           stripeCustomerId: session.customer as string,
           stripeSubscriptionId: session.subscription as string,
           priceId: process.env.STRIPE_PRO_PRICE_ID,
-          amount: 299, // cents
+          amount: 499, // cents ($4.99)
           currency: 'usd',
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
 
-        console.log(`✅ Pro subscription activated for user: ${uid}`);
+        console.log(`[stripe] checkout.completed uid=${uid.slice(0, 8)}…`);
         break;
       }
 
@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
           updatedAt: serverTimestamp(),
         }, { merge: true });
 
-        console.log(`✅ Pro subscription activated via Elements for user: ${uid} (${interval})`);
+        console.log(`[stripe] invoice.paid uid=${uid.slice(0, 8)}… interval=${interval}`);
         break;
       }
 
@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
           updatedAt: serverTimestamp(),
         }, { merge: true });
 
-        console.log(`🔄 Subscription updated for user ${uid}: ${status}`);
+        console.log(`[stripe] subscription.updated uid=${uid.slice(0, 8)}… status=${status}`);
         break;
       }
 
@@ -141,7 +141,7 @@ export async function POST(req: NextRequest) {
           updatedAt: serverTimestamp(),
         }, { merge: true });
 
-        console.log(`❌ Subscription canceled for user ${uid}`);
+        console.log(`[stripe] subscription.deleted uid=${uid.slice(0, 8)}…`);
         break;
       }
 

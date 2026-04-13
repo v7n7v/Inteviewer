@@ -1,7 +1,7 @@
 /**
  * Pricing Tier Configuration
- * Free tier: current limits
- * Pro tier ($2.99/mo): 3x free limits
+ * Free tier: limited trial access — account required
+ * Pro tier ($4.99/mo): 3x free limits + priority queue
  */
 
 import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs } from 'firebase/firestore';
@@ -36,24 +36,28 @@ export function isMasterAccount(email?: string): boolean {
 
 export const PLAN_PRICE = {
   free: 0,
-  pro_monthly: 2.99,
-  pro_annual: 24.99, // $2.08/mo effective — 30% discount
+  pro_monthly: 4.99,
+  pro_annual: 49.99, // $4.17/mo effective — 17% discount vs monthly
 } as const;
 
 /** Rate limits per route per tier (requests per minute). GOD bypasses this entirely. */
 export const RATE_LIMITS: Record<string, Record<Exclude<PlanTier, 'god'>, number>> = {
-  '/api/resume/morph':        { free: 1,  pro: 3  },
-  '/api/resume/parse':        { free: 5,  pro: 15 },
-  '/api/resume/ai':           { free: 5,  pro: 15 },
-  '/api/voice/transcribe':    { free: 5,  pro: 15 },
-  '/api/voice/speak':         { free: 5,  pro: 15 },
-  '/api/gauntlet/grade':      { free: 7,  pro: 21 },
-  '/api/gauntlet/generate':   { free: 7,  pro: 21 },
-  '/api/gauntlet/parse-resume': { free: 5, pro: 15 },
-  '/api/chat':                { free: 10, pro: 30 },
-  '/api/ai':                  { free: 10, pro: 30 },
-  '/api/jobs/search':         { free: 10, pro: 30 },
-  '/api/dashboard/insights':  { free: 5,  pro: 15 },
+  '/api/resume/morph':          { free: 2,  pro: 10 },
+  '/api/resume/parse':          { free: 5,  pro: 20 },
+  '/api/resume/ai':             { free: 3,  pro: 15 },
+  '/api/voice/transcribe':      { free: 3,  pro: 15 },
+  '/api/voice/speak':           { free: 3,  pro: 15 },
+  '/api/gauntlet/grade':        { free: 5,  pro: 25 },
+  '/api/gauntlet/generate':     { free: 5,  pro: 25 },
+  '/api/gauntlet/parse-resume': { free: 3,  pro: 15 },
+  '/api/vault/list':            { free: 10, pro: 50 },
+  '/api/vault/export-plan':     { free: 2,  pro: 20 },
+  '/api/study-progress':        { free: 5,  pro: 25 },
+  '/api/chat':                  { free: 5,  pro: 30 },
+  '/api/ai':                    { free: 5,  pro: 30 },
+  '/api/jobs/search':           { free: 5,  pro: 30 },
+  '/api/market-oracle':         { free: 2,  pro: 15 },
+  '/api/dashboard/insights':    { free: 3,  pro: 15 },
 } as const;
 
 /** Get rate limit for a route based on tier */

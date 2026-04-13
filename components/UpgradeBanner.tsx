@@ -78,7 +78,7 @@ export default function UpgradeBanner({ currentTier = 'free', compact = false }:
         onClick={handleUpgrade}
         className="w-full text-[11px] font-medium text-black bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 px-3 py-1.5 rounded-lg transition-all"
       >
-        ⚡ Upgrade to Pro — $2.99/mo
+        <span className="material-symbols-rounded align-middle mr-1">bolt</span> Upgrade to Pro — $2.99/mo
       </button>
     );
   }
@@ -86,7 +86,7 @@ export default function UpgradeBanner({ currentTier = 'free', compact = false }:
   return (
     <div className="rounded-xl border border-[var(--theme-border)] bg-[var(--theme-bg-card)] p-4">
       <div className="flex items-center gap-2 mb-2">
-        <span className="text-sm">⚡</span>
+        <span className="text-sm"><span className="material-symbols-rounded">bolt</span></span>
         <span className="text-xs font-semibold">Upgrade to Pro</span>
       </div>
 

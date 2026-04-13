@@ -6,7 +6,7 @@ import { JobSearchSchema } from '@/lib/schemas';
 
 export async function GET(request: NextRequest) {
     try {
-        const guard = await guardApiRoute(request, { rateLimit: 10, rateLimitWindow: 60_000 });
+        const guard = await guardApiRoute(request, { rateLimit: 10, rateLimitWindow: 60_000, allowAnonymous: true, feature: 'jdGenerations' });
         if (guard.error) return guard.error;
 
         const { searchParams } = new URL(request.url);
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        const guard = await guardApiRoute(request, { rateLimit: 10, rateLimitWindow: 60_000 });
+        const guard = await guardApiRoute(request, { rateLimit: 10, rateLimitWindow: 60_000, allowAnonymous: true, feature: 'jdGenerations' });
         if (guard.error) return guard.error;
 
         const validated = await validateBody(request, JobSearchSchema);

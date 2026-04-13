@@ -134,13 +134,13 @@ export default function MarketOraclePage() {
     setResumeText(text.trim());
     setIsUploading(false);
     setProcessingStage(null);
-    showToast('Resume loaded!', '✅');
+    showToast('Resume loaded!', 'check_circle');
   };
 
   // Analyze market position with Dual-AI
   const analyzeMarket = async () => {
     if (!resumeText.trim()) {
-      showToast('Please upload your resume', '❌');
+      showToast('Please upload your resume', 'cancel');
       return;
     }
 
@@ -213,7 +213,7 @@ export default function MarketOraclePage() {
             };
           });
 
-          showToast(`Found ${jobs.length} real job matches!`, '🎯');
+          showToast(`Found ${jobs.length} real job matches!`, 'my_location');
         }
       } catch (jobError) {
         console.error('Job search error, using fallback:', jobError);
@@ -255,10 +255,10 @@ export default function MarketOraclePage() {
       });
 
       setStep('oracle');
-      showToast(jdText.trim() ? 'Dual-AI analysis complete!' : 'Market analysis complete!', '✅');
+      showToast(jdText.trim() ? 'Dual-AI analysis complete!' : 'Market analysis complete!', 'check_circle');
     } catch (error) {
       console.error('Analysis error:', error);
-      showToast('Error analyzing market', '❌');
+      showToast('Error analyzing market', 'cancel');
       setStep('setup');
     }
   };
@@ -281,17 +281,6 @@ export default function MarketOraclePage() {
     }
   }, [selectedJob]);
 
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-8">
-        <div className="glass-card p-12 text-center max-w-md">
-          <span className="text-6xl mb-4 block">🔒</span>
-          <h2 className="text-2xl font-bold text-white mb-3">Sign In Required</h2>
-          <p className="text-silver">Please sign in to access Market Oracle</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen">
@@ -342,10 +331,8 @@ export default function MarketOraclePage() {
                   <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
                   <span className="text-xs font-medium text-indigo-400">Career Intelligence Engine</span>
                 </motion.div>
-                <h1 className="text-2xl lg:text-3xl font-bold mb-2">
-                  <span className="bg-gradient-to-r from-cyan-400 via-indigo-400 to-cyan-400 bg-clip-text text-transparent">
-                    Market Oracle
-                  </span>
+                <h1 className="text-2xl lg:text-3xl font-bold mb-2 text-[var(--text-primary)]">
+                  Market Oracle
                 </h1>
                 <p className="text-silver text-sm max-w-2xl">
                   Paste a job description + your resume → Dual-AI decodes your fit score, salary intel, red flags, and bridge skills in the 3D Starfield.
@@ -358,10 +345,10 @@ export default function MarketOraclePage() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="elevation-1 p-6"
+                className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-6"
               >
-                <h3 className="font-bold text-white mb-4 flex items-center gap-2">
-                  <span>📄</span> Your Resume
+                <h3 className="font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2">
+                  <span className="text-xl"><span className="material-symbols-rounded align-middle">description</span></span> Your Resume
                 </h3>
                 {!resumeText ? (
                   <FileUploadDropzone
@@ -386,13 +373,13 @@ export default function MarketOraclePage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.05 }}
-                className="elevation-1 !border-emerald-500/20 p-6 relative overflow-hidden"
+                className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-6 relative overflow-hidden"
               >
-                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl" />
+                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl opacity-50 block dark:opacity-100" />
                 <div className="relative">
-                  <h3 className="font-bold text-white mb-2 flex items-center gap-2">
-                    <span>📋</span> Paste Job Description
-                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] border border-emerald-500/30 font-medium">JD DECODER</span>
+                  <h3 className="font-bold text-[var(--text-primary)] mb-2 flex items-center gap-2">
+                    <span className="text-xl"><span className="material-symbols-rounded">content_paste</span></span> Paste Job Description
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] border border-emerald-500/30 font-medium">JD DECODER</span>
                   </h3>
                   <p className="text-xs text-silver mb-4">Paste any JD to unlock Dual-AI fit analysis, red flags, salary intel, and hidden requirements.</p>
                   <textarea
@@ -420,9 +407,9 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                 transition={{ delay: 0.1 }}
                 className="grid md:grid-cols-2 gap-4"
               >
-                <div className="elevation-1 p-6">
-                  <h3 className="font-bold text-white mb-3 flex items-center gap-2">
-                    <span>🎯</span> Target Role (Optional)
+                <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-6">
+                  <h3 className="font-bold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+                    <span className="text-xl"><span className="material-symbols-rounded">my_location</span></span> Target Role (Optional)
                   </h3>
                   <input
                     type="text"
@@ -432,9 +419,9 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                     placeholder="e.g., Senior ML Engineer"
                   />
                 </div>
-                <div className="elevation-1 p-6">
-                  <h3 className="font-bold text-white mb-3 flex items-center gap-2">
-                    <span>📍</span> Location (Optional)
+                <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-6">
+                  <h3 className="font-bold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+                    <span className="text-xl"><span className="material-symbols-rounded align-middle">pin_drop</span></span> Location (Optional)
                   </h3>
                   <input
                     type="text"
@@ -456,14 +443,10 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                 <button
                   onClick={analyzeMarket}
                   disabled={!resumeText.trim()}
-                  className="group relative px-8 py-3 rounded-xl font-bold text-base overflow-hidden disabled:opacity-50"
+                  className="group px-8 py-3.5 rounded-xl font-black text-sm flex items-center justify-center gap-2 bg-indigo-500/10 border border-indigo-500/30 text-[var(--text-primary)] hover:border-indigo-500/50 shadow-indigo-500/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 via-indigo-500 to-cyan-500 opacity-80 group-hover:opacity-100 transition-opacity" />
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                  <span className="relative flex items-center gap-2 text-white">
-                    <span className="text-lg">🔮</span>
-                    {jdText.trim() ? 'Decode JD + Analyze Market' : 'Launch Market Oracle'}
-                  </span>
+                  <span className="text-xl"><span className="material-symbols-rounded">rocket_launch</span></span>
+                  {jdText.trim() ? 'Decode JD + Analyze Market' : 'Launch Market Oracle'}
                 </button>
               </motion.div>
 
@@ -475,15 +458,15 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                 className="flex items-center justify-center gap-6 pt-6 flex-wrap"
               >
                 {[
-                  { icon: '📋', label: 'JD Decoder' },
-                  { icon: '💰', label: 'Salary Intel' },
-                  { icon: '🚩', label: 'Red Flags' },
-                  { icon: '🌌', label: '3D Starfield' },
-                  { icon: '🌉', label: 'Bridge Skills' },
-                  { icon: '🎯', label: 'Actions' },
+                  { icon: 'content_paste', label: 'JD Decoder' },
+                  { icon: 'payments', label: 'Salary Intel' },
+                  { icon: 'flag', label: 'Red Flags' },
+                  { icon: 'hub', label: '3D Starfield' },
+                  { icon: 'route', label: 'Bridge Skills' },
+                  { icon: 'my_location', label: 'Actions' },
                 ].map((f, i) => (
-                  <div key={i} className="flex items-center gap-1.5 text-silver text-sm">
-                    <span>{f.icon}</span>
+                  <div key={i} className="flex items-center gap-2 text-silver text-sm font-medium">
+                    <span className="text-lg material-symbols-rounded">{f.icon}</span>
                     <span>{f.label}</span>
                   </div>
                 ))}
@@ -509,8 +492,8 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
               >
                 <div className="absolute inset-0 rounded-full border-4 border-indigo-500/20" />
                 <div className="absolute inset-0 rounded-full border-4 border-t-cyan-400 border-r-indigo-400 border-b-cyan-400 border-l-transparent animate-spin" />
-                <div className="absolute inset-4 rounded-full bg-gradient-to-br from-cyan-500/20 to-cyan-500/20 flex items-center justify-center">
-                  <span className="text-4xl">🔮</span>
+                <div className="absolute inset-4 rounded-full bg-gradient-to-br from-cyan-500/20 to-cyan-500/20 flex items-center justify-center text-cyan-400">
+                  <span className="material-symbols-rounded text-4xl">query_stats</span>
                 </div>
               </motion.div>
               <h2 className="text-2xl font-bold text-white mb-6">
@@ -519,9 +502,9 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
               {/* Pipeline Stages */}
               <div className="space-y-3 mb-6">
                 {[
-                  { stage: 1, label: 'GPT-OSS 120B', desc: 'Extracting skills, parsing JD, detecting red flags', icon: '🧠' },
-                  { stage: 2, label: 'Gemini 3 Flash', desc: 'Cross-validating, scoring fit, refining salary intel', icon: '✨' },
-                  { stage: 3, label: 'Market Scan', desc: 'Mapping job opportunities in 3D space', icon: '🌌' },
+                  { stage: 1, label: 'GPT-OSS 120B', desc: 'Extracting skills, parsing JD, detecting red flags', icon: 'memory' },
+                  { stage: 2, label: 'Gemini 3 Flash', desc: 'Cross-validating, scoring fit, refining salary intel', icon: 'auto_awesome' },
+                  { stage: 3, label: 'Market Scan', desc: 'Mapping job opportunities in 3D space', icon: 'scatter_plot' },
                 ].map((s) => (
                   <motion.div
                     key={s.stage}
@@ -536,7 +519,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                         : 'bg-[var(--theme-bg-elevated)] border-white/10 opacity-40'
                     }`}
                   >
-                    <span className="text-2xl">{analyzeStage > s.stage ? '✅' : s.icon}</span>
+                    <span className="material-symbols-rounded text-2xl">{analyzeStage > s.stage ? 'check_circle' : s.icon}</span>
                     <div className="text-left flex-1">
                       <p className="text-sm font-semibold text-white">{s.label}</p>
                       <p className="text-xs text-silver">{s.desc}</p>
@@ -611,7 +594,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                   transition={{ delay: 0.1 }}
                   className="glass-card p-4 !border-cyan-500/30"
                 >
-                  <p className="text-xs text-silver uppercase tracking-wider mb-2 text-center">🌉 Bridge Skills</p>
+                  <p className="text-xs text-silver uppercase tracking-wider mb-2 text-center flex justify-center items-center gap-1"><span className="material-symbols-rounded text-[14px] align-middle">route</span> Bridge Skills</p>
                   <div className="flex gap-2">
                     {analysis.bridgeSkills.map((skill, i) => (
                       <button
@@ -641,7 +624,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                       ? 'bg-green-500/20 text-green-400 border border-green-500/30'
                       : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
                     }`}>
-                    {analysis.jobDataSource.includes('real') || analysis.jobDataSource.includes('API') ? '🌐' : '⚡'} {analysis.jobDataSource}
+                    {analysis.jobDataSource.includes('real') || analysis.jobDataSource.includes('API') ? <span className="material-symbols-rounded text-[12px] align-middle">public</span> : <span className="text-[12px] inline-block -mb-0.5"><span className="material-symbols-rounded">bolt</span></span>} {analysis.jobDataSource}
                   </div>
                   <button
                     onClick={() => setStep('setup')}
@@ -703,7 +686,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                   transition={{ delay: 0.4 }}
                   className="glass-card p-4 max-w-sm"
                 >
-                  <p className="text-xs text-silver uppercase tracking-wider mb-2">📈 Market Trends</p>
+                  <p className="text-xs text-silver uppercase tracking-wider mb-2 flex items-center gap-1"><span className="text-[14px]"><span className="material-symbols-rounded align-middle">trending_up</span></span> Market Trends</p>
                   <div className="space-y-2">
                     {analysis.marketTrends.slice(0, 4).map((trend) => (
                       <div key={trend.skill} className="flex items-center justify-between">
@@ -724,10 +707,10 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                   className="glass-card p-4"
                 >
                   <p className="text-xs text-silver">
-                    🖱️ Drag to rotate • Scroll to zoom • Click stars for details
+                    <span className="text-[14px] inline-block -mb-0.5"><span className="material-symbols-rounded align-middle">mouse</span></span> Drag to rotate • Scroll to zoom • Click stars for details
                   </p>
                   <p className="text-xs text-cyan-400 mt-1">
-                    ⭐ Bright stars = 80%+ match • Lines = constellation paths
+                    <span className="text-[14px] inline-block -mb-0.5"><span className="material-symbols-rounded align-middle">star</span></span> Bright stars = 80%+ match • Lines = constellation paths
                   </p>
                 </motion.div>
               </div>
@@ -755,7 +738,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                         </div>
                         <p className="text-cyan-400">{selectedJob.company}</p>
                         {selectedJob.location && (
-                          <p className="text-silver text-sm">📍 {selectedJob.location}</p>
+                          <p className="text-silver text-sm flex items-center gap-1"><span className="text-[14px]"><span className="material-symbols-rounded align-middle">pin_drop</span></span> {selectedJob.location}</p>
                         )}
                       </div>
                       <button
@@ -807,7 +790,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                       </div>
 
                       <div className="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/30">
-                        <p className="text-xs text-cyan-400 uppercase tracking-wider mb-1">💡 Why You'll Win</p>
+                        <p className="text-xs text-cyan-400 uppercase tracking-wider mb-1 flex items-center gap-1"><span className="text-[14px]"><span className="material-symbols-rounded align-middle">lightbulb</span></span> Why You'll Win</p>
                         <p className="text-sm text-silver">
                           {selectedJob.fitScore > 0.8
                             ? "Your skills are a near-perfect match. You're a top candidate for this role."
@@ -833,9 +816,9 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                       <div className="pt-2 border-t border-white/10">
                         <p className="text-xs text-center text-silver">
                           {selectedJob.isReal ? (
-                            <>🌐 Source: <span className="text-cyan-400">{selectedJob.source || 'Job Board'}</span></>
+                            <span className="flex items-center justify-center gap-1"><span className="material-symbols-rounded text-[14px] align-middle">public</span> Source: <span className="text-cyan-400">{selectedJob.source || 'Job Board'}</span></span>
                           ) : (
-                            <>⚡ Simulated job based on market data</>
+                            <span className="flex items-center justify-center gap-1"><span className="text-[14px]"><span className="material-symbols-rounded">bolt</span></span> Simulated job based on market data</span>
                           )}
                         </p>
                       </div>
@@ -860,7 +843,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                     <div className="p-4 border-b border-white/10 bg-gradient-to-r from-emerald-500/10 to-cyan-500/10">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="text-xl">📋</span>
+                          <span className="text-xl"><span className="material-symbols-rounded">content_paste</span></span>
                           <div>
                             <h3 className="text-sm font-bold text-white">JD Intelligence Report</h3>
                             <p className="text-[10px] text-silver">Dual-AI Analysis • GPT + Gemini</p>
@@ -898,23 +881,23 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                             </span>
                           </div>
                         </div>
-                        <p className="text-xs font-semibold text-white mb-1">
-                          {jdIntel.fitVerdict === 'excellent' ? '🌟 Excellent Match' :
-                           jdIntel.fitVerdict === 'strong' ? '💪 Strong Match' :
-                           jdIntel.fitVerdict === 'moderate' ? '📊 Moderate Match' : '🎯 Growth Opportunity'}
+                        <p className="text-xs font-semibold text-white mb-1 flex items-center justify-center gap-1">
+                          {jdIntel.fitVerdict === 'excellent' ? <><span className="text-[14px]"><span className="material-symbols-rounded align-middle">star</span></span> Excellent Match</> :
+                           jdIntel.fitVerdict === 'strong' ? <><span className="text-[14px]"><span className="material-symbols-rounded align-middle">fitness_center</span></span> Strong Match</> :
+                           jdIntel.fitVerdict === 'moderate' ? <><span className="text-[14px]"><span className="material-symbols-rounded">bar_chart</span></span> Moderate Match</> : <><span className="text-[14px]"><span className="material-symbols-rounded">my_location</span></span> Growth Opportunity</>}
                         </p>
                         <p className="text-[11px] text-silver">{jdIntel.overallAssessment}</p>
                       </div>
 
                       {/* Matched vs Gap Skills */}
                       <div>
-                        <p className="text-xs text-silver uppercase tracking-wider mb-2">✅ Matched Skills</p>
+                        <p className="text-xs text-silver uppercase tracking-wider mb-2 flex items-center gap-1"><span className="text-[14px]"><span className="material-symbols-rounded">check_circle</span></span> Matched Skills</p>
                         <div className="flex flex-wrap gap-1.5 mb-3">
                           {jdIntel.matchedSkills.slice(0, 8).map(s => (
                             <span key={s} className="px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] border border-emerald-500/30">{s}</span>
                           ))}
                         </div>
-                        <p className="text-xs text-silver uppercase tracking-wider mb-2">❌ Gap Skills</p>
+                        <p className="text-xs text-silver uppercase tracking-wider mb-2 flex items-center gap-1"><span className="text-[14px]"><span className="material-symbols-rounded">cancel</span></span> Gap Skills</p>
                         <div className="flex flex-wrap gap-1.5">
                           {jdIntel.gapSkills.slice(0, 6).map(s => (
                             <span key={s} className="px-2 py-1 rounded-full bg-red-500/20 text-red-400 text-[10px] border border-red-500/30">{s}</span>
@@ -925,7 +908,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                       {/* Keywords to Add */}
                       {jdIntel.keywordsToAdd?.length > 0 && (
                         <div className="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20">
-                          <p className="text-xs text-cyan-400 font-semibold mb-2">🔑 Keywords to Add to Resume</p>
+                          <p className="text-xs text-cyan-400 font-semibold mb-2 flex items-center gap-1"><span className="text-[14px]"><span className="material-symbols-rounded">key</span></span> Keywords to Add to Resume</p>
                           <div className="flex flex-wrap gap-1.5">
                             {jdIntel.keywordsToAdd.slice(0, 8).map(k => (
                               <span key={k} className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 text-[10px]">{k}</span>
@@ -936,7 +919,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
 
                       {/* Salary Intel */}
                       <div className="p-3 rounded-xl bg-[var(--theme-bg-input)] border border-[var(--theme-border)]">
-                        <p className="text-xs text-silver uppercase tracking-wider mb-3">💰 Salary Intelligence</p>
+                        <p className="text-xs text-silver uppercase tracking-wider mb-3 flex items-center gap-1"><span className="text-[14px]"><span className="material-symbols-rounded">payments</span></span> Salary Intelligence</p>
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
                             <span className="text-xs text-silver">Range</span>
@@ -961,7 +944,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                       {/* Red Flags */}
                       {jdIntel.redFlags?.length > 0 && (
                         <div className="p-3 rounded-xl bg-red-500/5 border border-red-500/20">
-                          <p className="text-xs text-red-400 font-semibold mb-2">🚩 Red Flags Detected</p>
+                          <p className="text-xs text-red-400 font-semibold mb-2 flex items-center gap-1"><span className="text-[14px]"><span className="material-symbols-rounded align-middle">flag</span></span> Red Flags Detected</p>
                           <div className="space-y-2">
                             {jdIntel.redFlags.slice(0, 4).map((rf, i) => (
                               <div key={i} className="flex gap-2">
@@ -983,7 +966,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                       {/* Hidden Requirements */}
                       {jdIntel.hiddenRequirements?.length > 0 && (
                         <div className="p-3 rounded-xl bg-indigo-500/5 border border-indigo-500/20">
-                          <p className="text-xs text-indigo-400 font-semibold mb-2">🧠 Hidden Requirements</p>
+                          <p className="text-xs text-indigo-400 font-semibold mb-2 flex items-center gap-1"><span className="text-[14px]"><span className="material-symbols-rounded">psychology</span></span> Hidden Requirements</p>
                           <div className="space-y-2">
                             {jdIntel.hiddenRequirements.slice(0, 4).map((hr, i) => (
                               <div key={i} className="text-xs">
@@ -998,31 +981,31 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                       {/* Competitive Edge */}
                       {jdIntel.competitiveEdge && (
                         <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
-                          <p className="text-xs text-emerald-400 font-semibold mb-1">⚡ Your Competitive Edge</p>
+                          <p className="text-xs text-emerald-400 font-semibold mb-1 flex items-center gap-1"><span className="text-[14px]"><span className="material-symbols-rounded">bolt</span></span> Your Competitive Edge</p>
                           <p className="text-xs text-silver">{jdIntel.competitiveEdge}</p>
                         </div>
                       )}
 
                       {/* Action Buttons */}
                       <div className="space-y-2 pt-2 border-t border-white/10">
-                        <p className="text-xs text-silver uppercase tracking-wider">🎯 Take Action</p>
+                        <p className="text-xs text-silver uppercase tracking-wider flex items-center gap-1"><span className="text-[14px]"><span className="material-symbols-rounded">my_location</span></span> Take Action</p>
                         <button
                           onClick={() => router.push('/suite/resume')}
                           className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-sm font-semibold hover:shadow-lg hover:shadow-cyan-500/25 transition-all"
                         >
-                          🔄 Morph Resume for This JD
+                          <span className="flex items-center justify-center gap-2"><span className="text-[18px]"><span className="material-symbols-rounded align-middle">sync</span></span> Morph Resume for This JD</span>
                         </button>
                         <button
                           onClick={() => router.push('/suite/resume')}
                           className="w-full py-2.5 rounded-xl bg-white/10 text-white text-sm font-medium hover:bg-white/20 border border-white/10 transition-all"
                         >
-                          ✉️ Generate Cover Letter
+                          <span className="flex items-center justify-center gap-2"><span className="text-[18px]"><span className="material-symbols-rounded align-middle">mail</span></span> Generate Cover Letter</span>
                         </button>
                         <button
                           onClick={() => router.push('/suite/flashcards')}
                           className="w-full py-2.5 rounded-xl bg-white/10 text-white text-sm font-medium hover:bg-white/20 border border-white/10 transition-all"
                         >
-                          ⚔️ Practice Interview for This Role
+                          <span className="flex items-center justify-center gap-2"><span className="text-[18px]"><span className="material-symbols-rounded align-middle">school</span></span> Practice Interview for This Role</span>
                         </button>
                       </div>
                     </div>
@@ -1039,7 +1022,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                 onClick={() => setShowIntelPanel(true)}
                 className="absolute left-4 top-20 z-20 px-4 py-3 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-sm font-medium hover:bg-emerald-500/30 transition-all backdrop-blur-xl"
               >
-                📋 Show JD Intelligence
+                <span className="flex items-center gap-2"><span className="text-[18px]"><span className="material-symbols-rounded">content_paste</span></span> Show JD Intelligence</span>
               </motion.button>
             )}
 
@@ -1055,7 +1038,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                   <div className="glass-card p-6 rounded-2xl border border-cyan-500/30 bg-[var(--theme-bg-card)]/95 backdrop-blur-xl w-80">
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center">
-                        <span className="text-2xl">🌉</span>
+                        <span className="text-2xl text-white"><span className="material-symbols-rounded align-middle">route</span></span>
                       </div>
                       <div>
                         <p className="text-xs text-silver uppercase">Bridge Skill</p>
@@ -1078,8 +1061,8 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                       </div>
                     </div>
 
-                    <p className="text-xs text-silver mt-4 text-center">
-                      🟣 Purple marker shows your projected position
+                    <p className="text-xs text-silver mt-4 text-center flex items-center justify-center gap-1">
+                      <span className="material-symbols-rounded text-[14px] align-middle">radio_button_checked</span> Purple marker shows your projected position
                     </p>
                   </div>
                 </motion.div>

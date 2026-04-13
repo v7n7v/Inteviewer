@@ -11,10 +11,13 @@ interface ToastMessage {
 let toastId = 0;
 const toastListeners = new Set<(toast: ToastMessage) => void>();
 
-export function showToast(message: string, icon: string = '✓') {
+export function showToast(message: string, icon: string = 'check_circle') {
   const toast: ToastMessage = { message, icon, id: toastId++ };
   toastListeners.forEach((listener) => listener(toast));
 }
+
+// Material icon names are lowercase alphanumeric with underscores
+const isMaterialIcon = (str: string) => /^[a-z][a-z0-9_]*$/.test(str);
 
 export default function Toast() {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -40,7 +43,11 @@ export default function Toast() {
           key={toast.id}
           className="glass rounded-xl px-6 py-4 flex items-center gap-3 neon-border animate-in slide-in-from-right duration-300"
         >
-          <span className="text-xl">{toast.icon}</span>
+          {isMaterialIcon(toast.icon) ? (
+            <span className="material-symbols-rounded text-xl">{toast.icon}</span>
+          ) : (
+            <span className="text-xl">{toast.icon}</span>
+          )}
           <span className="text-sm">{toast.message}</span>
         </div>
       ))}

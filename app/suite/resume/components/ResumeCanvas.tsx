@@ -126,7 +126,7 @@ export default function ResumeCanvas({
             className="mb-8"
           >
             <h2 className="text-lg font-bold text-white mb-3">
-              {mode === 'technical' ? '🔧 Technical Summary' : '🎯 Leadership Profile'}
+              {mode === 'technical' ? <><span className="material-symbols-rounded align-middle mr-1">build</span> Technical Summary</> : <><span className="material-symbols-rounded align-middle mr-1">my_location</span> Leadership Profile</>}
             </h2>
             <textarea
               value={resume.personal.summary}
@@ -143,7 +143,7 @@ export default function ResumeCanvas({
 
         {/* Skills */}
         <div className="mb-8">
-          <h2 className="text-lg font-bold text-white mb-3">💡 Skills</h2>
+          <h2 className="text-lg font-bold text-white mb-3"><span className="material-symbols-rounded text-inherit align-middle">lightbulb</span> Skills</h2>
           <div className="flex flex-wrap gap-2">
             {resume.skills.map((skill, index) => (
               <motion.span
@@ -164,7 +164,7 @@ export default function ResumeCanvas({
                   }}
                   className="ml-2 text-xs opacity-50 hover:opacity-100"
                 >
-                  ✕
+                  <span className="material-symbols-rounded align-middle mr-1">close</span>
                 </button>
               </motion.span>
             ))}
@@ -192,7 +192,7 @@ export default function ResumeCanvas({
             className="mb-8"
           >
             <h2 className="text-lg font-bold text-white mb-4">
-              {mode === 'technical' ? '⚙️ Technical Experience' : '👥 Leadership Experience'}
+              {mode === 'technical' ? <><span className="material-symbols-rounded align-middle mr-1">settings</span> Technical Experience</> : <><span className="material-symbols-rounded align-middle mr-1">group</span> Leadership Experience</>}
             </h2>
             {resume.experience.map((exp, index) => (
               <div key={index} className="mb-6 p-4 rounded-xl bg-white/5 border border-white/10">
@@ -249,7 +249,7 @@ export default function ResumeCanvas({
 
         {/* Education */}
         <div>
-          <h2 className="text-lg font-bold text-white mb-3">🎓 Education</h2>
+          <h2 className="text-lg font-bold text-white mb-3"><span className="material-symbols-rounded text-inherit align-middle">school</span> Education</h2>
           {resume.education.map((edu, index) => (
             <div key={index} className="mb-3 p-4 rounded-xl bg-white/5 border border-white/10">
               <input

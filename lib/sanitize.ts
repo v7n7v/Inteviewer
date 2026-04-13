@@ -44,3 +44,60 @@ export function sanitizeForAI(text: string, maxLength = 50_000): string {
 export function wrapUserContent(label: string, content: string): string {
   return `<user_${label}>\n${sanitizeForAI(content)}\n</user_${label}>`;
 }
+
+// ═══════════════════════════════════════════════════════════
+// HTML Sanitizer — for dangerouslySetInnerHTML usage
+// ═══════════════════════════════════════════════════════════
+
+const ALLOWED_TAGS = new Set([
+  'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+  'p', 'br', 'strong', 'em', 'b', 'i', 'u',
+  'ul', 'ol', 'li',
+  'span', 'div',
+  'a', 'code', 'pre', 'blockquote',
+]);
+
+const ALLOWED_ATTRS = new Set(['class', 'href', 'target', 'rel']);
+
+const DANGEROUS_HTML_PATTERNS = [
+  /javascript\s*:/gi,
+  /on\w+\s*=/gi,
+  /<\s*script/gi,
+  /<\s*iframe/gi,
+  /<\s*object/gi,
+  /<\s*embed/gi,
+  /<\s*form/gi,
+  /<\s*input/gi,
+  /<\s*textarea/gi,
+  /<\s*button/gi,
+  /<\s*link/gi,
+  /<\s*meta/gi,
+  /<\s*style/gi,
+  /expression\s*\(/gi,
+  /url\s*\(\s*['"]?\s*javascript/gi,
+];
+
+/**
+ * Sanitize HTML string for safe rendering via dangerouslySetInnerHTML.
+ * Strips dangerous elements/attributes, keeps safe markdown tags.
+ */
+export function sanitizeHtml(html: string): string {
+  let safe = html;
+
+  for (const pattern of DANGEROUS_HTML_PATTERNS) {
+    safe = safe.replace(pattern, '');
+  }
+
+  safe = safe.replace(/<\/?([a-z][a-z0-9]*)\b[^>]*>/gi, (match, tagName) => {
+    const tag = tagName.toLowerCase();
+    if (!ALLOWED_TAGS.has(tag)) return '';
+
+    return match.replace(/\s+([a-z-]+)\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, (attrMatch, attrName) => {
+      if (!ALLOWED_ATTRS.has(attrName.toLowerCase())) return '';
+      return attrMatch;
+    });
+  });
+
+  return safe;
+}
+

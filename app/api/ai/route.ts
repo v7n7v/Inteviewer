@@ -24,7 +24,7 @@ function getGroqClient() {
 
 export async function POST(request: NextRequest) {
   try {
-    const guard = await guardApiRoute(request, { rateLimit: 10, rateLimitWindow: 60_000 });
+    const guard = await guardApiRoute(request, { rateLimit: 10, rateLimitWindow: 60_000, allowAnonymous: true });
     if (guard.error) return guard.error;
 
     const validated = await validateBody(request, AICompletionSchema);

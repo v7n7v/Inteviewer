@@ -8,6 +8,7 @@ import { showToast } from '@/components/Toast';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 import { authFetch } from '@/lib/auth-fetch';
+import { useAuthGate } from '@/hooks/useAuthGate';
 import FileUploadDropzone from '@/components/FileUploadDropzone';
 import { getResumeVersions, type ResumeVersion } from '@/lib/database-suite';
 
@@ -66,21 +67,21 @@ type DrillCategory = 'behavioral' | 'technical' | 'system-design' | 'leadership'
 type InterviewStyle = 'friendly' | 'tough';
 type InterviewerPersona = 'faang-lead' | 'friendly-hr' | 'startup-cto' | 'vp-engineering' | 'consulting-partner' | 'behavioral-specialist';
 
-const PERSONA_OPTIONS: { id: InterviewerPersona; icon: string; label: string; subtitle: string; activeClass: string }[] = [
-    { id: 'faang-lead', icon: '🎯', label: 'FAANG Tech Lead', subtitle: 'Surgical. Probing. No fluff.', activeClass: 'bg-red-500/20 border-red-500/50 shadow-lg shadow-red-500/10' },
-    { id: 'friendly-hr', icon: '😊', label: 'Friendly HR', subtitle: 'Warm but thorough.', activeClass: 'bg-emerald-500/20 border-emerald-500/50 shadow-lg shadow-emerald-500/10' },
-    { id: 'startup-cto', icon: '🚀', label: 'Startup CTO', subtitle: 'Ship it. Be scrappy.', activeClass: 'bg-amber-500/20 border-amber-500/50 shadow-lg shadow-amber-500/10' },
-    { id: 'vp-engineering', icon: '📊', label: 'VP of Engineering', subtitle: 'Strategic. Big-picture.', activeClass: 'bg-blue-500/20 border-blue-500/50 shadow-lg shadow-blue-500/10' },
-    { id: 'consulting-partner', icon: '💼', label: 'Consulting Partner', subtitle: 'Structured. MECE.', activeClass: 'bg-violet-500/20 border-violet-500/50 shadow-lg shadow-violet-500/10' },
-    { id: 'behavioral-specialist', icon: '🔬', label: 'STAR Specialist', subtitle: 'Deep behavioral probing.', activeClass: 'bg-cyan-500/20 border-cyan-500/50 shadow-lg shadow-cyan-500/10' },
+const PERSONA_OPTIONS: { id: InterviewerPersona; icon: string; label: string; subtitle: string; colorClass: string; activeClass: string }[] = [
+    { id: 'faang-lead', icon: 'psychology', label: 'FAANG Tech Lead', subtitle: 'Surgical. Probing.', colorClass: 'bg-red-500/10 text-red-500 border-red-500/20', activeClass: 'border-red-500/50 bg-red-500/10 shadow-lg shadow-red-500/10' },
+    { id: 'friendly-hr', icon: 'sentiment_satisfied', label: 'Friendly HR', subtitle: 'Warm but thorough.', colorClass: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20', activeClass: 'border-emerald-500/50 bg-emerald-500/10 shadow-lg shadow-emerald-500/10' },
+    { id: 'startup-cto', icon: 'rocket_launch', label: 'Startup CTO', subtitle: 'Ship it. Be scrappy.', colorClass: 'bg-amber-500/10 text-amber-500 border-amber-500/20', activeClass: 'border-amber-500/50 bg-amber-500/10 shadow-lg shadow-amber-500/10' },
+    { id: 'vp-engineering', icon: 'bar_chart', label: 'VP of Engineering', subtitle: 'Strategic. Big-picture.', colorClass: 'bg-blue-500/10 text-blue-500 border-blue-500/20', activeClass: 'border-blue-500/50 bg-blue-500/10 shadow-lg shadow-blue-500/10' },
+    { id: 'consulting-partner', icon: 'work', label: 'Consulting Partner', subtitle: 'Structured. MECE.', colorClass: 'bg-violet-500/10 text-violet-500 border-violet-500/20', activeClass: 'border-violet-500/50 bg-violet-500/10 shadow-lg shadow-violet-500/10' },
+    { id: 'behavioral-specialist', icon: 'science', label: 'STAR Specialist', subtitle: 'Deep behavioral probing.', colorClass: 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20', activeClass: 'border-cyan-500/50 bg-cyan-500/10 shadow-lg shadow-cyan-500/10' },
 ];
 
-const QUESTION_TYPE_CONFIG: Record<string, { icon: string; label: string; color: string }> = {
-    behavioral: { icon: '🧠', label: 'Behavioral', color: 'from-blue-500/20 to-cyan-500/20' },
-    technical: { icon: '⚙️', label: 'Technical', color: 'from-emerald-500/20 to-teal-500/20' },
-    'system-design': { icon: '🏗️', label: 'System Design', color: 'from-amber-500/20 to-orange-500/20' },
-    situational: { icon: '🎭', label: 'Situational', color: 'from-violet-500/20 to-purple-500/20' },
-    leadership: { icon: '👑', label: 'Leadership', color: 'from-rose-500/20 to-pink-500/20' },
+const QUESTION_TYPE_CONFIG: Record<string, { icon: React.ReactNode; label: string; color: string }> = {
+    behavioral: { icon: <span className="material-symbols-rounded text-[14px]">psychology</span>, label: 'Behavioral', color: 'from-blue-500/20 to-cyan-500/20' },
+    technical: { icon: <span className="material-symbols-rounded text-[14px]">settings</span>, label: 'Technical', color: 'from-emerald-500/20 to-teal-500/20' },
+    'system-design': { icon: <span className="material-symbols-rounded text-[14px]">architecture</span>, label: 'System Design', color: 'from-amber-500/20 to-orange-500/20' },
+    situational: { icon: <span className="material-symbols-rounded text-[14px]">theater_comedy</span>, label: 'Situational', color: 'from-violet-500/20 to-purple-500/20' },
+    leadership: { icon: <span className="material-symbols-rounded text-[14px]">stars</span>, label: 'Leadership', color: 'from-rose-500/20 to-pink-500/20' },
 };
 
 // ============================================
@@ -89,6 +90,7 @@ const QUESTION_TYPE_CONFIG: Record<string, { icon: string; label: string; color:
 export default function GauntletPage() {
     const { user } = useStore();
     const router = useRouter();
+    const { handleApiError, renderAuthModal } = useAuthGate();
 
     // View state
     const [viewMode, setViewMode] = useState<ViewMode>('setup');
@@ -165,7 +167,7 @@ export default function GauntletPage() {
             const text = formatResumeToText(resume.content);
             setResumeText(text);
             setUploadedFileName(resume.version_name || (resume.content as any)?.name || 'Saved Resume');
-            showToast('Saved resume loaded!', '📄');
+            showToast('Saved resume loaded!', 'description');
         }
     };
 
@@ -242,23 +244,27 @@ export default function GauntletPage() {
                     questionCount,
                 }),
             });
-            if (!res.ok) throw new Error('Failed to generate flashcards');
+            if (!res.ok) {
+                const errBody = await res.json().catch(() => ({}));
+                if (handleApiError(errBody)) { setIsGenerating(false); return; }
+                throw new Error(errBody.error || 'Failed to generate flashcards');
+            }
             const data = await res.json();
             const cards: Flashcard[] = (data.flashcards || []).map((c: any) => ({
                 question: c.question, answer: c.answer,
                 category: c.category || 'technical',
                 difficulty: c.difficulty || 'intermediate',
             }));
-            if (cards.length === 0) { showToast('No flashcards generated', '❌'); setIsGenerating(false); return; }
+            if (cards.length === 0) { showToast('No flashcards generated', 'cancel'); setIsGenerating(false); return; }
             setFlashcards(cards);
             setFlashcardIndex(0);
             setIsFlipped(false);
             setFlashcardRatings({});
             setViewMode('flashcards');
-            showToast(`${cards.length} study cards ready`, '📚');
+            showToast(`${cards.length} study cards ready`, 'library_books');
         } catch (error) {
             console.error('Flashcard generation error:', error);
-            showToast('Failed to generate flashcards', '❌');
+            showToast('Failed to generate flashcards', 'cancel');
         } finally {
             setIsGenerating(false);
         }
@@ -276,21 +282,21 @@ export default function GauntletPage() {
         if (type === 'flashcards') {
             itemsToSave = flashcards.filter((f, i) => flashcardRatings[i] === 'needs-work');
             if (itemsToSave.length === 0) {
-                showToast('No cards marked "Needs Work" to summarize! You aced it.', '✅');
+                showToast('No cards marked "Needs Work" to summarize! You aced it.', 'check_circle');
                 setIsGeneratingNotes(false);
                 return;
             }
         } else {
             itemsToSave = results.map(r => ({ question: r.question.text, userAnswer: r.answer, feedback: r.grading.coaching_tip || r.grading.rewritten_answer })) || [];
             if (itemsToSave.length === 0) {
-                showToast('No interview data to save.', '❌');
+                showToast('No interview data to save.', 'cancel');
                 setIsGeneratingNotes(false);
                 return;
             }
         }
 
         try {
-            showToast('Generating Study Notes & saving to Vault...', '📚');
+            showToast('Generating Study Notes & saving to Vault...', 'library_books');
             const res = await authFetch('/api/vault/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -298,11 +304,11 @@ export default function GauntletPage() {
             });
             
             if (!res.ok) throw new Error('Failed to generate vault notes');
-            showToast('Saved to your Study Vault!', '✅');
+            showToast('Saved to your Study Vault!', 'check_circle');
             router.push('/suite/vault');
         } catch (e: any) {
             console.error('Vault error:', e);
-            showToast(e.message || 'Failed to save to Vault', '❌');
+            showToast(e.message || 'Failed to save to Vault', 'cancel');
         } finally {
             setIsGeneratingNotes(false);
         }
@@ -314,11 +320,12 @@ export default function GauntletPage() {
     const speakQuestion = async (text: string) => {
         setIsSpeakingQuestion(true);
         try {
-            const voiceId = voiceGender === 'male' ? undefined : undefined; // Let server pick from env
+            // Send the persona name so the backend can map it to a CosyVoice voice
+            const voiceHint = selectedPersona || voiceGender;
             const res = await authFetch('/api/voice/speak', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text, voiceId: voiceGender === 'male' ? 'DMyrgzQFny3JI1Y1paM5' : 'jqcCZkN6Knx8BJ5TBdYR' }),
+                body: JSON.stringify({ text, voiceId: voiceHint }),
             });
             if (!res.ok) throw new Error('TTS failed');
             const audioBlob = await res.blob();
@@ -345,10 +352,10 @@ export default function GauntletPage() {
                 if (!res.ok) throw new Error('Transcription failed');
                 const { text } = await res.json();
                 setUserAnswer(prev => prev ? prev + ' ' + text : text);
-                showToast('Answer transcribed', '🎤');
+                showToast('Answer transcribed', 'mic');
             } catch (error) {
                 console.error('Transcription error:', error);
-                showToast('Failed to transcribe', '❌');
+                showToast('Failed to transcribe', 'cancel');
             } finally {
                 setIsTranscribing(false);
             }
@@ -370,7 +377,7 @@ export default function GauntletPage() {
         setIsGenerating(true);
         try {
             if (interviewType === 'mock-interview' && !jobDescription.trim()) {
-                showToast('Paste a job description to start', '❌');
+                showToast('Paste a job description to start', 'cancel');
                 setIsGenerating(false);
                 return;
             }
@@ -390,7 +397,11 @@ export default function GauntletPage() {
                 }),
             });
 
-            if (!res.ok) throw new Error('Failed to generate questions');
+            if (!res.ok) {
+                const errBody = await res.json().catch(() => ({}));
+                if (handleApiError(errBody)) { setIsGenerating(false); return; }
+                throw new Error(errBody.error || 'Failed to generate questions');
+            }
             const response = await res.json();
 
             const generated: GauntletQuestion[] = (response.questions || []).map((q: any, i: number) => ({
@@ -402,7 +413,7 @@ export default function GauntletPage() {
             }));
 
             if (generated.length === 0) {
-                showToast('Failed to generate questions. Try again.', '❌');
+                showToast('Failed to generate questions. Try again.', 'cancel');
                 setIsGenerating(false);
                 return;
             }
@@ -416,10 +427,10 @@ export default function GauntletPage() {
             setQuestionStartTime(Date.now());
             setElapsed(0);
             setViewMode('gauntlet');
-            showToast(`${generated.length} questions locked and loaded`, '⚔️');
+            showToast(`${generated.length} questions locked and loaded`, 'swords');
         } catch (error) {
             console.error('Failed to generate questions:', error);
-            showToast('Failed to generate questions', '❌');
+            showToast('Failed to generate questions', 'cancel');
         } finally {
             setIsGenerating(false);
         }
@@ -430,7 +441,7 @@ export default function GauntletPage() {
     // ============================================
     const submitAnswer = async () => {
         if (!userAnswer.trim()) {
-            showToast('Type your answer first', '✏️');
+            showToast('Type your answer first', 'edit');
             return;
         }
 
@@ -453,7 +464,11 @@ export default function GauntletPage() {
                 }),
             });
 
-            if (!res.ok) throw new Error('Grading failed');
+            if (!res.ok) {
+                const errBody = await res.json().catch(() => ({}));
+                if (handleApiError(errBody)) { setIsGrading(false); return; }
+                throw new Error(errBody.error || 'Grading failed');
+            }
 
             const grading: GradingResult = await res.json();
             setCurrentGrading(grading);
@@ -468,7 +483,7 @@ export default function GauntletPage() {
             setViewMode('scorecard');
         } catch (error) {
             console.error('Grading error:', error);
-            showToast('Failed to grade answer. Try again.', '❌');
+            showToast('Failed to grade answer. Try again.', 'cancel');
         } finally {
             setIsGrading(false);
         }
@@ -514,17 +529,6 @@ export default function GauntletPage() {
         return 'Critical';
     };
 
-    if (!user) {
-        return (
-            <div className="min-h-screen flex items-center justify-center p-8">
-                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="glass-card p-12 text-center max-w-md">
-                    <span className="text-6xl mb-4 block">🔒</span>
-                    <h2 className="text-2xl font-bold text-white mb-3">Sign In Required</h2>
-                    <p className="text-silver">Please sign in to access The Gauntlet</p>
-                </motion.div>
-            </div>
-        );
-    }
 
     return (
         <div className="min-h-screen p-6 lg:p-8">
@@ -555,17 +559,17 @@ export default function GauntletPage() {
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.1 }}
-                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/30 mb-4"
+                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 mb-4"
                         >
-                            <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }} className="w-2 h-2 rounded-full bg-red-400" />
-                            <span className="text-xs font-medium text-red-400">AI Interview Simulator</span>
+                            <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }} className="w-2 h-2 rounded-full bg-cyan-500" />
+                            <span className="text-xs font-medium text-cyan-600 dark:text-cyan-400">AI Interview Simulator</span>
                         </motion.div>
                         <h1 className="text-2xl lg:text-3xl font-bold mb-2">
-                            <span className="bg-gradient-to-r from-red-400 via-orange-400 to-amber-400 bg-clip-text text-transparent">
-                                The Gauntlet
+                            <span className="text-[var(--text-primary)]">
+                                Interview Simulator
                             </span>
                         </h1>
-                        <p className="text-silver text-sm max-w-xl">
+                        <p className="text-[var(--text-secondary)] text-sm max-w-xl">
                             {viewMode === 'setup' && 'Train like you fight. AI-powered interview simulation with real-time grading.'}
                             {viewMode === 'gauntlet' && `Question ${currentIndex + 1} of ${questions.length}`}
                             {viewMode === 'scorecard' && 'Answer graded. Review your performance.'}
@@ -611,8 +615,8 @@ export default function GauntletPage() {
                             >
                                 <div className={`absolute inset-0 bg-gradient-to-br from-red-500/10 to-orange-500/10 ${interviewType === 'mock-interview' ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'} transition-opacity`} />
                                 <div className="relative">
-                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center mb-3 border border-white/10">
-                                        <span className="text-lg">🎯</span>
+                                    <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mb-3 shadow-inner">
+                                        <span className="text-lg text-rose-500"><span className="material-symbols-rounded text-inherit align-middle">my_location</span></span>
                                     </div>
                                     <h3 className="text-sm font-bold text-white mb-1">Mock Interview</h3>
                                     <p className="text-silver text-xs leading-relaxed">Paste a JD + resume. AI generates targeted questions against the role's requirements.</p>
@@ -632,8 +636,8 @@ export default function GauntletPage() {
                             >
                                 <div className={`absolute inset-0 bg-gradient-to-br from-amber-500/10 to-yellow-500/10 ${interviewType === 'quick-drill' ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'} transition-opacity`} />
                                 <div className="relative">
-                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-yellow-500/20 flex items-center justify-center mb-3 border border-white/10">
-                                        <span className="text-lg">⚡</span>
+                                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-3 shadow-inner">
+                                        <span className="text-lg text-amber-500"><span className="material-symbols-rounded text-inherit align-middle">bolt</span></span>
                                     </div>
                                     <h3 className="text-sm font-bold text-white mb-1">Quick Drill</h3>
                                     <p className="text-silver text-xs leading-relaxed">Pick a category and practice. Rapid-fire questions to sharpen specific skills.</p>
@@ -653,8 +657,8 @@ export default function GauntletPage() {
                             >
                                 <div className={`absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 ${interviewType === 'study-cards' ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'} transition-opacity`} />
                                 <div className="relative">
-                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center mb-3 border border-white/10">
-                                        <span className="text-lg">📚</span>
+                                    <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mb-3 shadow-inner">
+                                        <span className="text-lg text-cyan-500"><span className="material-symbols-rounded text-inherit align-middle">library_books</span></span>
                                     </div>
                                     <h3 className="text-sm font-bold text-white mb-1">Study Cards</h3>
                                     <p className="text-silver text-xs leading-relaxed">AI flashcards from your JD + resume. Flip, rate yourself, and drill key concepts.</p>
@@ -710,15 +714,15 @@ export default function GauntletPage() {
                                                 onUploadSuccess={(text, fileName) => {
                                                     setResumeText(text);
                                                     setUploadedFileName(fileName);
-                                                    showToast(`Resume loaded: ${fileName}`, '📄');
+                                                    showToast(`Resume loaded: ${fileName}`, 'description');
                                                 }}
                                                 className="w-full"
                                             />
                                         </div>
                                         {uploadedFileName && (
                                             <div className="mt-2 flex items-center gap-2 text-xs text-emerald-400">
-                                                <span>📄 {uploadedFileName}</span>
-                                                <button onClick={() => { setUploadedFileName(''); setResumeText(''); }} className="text-silver hover:text-red-400 transition-colors">✕</button>
+                                                <span><span className="material-symbols-rounded text-inherit align-middle">description</span> {uploadedFileName}</span>
+                                                <button onClick={() => { setUploadedFileName(''); setResumeText(''); }} className="text-silver hover:text-red-400 transition-colors"><span className="material-symbols-rounded">close</span></button>
                                             </div>
                                         )}
                                     </div>
@@ -764,15 +768,15 @@ export default function GauntletPage() {
                                                 onUploadSuccess={(text, fileName) => {
                                                     setResumeText(text);
                                                     setUploadedFileName(fileName);
-                                                    showToast(`Resume loaded: ${fileName}`, '📄');
+                                                    showToast(`Resume loaded: ${fileName}`, 'description');
                                                 }}
                                                 className="w-full"
                                             />
                                         </div>
                                         {uploadedFileName && (
                                             <div className="mt-2 flex items-center gap-2 text-xs text-emerald-400">
-                                                <span>📄 {uploadedFileName}</span>
-                                                <button onClick={() => { setUploadedFileName(''); setResumeText(''); }} className="text-silver hover:text-red-400 transition-colors">✕</button>
+                                                <span><span className="material-symbols-rounded text-inherit align-middle">description</span> {uploadedFileName}</span>
+                                                <button onClick={() => { setUploadedFileName(''); setResumeText(''); }} className="text-silver hover:text-red-400 transition-colors"><span className="material-symbols-rounded">close</span></button>
                                             </div>
                                         )}
                                     </div>
@@ -809,25 +813,50 @@ export default function GauntletPage() {
                                     {/* Category Selection */}
                                     <div>
                                         <label className="block text-white font-medium mb-3">Choose Category</label>
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                            {([
-                                                { id: 'behavioral', icon: '🧠', label: 'Behavioral' },
-                                                { id: 'technical', icon: '⚙️', label: 'Technical' },
-                                                { id: 'system-design', icon: '🏗️', label: 'System Design' },
-                                                { id: 'leadership', icon: '👑', label: 'Leadership' },
-                                            ] as const).map((cat) => (
-                                                <button
-                                                    key={cat.id}
-                                                    onClick={() => setDrillCategory(cat.id)}
-                                                    className={`p-4 rounded-xl border text-center transition-all ${drillCategory === cat.id
-                                                        ? 'bg-amber-500/20 border-amber-500/50 text-white'
-                                                        : 'bg-white/5 border-white/10 text-silver hover:text-white hover:bg-white/10'
-                                                    }`}
-                                                >
-                                                    <span className="text-2xl block mb-2">{cat.icon}</span>
-                                                    <span className="text-sm font-medium">{cat.label}</span>
-                                                </button>
-                                            ))}
+                                        <div className="flex gap-2">
+                                            {/* Left side categories */}
+                                            <div className="flex-1 flex flex-col gap-2">
+                                                {[
+                                                    { id: 'behavioral', icon: <span className="material-symbols-rounded text-sm">psychology</span>, label: 'Behavioral' },
+                                                    { id: 'technical', icon: <span className="material-symbols-rounded text-sm">settings</span>, label: 'Technical' },
+                                                ].map((t) => (
+                                                    <button
+                                                        key={t.id}
+                                                        onClick={() => setDrillCategory(t.id as any)}
+                                                        className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${drillCategory === t.id
+                                                            ? 'bg-cyan-500/20 border-cyan-500/50 shadow-lg shadow-cyan-500/10'
+                                                            : 'bg-white/5 border-white/10 hover:bg-white/10'
+                                                            }`}
+                                                    >
+                                                        <div className="w-8 h-8 rounded-lg bg-white/10 text-white flex items-center justify-center">
+                                                            {t.icon}
+                                                        </div>
+                                                        <span className="font-semibold text-white">{t.label}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            {/* Right side categories */}
+                                            <div className="flex-1 flex flex-col gap-2">
+                                                {[
+                                                    { id: 'leadership', icon: <span className="material-symbols-rounded text-sm">stars</span>, label: 'Leadership' },
+                                                    { id: 'situational', icon: <span className="material-symbols-rounded text-sm">theater_comedy</span>, label: 'Situational' }
+                                                ].map((t) => (
+                                                    <button
+                                                        key={t.id}
+                                                        onClick={() => setDrillCategory(t.id as any)}
+                                                        className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${drillCategory === t.id
+                                                            ? 'bg-cyan-500/20 border-cyan-500/50 shadow-lg shadow-cyan-500/10'
+                                                            : 'bg-white/5 border-white/10 hover:bg-white/10'
+                                                            }`}
+                                                    >
+                                                        <div className="w-8 h-8 rounded-lg bg-white/10 text-white flex items-center justify-center">
+                                                            {t.icon}
+                                                        </div>
+                                                        <span className="font-semibold text-white">{t.label}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
 
@@ -861,15 +890,15 @@ export default function GauntletPage() {
                                                 onUploadSuccess={(text, fileName) => {
                                                     setResumeText(text);
                                                     setUploadedFileName(fileName);
-                                                    showToast(`Resume loaded: ${fileName}`, '📄');
+                                                    showToast(`Resume loaded: ${fileName}`, 'description');
                                                 }}
                                                 className="w-full"
                                             />
                                         </div>
                                         {uploadedFileName && (
                                             <div className="flex items-center gap-2 mt-2 text-xs text-emerald-400">
-                                                <span>📄 {uploadedFileName}</span>
-                                                <button onClick={() => { setUploadedFileName(''); setResumeText(''); }} className="text-silver hover:text-red-400 transition-colors">✕</button>
+                                                <span><span className="material-symbols-rounded text-inherit align-middle">description</span> {uploadedFileName}</span>
+                                                <button onClick={() => { setUploadedFileName(''); setResumeText(''); }} className="text-silver hover:text-red-400 transition-colors"><span className="material-symbols-rounded">close</span></button>
                                             </div>
                                         )}
                                     </div>
@@ -893,25 +922,26 @@ export default function GauntletPage() {
                                     </div>
                                 </div>
 
-                                {/* Interviewer Persona */}
                                 <div className="md:col-span-2">
-                                    <label className="block text-sm font-medium text-slate-300 mb-3">Choose Your Interviewer</label>
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                    <label className="block text-sm font-medium text-[var(--text-primary)] mb-3">Choose Your Interviewer</label>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                         {PERSONA_OPTIONS.map((p) => (
                                             <button
                                                 key={p.id}
                                                 onClick={() => setSelectedPersona(p.id)}
-                                                className={`p-3 rounded-xl border text-left transition-all ${
+                                                className={`p-3 rounded-xl border text-left transition-all flex flex-col group ${
                                                     selectedPersona === p.id
                                                         ? p.activeClass
-                                                        : 'bg-white/5 border-white/10 hover:bg-white/10'
+                                                        : 'bg-[var(--bg-surface)] border-[var(--border-subtle)] hover:border-[var(--text-secondary)] hover:shadow-md'
                                                 }`}
                                             >
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <span className="text-lg">{p.icon}</span>
-                                                    <span className={`text-xs font-bold ${selectedPersona === p.id ? 'text-white' : 'text-silver'}`}>{p.label}</span>
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shadow-inner ${p.colorClass}`}>
+                                                        <span className="material-symbols-rounded text-[20px] text-inherit">{p.icon}</span>
+                                                    </div>
+                                                    <span className={`text-xs font-bold text-[var(--text-primary)]`}>{p.label}</span>
                                                 </div>
-                                                <p className={`text-[10px] ${selectedPersona === p.id ? 'text-white/60' : 'text-silver/50'}`}>{p.subtitle}</p>
+                                                <p className={`text-[10.5px] leading-snug text-[var(--text-muted)]`}>{p.subtitle}</p>
                                             </button>
                                         ))}
                                     </div>
@@ -919,17 +949,18 @@ export default function GauntletPage() {
 
                                 {/* Voice Mode Toggle */}
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-2">Voice Mode</label>
+                                    <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">Voice Mode</label>
                                     <button
                                         onClick={() => setVoiceEnabled(!voiceEnabled)}
-                                        className={`w-full py-2 rounded-lg text-sm font-medium transition-all mb-2 ${voiceEnabled ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-400' : 'bg-white/5 border border-white/10 text-silver'}`}
+                                        className={`w-full py-2.5 rounded-xl text-sm font-bold transition-all mb-2 flex items-center justify-center gap-2 ${voiceEnabled ? 'bg-cyan-500/10 border border-cyan-500/30 text-cyan-700 dark:text-cyan-400' : 'bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-muted)]'}`}
                                     >
-                                        {voiceEnabled ? '🎙️ Voice ON' : '🔇 Voice OFF'}
+                                        <span className="material-symbols-rounded">{voiceEnabled ? 'mic' : 'mic_off'}</span>
+                                        {voiceEnabled ? 'Voice ON' : 'Voice OFF'}
                                     </button>
                                     {voiceEnabled && (
                                         <div className="flex gap-2">
-                                            <button onClick={() => setVoiceGender('female')} className={`flex-1 py-1.5 rounded-lg text-xs transition-all ${voiceGender === 'female' ? 'bg-pink-500/20 border border-pink-500/50 text-pink-400' : 'bg-white/5 border border-white/10 text-silver'}`}>👩 Female</button>
-                                            <button onClick={() => setVoiceGender('male')} className={`flex-1 py-1.5 rounded-lg text-xs transition-all ${voiceGender === 'male' ? 'bg-blue-500/20 border border-blue-500/50 text-blue-400' : 'bg-white/5 border border-white/10 text-silver'}`}>👨 Male</button>
+                                            <button onClick={() => setVoiceGender('female')} className={`flex-1 py-2 rounded-xl text-xs font-medium transition-all flex items-center justify-center gap-1.5 ${voiceGender === 'female' ? 'bg-pink-500/10 border border-pink-500/30 text-pink-600 dark:text-pink-400' : 'bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[var(--text-muted)]'}`}><span className="material-symbols-rounded text-[16px]">woman</span> Female</button>
+                                            <button onClick={() => setVoiceGender('male')} className={`flex-1 py-2 rounded-xl text-xs font-medium transition-all flex items-center justify-center gap-1.5 ${voiceGender === 'male' ? 'bg-indigo-500/10 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400' : 'bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[var(--text-muted)]'}`}><span className="material-symbols-rounded text-[16px]">man</span> Male</button>
                                         </div>
                                     )}
                                 </div>
@@ -941,15 +972,15 @@ export default function GauntletPage() {
                                 whileTap={{ scale: 0.98 }}
                                 onClick={interviewType === 'study-cards' ? generateFlashcards : startGauntlet}
                                 disabled={isGenerating}
-                                className={`w-full mt-5 py-3 rounded-xl text-white font-bold text-sm hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${interviewType === 'study-cards' ? 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:shadow-cyan-500/25' : 'bg-gradient-to-r from-red-500 to-orange-500 hover:shadow-red-500/25'}`}
+                                className={`w-full mt-6 py-3.5 rounded-xl font-black text-sm hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${interviewType === 'study-cards' ? 'bg-indigo-500/10 border border-indigo-500/30 text-[var(--text-primary)] hover:border-indigo-500/50 shadow-indigo-500/10' : 'bg-cyan-500/10 border border-cyan-500/30 text-[var(--text-primary)] hover:border-cyan-500/50 shadow-cyan-500/10'}`}
                             >
                                 {isGenerating ? (
                                     <>
-                                        <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full" />
-                                        {interviewType === 'study-cards' ? 'Generating Cards...' : 'Generating Questions...'}
+                                        <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="w-5 h-5 border-2 border-cyan-500/50 border-t-cyan-500 rounded-full" />
+                                        {interviewType === 'study-cards' ? 'Generating Cards...' : 'Spinning Up Simulator...'}
                                     </>
                                 ) : (
-                                    <>{interviewType === 'study-cards' ? '📚 Generate Study Cards' : '⚔️ Enter The Gauntlet'}</>
+                                    <>{interviewType === 'study-cards' ? <><span className="material-symbols-rounded text-[20px] text-indigo-500">style</span> Generate Study Cards</> : <><span className="material-symbols-rounded text-[20px] text-cyan-500">play_arrow</span> Start Simulator</>}</>
                                 )}
                             </motion.button>
                         </div>
@@ -992,10 +1023,12 @@ export default function GauntletPage() {
                         >
                             {/* Question Type Badge */}
                             <div className={`px-6 py-3 bg-gradient-to-r ${QUESTION_TYPE_CONFIG[questions[currentIndex].type]?.color || 'from-white/5 to-white/5'} border-b border-white/10 flex items-center justify-between`}>
-                                <div className="flex items-center gap-2">
-                                    <span>{QUESTION_TYPE_CONFIG[questions[currentIndex].type]?.icon || '❓'}</span>
-                                    <span className="text-sm font-medium text-white">{QUESTION_TYPE_CONFIG[questions[currentIndex].type]?.label || questions[currentIndex].type}</span>
-                                    <span className={`text-xs px-2 py-0.5 rounded-full border ${questions[currentIndex].difficulty === 'killer' ? 'bg-red-500/20 border-red-500/30 text-red-400' : questions[currentIndex].difficulty === 'advanced' ? 'bg-amber-500/20 border-amber-500/30 text-amber-400' : 'bg-white/10 border-white/20 text-silver'}`}>
+                                <div className="absolute top-4 left-4 flex gap-2">
+                                    <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold border border-blue-500/20 shadow-lg backdrop-blur-md">
+                                        <span>{QUESTION_TYPE_CONFIG[questions[currentIndex].type]?.icon || <span className="material-symbols-rounded text-[14px]">help</span>}</span>
+                                        {QUESTION_TYPE_CONFIG[questions[currentIndex].type]?.label || questions[currentIndex].type}
+                                    </span>
+                                    <span className={`px-3 py-1 rounded-full text-xs font-bold border shadow-lg backdrop-blur-md ${questions[currentIndex].difficulty === 'killer' ? 'bg-red-500/20 text-red-400 border-red-500/20' : questions[currentIndex].difficulty === 'advanced' ? 'bg-amber-500/20 text-amber-400 border-amber-500/20' : 'bg-white/10 text-silver border-white/10'}`}>
                                         {questions[currentIndex].difficulty}
                                     </span>
                                 </div>
@@ -1008,7 +1041,7 @@ export default function GauntletPage() {
                                 </p>
                                 <div className="mt-4 flex items-center justify-between">
                                     <p className="text-xs text-silver/60 italic">
-                                        💭 {questions[currentIndex].context}
+                                        <span className="material-symbols-rounded align-middle mr-1">chat</span> {questions[currentIndex].context}
                                     </p>
                                     {voiceEnabled && (
                                         <button
@@ -1016,7 +1049,7 @@ export default function GauntletPage() {
                                             disabled={isSpeakingQuestion || isPlaying}
                                             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${isSpeakingQuestion || isPlaying ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-400 animate-pulse' : 'bg-white/10 hover:bg-white/20 border border-white/10 text-white'}`}
                                         >
-                                            {isSpeakingQuestion || isPlaying ? '🔊 Speaking...' : '🔊 Listen'}
+                                            {isSpeakingQuestion || isPlaying ? <><span className="material-symbols-rounded text-[14px] align-middle">volume_up</span> Speaking...</> : <><span className="material-symbols-rounded text-[14px] align-middle">volume_up</span> Listen</>}
                                         </button>
                                     )}
                                 </div>
@@ -1042,7 +1075,7 @@ export default function GauntletPage() {
                             <div className="flex items-center justify-between mt-4">
                                 <div className="flex items-center gap-3">
                                     <p className="text-xs text-silver">
-                                        💡 Tip: Be specific. Use numbers, metrics, and concrete outcomes.
+                                        <span className="material-symbols-rounded align-middle mr-1">lightbulb</span> Tip: Be specific. Use numbers, metrics, and concrete outcomes.
                                     </p>
                                     {voiceEnabled && (
                                         <button
@@ -1050,7 +1083,7 @@ export default function GauntletPage() {
                                             disabled={isTranscribing}
                                             className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${isRecording ? 'bg-red-500/30 border border-red-500/50 text-red-400 animate-pulse' : isTranscribing ? 'bg-amber-500/20 border border-amber-500/50 text-amber-400' : 'bg-white/10 hover:bg-white/20 border border-white/10 text-white'}`}
                                         >
-                                            {isRecording ? '⏹ Stop Recording' : isTranscribing ? '⏳ Transcribing...' : '🎙️ Speak Answer'}
+                                            {isRecording ? <><span className="material-symbols-rounded align-middle mr-1">stop</span> Stop Recording</> : isTranscribing ? <><span className="material-symbols-rounded align-middle mr-1">history</span> Transcribing...</> : <><span className="material-symbols-rounded text-[14px] align-middle">mic</span> Speak Answer</>}
                                         </button>
                                     )}
                                 </div>
@@ -1085,8 +1118,8 @@ export default function GauntletPage() {
                             <div className="flex items-center justify-between text-sm text-silver mb-2">
                                 <span>Card {flashcardIndex + 1} of {flashcards.length}</span>
                                 <span className="text-xs">
-                                    ✅ {Object.values(flashcardRatings).filter(r => r === 'got-it').length} Got It &nbsp;•&nbsp;
-                                    📝 {Object.values(flashcardRatings).filter(r => r === 'needs-work').length} Needs Work
+                                    <span className="material-symbols-rounded align-middle mr-1">check_circle</span> {Object.values(flashcardRatings).filter(r => r === 'got-it').length} Got It &nbsp;•&nbsp;
+                                    <span className="material-symbols-rounded align-middle mr-1">edit_document</span> {Object.values(flashcardRatings).filter(r => r === 'needs-work').length} Needs Work
                                 </span>
                             </div>
                             <div className="h-2 rounded-full bg-white/10 overflow-hidden">
@@ -1118,14 +1151,14 @@ export default function GauntletPage() {
                                         <motion.div key={isFlipped ? 'answer' : 'question'} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
                                             {!isFlipped ? (
                                                 <div className="text-center">
-                                                    <span className="text-4xl mb-4 block">❓</span>
+                                                    <span className="text-4xl mb-4 block"><span className="material-symbols-rounded text-inherit align-middle">help</span></span>
                                                     <p className="text-xl text-white font-medium leading-relaxed">
                                                         {flashcards[flashcardIndex].question}
                                                     </p>
                                                 </div>
                                             ) : (
                                                 <div className="text-center">
-                                                    <span className="text-4xl mb-4 block">✅</span>
+                                                    <span className="text-4xl mb-4 block"><span className="material-symbols-rounded text-inherit align-middle">check_circle</span></span>
                                                     <p className="text-lg text-emerald-200 leading-relaxed">
                                                         {flashcards[flashcardIndex].answer}
                                                     </p>
@@ -1144,13 +1177,13 @@ export default function GauntletPage() {
                                     onClick={() => { setFlashcardRatings(prev => ({ ...prev, [flashcardIndex]: 'needs-work' })); if (flashcardIndex < flashcards.length - 1) { setFlashcardIndex(i => i + 1); setIsFlipped(false); } }}
                                     className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${flashcardRatings[flashcardIndex] === 'needs-work' ? 'bg-amber-500/20 border border-amber-500/50 text-amber-400' : 'bg-white/5 border border-white/10 text-silver hover:text-white'}`}
                                 >
-                                    📝 Needs Work
+                                    <span className="material-symbols-rounded align-middle mr-1">edit_document</span> Needs Work
                                 </button>
                                 <button
                                     onClick={() => { setFlashcardRatings(prev => ({ ...prev, [flashcardIndex]: 'got-it' })); if (flashcardIndex < flashcards.length - 1) { setFlashcardIndex(i => i + 1); setIsFlipped(false); } }}
                                     className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${flashcardRatings[flashcardIndex] === 'got-it' ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-400' : 'bg-white/5 border border-white/10 text-silver hover:text-white'}`}
                                 >
-                                    ✅ Got It
+                                    <span className="material-symbols-rounded align-middle mr-1">check_circle</span> Got It
                                 </button>
                             </div>
                             <div className="flex gap-2">
@@ -1173,7 +1206,7 @@ export default function GauntletPage() {
                                         onClick={() => { setViewMode('setup'); setFlashcards([]); }}
                                         className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-sm font-medium transition-all"
                                     >
-                                        ✅ Done
+                                        <span className="material-symbols-rounded align-middle mr-1">check_circle</span> Done
                                     </button>
                                 )}
                             </div>
@@ -1207,7 +1240,7 @@ export default function GauntletPage() {
 
                         {/* STAR Method Breakdown */}
                         <div className="rounded-2xl glass-card p-6">
-                            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">⭐ STAR Method Analysis</h3>
+                            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><span className="material-symbols-rounded text-inherit align-middle">star</span> STAR Method Analysis</h3>
                             <div className="grid md:grid-cols-2 gap-4">
                                 {(['situation', 'task', 'action', 'result'] as const).map((key) => {
                                     const item = currentGrading.star_method[key];
@@ -1218,11 +1251,16 @@ export default function GauntletPage() {
                                             animate={{ opacity: 1, y: 0 }}
                                             className={`p-4 rounded-xl border ${item.present ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-red-500/10 border-red-500/20'}`}
                                         >
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <span className={`text-lg ${item.present ? 'text-emerald-400' : 'text-red-400'}`}>
-                                                    {item.present ? '✅' : '❌'}
-                                                </span>
-                                                <span className="font-bold text-white capitalize">{key}</span>
+                                            <div className="flex-1">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <span className="font-bold text-white capitalize flex items-center gap-2">
+                                                        {key}
+                                                        {item.present ? 
+                                                            <span className="material-symbols-rounded text-green-400 text-sm">check_circle</span> : 
+                                                            <span className="material-symbols-rounded text-red-400 text-sm">cancel</span>
+                                                        }
+                                                    </span>
+                                                </div>
                                             </div>
                                             <p className="text-sm text-silver">{item.feedback}</p>
                                         </motion.div>
@@ -1234,7 +1272,7 @@ export default function GauntletPage() {
                         {/* Strengths & Improvements */}
                         <div className="grid md:grid-cols-2 gap-6">
                             <div className="rounded-2xl glass-card p-6">
-                                <h3 className="text-base font-bold text-emerald-400 mb-3 flex items-center gap-2">💪 Strengths</h3>
+                                <h3 className="text-base font-bold text-emerald-400 mb-3 flex items-center gap-2"><span className="material-symbols-rounded text-inherit align-middle">fitness_center</span> Strengths</h3>
                                 <ul className="space-y-2">
                                     {currentGrading.strengths.map((s, i) => (
                                         <li key={i} className="text-sm text-silver flex items-start gap-2">
@@ -1244,7 +1282,7 @@ export default function GauntletPage() {
                                 </ul>
                             </div>
                             <div className="rounded-2xl glass-card p-6">
-                                <h3 className="text-base font-bold text-amber-400 mb-3 flex items-center gap-2">📈 Improvements</h3>
+                                <h3 className="text-base font-bold text-amber-400 mb-3 flex items-center gap-2"><span className="material-symbols-rounded text-inherit align-middle">trending_up</span> Improvements</h3>
                                 <ul className="space-y-2">
                                     {currentGrading.improvements.map((s, i) => (
                                         <li key={i} className="text-sm text-silver flex items-start gap-2">
@@ -1258,7 +1296,7 @@ export default function GauntletPage() {
                         {/* Filler Analysis */}
                         {currentGrading.filler_analysis?.weak_phrases?.length > 0 && (
                             <div className="rounded-2xl glass-card p-6">
-                                <h3 className="text-base font-bold text-rose-400 mb-3 flex items-center gap-2">🚫 Weak Phrases Detected</h3>
+                                <h3 className="text-base font-bold text-rose-400 mb-3 flex items-center gap-2"><span className="material-symbols-rounded text-inherit align-middle">block</span> Weak Phrases Detected</h3>
                                 <div className="flex flex-wrap gap-2 mb-3">
                                     {currentGrading.filler_analysis.weak_phrases.map((w, i) => (
                                         <span key={i} className="px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-medium">
@@ -1272,19 +1310,19 @@ export default function GauntletPage() {
 
                         {/* Coaching Tip */}
                         <div className="rounded-2xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 p-6">
-                            <h3 className="text-base font-bold text-amber-400 mb-2 flex items-center gap-2">🎯 Coaching Tip</h3>
+                            <h3 className="text-base font-bold text-amber-400 mb-2 flex items-center gap-2"><span className="material-symbols-rounded text-inherit align-middle">my_location</span> Coaching Tip</h3>
                             <p className="text-silver">{currentGrading.coaching_tip}</p>
                         </div>
 
                         {/* Model Answer */}
                         <div className="rounded-2xl glass-card p-6">
-                            <h3 className="text-base font-bold text-cyan-400 mb-3 flex items-center gap-2">✨ Model Answer</h3>
+                            <h3 className="text-base font-bold text-cyan-400 mb-3 flex items-center gap-2"><span className="material-symbols-rounded text-inherit align-middle">auto_awesome</span> Model Answer</h3>
                             <p className="text-silver leading-relaxed italic">&quot;{currentGrading.rewritten_answer}&quot;</p>
                         </div>
 
                         {/* Follow-Up Question */}
                         <div className="rounded-2xl glass-card p-6">
-                            <h3 className="text-base font-bold text-violet-400 mb-2 flex items-center gap-2">🔄 Follow-Up Question</h3>
+                            <h3 className="text-base font-bold text-violet-400 mb-2 flex items-center gap-2"><span className="material-symbols-rounded text-inherit align-middle">sync</span> Follow-Up Question</h3>
                             <p className="text-white font-medium">&quot;{currentGrading.follow_up_question}&quot;</p>
                             <p className="text-xs text-silver mt-2">A real interviewer would ask this next. Practice your answer mentally.</p>
                         </div>
@@ -1323,7 +1361,7 @@ export default function GauntletPage() {
                                         transition={{ duration: 3 + Math.random() * 2, delay: Math.random() * 2, repeat: Infinity }}
                                         className="absolute text-lg"
                                     >
-                                        {['⚔️', '🏆', '⭐', '🎖️'][Math.floor(Math.random() * 4)]}
+                                        <span className="material-symbols-rounded text-6xl">emoji_events</span>
                                     </motion.div>
                                 ))}
                             </div>
@@ -1379,7 +1417,7 @@ export default function GauntletPage() {
 
                         {/* Per-Question Breakdown */}
                         <div className="rounded-2xl glass-card p-6">
-                            <h3 className="text-lg font-bold text-white mb-4">📋 Question Breakdown</h3>
+                            <h3 className="text-lg font-bold text-white mb-4"><span className="material-symbols-rounded text-inherit align-middle">content_paste</span> Question Breakdown</h3>
                             <div className="space-y-3">
                                 {results.map((r, i) => (
                                     <motion.div
@@ -1421,7 +1459,7 @@ export default function GauntletPage() {
                             if (weakResults.length === 0) return null;
                             return (
                                 <div className="rounded-2xl bg-red-500/5 border border-red-500/20 p-6">
-                                    <h3 className="text-lg font-bold text-red-400 mb-3">⚠️ Areas Needing Work</h3>
+                                    <h3 className="text-lg font-bold text-red-400 mb-3"><span className="material-symbols-rounded text-inherit align-middle">warning</span> Areas Needing Work</h3>
                                     <div className="space-y-3">
                                         {weakResults.map((r, i) => (
                                             <div key={i} className="p-3 rounded-xl bg-red-500/5 text-sm">
@@ -1448,7 +1486,7 @@ export default function GauntletPage() {
                                 }}
                                 className="p-6 rounded-2xl bg-gradient-to-br from-red-500/20 to-orange-500/20 border border-red-500/30 text-left transition-all"
                             >
-                                <span className="text-3xl mb-2 block">🔄</span>
+                                <span className="text-3xl mb-2 block"><span className="material-symbols-rounded text-inherit align-middle">sync</span></span>
                                 <h4 className="text-lg font-bold text-white">New Session</h4>
                                 <p className="text-silver text-sm">Start a fresh gauntlet with different questions</p>
                             </motion.button>
@@ -1468,11 +1506,11 @@ export default function GauntletPage() {
                                         setQuestionStartTime(Date.now());
                                         setElapsed(0);
                                         setViewMode('gauntlet');
-                                        showToast(`Retrying ${weakQuestions.length} weak questions`, '⚔️');
+                                        showToast(`Retrying ${weakQuestions.length} weak questions`, 'swords');
                                     }}
                                     className="p-6 rounded-2xl bg-gradient-to-br from-amber-500/20 to-red-500/20 border border-amber-500/30 text-left transition-all"
                                 >
-                                    <span className="text-3xl mb-2 block">🎯</span>
+                                    <span className="text-3xl mb-2 block"><span className="material-symbols-rounded text-inherit align-middle">my_location</span></span>
                                     <h4 className="text-lg font-bold text-white">Retry Weak Areas</h4>
                                     <p className="text-silver text-sm">Redo questions you scored &lt;60 on</p>
                                 </motion.button>
@@ -1490,11 +1528,11 @@ export default function GauntletPage() {
                                     setQuestionStartTime(Date.now());
                                     setElapsed(0);
                                     setViewMode('gauntlet');
-                                    showToast('Same questions, fresh start', '🔄');
+                                    showToast('Same questions, fresh start', 'sync');
                                 }}
                                 className="p-6 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 text-left transition-all"
                             >
-                                <span className="text-3xl mb-2 block">🔁</span>
+                                <span className="text-3xl mb-2 block"><span className="material-symbols-rounded text-[32px] align-middle">replay</span></span>
                                 <h4 className="text-lg font-bold text-white">Redo Same Questions</h4>
                                 <p className="text-silver text-sm">Practice the exact same questions again</p>
                             </motion.button>
@@ -1505,7 +1543,7 @@ export default function GauntletPage() {
                                 disabled={isGeneratingNotes}
                                 className="p-6 rounded-2xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 border border-violet-500/30 text-left transition-all disabled:opacity-50"
                             >
-                                <span className="text-3xl mb-2 block">📚</span>
+                                <span className="text-3xl mb-2 block"><span className="material-symbols-rounded text-inherit align-middle">library_books</span></span>
                                 <h4 className="text-lg font-bold text-white">{isGeneratingNotes ? 'Saving...' : 'Save Study Notes'}</h4>
                                 <p className="text-silver text-sm">Save a summarized study guide of your mistakes</p>
                             </motion.button>
@@ -1513,6 +1551,7 @@ export default function GauntletPage() {
                     </motion.div>
                 )}
             </AnimatePresence>
+            {renderAuthModal()}
         </div>
     );
 }

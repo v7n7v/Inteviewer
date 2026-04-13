@@ -1,44 +1,180 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { authHelpers } from '@/lib/firebase';
 import { useStore } from '@/lib/store';
-import LogoutModal from './modals/LogoutModal';
-import UpgradeBanner from '@/components/UpgradeBanner';
-import { useUserTier } from '@/hooks/use-user-tier';
 import { useTheme } from '@/components/ThemeProvider';
-import ThemeToggle from '@/components/ThemeToggle';
+import LogoutModal from './modals/LogoutModal';
+import AuthModal from './modals/AuthModal';
+import { useUserTier } from '@/hooks/use-user-tier';
+import UsageCounter from '@/components/UsageCounter';
 
 interface NavigationItem {
   id: string;
   label: string;
-  icon: string;
   description: string;
   path: string;
   badge?: string;
+  iconName: string;
+  color: { iconColor: string };
 }
 
-const talentSuiteItems: NavigationItem[] = [
-  { id: 'resume', label: 'Liquid Resume', icon: '📄', description: 'Resume Builder', path: '/suite/resume' },
-  { id: 'applications', label: 'Applications', icon: '📊', description: 'Track Jobs', path: '/suite/applications' },
-  { id: 'flashcards', label: 'The Gauntlet', icon: '⚔️', description: 'Interview Simulator', path: '/suite/flashcards' },
-  { id: 'vault', label: 'Study Vault', icon: '📚', description: 'Saved Practice Notes', path: '/suite/vault' },
-  { id: 'skill-bridge', label: 'Skill Bridge', icon: '🌉', description: 'From Resume to Ready', path: '/suite/skill-bridge', badge: 'PRO' },
-  { id: 'oracle', label: 'Market Oracle', icon: '🔮', description: 'Career Intelligence', path: '/suite/market-oracle' },
-  { id: 'job-search', label: 'Job Search', icon: '🔍', description: 'Find Jobs', path: '/suite/job-search', badge: 'Soon' },
+const navItems: NavigationItem[] = [
+  {
+    id: 'resume',
+    label: 'Resume Studio',
+    description: 'Resume Builder',
+    path: '/suite/resume',
+    iconName: 'auto_awesome',
+    color: { iconColor: '#f59e0b' },
+  },
+  {
+    id: 'applications',
+    label: 'Applications',
+    description: 'Track Jobs',
+    path: '/suite/applications',
+    iconName: 'work',
+    color: { iconColor: '#22c55e' },
+  },
+  {
+    id: 'flashcards',
+    label: 'Interview Simulator',
+    description: 'Interactive AI Interviews',
+    path: '/suite/flashcards',
+    iconName: 'chat',
+    color: { iconColor: '#3b82f6' },
+  },
+  {
+    id: 'skill-bridge',
+    label: 'Skill Bridge',
+    description: 'From Resume to Ready',
+    path: '/suite/skill-bridge',
+    badge: 'PRO',
+    iconName: 'route',
+    color: { iconColor: '#10b981' },
+  },
+  {
+    id: 'vault',
+    label: 'Study Vault',
+    description: 'Saved Practice Notes',
+    path: '/suite/vault',
+    iconName: 'folder_open',
+    color: { iconColor: '#f97316' },
+  },
+  {
+    id: 'oracle',
+    label: 'Market Oracle',
+    description: 'Career Intelligence',
+    path: '/suite/market-oracle',
+    iconName: 'troubleshoot',
+    color: { iconColor: '#a855f7' },
+  },
+  {
+    id: 'job-search',
+    label: 'Job Search',
+    description: 'Find Jobs',
+    path: '/suite/job-search',
+    badge: 'Soon',
+    iconName: 'search',
+    color: { iconColor: '#06b6d4' },
+  },
+  {
+    id: 'gallery',
+    label: 'Product Gallery',
+    description: 'Archived Animations',
+    path: '/suite/gallery',
+    iconName: 'grid_view',
+    color: { iconColor: '#94a3b8' },
+  },
 ];
 
-const suiteConfig = {
-  name: 'Talent Suite',
-  tagline: 'AI Career Intelligence',
-  icon: '✨',
-  gradient: 'from-[#0070F3] to-[#0070F3]/60',
-  accentColor: 'blue',
-  bgGlow: 'bg-[#0070F3]/10',
-  items: talentSuiteItems,
-};
+function ThemeMenu({ isCollapsed }: { isCollapsed: boolean }) {
+  const { mode, setMode } = useTheme();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    if (open) document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const options: { value: 'light' | 'dark' | 'system'; label: string; icon: React.ReactNode }[] = [
+    { value: 'light', label: 'Light', icon: <span className="material-symbols-rounded text-[16px]">light_mode</span> },
+    { value: 'dark', label: 'Dark', icon: <span className="material-symbols-rounded text-[16px]">dark_mode</span> },
+    { value: 'system', label: 'System', icon: <span className="material-symbols-rounded text-[16px]">desktop_windows</span> },
+  ];
+
+  return (
+    <div ref={ref} className="relative group/theme">
+      <button
+        onClick={() => setOpen(!open)}
+        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors duration-100 text-[var(--sidebar-text)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] ${isCollapsed ? 'justify-center' : ''}`}
+        title={isCollapsed ? 'Theme' : ''}
+      >
+        <span
+          className="material-symbols-rounded flex-shrink-0 text-[18px] w-6 h-6 flex items-center justify-center rounded-md"
+          style={{
+            backgroundColor: 'var(--tag-purple-bg)',
+            color: 'var(--tag-purple-text)'
+          }}
+        >
+          palette
+        </span>
+        {!isCollapsed && (
+          <>
+            <span className="flex-1 text-left">Theme</span>
+            <span
+              className="material-symbols-rounded text-[16px] opacity-50 transition-transform duration-200"
+              style={{ transform: open ? 'rotate(90deg)' : 'none' }}>
+              chevron_right
+            </span>
+          </>
+        )}
+      </button>
+
+      {open && (
+        <div
+          className="absolute left-[calc(100%+8px)] bottom-0 w-44 rounded-[8px] border shadow-lg z-[100] py-1"
+          style={{
+            background: 'var(--bg-surface)',
+            borderColor: 'var(--border-subtle)',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+          }}
+        >
+          {options.map((opt) => {
+            const isActive = mode === opt.value;
+            return (
+              <button
+                key={opt.value}
+                onClick={() => { setMode(opt.value); setOpen(false); }}
+                className="w-full flex items-center gap-3 px-3 py-2 text-[14px] leading-[20px] transition-colors duration-100 hover:bg-[var(--bg-hover)]"
+                style={{
+                  color: 'var(--text-primary)',
+                  backgroundColor: isActive ? 'var(--bg-hover)' : 'transparent',
+                }}
+              >
+                <span
+                  className="flex items-center justify-center w-[16px] h-[16px] rounded-full border-[1.5px] flex-shrink-0"
+                  style={{ borderColor: 'currentColor' }}
+                >
+                  {isActive && (
+                    <span className="w-[8px] h-[8px] rounded-full bg-current" />
+                  )}
+                </span>
+                <span className="flex-shrink-0 opacity-70">{opt.icon}</span>
+                <span className="flex-1 text-left">{opt.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface SuiteSidebarProps {
   onNavigate?: () => void;
@@ -49,34 +185,26 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
   const pathname = usePathname();
   const { user, setUser } = useStore();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const { tier, isPro } = useUserTier();
-  const { theme } = useTheme();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState<'login' | 'signup' | null>(null);
 
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    const check = () => setIsMobile(window.innerWidth < 1024);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
   }, []);
 
   useEffect(() => {
     setIsMobileOpen(false);
   }, [pathname]);
 
-  const suite = suiteConfig;
-
-  const handleNavigation = (path: string) => {
+  const handleNav = (path: string) => {
     router.push(path);
     onNavigate?.();
-  };
-
-  const handleLogoutClick = () => {
-    setShowLogoutModal(true);
-    setShowUserMenu(false);
   };
 
   const confirmLogout = async () => {
@@ -86,347 +214,262 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
     setShowLogoutModal(false);
   };
 
-  const isActive = (path: string) => {
-    return pathname?.startsWith(path);
-  };
+  const isActive = (path: string) => pathname?.startsWith(path);
+  const sidebarWidth = isCollapsed ? 56 : 250;
 
   return (
     <>
-      {/* Mobile Menu Button */}
+      {/* Mobile toggle */}
       {isMobile && (
         <button
           onClick={() => setIsMobileOpen(!isMobileOpen)}
-          className={`fixed top-4 left-4 z-[60] p-3 rounded-xl border transition-all ${isMobileOpen
-            ? 'bg-slate-800 border-white/20'
-            : `bg-gradient-to-r ${suite.gradient} border-transparent`
-            }`}
+          className="fixed top-3 left-3 z-[60] p-2 rounded-lg border border-[var(--border)] bg-[var(--sidebar-bg)] text-[var(--sidebar-text)] hover:text-[var(--text-primary)] transition-colors duration-100"
         >
-          <motion.div
-            animate={isMobileOpen ? 'open' : 'closed'}
-          >
-            {isMobileOpen ? (
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            ) : (
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            )}
-          </motion.div>
+          {isMobileOpen ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+          )}
         </button>
       )}
 
-      {/* Mobile Overlay */}
-      <AnimatePresence>
-        {isMobile && isMobileOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setIsMobileOpen(false)}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
-          />
-        )}
-      </AnimatePresence>
+      {/* Mobile overlay */}
+      {isMobile && isMobileOpen && (
+        <div
+          onClick={() => setIsMobileOpen(false)}
+          className="fixed inset-0 bg-black/50 z-40"
+        />
+      )}
 
-      <motion.aside
-        layout
-        initial={false}
-        animate={{
-          width: isMobile ? 280 : (isCollapsed ? 80 : 280),
-          x: isMobile ? (isMobileOpen ? 0 : -300) : 0
-        }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className={`fixed left-0 top-0 h-screen z-50 flex flex-col overflow-hidden`}
+      {/* Sidebar */}
+      <aside
         style={{
-          background: theme === 'light' ? 'rgba(255, 255, 255, 0.92)' : 'rgba(0, 0, 0, 0.85)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-          borderRight: theme === 'light' ? '1px solid rgba(0,0,0,0.08)' : 'none',
+          width: isMobile ? 250 : sidebarWidth,
+          transform: isMobile ? (isMobileOpen ? 'translateX(0)' : 'translateX(-100%)') : 'translateX(0)',
         }}
+        className="fixed left-0 top-0 h-screen z-50 flex flex-col bg-[var(--sidebar-bg)] border-r border-[var(--border)] transition-all duration-200 ease-out"
       >
-        {/* Subtle top glow */}
-        <div className={`absolute top-0 left-0 w-full h-24 ${suite.bgGlow} blur-3xl opacity-20`} />
-
-        {/* Border */}
-        <div className="absolute right-0 top-0 bottom-0 w-px bg-white/10" />
-
-        <LayoutGroup>
-          {/* Header */}
-          <div className="relative p-4 border-b border-white/5">
-            <div className={`flex items-center gap-3 overflow-hidden transition-all duration-300 w-full ${isCollapsed ? 'flex-col !gap-4' : ''}`}>
-              <motion.div
-                layout
-                whileHover={{ scale: 1.05, rotate: 5 }}
-                className={`w-10 h-10 rounded-xl bg-gradient-to-br ${suite.gradient} flex items-center justify-center shadow-lg flex-shrink-0`}
-              >
-                <span className="text-xl">{suite.icon}</span>
-              </motion.div>
-
-              <motion.div
-                animate={{
-                  opacity: isCollapsed ? 0 : 1,
-                  width: isCollapsed ? 0 : 'auto',
-                  height: isCollapsed ? 0 : 'auto',
-                }}
-                transition={{ duration: 0.2, ease: 'easeOut' }}
-                className={`overflow-hidden whitespace-nowrap ${isCollapsed ? '' : 'flex-1'}`}
-              >
-                <h1 className="text-base font-bold text-white">{suite.name}</h1>
-                <p className={`text-xs bg-gradient-to-r ${suite.gradient} bg-clip-text text-transparent font-medium`}>
-                  {suite.tagline}
-                </p>
-              </motion.div>
-
-              <motion.button
-                layout
-                onClick={() => setIsCollapsed(!isCollapsed)}
-                className={`p-2 rounded-lg transition-colors flex-shrink-0 ${isCollapsed ? 'w-full flex justify-center bg-white/5 hover:bg-white/10 hover:border-cyan-500/30' : 'hover:bg-white/5'}`}
-                title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              >
-                <motion.svg
-                  layout
-                  animate={{ rotate: isCollapsed ? 180 : 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="w-5 h-5 text-slate-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-                </motion.svg>
-              </motion.button>
-            </div>
-          </div>
-
-          {/* Quick Navigation - Back to Dashboard */}
-          <div className="p-3">
-            <motion.button
-              onClick={() => router.push('/suite')}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg glass-card hover:bg-[var(--theme-bg-hover)] hover:border-white/20 transition-all ${isCollapsed ? 'justify-center' : ''}`}
-              title="Back to Dashboard"
-            >
-              <svg className="w-4 h-4 text-silver" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17l-5-5m0 0l5-5m-5 5h12" />
-              </svg>
-              {!isCollapsed && <span className="text-xs text-silver">Dashboard</span>}
-            </motion.button>
-          </div>
-
-          {/* Navigation Items */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-1">
-            {suite.items.map((item, index) => {
-              const active = isActive(item.path);
-              return (
-                <motion.button
-                  key={item.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  onClick={() => handleNavigation(item.path)}
-                  className={`
-                  w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200
-                  ${active
-                      ? `bg-gradient-to-r ${suite.gradient} bg-opacity-20 text-white`
-                      : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                    }
-                  ${isCollapsed ? 'justify-center' : ''}
-                `}
-                  title={isCollapsed ? item.label : ''}
-                >
-                  <span className={`text-xl`}>{item.icon}</span>
-                  <AnimatePresence mode="wait">
-                    {!isCollapsed && (
-                      <motion.div
-                        initial={{ opacity: 0, width: 0 }}
-                        animate={{ opacity: 1, width: 'auto' }}
-                        exit={{ opacity: 0, width: 0 }}
-                        className="flex-1 text-left overflow-hidden"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm">{item.label}</span>
-                          {item.badge && (
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full ${item.badge === 'New'
-                              ? `bg-gradient-to-r ${suite.gradient} text-white`
-                              : item.badge === 'PRO'
-                              ? 'bg-cyan-500/20 text-cyan-400'
-                              : 'bg-slate-500/20 text-slate-400'
-                              }`}>
-                              {item.badge}
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-xs text-slate-500">{item.description}</span>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                  {active && !isCollapsed && (
-                    <motion.div
-                      layoutId="active-nav"
-                      className={`w-1 h-8 rounded-full bg-gradient-to-b ${suite.gradient}`}
-                    />
-                  )}
-                </motion.button>
-              );
-            })}
-          </div>
-
-          {/* Upgrade Banner */}
+        {/* Header */}
+        <div className="flex items-center justify-between px-3 h-[52px] border-b border-[var(--border-subtle)]">
           {!isCollapsed && (
-            <div className="px-3 pb-2">
-              <UpgradeBanner currentTier={tier} compact />
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-sm font-semibold text-[var(--text-primary)] truncate">Talent Studio</span>
+              <span className="material-symbols-rounded text-[16px] text-[var(--text-muted)]">chevron_right</span>
             </div>
           )}
-
-          {/* Admin Panel (master only) */}
-          {user?.email && ['alula2006@gmail.com'].includes(user.email.toLowerCase()) && (
-            <div className="px-3 pb-1">
-              <motion.button
-                onClick={() => handleNavigation('/suite/admin')}
-                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${
-                  isActive('/suite/admin')
-                    ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-400'
-                    : 'text-slate-400 hover:bg-white/5 hover:text-amber-400'
-                } ${isCollapsed ? 'justify-center' : ''}`}
-                title="Admin Panel"
-              >
-                <span className="text-xl">🛡️</span>
-                <AnimatePresence mode="wait">
-                  {!isCollapsed && (
-                    <motion.div
-                      initial={{ opacity: 0, width: 0 }}
-                      animate={{ opacity: 1, width: 'auto' }}
-                      exit={{ opacity: 0, width: 0 }}
-                      className="flex-1 text-left overflow-hidden"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm">Admin</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400">Master</span>
-                      </div>
-                      <span className="text-xs text-slate-500">User Management</span>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.button>
-            </div>
-          )}
-
-          {/* Help & Support */}
-          <div className="px-3 pb-1 flex items-center gap-1">
-            <motion.button
-              onClick={() => handleNavigation('/suite/help')}
-              className={`flex-1 flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 text-slate-400 hover:bg-white/5 hover:text-white ${isCollapsed ? 'justify-center' : ''}`}
+          {!isMobile && (
+            <button
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="p-1.5 rounded-md hover:bg-[var(--bg-hover)] text-[var(--sidebar-text)] hover:text-[var(--text-primary)] transition-colors duration-100 flex-shrink-0"
             >
-              <span className="text-xl">💡</span>
-              <AnimatePresence mode="wait">
-                {!isCollapsed && (
-                  <motion.div
-                    initial={{ opacity: 0, width: 0 }}
-                    animate={{ opacity: 1, width: 'auto' }}
-                    exit={{ opacity: 0, width: 0 }}
-                    className="flex-1 text-left overflow-hidden"
-                  >
-                    <span className="font-medium text-sm">Help & Support</span>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.button>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ transform: isCollapsed ? 'rotate(180deg)' : 'none' }}>
+                <path d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
+        </div>
 
-            {/* Theme Toggle */}
-            <ThemeToggle size="sm" />
+        {/* Dashboard link */}
+        <div className="px-2 pt-2">
+          <button
+            onClick={() => handleNav('/suite')}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors duration-100 ${
+              pathname === '/suite'
+                ? 'bg-[rgba(168,199,250,0.08)] text-[#a8c7fa]'
+                : 'text-[var(--sidebar-text)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'
+            } ${isCollapsed ? 'justify-center' : ''}`}
+            title="Dashboard"
+          >
+            <span
+              className="material-symbols-rounded flex-shrink-0 text-[18px] w-6 h-6 flex items-center justify-center rounded-md transition-colors"
+              style={pathname === '/suite' ? {
+                backgroundColor: 'rgba(168, 199, 250, 0.15)',
+                color: '#a8c7fa'
+              } : {}}
+            >home</span>
+            {!isCollapsed && <span>Dashboard</span>}
+          </button>
+        </div>
+
+        {/* Divider */}
+        <div className="mx-3 my-2 h-px bg-[var(--border-subtle)]" />
+
+        {/* Nav label */}
+        {!isCollapsed && (
+          <div className="px-4 py-1.5">
+            <span className="text-[11px] font-medium text-[var(--text-muted)] uppercase tracking-wider">Tools</span>
           </div>
+        )}
 
-          {/* User Section */}
-          <div className="p-3 border-t border-white/5">
-            <div className="relative">
+        {/* Navigation items */}
+        <nav className="flex-1 overflow-y-auto px-2 space-y-0.5">
+          {navItems.map((item) => {
+            const active = isActive(item.path);
+            return (
               <button
-                onClick={() => !isCollapsed && setShowUserMenu(!showUserMenu)}
-                className={`w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-colors ${isCollapsed ? 'justify-center' : ''}`}
+                key={item.id}
+                onClick={() => handleNav(item.path)}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors duration-100 text-[var(--sidebar-text)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] ${
+                  isCollapsed ? 'justify-center' : ''
+                } ${active ? 'bg-[var(--bg-hover)] text-[var(--text-primary)]' : ''}`}
+                title={isCollapsed ? item.label : ''}
               >
-                <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${suite.gradient} flex items-center justify-center text-sm font-bold flex-shrink-0`}>
-                  {user?.email?.[0].toUpperCase()}
-                </div>
-                <AnimatePresence mode="wait">
-                  {!isCollapsed && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="flex-1 text-left overflow-hidden"
-                    >
-                      <p className="text-sm font-medium text-white truncate flex items-center gap-1.5">
-                        {user?.email?.split('@')[0]}
-                        {isPro && (
-                          <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${tier === 'god' ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-400 border border-amber-500/30' : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'}`}>
-                            {tier === 'god' ? '👑 GOD' : '⚡ PRO'}
-                          </span>
-                        )}
-                      </p>
-                      <p className="text-xs text-slate-500 truncate">{user?.email}</p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                {/* Icon — always shows brand color at full saturation */}
+                <span
+                  className="material-symbols-rounded flex-shrink-0 text-[18px] w-6 h-6 flex items-center justify-center rounded-md flex-none"
+                  style={{ color: item.color.iconColor }}
+                >
+                  {item.iconName}
+                </span>
+
                 {!isCollapsed && (
-                  <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                  </svg>
+                  <span className="flex-1 text-left truncate font-[450]">{item.label}</span>
+                )}
+
+                {!isCollapsed && item.badge && (
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                    item.badge === 'PRO'
+                      ? 'bg-[var(--accent-dim)] text-[var(--accent)]'
+                      : 'bg-[var(--bg-hover)] text-[var(--text-muted)]'
+                  }`}>
+                    {item.badge}
+                  </span>
                 )}
               </button>
+            );
+          })}
+        </nav>
 
-              <AnimatePresence>
-                {showUserMenu && !isCollapsed && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className="absolute bottom-full left-0 right-0 mb-2 p-2 rounded-xl bg-slate-800 border border-white/10 shadow-xl"
-                  >
-                    <button
-                      onClick={() => { router.push('/suite'); setShowUserMenu(false); }}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 text-slate-300 hover:text-white text-left"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                      </svg>
-                      <span className="text-sm">Dashboard</span>
-                    </button>
-                    <button
-                      onClick={() => { router.push('/suite/settings'); setShowUserMenu(false); }}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 text-slate-300 hover:text-white text-left"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      <span className="text-sm">Settings</span>
-                    </button>
+        {/* Bottom section */}
+        <div className="border-t border-[var(--border-subtle)] px-2 py-2 space-y-0.5">
+          {/* Usage counter — free users only */}
+          {!isPro && !isCollapsed && (
+            <UsageCounter compact />
+          )}
+          {/* Upgrade CTA — free users only */}
+          {!isPro && !isCollapsed && (
+            <button
+              onClick={() => handleNav('/suite/upgrade')}
+              className="w-full mb-2 px-3 py-2.5 rounded-xl text-sm font-semibold text-white flex items-center gap-2 justify-center transition-opacity hover:opacity-90"
+              style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', boxShadow: '0 2px 12px rgba(16,185,129,0.25)' }}
+            >
+              <span className="material-symbols-rounded text-[16px]">bolt</span>
+              Upgrade to Pro · $4.99/mo
+            </button>
+          )}
+          {!isPro && isCollapsed && (
+            <button
+              onClick={() => handleNav('/suite/upgrade')}
+              title="Upgrade to Pro"
+              className="w-full flex justify-center py-2 rounded-xl text-emerald-500 hover:bg-emerald-500/10 transition-colors"
+            >
+              <span className="material-symbols-rounded text-[20px]">bolt</span>
+            </button>
+          )}
+          {/* Admin (master only) */}
+          {user?.email && ['alula2006@gmail.com'].includes(user.email.toLowerCase()) && (
+            <button
+              onClick={() => handleNav('/suite/admin')}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors duration-100 ${
+                isActive('/suite/admin') ? 'bg-[var(--bg-hover)] text-[var(--text-primary)]' : 'text-[var(--sidebar-text)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'
+              } ${isCollapsed ? 'justify-center' : ''}`}
+            >
+              <span className="material-symbols-rounded flex-shrink-0 text-[20px]" style={{ color: '#fdd663' }}>shield</span>
+              {!isCollapsed && <span>Admin</span>}
+            </button>
+          )}
 
-                    <div className="my-1 border-t border-white/10" />
-                    <button
-                      onClick={handleLogoutClick}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-500/10 text-slate-300 hover:text-red-400 text-left"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                      </svg>
-                      <span className="text-sm">Logout</span>
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+          {/* Theme — AI Studio flyout */}
+          <ThemeMenu isCollapsed={isCollapsed} />
+
+          {/* Help */}
+          <button
+            onClick={() => handleNav('/suite/help')}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors duration-100 text-[var(--sidebar-text)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] ${isCollapsed ? 'justify-center' : ''}`}
+          >
+            <span className="material-symbols-rounded flex-shrink-0 text-[20px]" style={{ color: '#06b6d4' }}>help</span>
+            {!isCollapsed && <span>Help</span>}
+          </button>
+
+          {/* Settings */}
+          <button
+            onClick={() => handleNav('/suite/settings')}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors duration-100 text-[var(--sidebar-text)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] ${isCollapsed ? 'justify-center' : ''}`}
+          >
+            <span className="material-symbols-rounded flex-shrink-0 text-[20px]" style={{ color: '#94a3b8' }}>settings</span>
+            {!isCollapsed && <span>Settings</span>}
+          </button>
+        </div>
+
+        {/* User section */}
+        <div className="border-t border-[var(--border-subtle)] px-2 py-2">
+          {user ? (
+            /* Authenticated — show profile */
+            <div className="flex items-center gap-3 px-3 py-2 rounded-lg">
+              <div className="w-7 h-7 rounded-full bg-[var(--bg-hover)] border border-[var(--border)] flex items-center justify-center text-xs font-medium text-[var(--text-secondary)] flex-shrink-0">
+                {user.email?.[0].toUpperCase() || '?'}
+              </div>
+              {!isCollapsed && (
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-[var(--text-primary)] truncate flex items-center gap-1.5">
+                    {user.displayName || user.email?.split('@')[0] || 'User'}
+                    {isPro && (
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${
+                        tier === 'god' ? 'bg-[rgba(253,214,99,0.1)] text-[var(--warning)]' : 'bg-[rgba(129,201,149,0.1)] text-[var(--success)]'
+                      }`}>
+                        {tier === 'god' ? 'GOD' : 'PRO'}
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-[11px] text-[var(--text-muted)] truncate">{user.email}</p>
+                </div>
+              )}
+              {!isCollapsed && (
+                <button
+                  onClick={() => setShowLogoutModal(true)}
+                  className="p-1.5 rounded-md hover:bg-[var(--bg-hover)] text-[var(--text-muted)] hover:text-red-500 transition-colors duration-100"
+                  title="Sign out"
+                >
+                  <span className="material-symbols-rounded text-[20px] block" style={{ color: '#ef4444' }}>logout</span>
+                </button>
+              )}
             </div>
-          </div>
-        </LayoutGroup>
-      </motion.aside>
+          ) : (
+            /* Anonymous — show Sign In */
+            <button
+              onClick={() => setShowAuthModal('login')}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors duration-100 hover:bg-[var(--bg-hover)] ${isCollapsed ? 'justify-center' : ''}`}
+            >
+              <div
+                className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{ background: 'rgba(6,182,212,0.12)', border: '1px solid rgba(6,182,212,0.25)' }}
+              >
+                <span className="material-symbols-rounded text-[16px]" style={{ color: '#06b6d4' }}>login</span>
+              </div>
+              {!isCollapsed && (
+                <div className="text-left">
+                  <p className="text-xs font-medium text-[var(--text-primary)] leading-tight">Sign In</p>
+                  <p className="text-[10px] text-[var(--text-muted)]">Create a free account</p>
+                </div>
+              )}
+            </button>
+          )}
+        </div>
+      </aside>
 
       <LogoutModal
         isOpen={showLogoutModal}
         onClose={() => setShowLogoutModal(false)}
         onConfirm={confirmLogout}
       />
+
+      {showAuthModal && (
+        <AuthModal
+          mode={showAuthModal}
+          onClose={() => setShowAuthModal(null)}
+          onSwitchMode={() => setShowAuthModal(showAuthModal === 'login' ? 'signup' : 'login')}
+        />
+      )}
     </>
   );
 }

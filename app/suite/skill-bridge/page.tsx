@@ -7,6 +7,7 @@ import { useStore } from '@/lib/store';
 import { authFetch } from '@/lib/auth-fetch';
 import { useTheme } from '@/components/ThemeProvider';
 import { showToast } from '@/components/Toast';
+import ProGate from '@/components/ProGate';
 import {
   saveStudyProgress,
   markDayComplete,
@@ -56,83 +57,83 @@ interface LearningResource {
 // ═══════════════════════════════════════
 const RESOURCE_DATABASE: Record<string, LearningResource[]> = {
   'React': [
-    { title: 'React Full Course 2025', platform: 'YouTube', icon: '🎥', url: 'https://youtube.com/results?search_query=react+full+course+2025', duration: '6h', free: true },
-    { title: 'React Documentation', platform: 'React.dev', icon: '📘', url: 'https://react.dev/learn', duration: 'Self-paced', free: true },
-    { title: 'React Basics', platform: 'freeCodeCamp', icon: '🏗️', url: 'https://www.freecodecamp.org/learn/front-end-development-libraries/#react', duration: '10h', free: true },
+    { title: 'React Full Course 2025', platform: 'YouTube', icon: 'smart_display', url: 'https://youtube.com/results?search_query=react+full+course+2025', duration: '6h', free: true },
+    { title: 'React Documentation', platform: 'React.dev', icon: 'menu_book', url: 'https://react.dev/learn', duration: 'Self-paced', free: true },
+    { title: 'React Basics', platform: 'freeCodeCamp', icon: 'architecture', url: 'https://www.freecodecamp.org/learn/front-end-development-libraries/#react', duration: '10h', free: true },
   ],
   'TypeScript': [
-    { title: 'TypeScript for Beginners', platform: 'YouTube', icon: '🎥', url: 'https://youtube.com/results?search_query=typescript+full+course', duration: '3h', free: true },
-    { title: 'TypeScript Handbook', platform: 'TypeScript', icon: '📘', url: 'https://www.typescriptlang.org/docs/handbook/', duration: 'Self-paced', free: true },
-    { title: 'Execute Program', platform: 'Execute Program', icon: '💻', url: 'https://www.executeprogram.com/courses/typescript', duration: '8h', free: false },
+    { title: 'TypeScript for Beginners', platform: 'YouTube', icon: 'smart_display', url: 'https://youtube.com/results?search_query=typescript+full+course', duration: '3h', free: true },
+    { title: 'TypeScript Handbook', platform: 'TypeScript', icon: 'menu_book', url: 'https://www.typescriptlang.org/docs/handbook/', duration: 'Self-paced', free: true },
+    { title: 'Execute Program', platform: 'Execute Program', icon: 'computer', url: 'https://www.executeprogram.com/courses/typescript', duration: '8h', free: false },
   ],
   'Next.js': [
-    { title: 'Next.js 15 Full Course', platform: 'YouTube', icon: '🎥', url: 'https://youtube.com/results?search_query=next.js+full+course+2025', duration: '8h', free: true },
+    { title: 'Next.js 15 Full Course', platform: 'YouTube', icon: 'smart_display', url: 'https://youtube.com/results?search_query=next.js+full+course+2025', duration: '8h', free: true },
     { title: 'Learn Next.js', platform: 'Vercel', icon: '▲', url: 'https://nextjs.org/learn', duration: '12h', free: true },
   ],
   'Node.js': [
-    { title: 'Node.js Complete Guide', platform: 'YouTube', icon: '🎥', url: 'https://youtube.com/results?search_query=node.js+complete+guide', duration: '8h', free: true },
-    { title: 'Introduction to Node.js', platform: 'Node.dev', icon: '📘', url: 'https://nodejs.org/en/learn/getting-started/introduction-to-nodejs', duration: 'Self-paced', free: true },
+    { title: 'Node.js Complete Guide', platform: 'YouTube', icon: 'smart_display', url: 'https://youtube.com/results?search_query=node.js+complete+guide', duration: '8h', free: true },
+    { title: 'Introduction to Node.js', platform: 'Node.dev', icon: 'menu_book', url: 'https://nodejs.org/en/learn/getting-started/introduction-to-nodejs', duration: 'Self-paced', free: true },
   ],
   'Python': [
-    { title: 'Python for Everybody', platform: 'Coursera', icon: '🎓', url: 'https://www.coursera.org/specializations/python', duration: '8mo', free: true },
-    { title: 'Automate the Boring Stuff', platform: 'YouTube', icon: '🎥', url: 'https://youtube.com/results?search_query=automate+the+boring+stuff+python', duration: '10h', free: true },
-    { title: 'Python Certification', platform: 'freeCodeCamp', icon: '🏗️', url: 'https://www.freecodecamp.org/learn/scientific-computing-with-python/', duration: '40h', free: true },
+    { title: 'Python for Everybody', platform: 'Coursera', icon: 'school', url: 'https://www.coursera.org/specializations/python', duration: '8mo', free: true },
+    { title: 'Automate the Boring Stuff', platform: 'YouTube', icon: 'smart_display', url: 'https://youtube.com/results?search_query=automate+the+boring+stuff+python', duration: '10h', free: true },
+    { title: 'Python Certification', platform: 'freeCodeCamp', icon: 'architecture', url: 'https://www.freecodecamp.org/learn/scientific-computing-with-python/', duration: '40h', free: true },
   ],
   'AWS': [
-    { title: 'AWS Cloud Practitioner', platform: 'AWS Skill Builder', icon: '☁️', url: 'https://skillbuilder.aws/exam-prep/cloud-practitioner', duration: '12h', free: true },
-    { title: 'AWS Certified Solutions Architect', platform: 'YouTube', icon: '🎥', url: 'https://youtube.com/results?search_query=aws+solutions+architect+2025', duration: '15h', free: true },
-    { title: 'AWS re/Start', platform: 'Amazon', icon: '📦', url: 'https://aws.amazon.com/training/restart/', duration: '12wk', free: true },
+    { title: 'AWS Cloud Practitioner', platform: 'AWS Skill Builder', icon: 'cloud', url: 'https://skillbuilder.aws/exam-prep/cloud-practitioner', duration: '12h', free: true },
+    { title: 'AWS Certified Solutions Architect', platform: 'YouTube', icon: 'smart_display', url: 'https://youtube.com/results?search_query=aws+solutions+architect+2025', duration: '15h', free: true },
+    { title: 'AWS re/Start', platform: 'Amazon', icon: 'inventory_2', url: 'https://aws.amazon.com/training/restart/', duration: '12wk', free: true },
   ],
   'Docker': [
-    { title: 'Docker in 2 Hours', platform: 'YouTube', icon: '🎥', url: 'https://youtube.com/results?search_query=docker+full+course', duration: '2h', free: true },
+    { title: 'Docker in 2 Hours', platform: 'YouTube', icon: 'smart_display', url: 'https://youtube.com/results?search_query=docker+full+course', duration: '2h', free: true },
     { title: 'Docker Get Started', platform: 'Docker', icon: '🐳', url: 'https://docs.docker.com/get-started/', duration: '3h', free: true },
   ],
   'Kubernetes': [
-    { title: 'Kubernetes Course', platform: 'YouTube (KodeKloud)', icon: '🎥', url: 'https://youtube.com/results?search_query=kubernetes+full+course+kodekloud', duration: '6h', free: true },
-    { title: 'EKS Workshop', platform: 'AWS', icon: '☁️', url: 'https://www.eksworkshop.com/', duration: '8h', free: true },
-    { title: 'Kubernetes Basics', platform: 'Google Cloud', icon: '🎓', url: 'https://cloud.google.com/kubernetes-engine/docs/tutorials', duration: '4h', free: true },
+    { title: 'Kubernetes Course', platform: 'YouTube (KodeKloud)', icon: 'smart_display', url: 'https://youtube.com/results?search_query=kubernetes+full+course+kodekloud', duration: '6h', free: true },
+    { title: 'EKS Workshop', platform: 'AWS', icon: 'cloud', url: 'https://www.eksworkshop.com/', duration: '8h', free: true },
+    { title: 'Kubernetes Basics', platform: 'Google Cloud', icon: 'school', url: 'https://cloud.google.com/kubernetes-engine/docs/tutorials', duration: '4h', free: true },
   ],
   'SQL': [
-    { title: 'SQL Full Course', platform: 'YouTube', icon: '🎥', url: 'https://youtube.com/results?search_query=sql+full+course+2025', duration: '4h', free: true },
-    { title: 'SQL Course', platform: 'freeCodeCamp', icon: '🏗️', url: 'https://www.freecodecamp.org/learn/relational-database/', duration: '20h', free: true },
-    { title: 'SQLBolt Interactive', platform: 'SQLBolt', icon: '⚡', url: 'https://sqlbolt.com/', duration: '2h', free: true },
+    { title: 'SQL Full Course', platform: 'YouTube', icon: 'smart_display', url: 'https://youtube.com/results?search_query=sql+full+course+2025', duration: '4h', free: true },
+    { title: 'SQL Course', platform: 'freeCodeCamp', icon: 'architecture', url: 'https://www.freecodecamp.org/learn/relational-database/', duration: '20h', free: true },
+    { title: 'SQLBolt Interactive', platform: 'SQLBolt', icon: 'bolt', url: 'https://sqlbolt.com/', duration: '2h', free: true },
   ],
   'GraphQL': [
-    { title: 'GraphQL Full Course', platform: 'YouTube', icon: '🎥', url: 'https://youtube.com/results?search_query=graphql+full+course', duration: '4h', free: true },
-    { title: 'How to GraphQL', platform: 'Prisma', icon: '📘', url: 'https://www.howtographql.com/', duration: '6h', free: true },
+    { title: 'GraphQL Full Course', platform: 'YouTube', icon: 'smart_display', url: 'https://youtube.com/results?search_query=graphql+full+course', duration: '4h', free: true },
+    { title: 'How to GraphQL', platform: 'Prisma', icon: 'menu_book', url: 'https://www.howtographql.com/', duration: '6h', free: true },
   ],
   'CI/CD': [
-    { title: 'GitHub Actions Tutorial', platform: 'YouTube', icon: '🎥', url: 'https://youtube.com/results?search_query=github+actions+complete+guide', duration: '3h', free: true },
+    { title: 'GitHub Actions Tutorial', platform: 'YouTube', icon: 'smart_display', url: 'https://youtube.com/results?search_query=github+actions+complete+guide', duration: '3h', free: true },
     { title: 'CI/CD with GitHub Actions', platform: 'GitHub', icon: '🐙', url: 'https://docs.github.com/en/actions/learn-github-actions', duration: '4h', free: true },
   ],
   'Machine Learning': [
-    { title: 'Machine Learning Crash Course', platform: 'Google', icon: '🎓', url: 'https://developers.google.com/machine-learning/crash-course', duration: '15h', free: true },
-    { title: 'Practical Deep Learning', platform: 'fast.ai', icon: '🧠', url: 'https://course.fast.ai/', duration: '40h', free: true },
-    { title: 'ML Specialization', platform: 'Coursera', icon: '🎓', url: 'https://www.coursera.org/specializations/machine-learning-introduction', duration: '3mo', free: true },
+    { title: 'Machine Learning Crash Course', platform: 'Google', icon: 'school', url: 'https://developers.google.com/machine-learning/crash-course', duration: '15h', free: true },
+    { title: 'Practical Deep Learning', platform: 'fast.ai', icon: 'psychology', url: 'https://course.fast.ai/', duration: '40h', free: true },
+    { title: 'ML Specialization', platform: 'Coursera', icon: 'school', url: 'https://www.coursera.org/specializations/machine-learning-introduction', duration: '3mo', free: true },
   ],
   'Data Analysis': [
-    { title: 'Google Data Analytics', platform: 'Coursera', icon: '🎓', url: 'https://www.coursera.org/professional-certificates/google-data-analytics', duration: '6mo', free: true },
-    { title: 'Data Analysis with Python', platform: 'freeCodeCamp', icon: '🏗️', url: 'https://www.freecodecamp.org/learn/data-analysis-with-python/', duration: '20h', free: true },
+    { title: 'Google Data Analytics', platform: 'Coursera', icon: 'school', url: 'https://www.coursera.org/professional-certificates/google-data-analytics', duration: '6mo', free: true },
+    { title: 'Data Analysis with Python', platform: 'freeCodeCamp', icon: 'architecture', url: 'https://www.freecodecamp.org/learn/data-analysis-with-python/', duration: '20h', free: true },
   ],
   'Leadership': [
-    { title: 'Leadership & Management', platform: 'LinkedIn Learning', icon: '💼', url: 'https://www.linkedin.com/learning/topics/leadership-and-management', duration: '4h', free: false },
-    { title: 'Team Leadership', platform: 'Coursera', icon: '🎓', url: 'https://www.coursera.org/learn/leading-teams', duration: '8h', free: true },
+    { title: 'Leadership & Management', platform: 'LinkedIn Learning', icon: 'work', url: 'https://www.linkedin.com/learning/topics/leadership-and-management', duration: '4h', free: false },
+    { title: 'Team Leadership', platform: 'Coursera', icon: 'school', url: 'https://www.coursera.org/learn/leading-teams', duration: '8h', free: true },
   ],
   'Agile': [
-    { title: 'Agile with Atlassian Jira', platform: 'Coursera', icon: '🎓', url: 'https://www.coursera.org/learn/agile-atlassian-jira', duration: '4h', free: true },
-    { title: 'Scrum Master Certification Prep', platform: 'YouTube', icon: '🎥', url: 'https://youtube.com/results?search_query=scrum+master+certification+prep', duration: '3h', free: true },
+    { title: 'Agile with Atlassian Jira', platform: 'Coursera', icon: 'school', url: 'https://www.coursera.org/learn/agile-atlassian-jira', duration: '4h', free: true },
+    { title: 'Scrum Master Certification Prep', platform: 'YouTube', icon: 'smart_display', url: 'https://youtube.com/results?search_query=scrum+master+certification+prep', duration: '3h', free: true },
   ],
   'Project Management': [
-    { title: 'Google Project Management', platform: 'Coursera', icon: '🎓', url: 'https://www.coursera.org/professional-certificates/google-project-management', duration: '6mo', free: true },
-    { title: 'PMP Exam Prep', platform: 'YouTube', icon: '🎥', url: 'https://youtube.com/results?search_query=pmp+exam+prep+2025', duration: '8h', free: true },
+    { title: 'Google Project Management', platform: 'Coursera', icon: 'school', url: 'https://www.coursera.org/professional-certificates/google-project-management', duration: '6mo', free: true },
+    { title: 'PMP Exam Prep', platform: 'YouTube', icon: 'smart_display', url: 'https://youtube.com/results?search_query=pmp+exam+prep+2025', duration: '8h', free: true },
   ],
 };
 
 function getDefaultResources(skill: string): LearningResource[] {
   return [
-    { title: `${skill} Complete Guide`, platform: 'YouTube', icon: '🎥', url: `https://youtube.com/results?search_query=${encodeURIComponent(skill)}+tutorial+2025`, duration: 'Varies', free: true },
-    { title: `Learn ${skill}`, platform: 'Google', icon: '🎓', url: `https://www.google.com/search?q=learn+${encodeURIComponent(skill)}+free+course`, duration: 'Self-paced', free: true },
-    { title: `${skill} Training`, platform: 'LinkedIn Learning', icon: '💼', url: `https://www.linkedin.com/learning/search?keywords=${encodeURIComponent(skill)}`, duration: 'Varies', free: false },
+    { title: `${skill} Complete Guide`, platform: 'YouTube', icon: 'smart_display', url: `https://youtube.com/results?search_query=${encodeURIComponent(skill)}+tutorial+2025`, duration: 'Varies', free: true },
+    { title: `Learn ${skill}`, platform: 'Google', icon: 'school', url: `https://www.google.com/search?q=learn+${encodeURIComponent(skill)}+free+course`, duration: 'Self-paced', free: true },
+    { title: `${skill} Training`, platform: 'LinkedIn Learning', icon: 'work', url: `https://www.linkedin.com/learning/search?keywords=${encodeURIComponent(skill)}`, duration: 'Varies', free: false },
   ];
 }
 
@@ -178,10 +179,10 @@ function getTrainingDays(skill: string, category: 'technical' | 'soft' | 'domain
 }
 
 const DURATION_LABELS: Record<number, { label: string; icon: string }> = {
-  2: { label: '2-Day Sprint', icon: '⚡' },
-  3: { label: '3-Day Focus', icon: '🎯' },
-  4: { label: '4-Day Plan', icon: '📅' },
-  5: { label: '5-Day Deep Dive', icon: '🔬' },
+  2: { label: '2-Day Sprint', icon: 'bolt' },
+  3: { label: '3-Day Focus', icon: 'my_location' },
+  4: { label: '4-Day Plan', icon: 'calendar_month' },
+  5: { label: '5-Day Deep Dive', icon: 'science' },
 };
 
 // ═══════════════════════════════════════
@@ -199,89 +200,89 @@ interface DayPlan {
 
 const CURATED_PLANS: Record<string, DayPlan[]> = {
   'Kubernetes': [
-    { day: 1, focus: 'Core Concepts: Pods, Nodes, Clusters', hours: 2, platform: 'YouTube', platformIcon: '🎥', resource: 'Kubernetes Crash Course', url: 'https://youtube.com/results?search_query=kubernetes+crash+course+2025' },
-    { day: 2, focus: 'Deployments, Services & Networking', hours: 2.5, platform: 'KodeKloud', platformIcon: '💻', resource: 'Kubernetes for Beginners', url: 'https://kodekloud.com/courses/kubernetes-for-the-absolute-beginners/' },
-    { day: 3, focus: 'Helm, ConfigMaps & Secrets', hours: 2, platform: 'Official Docs', platformIcon: '📘', resource: 'Kubernetes Documentation', url: 'https://kubernetes.io/docs/tutorials/' },
-    { day: 4, focus: 'Practice: Deploy a full app on Minikube', hours: 3, platform: 'Hands-on Lab', platformIcon: '🔧', resource: 'Killercoda Interactive', url: 'https://killercoda.com/playgrounds/scenario/kubernetes' },
+    { day: 1, focus: 'Core Concepts: Pods, Nodes, Clusters', hours: 2, platform: 'YouTube', platformIcon: 'smart_display', resource: 'Kubernetes Crash Course', url: 'https://youtube.com/results?search_query=kubernetes+crash+course+2025' },
+    { day: 2, focus: 'Deployments, Services & Networking', hours: 2.5, platform: 'KodeKloud', platformIcon: 'computer', resource: 'Kubernetes for Beginners', url: 'https://kodekloud.com/courses/kubernetes-for-the-absolute-beginners/' },
+    { day: 3, focus: 'Helm, ConfigMaps & Secrets', hours: 2, platform: 'Official Docs', platformIcon: 'menu_book', resource: 'Kubernetes Documentation', url: 'https://kubernetes.io/docs/tutorials/' },
+    { day: 4, focus: 'Practice: Deploy a full app on Minikube', hours: 3, platform: 'Hands-on Lab', platformIcon: 'build', resource: 'Killercoda Interactive', url: 'https://killercoda.com/playgrounds/scenario/kubernetes' },
   ],
   'CI/CD': [
-    { day: 1, focus: 'CI/CD Concepts + GitHub Actions Basics', hours: 1.5, platform: 'YouTube', platformIcon: '🎥', resource: 'GitHub Actions Tutorial', url: 'https://youtube.com/results?search_query=github+actions+complete+guide+2025' },
-    { day: 2, focus: 'Build Pipelines: Test, Lint, Deploy', hours: 2, platform: 'GitHub Docs', platformIcon: '🐙', resource: 'GitHub Actions Docs', url: 'https://docs.github.com/en/actions/learn-github-actions' },
-    { day: 3, focus: 'Docker + CI/CD Integration', hours: 2, platform: 'LinkedIn Learning', platformIcon: '💼', resource: 'Learning CI/CD', url: 'https://www.linkedin.com/learning/search?keywords=ci+cd' },
-    { day: 4, focus: 'Practice: Build real pipeline for a project', hours: 2.5, platform: 'Hands-on Lab', platformIcon: '🔧', resource: 'Build Your Own Pipeline', url: 'https://github.com/skills/continuous-integration' },
+    { day: 1, focus: 'CI/CD Concepts + GitHub Actions Basics', hours: 1.5, platform: 'YouTube', platformIcon: 'smart_display', resource: 'GitHub Actions Tutorial', url: 'https://youtube.com/results?search_query=github+actions+complete+guide+2025' },
+    { day: 2, focus: 'Build Pipelines: Test, Lint, Deploy', hours: 2, platform: 'GitHub Docs', platformIcon: 'hub', resource: 'GitHub Actions Docs', url: 'https://docs.github.com/en/actions/learn-github-actions' },
+    { day: 3, focus: 'Docker + CI/CD Integration', hours: 2, platform: 'LinkedIn Learning', platformIcon: 'work', resource: 'Learning CI/CD', url: 'https://www.linkedin.com/learning/search?keywords=ci+cd' },
+    { day: 4, focus: 'Practice: Build real pipeline for a project', hours: 2.5, platform: 'Hands-on Lab', platformIcon: 'build', resource: 'Build Your Own Pipeline', url: 'https://github.com/skills/continuous-integration' },
   ],
   'GraphQL': [
-    { day: 1, focus: 'GraphQL vs REST, Schemas & Types', hours: 1.5, platform: 'YouTube', platformIcon: '🎥', resource: 'GraphQL Crash Course', url: 'https://youtube.com/results?search_query=graphql+crash+course+2025' },
-    { day: 2, focus: 'Queries, Mutations & Resolvers', hours: 2, platform: 'How to GraphQL', platformIcon: '📘', resource: 'Interactive Tutorial', url: 'https://www.howtographql.com/' },
-    { day: 3, focus: 'Apollo Client + React Integration', hours: 2, platform: 'Apollo Docs', platformIcon: '🚀', resource: 'Apollo Full Stack Tutorial', url: 'https://www.apollographql.com/tutorials/' },
-    { day: 4, focus: 'Practice: Build a GraphQL API', hours: 2.5, platform: 'Hands-on Lab', platformIcon: '🔧', resource: 'Build GraphQL Server', url: 'https://graphql.org/learn/' },
+    { day: 1, focus: 'GraphQL vs REST, Schemas & Types', hours: 1.5, platform: 'YouTube', platformIcon: 'smart_display', resource: 'GraphQL Crash Course', url: 'https://youtube.com/results?search_query=graphql+crash+course+2025' },
+    { day: 2, focus: 'Queries, Mutations & Resolvers', hours: 2, platform: 'How to GraphQL', platformIcon: 'menu_book', resource: 'Interactive Tutorial', url: 'https://www.howtographql.com/' },
+    { day: 3, focus: 'Apollo Client + React Integration', hours: 2, platform: 'Apollo Docs', platformIcon: 'rocket_launch', resource: 'Apollo Full Stack Tutorial', url: 'https://www.apollographql.com/tutorials/' },
+    { day: 4, focus: 'Practice: Build a GraphQL API', hours: 2.5, platform: 'Hands-on Lab', platformIcon: 'build', resource: 'Build GraphQL Server', url: 'https://graphql.org/learn/' },
   ],
   'AWS': [
-    { day: 1, focus: 'Cloud Fundamentals: EC2, S3, IAM', hours: 2, platform: 'YouTube', platformIcon: '🎥', resource: 'AWS Cloud Practitioner', url: 'https://youtube.com/results?search_query=aws+cloud+practitioner+2025' },
-    { day: 2, focus: 'Serverless: Lambda, API Gateway, DynamoDB', hours: 2.5, platform: 'AWS Skill Builder', platformIcon: '☁️', resource: 'AWS Skill Builder', url: 'https://skillbuilder.aws/' },
-    { day: 3, focus: 'Networking: VPC, Route53, CloudFront', hours: 2, platform: 'LinkedIn Learning', platformIcon: '💼', resource: 'AWS Essential Training', url: 'https://www.linkedin.com/learning/search?keywords=aws' },
-    { day: 4, focus: 'CI/CD on AWS: CodePipeline & CloudFormation', hours: 2, platform: 'Official Docs', platformIcon: '📘', resource: 'AWS Well-Architected', url: 'https://aws.amazon.com/architecture/well-architected/' },
-    { day: 5, focus: 'Practice: Deploy full-stack app on AWS', hours: 3, platform: 'Hands-on Lab', platformIcon: '🔧', resource: 'AWS Free Tier Labs', url: 'https://aws.amazon.com/free/' },
+    { day: 1, focus: 'Cloud Fundamentals: EC2, S3, IAM', hours: 2, platform: 'YouTube', platformIcon: 'smart_display', resource: 'AWS Cloud Practitioner', url: 'https://youtube.com/results?search_query=aws+cloud+practitioner+2025' },
+    { day: 2, focus: 'Serverless: Lambda, API Gateway, DynamoDB', hours: 2.5, platform: 'AWS Skill Builder', platformIcon: 'cloud', resource: 'AWS Skill Builder', url: 'https://skillbuilder.aws/' },
+    { day: 3, focus: 'Networking: VPC, Route53, CloudFront', hours: 2, platform: 'LinkedIn Learning', platformIcon: 'work', resource: 'AWS Essential Training', url: 'https://www.linkedin.com/learning/search?keywords=aws' },
+    { day: 4, focus: 'CI/CD on AWS: CodePipeline & CloudFormation', hours: 2, platform: 'Official Docs', platformIcon: 'menu_book', resource: 'AWS Well-Architected', url: 'https://aws.amazon.com/architecture/well-architected/' },
+    { day: 5, focus: 'Practice: Deploy full-stack app on AWS', hours: 3, platform: 'Hands-on Lab', platformIcon: 'build', resource: 'AWS Free Tier Labs', url: 'https://aws.amazon.com/free/' },
   ],
   'Leadership': [
-    { day: 1, focus: 'Leadership Styles & Self-Assessment', hours: 1.5, platform: 'LinkedIn Learning', platformIcon: '💼', resource: 'Leadership Foundations', url: 'https://www.linkedin.com/learning/topics/leadership-and-management' },
-    { day: 2, focus: 'Team Dynamics & Conflict Resolution', hours: 1.5, platform: 'Coursera', platformIcon: '🎓', resource: 'Leading Teams', url: 'https://www.coursera.org/learn/leading-teams' },
-    { day: 3, focus: 'STAR Method: Behavioral Interview Prep', hours: 2, platform: 'YouTube', platformIcon: '🎥', resource: 'Leadership Interview Answers', url: 'https://youtube.com/results?search_query=leadership+behavioral+interview+STAR+method' },
+    { day: 1, focus: 'Leadership Styles & Self-Assessment', hours: 1.5, platform: 'LinkedIn Learning', platformIcon: 'work', resource: 'Leadership Foundations', url: 'https://www.linkedin.com/learning/topics/leadership-and-management' },
+    { day: 2, focus: 'Team Dynamics & Conflict Resolution', hours: 1.5, platform: 'Coursera', platformIcon: 'school', resource: 'Leading Teams', url: 'https://www.coursera.org/learn/leading-teams' },
+    { day: 3, focus: 'STAR Method: Behavioral Interview Prep', hours: 2, platform: 'YouTube', platformIcon: 'smart_display', resource: 'Leadership Interview Answers', url: 'https://youtube.com/results?search_query=leadership+behavioral+interview+STAR+method' },
   ],
   'Docker': [
-    { day: 1, focus: 'Containers, Images & Dockerfile', hours: 1.5, platform: 'YouTube', platformIcon: '🎥', resource: 'Docker in 100 Seconds + Tutorial', url: 'https://youtube.com/results?search_query=docker+tutorial+beginners+2025' },
-    { day: 2, focus: 'Docker Compose + Practice Build', hours: 2, platform: 'Official Docs', platformIcon: '🐳', resource: 'Docker Get Started', url: 'https://docs.docker.com/get-started/' },
+    { day: 1, focus: 'Containers, Images & Dockerfile', hours: 1.5, platform: 'YouTube', platformIcon: 'smart_display', resource: 'Docker in 100 Seconds + Tutorial', url: 'https://youtube.com/results?search_query=docker+tutorial+beginners+2025' },
+    { day: 2, focus: 'Docker Compose + Practice Build', hours: 2, platform: 'Official Docs', platformIcon: 'deployed_code', resource: 'Docker Get Started', url: 'https://docs.docker.com/get-started/' },
   ],
   'SQL': [
-    { day: 1, focus: 'SELECT, JOINs, WHERE, GROUP BY', hours: 1.5, platform: 'SQLBolt', platformIcon: '⚡', resource: 'SQLBolt Interactive', url: 'https://sqlbolt.com/' },
-    { day: 2, focus: 'Subqueries, Window Functions & Practice', hours: 2, platform: 'YouTube', platformIcon: '🎥', resource: 'Advanced SQL', url: 'https://youtube.com/results?search_query=advanced+sql+interview+prep' },
+    { day: 1, focus: 'SELECT, JOINs, WHERE, GROUP BY', hours: 1.5, platform: 'SQLBolt', platformIcon: 'bolt', resource: 'SQLBolt Interactive', url: 'https://sqlbolt.com/' },
+    { day: 2, focus: 'Subqueries, Window Functions & Practice', hours: 2, platform: 'YouTube', platformIcon: 'smart_display', resource: 'Advanced SQL', url: 'https://youtube.com/results?search_query=advanced+sql+interview+prep' },
   ],
   'React': [
-    { day: 1, focus: 'Components, JSX, Props & State', hours: 2, platform: 'React.dev', platformIcon: '📘', resource: 'Official React Tutorial', url: 'https://react.dev/learn' },
-    { day: 2, focus: 'Hooks: useState, useEffect, useContext', hours: 2, platform: 'YouTube', platformIcon: '🎥', resource: 'React Hooks Course', url: 'https://youtube.com/results?search_query=react+hooks+complete+2025' },
-    { day: 3, focus: 'State Management & Performance', hours: 2, platform: 'freeCodeCamp', platformIcon: '🏗️', resource: 'React & Redux', url: 'https://www.freecodecamp.org/learn/front-end-development-libraries/#react' },
-    { day: 4, focus: 'Practice: Build a mini project', hours: 2.5, platform: 'Hands-on Lab', platformIcon: '🔧', resource: 'Build with React', url: 'https://react.dev/learn/tutorial-tic-tac-toe' },
+    { day: 1, focus: 'Components, JSX, Props & State', hours: 2, platform: 'React.dev', platformIcon: 'menu_book', resource: 'Official React Tutorial', url: 'https://react.dev/learn' },
+    { day: 2, focus: 'Hooks: useState, useEffect, useContext', hours: 2, platform: 'YouTube', platformIcon: 'smart_display', resource: 'React Hooks Course', url: 'https://youtube.com/results?search_query=react+hooks+complete+2025' },
+    { day: 3, focus: 'State Management & Performance', hours: 2, platform: 'freeCodeCamp', platformIcon: 'architecture', resource: 'React & Redux', url: 'https://www.freecodecamp.org/learn/front-end-development-libraries/#react' },
+    { day: 4, focus: 'Practice: Build a mini project', hours: 2.5, platform: 'Hands-on Lab', platformIcon: 'build', resource: 'Build with React', url: 'https://react.dev/learn/tutorial-tic-tac-toe' },
   ],
   'TypeScript': [
-    { day: 1, focus: 'Types, Interfaces & Generics', hours: 1.5, platform: 'TypeScript Docs', platformIcon: '📘', resource: 'TypeScript Handbook', url: 'https://www.typescriptlang.org/docs/handbook/' },
-    { day: 2, focus: 'Utility Types & Advanced Patterns', hours: 2, platform: 'YouTube', platformIcon: '🎥', resource: 'TypeScript Full Course', url: 'https://youtube.com/results?search_query=typescript+full+course+2025' },
-    { day: 3, focus: 'TS + React: Typing Components', hours: 2, platform: 'Execute Program', platformIcon: '💻', resource: 'TypeScript Exercises', url: 'https://www.typescriptlang.org/play' },
-    { day: 4, focus: 'Practice: Refactor JS to TS', hours: 2, platform: 'Hands-on Lab', platformIcon: '🔧', resource: 'Type Challenges', url: 'https://github.com/type-challenges/type-challenges' },
+    { day: 1, focus: 'Types, Interfaces & Generics', hours: 1.5, platform: 'TypeScript Docs', platformIcon: 'menu_book', resource: 'TypeScript Handbook', url: 'https://www.typescriptlang.org/docs/handbook/' },
+    { day: 2, focus: 'Utility Types & Advanced Patterns', hours: 2, platform: 'YouTube', platformIcon: 'smart_display', resource: 'TypeScript Full Course', url: 'https://youtube.com/results?search_query=typescript+full+course+2025' },
+    { day: 3, focus: 'TS + React: Typing Components', hours: 2, platform: 'Execute Program', platformIcon: 'computer', resource: 'TypeScript Exercises', url: 'https://www.typescriptlang.org/play' },
+    { day: 4, focus: 'Practice: Refactor JS to TS', hours: 2, platform: 'Hands-on Lab', platformIcon: 'build', resource: 'Type Challenges', url: 'https://github.com/type-challenges/type-challenges' },
   ],
   'Python': [
-    { day: 1, focus: 'Syntax, Data Structures & Functions', hours: 2, platform: 'YouTube', platformIcon: '🎥', resource: 'Python Crash Course', url: 'https://youtube.com/results?search_query=python+crash+course+2025' },
-    { day: 2, focus: 'OOP, File I/O & Modules', hours: 2, platform: 'freeCodeCamp', platformIcon: '🏗️', resource: 'Scientific Python', url: 'https://www.freecodecamp.org/learn/scientific-computing-with-python/' },
-    { day: 3, focus: 'Libraries: NumPy, Pandas basics', hours: 2, platform: 'Coursera', platformIcon: '🎓', resource: 'Python for Data Science', url: 'https://www.coursera.org/specializations/python' },
-    { day: 4, focus: 'Practice: Solve 10 LeetCode problems', hours: 2.5, platform: 'LeetCode', platformIcon: '🧩', resource: 'Python Problems', url: 'https://leetcode.com/problemset/?topicSlugs=array&difficulty=EASY' },
+    { day: 1, focus: 'Syntax, Data Structures & Functions', hours: 2, platform: 'YouTube', platformIcon: 'smart_display', resource: 'Python Crash Course', url: 'https://youtube.com/results?search_query=python+crash+course+2025' },
+    { day: 2, focus: 'OOP, File I/O & Modules', hours: 2, platform: 'freeCodeCamp', platformIcon: 'architecture', resource: 'Scientific Python', url: 'https://www.freecodecamp.org/learn/scientific-computing-with-python/' },
+    { day: 3, focus: 'Libraries: NumPy, Pandas basics', hours: 2, platform: 'Coursera', platformIcon: 'school', resource: 'Python for Data Science', url: 'https://www.coursera.org/specializations/python' },
+    { day: 4, focus: 'Practice: Solve 10 LeetCode problems', hours: 2.5, platform: 'LeetCode', platformIcon: 'extension', resource: 'Python Problems', url: 'https://leetcode.com/problemset/?topicSlugs=array&difficulty=EASY' },
   ],
   'Node.js': [
-    { day: 1, focus: 'Event Loop, Modules & async/await', hours: 2, platform: 'YouTube', platformIcon: '🎥', resource: 'Node.js Crash Course', url: 'https://youtube.com/results?search_query=node.js+crash+course+2025' },
-    { day: 2, focus: 'Express.js: Routes, Middleware, REST', hours: 2, platform: 'Official Docs', platformIcon: '📘', resource: 'Node.js Learn', url: 'https://nodejs.org/en/learn' },
-    { day: 3, focus: 'Database Integration + Auth', hours: 2.5, platform: 'LinkedIn Learning', platformIcon: '💼', resource: 'Node.js Essential Training', url: 'https://www.linkedin.com/learning/search?keywords=node.js' },
-    { day: 4, focus: 'Practice: Build a REST API', hours: 3, platform: 'Hands-on Lab', platformIcon: '🔧', resource: 'Express Tutorial', url: 'https://expressjs.com/en/starter/installing.html' },
+    { day: 1, focus: 'Event Loop, Modules & async/await', hours: 2, platform: 'YouTube', platformIcon: 'smart_display', resource: 'Node.js Crash Course', url: 'https://youtube.com/results?search_query=node.js+crash+course+2025' },
+    { day: 2, focus: 'Express.js: Routes, Middleware, REST', hours: 2, platform: 'Official Docs', platformIcon: 'menu_book', resource: 'Node.js Learn', url: 'https://nodejs.org/en/learn' },
+    { day: 3, focus: 'Database Integration + Auth', hours: 2.5, platform: 'LinkedIn Learning', platformIcon: 'work', resource: 'Node.js Essential Training', url: 'https://www.linkedin.com/learning/search?keywords=node.js' },
+    { day: 4, focus: 'Practice: Build a REST API', hours: 3, platform: 'Hands-on Lab', platformIcon: 'build', resource: 'Express Tutorial', url: 'https://expressjs.com/en/starter/installing.html' },
   ],
   'Next.js': [
-    { day: 1, focus: 'App Router, Server Components, Routing', hours: 2, platform: 'Vercel', platformIcon: '▲', resource: 'Learn Next.js', url: 'https://nextjs.org/learn' },
-    { day: 2, focus: 'Data Fetching, Caching & APIs', hours: 2, platform: 'YouTube', platformIcon: '🎥', resource: 'Next.js Full Course', url: 'https://youtube.com/results?search_query=next.js+15+full+course' },
-    { day: 3, focus: 'Auth, Middleware & Deployment', hours: 2, platform: 'Official Docs', platformIcon: '📘', resource: 'Next.js Documentation', url: 'https://nextjs.org/docs' },
-    { day: 4, focus: 'Practice: Build & deploy a full app', hours: 3, platform: 'Hands-on Lab', platformIcon: '🔧', resource: 'Vercel Deploy', url: 'https://vercel.com/new' },
+    { day: 1, focus: 'App Router, Server Components, Routing', hours: 2, platform: 'Vercel', platformIcon: 'cloud_upload', resource: 'Learn Next.js', url: 'https://nextjs.org/learn' },
+    { day: 2, focus: 'Data Fetching, Caching & APIs', hours: 2, platform: 'YouTube', platformIcon: 'smart_display', resource: 'Next.js Full Course', url: 'https://youtube.com/results?search_query=next.js+15+full+course' },
+    { day: 3, focus: 'Auth, Middleware & Deployment', hours: 2, platform: 'Official Docs', platformIcon: 'menu_book', resource: 'Next.js Documentation', url: 'https://nextjs.org/docs' },
+    { day: 4, focus: 'Practice: Build & deploy a full app', hours: 3, platform: 'Hands-on Lab', platformIcon: 'build', resource: 'Vercel Deploy', url: 'https://vercel.com/new' },
   ],
   'Machine Learning': [
-    { day: 1, focus: 'ML Fundamentals: Regression & Classification', hours: 2, platform: 'Google', platformIcon: '🎓', resource: 'ML Crash Course', url: 'https://developers.google.com/machine-learning/crash-course' },
-    { day: 2, focus: 'Scikit-learn: Models & Evaluation', hours: 2.5, platform: 'YouTube', platformIcon: '🎥', resource: 'Scikit-learn Tutorial', url: 'https://youtube.com/results?search_query=scikit+learn+full+tutorial' },
-    { day: 3, focus: 'Neural Networks & Deep Learning Intro', hours: 2.5, platform: 'fast.ai', platformIcon: '🧠', resource: 'Practical Deep Learning', url: 'https://course.fast.ai/' },
-    { day: 4, focus: 'NLP & Computer Vision Basics', hours: 2, platform: 'Coursera', platformIcon: '🎓', resource: 'ML Specialization', url: 'https://www.coursera.org/specializations/machine-learning-introduction' },
-    { day: 5, focus: 'Practice: Train & evaluate a model', hours: 3, platform: 'Kaggle', platformIcon: '📊', resource: 'Kaggle Competitions', url: 'https://www.kaggle.com/competitions' },
+    { day: 1, focus: 'ML Fundamentals: Regression & Classification', hours: 2, platform: 'Google', platformIcon: 'school', resource: 'ML Crash Course', url: 'https://developers.google.com/machine-learning/crash-course' },
+    { day: 2, focus: 'Scikit-learn: Models & Evaluation', hours: 2.5, platform: 'YouTube', platformIcon: 'smart_display', resource: 'Scikit-learn Tutorial', url: 'https://youtube.com/results?search_query=scikit+learn+full+tutorial' },
+    { day: 3, focus: 'Neural Networks & Deep Learning Intro', hours: 2.5, platform: 'fast.ai', platformIcon: 'psychology', resource: 'Practical Deep Learning', url: 'https://course.fast.ai/' },
+    { day: 4, focus: 'NLP & Computer Vision Basics', hours: 2, platform: 'Coursera', platformIcon: 'school', resource: 'ML Specialization', url: 'https://www.coursera.org/specializations/machine-learning-introduction' },
+    { day: 5, focus: 'Practice: Train & evaluate a model', hours: 3, platform: 'Kaggle', platformIcon: 'bar_chart', resource: 'Kaggle Competitions', url: 'https://www.kaggle.com/competitions' },
   ],
   'Agile': [
-    { day: 1, focus: 'Agile Manifesto, Scrum Framework', hours: 1.5, platform: 'YouTube', platformIcon: '🎥', resource: 'Agile in 10 Minutes', url: 'https://youtube.com/results?search_query=agile+scrum+explained' },
-    { day: 2, focus: 'Sprint Planning, Standups, Retros', hours: 1.5, platform: 'Coursera', platformIcon: '🎓', resource: 'Agile with Jira', url: 'https://www.coursera.org/learn/agile-atlassian-jira' },
-    { day: 3, focus: 'Kanban + Interview Scenario Prep', hours: 2, platform: 'LinkedIn Learning', platformIcon: '💼', resource: 'Agile Teams', url: 'https://www.linkedin.com/learning/search?keywords=agile' },
+    { day: 1, focus: 'Agile Manifesto, Scrum Framework', hours: 1.5, platform: 'YouTube', platformIcon: 'smart_display', resource: 'Agile in 10 Minutes', url: 'https://youtube.com/results?search_query=agile+scrum+explained' },
+    { day: 2, focus: 'Sprint Planning, Standups, Retros', hours: 1.5, platform: 'Coursera', platformIcon: 'school', resource: 'Agile with Jira', url: 'https://www.coursera.org/learn/agile-atlassian-jira' },
+    { day: 3, focus: 'Kanban + Interview Scenario Prep', hours: 2, platform: 'LinkedIn Learning', platformIcon: 'work', resource: 'Agile Teams', url: 'https://www.linkedin.com/learning/search?keywords=agile' },
   ],
   'Project Management': [
-    { day: 1, focus: 'PM Methodologies & Stakeholder Mgmt', hours: 2, platform: 'Coursera', platformIcon: '🎓', resource: 'Google Project Mgmt', url: 'https://www.coursera.org/professional-certificates/google-project-management' },
-    { day: 2, focus: 'Risk Assessment & Communication', hours: 1.5, platform: 'YouTube', platformIcon: '🎥', resource: 'PM Interview Prep', url: 'https://youtube.com/results?search_query=project+management+interview+prep' },
-    { day: 3, focus: 'Tools + STAR method for PM interviews', hours: 2, platform: 'LinkedIn Learning', platformIcon: '💼', resource: 'PM Professional', url: 'https://www.linkedin.com/learning/search?keywords=project+management' },
+    { day: 1, focus: 'PM Methodologies & Stakeholder Mgmt', hours: 2, platform: 'Coursera', platformIcon: 'school', resource: 'Google Project Mgmt', url: 'https://www.coursera.org/professional-certificates/google-project-management' },
+    { day: 2, focus: 'Risk Assessment & Communication', hours: 1.5, platform: 'YouTube', platformIcon: 'smart_display', resource: 'PM Interview Prep', url: 'https://youtube.com/results?search_query=project+management+interview+prep' },
+    { day: 3, focus: 'Tools + STAR method for PM interviews', hours: 2, platform: 'LinkedIn Learning', platformIcon: 'work', resource: 'PM Professional', url: 'https://www.linkedin.com/learning/search?keywords=project+management' },
   ],
 };
 
@@ -289,11 +290,11 @@ function getCuratedPlan(skill: string, totalDays: number): DayPlan[] {
   if (CURATED_PLANS[skill]) return CURATED_PLANS[skill];
   // Fallback: generate a generic plan
   const platforms = [
-    { platform: 'YouTube', icon: '🎥', url: `https://youtube.com/results?search_query=${encodeURIComponent(skill)}+tutorial+2025` },
-    { platform: 'LinkedIn Learning', icon: '💼', url: `https://www.linkedin.com/learning/search?keywords=${encodeURIComponent(skill)}` },
-    { platform: 'Coursera', icon: '🎓', url: `https://www.coursera.org/search?query=${encodeURIComponent(skill)}` },
-    { platform: 'freeCodeCamp', icon: '🏗️', url: 'https://www.freecodecamp.org/' },
-    { platform: 'Hands-on Lab', icon: '🔧', url: `https://www.google.com/search?q=${encodeURIComponent(skill)}+hands+on+practice` },
+    { platform: 'YouTube', icon: 'smart_display', url: `https://youtube.com/results?search_query=${encodeURIComponent(skill)}+tutorial+2025` },
+    { platform: 'LinkedIn Learning', icon: 'work', url: `https://www.linkedin.com/learning/search?keywords=${encodeURIComponent(skill)}` },
+    { platform: 'Coursera', icon: 'school', url: `https://www.coursera.org/search?query=${encodeURIComponent(skill)}` },
+    { platform: 'freeCodeCamp', icon: 'architecture', url: 'https://www.freecodecamp.org/' },
+    { platform: 'Hands-on Lab', icon: 'build', url: `https://www.google.com/search?q=${encodeURIComponent(skill)}+hands+on+practice` },
   ];
   const focuses = ['Core Concepts & Fundamentals', 'Intermediate Patterns', 'Advanced Techniques', 'Real-world Practice', 'Interview Prep & Review'];
   return Array.from({ length: totalDays }, (_, i) => ({
@@ -403,11 +404,11 @@ function SkillCard({ gap, completedDays, totalDays, onDayToggle, onCourseToggle,
   const daysCompleted = completedDays.length;
   const progress = Math.round((daysCompleted / totalDays) * 100);
   const isComplete = daysCompleted >= totalDays;
-  const durationInfo = DURATION_LABELS[totalDays] || { label: `${totalDays}-Day Plan`, icon: '📅' };
+  const durationInfo = DURATION_LABELS[totalDays] || { label: `${totalDays}-Day Plan`, icon: 'calendar_month' };
   const confidenceConfig = {
-    'ai-added': { label: 'AI-Enhanced', icon: '⚡' },
-    'weak': { label: 'Needs Work', icon: '📈' },
-    'strong': { label: 'Strong', icon: '✅' },
+    'ai-added': { label: 'AI-Enhanced', icon: 'bolt' },
+    'weak': { label: 'Needs Work', icon: 'trending_up' },
+    'strong': { label: 'Strong', icon: 'check_circle' },
   }[gap.confidence];
 
   const handleDismissClick = () => {
@@ -452,7 +453,7 @@ function SkillCard({ gap, completedDays, totalDays, onDayToggle, onCourseToggle,
             ? 'text-slate-300 hover:text-red-500 hover:bg-red-50'
             : 'text-white/15 hover:text-red-400 hover:bg-red-500/10'
         }`}
-        title={isEssential ? `⚠️ Essential skill — confirm to remove` : `Dismiss ${gap.skill}`}
+        title={isEssential ? `⚠ Essential skill — confirm to remove` : `Dismiss ${gap.skill}`}
       >
         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -471,7 +472,7 @@ function SkillCard({ gap, completedDays, totalDays, onDayToggle, onCourseToggle,
           >
             <div className="text-center px-6 py-4">
               <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto mb-3">
-                <span className="text-2xl">⚠️</span>
+                <span className="material-symbols-rounded text-2xl">warning</span>
               </div>
               <p className={`text-sm font-bold mb-1 ${isLight ? 'text-slate-900' : 'text-white'}`}>
                 Remove essential skill?
@@ -527,7 +528,7 @@ function SkillCard({ gap, completedDays, totalDays, onDayToggle, onCourseToggle,
                     ? 'bg-amber-100 text-amber-800 border-amber-300'
                     : 'bg-amber-500/10 text-amber-400 border-amber-500/25'
                 }`}>
-                  ⭐ Essential
+                  <span className="material-symbols-rounded align-middle mr-1">star</span> Essential
                 </span>
               )}
             </div>
@@ -535,7 +536,7 @@ function SkillCard({ gap, completedDays, totalDays, onDayToggle, onCourseToggle,
             <div className="flex items-center gap-1.5 mt-2">
               {isComplete ? (
                 <>
-                  <span className="text-[10px]">🏆</span>
+                  <span className="text-[10px]"><span className="material-symbols-rounded align-middle">emoji_events</span></span>
                   <span className={`text-[10px] font-bold ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`}>Completed</span>
                 </>
               ) : daysCompleted > 0 ? (
@@ -554,7 +555,7 @@ function SkillCard({ gap, completedDays, totalDays, onDayToggle, onCourseToggle,
               )}
               <span className="mx-1">·</span>
               <span className={`text-[10px] font-medium ${isLight ? 'text-slate-400' : 'text-white/25'}`}>
-                {durationInfo.icon} {durationInfo.label}
+                <span className="material-symbols-rounded text-[10px] align-middle">{durationInfo.icon}</span> {durationInfo.label}
               </span>
             </div>
 
@@ -596,7 +597,7 @@ function SkillCard({ gap, completedDays, totalDays, onDayToggle, onCourseToggle,
                   : 'bg-white/5 text-white/50 border border-white/10 hover:bg-white/10'
             }`}
           >
-            {isComplete ? '✅ Completed' : '○ Mark Complete'}
+            {isComplete ? <><span className="material-symbols-rounded align-middle mr-1">check_circle</span> Completed</> : <><span className="material-symbols-rounded align-middle mr-1 opacity-40">radio_button_unchecked</span> Mark Complete</>}
           </button>
 
           {!hasPlanData ? (
@@ -609,7 +610,7 @@ function SkillCard({ gap, completedDays, totalDays, onDayToggle, onCourseToggle,
                  : 'bg-indigo-500/[0.08] text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/15'
              }`}
            >
-             {loadingPlan ? '⏳ Generating AI Plan...' : '✨ Generate AI Plan'}
+             {loadingPlan ? <><span className="material-symbols-rounded align-middle mr-1">history</span> Generating AI Plan...</> : <><span className="material-symbols-rounded align-middle mr-1">auto_awesome</span> Generate AI Plan</>}
            </button>
           ) : (
              <button
@@ -620,7 +621,7 @@ function SkillCard({ gap, completedDays, totalDays, onDayToggle, onCourseToggle,
                  : 'bg-cyan-500/[0.08] text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500/15'
              }`}
            >
-             <span>📅</span> {expanded ? 'Hide Plan' : 'View Plan'}
+             <span className="material-symbols-rounded text-[14px] align-middle">calendar_month</span> {expanded ? 'Hide Plan' : 'View Plan'}
            </button>
           )}
 
@@ -632,7 +633,7 @@ function SkillCard({ gap, completedDays, totalDays, onDayToggle, onCourseToggle,
             }`}
             title={`Practice "${gap.skill}" in The Gauntlet`}
           >
-            <span className="text-sm">⚔️</span>
+            <span className="material-symbols-rounded text-[14px] align-middle">swords</span>
           </button>
         </div>
       </div>
@@ -653,12 +654,12 @@ function SkillCard({ gap, completedDays, totalDays, onDayToggle, onCourseToggle,
                 <p className={`text-[10px] font-semibold uppercase tracking-wider ${
                   isLight ? 'text-slate-400' : 'text-white/25'
                 }`}>
-                  📅 {totalDays}-Day Study Plan
+                  <span className="material-symbols-rounded text-[14px] align-middle">calendar_month</span> {totalDays}-Day Study Plan
                 </p>
                 <div className="flex items-center gap-3">
                   {hasPlanData && planData.summary && (
                     <p className={`text-[10px] max-w-[250px] truncate ${isLight ? 'text-indigo-600 font-medium' : 'text-indigo-400'}`}>
-                       ⭐ {planData.summary}
+                       <span className="material-symbols-rounded align-middle mr-1">star</span> {planData.summary}
                     </p>
                   )}
                   {hasPlanData && (
@@ -671,7 +672,7 @@ function SkillCard({ gap, completedDays, totalDays, onDayToggle, onCourseToggle,
                           : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 disabled:opacity-50'
                       }`}
                     >
-                      {exportingVault ? '⏳ Saving...' : '💾 Save to Vault'}
+                      {exportingVault ? <><span className="material-symbols-rounded align-middle mr-1">history</span> Saving...</> : <><span className="material-symbols-rounded text-[14px] align-middle">save</span> Save to Vault</>}
                     </button>
                   )}
                 </div>
@@ -740,12 +741,12 @@ function SkillCard({ gap, completedDays, totalDays, onDayToggle, onCourseToggle,
                         <div className="mt-2 flex flex-wrap gap-1.5">
                           {isDynamic ? (
                             dayPlan.resources?.map((r: any, rIdx: number) => {
-                              const icons: Record<string, string> = { video: '🎥', article: '📰', practice: '🔧', project: '💻', course: '🎓', reading: '📘' };
+                              const icons: Record<string, string> = { video: 'smart_display', article: 'article', practice: 'build', project: 'computer', course: 'school', reading: 'menu_book' };
                               return (
                                 <a key={rIdx} href={r.url} target="_blank" rel="noopener noreferrer" className={`text-[9px] px-2 py-1 rounded-md transition-all font-medium flex items-center gap-1 ${
                                   isLight ? 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200' : 'bg-white/[0.03] text-white/40 hover:text-white/60 border border-white/[0.05]'
                                 }`}>
-                                  <span>{icons[r.type] || '🌐'}</span>
+                                  <span>{icons[r.type] || 'public'}</span>
                                   {r.title}
                                 </a>
                               );
@@ -754,7 +755,7 @@ function SkillCard({ gap, completedDays, totalDays, onDayToggle, onCourseToggle,
                             <a href={(dayPlan as any).url} target="_blank" rel="noopener noreferrer" className={`text-[9px] px-2 py-1 rounded-md transition-all font-medium flex items-center gap-1 ${
                                 isLight ? 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200' : 'bg-white/[0.03] text-white/40 hover:text-white/60 border border-white/[0.05]'
                               }`}>
-                                <span>{(dayPlan as any).platformIcon}</span> {(dayPlan as any).resource}
+                                <span className="material-symbols-rounded text-[10px] align-middle">{(dayPlan as any).platformIcon}</span> {(dayPlan as any).resource}
                             </a>
                           )}
                         </div>
@@ -774,7 +775,7 @@ function SkillCard({ gap, completedDays, totalDays, onDayToggle, onCourseToggle,
 // ═══════════════════════════════════════
 // MAIN PAGE
 // ═══════════════════════════════════════
-export default function SkillBridgePage() {
+function SkillBridgePageInner() {
   const { user } = useStore();
   const router = useRouter();
   const { theme } = useTheme();
@@ -849,7 +850,7 @@ export default function SkillBridgePage() {
         setGeneratedPlans(prev => ({ ...prev, [skill]: true }));
       }
       const result = await markDayComplete(skill, day);
-      if (result.success) { showToast(`Day ${day} complete ✓`, '✅'); loadProgress(); }
+      if (result.success) { showToast(`Day ${day} complete ✓`, 'check_circle'); loadProgress(); }
     }
   };
 
@@ -863,10 +864,10 @@ export default function SkillBridgePage() {
     }
     if (complete) {
       const result = await markCourseComplete(skill, days);
-      if (result.success) { showToast(`${skill} marked complete! 🎉`, '🏆'); loadProgress(); }
+      if (result.success) { showToast(`${skill} marked complete!`, 'emoji_events'); loadProgress(); }
     } else {
       const result = await markCourseIncomplete(skill);
-      if (result.success) { showToast(`${skill} progress reset`, '↺'); loadProgress(); }
+      if (result.success) { showToast(`${skill} progress reset`, 'replay'); loadProgress(); }
     }
   };
 
@@ -885,11 +886,11 @@ export default function SkillBridgePage() {
         const days = getTrainingDays(skill, category);
         await saveStudyProgress(skill, category, data, applicationId || undefined);
         setGeneratedPlans(prev => ({ ...prev, [skill]: true }));
-        showToast(`${days}-Day plan for ${skill} created!`, '📅');
+        showToast(`${days}-Day plan for ${skill} created!`, 'calendar_month');
         loadProgress();
       }
     } catch (err) {
-      showToast('Failed to generate plan', '❌');
+      showToast('Failed to generate plan', 'cancel');
     }
     setLoadingPlans(prev => ({ ...prev, [skill]: false }));
   };
@@ -898,7 +899,7 @@ export default function SkillBridgePage() {
     const progress = allProgress.find(p => p.skill === skill);
     const planData = progress?.plan_data;
     if (!planData || !planData.schedule) {
-      showToast('No AI plan found to export', '❌');
+      showToast('No AI plan found to export', 'cancel');
       return;
     }
 
@@ -916,9 +917,9 @@ export default function SkillBridgePage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      showToast('Study Plan saved to Vault!', '💾');
+      showToast('Study Plan saved to Vault!', 'save');
     } catch (err: any) {
-      showToast(err.message || 'Failed to export to Vault', '❌');
+      showToast(err.message || 'Failed to export to Vault', 'cancel');
     }
     setExportingVaults(prev => ({ ...prev, [skill]: false }));
   };
@@ -936,9 +937,9 @@ export default function SkillBridgePage() {
   const handleDismiss = (skill: string) => {
     setDismissedSkills(prev => [...prev, skill]);
     if (essentialSkills.has(skill)) {
-      showToast(`Essential skill "${skill}" removed — you can re-add it by refreshing`, '⚠️');
+      showToast(`Essential skill "${skill}" removed — you can re-add it by refreshing`, 'warning');
     } else {
-      showToast(`${skill} dismissed`, '✕');
+      showToast(`${skill} dismissed`, 'close');
     }
   };
 
@@ -966,7 +967,7 @@ export default function SkillBridgePage() {
           <div className="relative z-10 flex items-center justify-between pl-12 lg:pl-0">
             <div>
               <div className="flex items-center gap-3 mb-1">
-                <span className="text-3xl">🌉</span>
+                <span className="material-symbols-rounded text-3xl align-middle">route</span>
                 <h1 className="text-3xl font-extrabold">
                   <span className={`bg-gradient-to-r ${isLight ? 'from-slate-900 to-slate-600' : 'from-white to-slate-400'} bg-clip-text text-transparent`}>
                     Skill Bridge
@@ -1000,17 +1001,17 @@ export default function SkillBridgePage() {
           className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8"
         >
           {[
-            { label: 'Skills Detected', value: gaps.length, icon: '🔍', color: isLight ? 'text-teal-800' : 'text-teal-400', borderColor: isLight ? 'border-t-teal-500' : '' },
-            { label: 'Days Completed', value: totalDaysCompleted, icon: '✅', color: isLight ? 'text-emerald-800' : 'text-emerald-400', borderColor: isLight ? 'border-t-emerald-500' : '' },
-            { label: 'Courses Done', value: completedSkills, icon: '🏆', color: isLight ? 'text-amber-800' : 'text-amber-400', borderColor: isLight ? 'border-t-amber-500' : '' },
-            { label: 'In Progress', value: Math.max(0, totalSkillsBridging - completedSkills), icon: '📝', color: isLight ? 'text-blue-800' : 'text-blue-400', borderColor: isLight ? 'border-t-blue-500' : '' },
+            { label: 'Skills Detected', value: gaps.length, icon: 'search', color: isLight ? 'text-teal-800' : 'text-teal-400', borderColor: isLight ? 'border-t-teal-500' : '' },
+            { label: 'Days Completed', value: totalDaysCompleted, icon: 'check_circle', color: isLight ? 'text-emerald-800' : 'text-emerald-400', borderColor: isLight ? 'border-t-emerald-500' : '' },
+            { label: 'Courses Done', value: completedSkills, icon: 'emoji_events', color: isLight ? 'text-amber-800' : 'text-amber-400', borderColor: isLight ? 'border-t-amber-500' : '' },
+            { label: 'In Progress', value: Math.max(0, totalSkillsBridging - completedSkills), icon: 'edit_document', color: isLight ? 'text-blue-800' : 'text-blue-400', borderColor: isLight ? 'border-t-blue-500' : '' },
           ].map((stat) => (
             <div key={stat.label} className={`p-4 rounded-2xl text-center transition-all border-t-[3px] ${
               isLight
                 ? `bg-white border border-slate-300 shadow-[0_2px_6px_rgba(0,0,0,0.06)] ${stat.borderColor}`
                 : 'bg-white/[0.02] border border-white/[0.06] border-t-transparent'
             }`}>
-              <span className="text-xl">{stat.icon}</span>
+              <span className="material-symbols-rounded text-xl align-middle">{stat.icon}</span>
               <p className={`text-2xl font-extrabold mt-1 ${stat.color}`}>{stat.value}</p>
               <p className={`text-[10px] font-medium mt-0.5 ${isLight ? 'text-slate-400' : 'text-white/25'}`}>{stat.label}</p>
             </div>
@@ -1029,7 +1030,7 @@ export default function SkillBridgePage() {
                 : 'bg-blue-500/[0.05] border border-blue-500/[0.12] text-blue-400/80'
             }`}
           >
-            <span className="text-sm">💡</span>
+            <span className="material-symbols-rounded text-sm align-middle text-amber-500 mr-2">lightbulb</span>
             <p className="text-[11px]">
               <span className="font-bold">Demo Mode:</span> Run AI Enhance on your resume to see personalized skill gaps. These are sample skills.
             </p>
@@ -1044,10 +1045,10 @@ export default function SkillBridgePage() {
           className="flex items-center gap-2 mb-6"
         >
           {[
-            { key: 'all', label: 'All Skills', count: gaps.length },
-            { key: 'technical', label: '💻 Technical', count: techCount },
-            { key: 'soft', label: '🤝 Soft Skills', count: softCount },
-            { key: 'domain', label: '🏢 Domain', count: domainCount },
+            { key: 'all', label: 'All Skills', icon: '', count: gaps.length },
+            { key: 'technical', label: 'Technical', icon: 'computer', count: techCount },
+            { key: 'soft', label: 'Soft Skills', icon: 'handshake', count: softCount },
+            { key: 'domain', label: 'Domain', icon: 'domain', count: domainCount },
           ].map((f) => (
             <button
               key={f.key}
@@ -1062,6 +1063,7 @@ export default function SkillBridgePage() {
                     : 'text-white/30 hover:text-white/50 hover:bg-white/[0.04]'
               }`}
             >
+              {f.icon && <span className="material-symbols-rounded text-[12px] align-middle mr-1">{f.icon}</span>}
               {f.label} {f.count > 0 && `(${f.count})`}
             </button>
           ))}
@@ -1112,7 +1114,7 @@ export default function SkillBridgePage() {
             }`}
           >
             <h3 className={`text-sm font-bold mb-4 flex items-center gap-2 ${isLight ? 'text-slate-800' : 'text-white/70'}`}>
-              <span>📈</span> Active Learning Timeline
+              <span className="material-symbols-rounded align-middle">trending_up</span> Active Learning Timeline
             </h3>
             <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
               {allProgress.filter(p => p.completed_days.length < getExpectedDays(p)).map((p) => {
@@ -1159,18 +1161,18 @@ export default function SkillBridgePage() {
           className="mb-8"
         >
           <h2 className={`text-base font-bold mb-4 flex items-center gap-2 ${isLight ? 'text-slate-800' : 'text-white/70'}`}>
-            <span>🌐</span> Free Learning Platforms
+            <span className="material-symbols-rounded text-lg">public</span> Free Learning Platforms
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { name: 'YouTube', icon: '🎥', url: 'https://youtube.com', desc: 'Free video courses', gradient: 'from-red-500 to-rose-600' },
-              { name: 'freeCodeCamp', icon: '🏗️', url: 'https://freecodecamp.org', desc: 'Free coding bootcamp', gradient: 'from-emerald-500 to-green-600' },
-              { name: 'Google Certs', icon: '🎓', url: 'https://grow.google/certificates/', desc: 'Career certificates', gradient: 'from-blue-500 to-sky-600' },
-              { name: 'AWS Training', icon: '☁️', url: 'https://skillbuilder.aws/', desc: 'Cloud skills', gradient: 'from-amber-500 to-orange-600' },
-              { name: 'Coursera', icon: '📚', url: 'https://coursera.org', desc: 'University courses', gradient: 'from-blue-600 to-indigo-600' },
-              { name: 'LinkedIn', icon: '💼', url: 'https://linkedin.com/learning', desc: 'Professional skills', gradient: 'from-sky-500 to-blue-600' },
-              { name: 'edX', icon: '🏛️', url: 'https://edx.org', desc: 'MIT/Harvard courses', gradient: 'from-red-600 to-rose-700' },
-              { name: 'Codecademy', icon: '💻', url: 'https://codecademy.com', desc: 'Interactive coding', gradient: 'from-teal-500 to-cyan-600' },
+              { name: 'YouTube', icon: 'smart_display', url: 'https://youtube.com', desc: 'Free video courses', color: 'text-red-500' },
+              { name: 'freeCodeCamp', icon: 'code_blocks', url: 'https://freecodecamp.org', desc: 'Free coding bootcamp', color: 'text-emerald-500' },
+              { name: 'Google Certs', icon: 'stars', url: 'https://grow.google/certificates/', desc: 'Career certificates', color: 'text-blue-500' },
+              { name: 'AWS Training', icon: 'cloud', url: 'https://skillbuilder.aws/', desc: 'Cloud skills', color: 'text-amber-500' },
+              { name: 'Coursera', icon: 'school', url: 'https://coursera.org', desc: 'University courses', color: 'text-blue-600' },
+              { name: 'LinkedIn', icon: 'work', url: 'https://linkedin.com/learning', desc: 'Professional skills', color: 'text-sky-500' },
+              { name: 'edX', icon: 'account_balance', url: 'https://edx.org', desc: 'MIT/Harvard courses', color: 'text-red-600' },
+              { name: 'Codecademy', icon: 'terminal', url: 'https://codecademy.com', desc: 'Interactive coding', color: 'text-teal-500' },
             ].map((p) => (
               <a
                 key={p.name}
@@ -1183,8 +1185,8 @@ export default function SkillBridgePage() {
                     : 'bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] hover:bg-white/[0.04]'
                 }`}
               >
-                <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${p.gradient} flex items-center justify-center text-lg mb-2.5 shadow-sm`}>
-                  {p.icon}
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg mb-2.5 shadow-sm ${isLight ? 'bg-slate-100' : 'bg-white/[0.06]'}`}>
+                  <span className={`material-symbols-rounded ${p.color}`}>{p.icon}</span>
                 </div>
                 <p className={`text-xs font-bold transition-colors ${
                   isLight ? 'text-slate-700 group-hover:text-slate-900' : 'text-white/60 group-hover:text-white/80'
@@ -1210,16 +1212,28 @@ export default function SkillBridgePage() {
           <p className={`text-xs mb-4 ${isLight ? 'text-slate-500' : 'text-white/30'}`}>The Gauntlet will simulate real interviews targeting your gap areas.</p>
           <button
             onClick={() => router.push('/suite/flashcards')}
-            className={`px-6 py-3 rounded-xl text-sm font-bold transition-all ${
+          className={`px-6 py-3 rounded-xl text-sm font-bold transition-all ${
               isLight
                 ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md hover:shadow-lg'
                 : 'bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 text-amber-400 hover:from-amber-500/15 hover:to-orange-500/15'
             }`}
           >
-            ⚔️ Enter The Gauntlet
+            <span className="material-symbols-rounded text-[14px] align-middle">swords</span> Enter The Gauntlet
           </button>
         </motion.div>
       </div>
     </div>
   );
 }
+
+export default function SkillBridgePage() {
+  return (
+    <ProGate
+      feature="Skill Bridge"
+      description="Skill Bridge generates personalized learning paths from your resume gaps to interview-ready skills. This is a Pro-exclusive feature."
+    >
+      <SkillBridgePageInner />
+    </ProGate>
+  );
+}
+

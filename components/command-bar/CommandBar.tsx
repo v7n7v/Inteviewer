@@ -17,7 +17,7 @@ const modules: Module[] = [
   {
     id: 'resume',
     name: 'Resume',
-    icon: '📄',
+    icon: 'description',
     path: '/suite/resume',
     description: 'Liquid Resume Builder',
     color: '#ffffff',
@@ -219,7 +219,7 @@ export default function CommandBar() {
               </div>
 
               <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between text-xs text-slate-500">
-                <div>Press <kbd className="px-1.5 py-0.5 rounded bg-white/10">⌘K</kbd> to open</div>
+                <div>Press <kbd className="px-1.5 py-0.5 rounded bg-white/10"><span className="material-symbols-rounded align-middle mr-1">keyboard_command_key</span>K</kbd> to open</div>
                 <div>Navigate with <kbd className="px-1.5 py-0.5 rounded bg-white/10">↑↓</kbd></div>
               </div>
             </motion.div>

@@ -70,7 +70,7 @@ export default function SkillGapWarningModal({ isOpen, onClose, newSkills, match
               <div className={`mx-6 mb-3 flex items-center gap-2 px-3 py-2 rounded-lg ${
                 isLight ? 'bg-emerald-50 border border-emerald-200' : 'bg-emerald-500/10 border border-emerald-500/20'
               }`}>
-                <span className="text-sm">✅</span>
+                <span className="text-sm"><span className="material-symbols-rounded">check_circle</span></span>
                 <span className={`text-xs font-medium ${isLight ? 'text-emerald-700' : 'text-emerald-400'}`}>
                   Resume match score: {matchScore}%
                 </span>
@@ -94,7 +94,7 @@ export default function SkillGapWarningModal({ isOpen, onClose, newSkills, match
                   >
                     <div className="flex items-center gap-2.5">
                       <span className="text-sm">
-                        {s.category === 'technical' ? '💻' : s.category === 'soft' ? '🤝' : '🏢'}
+                        {s.category === 'technical' ? 'computer' : s.category === 'soft' ? '🤝' : 'domain'}
                       </span>
                       <span className={`text-sm font-medium ${isLight ? 'text-gray-800' : 'text-white/80'}`}>
                         {s.skill}
@@ -105,7 +105,7 @@ export default function SkillGapWarningModal({ isOpen, onClose, newSkills, match
                         ? 'bg-amber-100 text-amber-700 border border-amber-300'
                         : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                     }`}>
-                      ⚠️ AI-Added
+                      <span className="material-symbols-rounded align-middle mr-1">warning</span> AI-Added
                     </span>
                   </motion.div>
                 ))}
@@ -118,7 +118,7 @@ export default function SkillGapWarningModal({ isOpen, onClose, newSkills, match
                 ? 'bg-blue-50 border border-blue-200 text-blue-700'
                 : 'bg-blue-500/[0.06] border border-blue-500/[0.12] text-blue-300/70'
             }`}>
-              <strong>💡 Pro Tip:</strong> These skills strengthen your resume match, but you should learn the basics before your interview. Skill Bridge creates a <strong>7-day crash course</strong> to get you ready.
+              <strong><span className="material-symbols-rounded align-middle mr-1">lightbulb</span> Pro Tip:</strong> These skills strengthen your resume match, but you should learn the basics before your interview. Skill Bridge creates a <strong>7-day crash course</strong> to get you ready.
             </div>
 
             {/* Actions */}

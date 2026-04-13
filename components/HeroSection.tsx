@@ -35,10 +35,10 @@ function Reveal({ children, className, delay = 0 }: { children: React.ReactNode;
 // Exact port from Liquid Resume — step-specific panels
 // ═══════════════════════════════════════
 const workflowSteps = [
-  { id: 'upload', step: '01', icon: '📤', title: 'Upload Resume', desc: 'PDF, Word, or text' },
-  { id: 'paste', step: '02', icon: '📋', title: 'Paste JD', desc: 'Target job description' },
-  { id: 'morph', step: '03', icon: '🧠', title: 'AI Morph', desc: 'Smart rewrite engine' },
-  { id: 'download', step: '04', icon: '⬇️', title: 'Download', desc: 'ATS-safe export' },
+  { id: 'upload', step: '01', icon: 'outbox', title: 'Upload Resume', desc: 'PDF, Word, or text' },
+  { id: 'paste', step: '02', icon: 'content_paste', title: 'Paste JD', desc: 'Target job description' },
+  { id: 'morph', step: '03', icon: 'psychology', title: 'AI Morph', desc: 'Smart rewrite engine' },
+  { id: 'download', step: '04', icon: 'arrow_downward', title: 'Download', desc: 'ATS-safe export' },
 ];
 
 function WorkflowAnimation() {
@@ -145,7 +145,7 @@ function WorkflowAnimation() {
           {/* Step 0: Upload */}
           {activeStep === 0 && (
             <motion.div key="upload" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }} className="p-5 flex flex-col items-center justify-center h-[140px]">
-              <motion.div initial={{ y: -30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2, type: 'spring', stiffness: 200 }} className="text-3xl mb-2">📄</motion.div>
+              <motion.div initial={{ y: -30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2, type: 'spring', stiffness: 200 }} className="text-3xl mb-2"><span className="material-symbols-rounded align-middle">description</span></motion.div>
               <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.5 }}
                 className="px-3 py-1.5 rounded-lg border-2 border-dashed border-emerald-500/30 bg-emerald-500/[0.03] text-[11px] text-emerald-400 flex items-center gap-2">
                 <motion.span animate={{ y: [0, -3, 0] }} transition={{ repeat: Infinity, duration: 1.5 }}>↑</motion.span>
@@ -222,8 +222,8 @@ function WorkflowAnimation() {
               </motion.div>
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className={`text-[13px] font-semibold mb-1.5 ${isLight ? 'text-gray-900' : 'text-white'}`}>Resume Ready</motion.div>
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }} className="flex items-center gap-2.5">
-                <span className={`px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-medium flex items-center gap-1 ${isLight ? 'font-bold text-emerald-700' : 'text-emerald-400'}`}>📄 PDF</span>
-                <span className={`px-2.5 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-[10px] font-medium flex items-center gap-1 ${isLight ? 'font-bold text-blue-700' : 'text-blue-400'}`}>📝 Word</span>
+                <span className={`px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-medium flex items-center gap-1 ${isLight ? 'font-bold text-emerald-700' : 'text-emerald-400'}`}><span className="material-symbols-rounded align-middle mr-1">description</span> PDF</span>
+                <span className={`px-2.5 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-[10px] font-medium flex items-center gap-1 ${isLight ? 'font-bold text-blue-700' : 'text-blue-400'}`}><span className="material-symbols-rounded align-middle mr-1">edit_document</span> Word</span>
                 <span className={`text-[10px] font-bold ${isLight ? 'text-emerald-700' : 'text-emerald-400'}`}>92% Match</span>
               </motion.div>
             </motion.div>
@@ -254,12 +254,12 @@ function DualAIAnimation() {
   }, [stage]);
 
   const pipelineSteps = [
-    { label: 'Check', icon: '🔍', color: '#f59e0b' },
-    { label: 'GPT Write', icon: '🧠', color: '#f59e0b' },
-    { label: 'Gemini Val', icon: '✨', color: '#22c55e' },
-    { label: 'Auto-Fix', icon: '🔧', color: '#8b5cf6' },
-    { label: 'Cover Letter', icon: '📝', color: '#3b82f6' },
-    { label: 'Complete', icon: '🚀', color: '#06b6d4' },
+    { label: 'Check', icon: 'search', color: '#f59e0b' },
+    { label: 'GPT Write', icon: 'psychology', color: '#f59e0b' },
+    { label: 'Gemini Val', icon: 'auto_awesome', color: '#22c55e' },
+    { label: 'Auto-Fix', icon: 'build', color: '#8b5cf6' },
+    { label: 'Cover Letter', icon: 'edit_document', color: '#3b82f6' },
+    { label: 'Complete', icon: 'rocket_launch', color: '#06b6d4' },
   ];
 
   return (
@@ -267,7 +267,7 @@ function DualAIAnimation() {
       {/* Title bar */}
       <div className="px-4 py-2.5 border-b border-white/[0.04] flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-sm">✨</span>
+          <span className="text-sm"><span className="material-symbols-rounded">auto_awesome</span></span>
           <span className={`text-[11px] font-semibold ${isLight ? 'text-gray-900' : 'text-white/50'}`}>Dual-AI Enhance Pipeline</span>
           <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium border ${isLight ? 'font-bold bg-cyan-50 border-cyan-200 text-cyan-600' : 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400'}`}>PRO</span>
         </div>
@@ -317,14 +317,14 @@ function DualAIAnimation() {
               </div>
               <div className="space-y-1.5">
                 {[
-                  { text: '⚠️ Missing quantified achievements in 3 roles', delay: 0.2 },
-                  { text: '⚠️ Weak action verbs: "responsible for", "helped"', delay: 0.7 },
-                  { text: '✅ Skills section well-structured', delay: 1.2 },
-                  { text: '⚠️ No ATS-friendly keywords from target JD', delay: 1.7 },
+                  { icon: 'warning', text: 'Missing quantified achievements in 3 roles', delay: 0.2 },
+                  { icon: 'warning', text: 'Weak action verbs: "responsible for", "helped"', delay: 0.7 },
+                  { icon: 'check_circle', text: 'Skills section well-structured', delay: 1.2 },
+                  { icon: 'warning', text: 'No ATS-friendly keywords from target JD', delay: 1.7 },
                 ].map((item, i) => (
                   <motion.div key={item.text} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: item.delay }}
                     className={`text-[9px] flex items-center gap-1.5 ${isLight ? 'font-bold text-gray-900' : 'text-white/30'}`}>
-                    <span>{item.text}</span>
+                    <span><span className="material-symbols-rounded align-middle mr-1">{item.icon}</span>{item.text}</span>
                   </motion.div>
                 ))}
               </div>
@@ -374,8 +374,8 @@ function DualAIAnimation() {
               <div className="space-y-1.5">
                 {[
                   { text: 'Verifying factual consistency across roles', icon: '🔎' },
-                  { text: 'Injecting 12 ATS keywords from target JD', icon: '🔑' },
-                  { text: 'Optimizing section ordering for impact', icon: '📊' },
+                  { text: 'Injecting 12 ATS keywords from target JD', icon: 'key' },
+                  { text: 'Optimizing section ordering for impact', icon: 'bar_chart' },
                   { text: 'Checking tone consistency & professionalism', icon: '✍️' },
                 ].map((item, i) => (
                   <motion.div key={item.text} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 + i * 0.5 }}
@@ -482,8 +482,8 @@ function ProcessCarousel() {
   const isLight = theme === 'light';
   const [activeSlide, setActiveSlide] = useState(0);
   const slides = [
-    { label: 'Liquid Resume', icon: '📄', color: isLight ? '#059669' : '#10B981', duration: 15000 },
-    { label: 'Dual-AI Enhance', icon: '✨', color: isLight ? '#0891B2' : '#06B6D4', duration: 18000 },
+    { label: 'Liquid Resume', icon: 'description', color: isLight ? '#059669' : '#10B981', duration: 15000 },
+    { label: 'Dual-AI Enhance', icon: 'auto_awesome', color: isLight ? '#0891B2' : '#06B6D4', duration: 18000 },
   ];
 
   // Auto-advance after each animation's full cycle
@@ -929,7 +929,7 @@ function GauntletAnimation() {
               <div className="flex items-start gap-3">
                 <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
                   className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                  <span className="text-sm">🤖</span>
+                  <span className="text-sm"><span className="material-symbols-rounded">smart_toy</span></span>
                 </motion.div>
                 <div>
                   <span className={`text-[9px] font-medium uppercase tracking-wider ${isLight ? 'font-bold text-amber-700' : 'text-amber-400/60'}`}>AI Interviewer</span>
@@ -949,7 +949,7 @@ function GauntletAnimation() {
             <motion.div key="answer" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }} className="p-5">
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                  <span className="text-sm">👤</span>
+                  <span className="text-sm"><span className="material-symbols-rounded align-middle">person</span></span>
                 </div>
                 <div className="flex-1">
                   <span className={`text-[9px] font-medium uppercase tracking-wider ${isLight ? 'font-bold text-emerald-700' : 'text-emerald-400/60'}`}>Your Answer</span>
@@ -1024,7 +1024,7 @@ function GauntletAnimation() {
 }
 const suiteTools = [
   {
-    icon: '📄', title: 'Liquid Resume', tag: 'AI-Morphing Builder',
+    icon: 'description', title: 'Liquid Resume', tag: 'AI-Morphing Builder',
     desc: 'One resume, infinite versions. Choose from 18+ professional templates, then AI morphs it to match any JD — keywords injected, skills reordered, ATS-optimized.',
     color: '#10B981', chips: ['18+ Templates', 'JD Morphing', 'Skill Graph', 'Match Score'],
   },
@@ -1034,7 +1034,7 @@ const suiteTools = [
     color: '#FCA130', chips: ['Quick Drill', 'Voice Mode', 'Stress Test'],
   },
   {
-    icon: '💼', title: 'JD Generator', tag: 'Smart Descriptions',
+    icon: 'work', title: 'JD Generator', tag: 'Smart Descriptions',
     desc: 'Generate tailored job descriptions with AI. Includes Talent Density Score and role-specific frameworks.',
     color: '#38BDF8', chips: ['Density Score', '90-Day Plan', 'Culture Pulse'],
   },
@@ -1511,8 +1511,8 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
                 </p>
                 <div className="flex flex-wrap gap-3">
                   {[
-                    { icon: '🎯', label: 'JD-Targeted Questions' },
-                    { icon: '⭐', label: 'STAR Grading' },
+                    { icon: 'my_location', label: 'JD-Targeted Questions' },
+                    { icon: 'star', label: 'STAR Grading' },
                     { icon: '🎙️', label: 'Voice Mode' },
                   ].map((f) => (
                     <span key={f.label} className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-lg border ${isLight ? 'font-bold text-gray-900 bg-black/5 border-black/10' : 'text-white/30 bg-white/[0.03] border-white/[0.05]'}` }>

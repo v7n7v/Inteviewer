@@ -13,7 +13,7 @@ function getGroqClient() {
 
 export async function POST(req: NextRequest) {
     try {
-        const guard = await guardApiRoute(req, { rateLimit: 7, rateLimitWindow: 60_000 });
+        const guard = await guardApiRoute(req, { rateLimit: 7, rateLimitWindow: 60_000, allowAnonymous: true, feature: 'gauntlets' });
         if (guard.error) return guard.error;
 
         const validated = await validateBody(req, GauntletGradeSchema);

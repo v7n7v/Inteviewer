@@ -1,9 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/lib/store';
-import { useTheme } from '@/components/ThemeProvider';
 import { getJobApplications, getResumeVersions, getUserProfile } from '@/lib/database-suite';
 import { authFetch } from '@/lib/auth-fetch';
 
@@ -16,22 +14,18 @@ interface Message {
 
 export default function AIAssistant() {
   const { user } = useStore();
-  const { theme } = useTheme();
-  const isLight = theme === 'light';
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       role: 'assistant',
-      content: "Hi! I'm Sona, your AI career companion ✨. I know about your applications, resumes, and interview prep. Ask me anything — I'm personalized to you!",
+      content: "Hi! I'm your AI career companion. I know about your applications, resumes, and interview prep. Ask me anything.",
       timestamp: new Date(),
     },
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
-  const [showHint, setShowHint] = useState(false);
-  const [hintIndex, setHintIndex] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const contextRef = useRef<string>('');
@@ -49,13 +43,11 @@ export default function AIAssistant() {
 
       const parts: string[] = [];
 
-      // Profile
       if (profileResult.status === 'fulfilled' && profileResult.value.success && profileResult.value.data) {
         const p = profileResult.value.data;
         parts.push(`## User Profile\n- Name: ${p.full_name || 'Unknown'}\n- Email: ${p.email || 'Unknown'}\n- Skills: ${p.skills?.join(', ') || 'Not specified'}`);
       }
 
-      // Applications
       if (appsResult.status === 'fulfilled' && appsResult.value.success && appsResult.value.data) {
         const apps = appsResult.value.data;
         const statusCount: Record<string, number> = {};
@@ -66,7 +58,6 @@ export default function AIAssistant() {
         parts.push(`## Job Applications (${apps.length} total)\nStatus: ${Object.entries(statusCount).map(([k, v]) => `${k}: ${v}`).join(', ')}\n${appLines.join('\n')}`);
       }
 
-      // Resumes
       if (resumesResult.status === 'fulfilled' && resumesResult.value.success && resumesResult.value.data) {
         const resumes = resumesResult.value.data;
         parts.push(`## Resumes (${resumes.length} versions)\n${resumes.slice(0, 5).map(r =>
@@ -83,37 +74,12 @@ export default function AIAssistant() {
     }
   }, []);
 
-  const hintMessages = [
-    { text: "Ask Sona anything ✨", emoji: "💬" },
-    { text: "How's my job search going?", emoji: "📊" },
-    { text: "Help me prep for Amazon", emoji: "🎯" },
-    { text: "Which apps need follow-ups?", emoji: "📋" },
-    { text: "Review my resume for Google", emoji: "📝" },
-    { text: "How to answer 'Why us?'", emoji: "🤔" },
-  ];
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => { scrollToBottom(); }, [messages]);
-
-  useEffect(() => {
-    if (isOpen) inputRef.current?.focus();
-  }, [isOpen]);
-
-  // Popup hint every 2 minutes (only when chat is closed)
-  useEffect(() => {
-    if (isOpen) return;
-    const showHintPopup = () => {
-      setShowHint(true);
-      setHintIndex(prev => (prev + 1) % hintMessages.length);
-      setTimeout(() => setShowHint(false), 3000);
-    };
-    const initialTimer = setTimeout(showHintPopup, 30000);
-    const interval = setInterval(showHintPopup, 120000);
-    return () => { clearTimeout(initialTimer); clearInterval(interval); };
-  }, [isOpen, hintMessages.length]);
+  useEffect(() => { if (isOpen) inputRef.current?.focus(); }, [isOpen]);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -130,7 +96,6 @@ export default function AIAssistant() {
     setIsLoading(true);
     setIsStreaming(true);
 
-    // Add placeholder assistant message for streaming
     const assistantId = (Date.now() + 1).toString();
     setMessages(prev => [...prev, {
       id: assistantId,
@@ -141,13 +106,12 @@ export default function AIAssistant() {
 
     try {
       const conversationHistory = messages
-        .filter(m => m.id !== '1') // skip initial greeting
+        .filter(m => m.id !== '1')
         .slice(-8)
         .map(m => ({ role: m.role, content: m.content }));
 
       conversationHistory.push({ role: 'user', content: userMessage.content });
 
-      // Fetch user context (cached)
       const userContext = await buildUserContext();
 
       const response = await authFetch('/api/chat', {
@@ -164,7 +128,6 @@ export default function AIAssistant() {
         throw new Error(errData.error || `API error: ${response.status}`);
       }
 
-      // Stream the response
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       let fullContent = '';
@@ -196,7 +159,6 @@ export default function AIAssistant() {
         }
       }
 
-      // Final update
       if (!fullContent) {
         const fallbackData = await response.text();
         try {
@@ -240,205 +202,122 @@ export default function AIAssistant() {
   return (
     <div className="fixed bottom-0 right-0 z-[9999] pointer-events-none">
       <div className="relative">
-        {/* Hint Popup */}
-        <AnimatePresence>
-          {showHint && !isOpen && (
-            <motion.div
-              initial={{ opacity: 0, x: 20, scale: 0.9 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 10, scale: 0.95 }}
-              transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-              className="absolute bottom-20 right-4 sm:right-6 pointer-events-auto max-w-[calc(100vw-2rem)]"
-            >
-              <div
-                onClick={() => { setShowHint(false); setIsOpen(true); }}
-                className={`flex items-center gap-3 px-4 py-3 rounded-2xl border shadow-2xl cursor-pointer transition-all group ${
-                  isLight
-                    ? 'bg-white border-gray-200 hover:border-blue-300'
-                    : 'bg-[var(--theme-bg-elevated)] border-[var(--theme-border)] hover:border-[var(--theme-border-hover)]'
-                }`}
-                style={{ boxShadow: isLight ? '0 4px 20px rgba(0, 0, 0, 0.1)' : '0 4px 20px rgba(0, 0, 0, 0.5)' }}
-              >
-                <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-cyan-500/50 flex-shrink-0">
-                  <img src="/sona-avatar.png" alt="Sona" className="w-full h-full object-cover" />
-                </div>
-                <div>
-                  <p className={`font-medium text-sm transition-colors ${isLight ? 'text-gray-800 group-hover:text-blue-600' : 'text-white group-hover:text-cyan-400'}`}>
-                    {hintMessages[hintIndex].text}
-                  </p>
-                  <p className={`text-xs ${isLight ? 'text-gray-500' : 'text-slate-400'}`}>Click to chat with Sona</p>
-                </div>
-                <span className="text-xl ml-1">{hintMessages[hintIndex].emoji}</span>
-              </div>
-              <div className={`absolute -bottom-2 right-10 w-4 h-4 rotate-45 ${isLight ? 'bg-white border-r border-b border-gray-200' : 'bg-[var(--theme-bg-elevated)] border-r border-b border-[var(--theme-border)]'}`} />
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         {/* Chat Window */}
-        <AnimatePresence>
-          {isOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.95 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="fixed sm:absolute inset-0 sm:inset-auto sm:bottom-[76px] sm:right-6 w-full sm:w-[400px] h-full sm:h-[520px] pointer-events-auto"
-              style={{ backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)' }}
-            >
-              <div className={`glass-card h-full flex flex-col rounded-none sm:rounded-2xl shadow-2xl overflow-hidden`}>
-                {/* Header */}
-                <div className="flex items-center justify-between p-3 pt-[max(0.75rem,env(safe-area-inset-top))] border-b border-[var(--theme-border)] bg-[var(--theme-bg-input)]">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full overflow-hidden border border-cyan-500/30">
-                      <img src="/sona-avatar.png" alt="Sona" className="w-full h-full object-cover" />
-                    </div>
-                    <div>
-                      <h3 className={`text-xs font-semibold ${isLight ? 'text-gray-900' : 'text-white'}`}>Sona</h3>
-                      <p className={`text-[10px] ${isLight ? 'text-blue-600' : 'text-cyan-400'}`}>Context-Aware Career AI</p>
+        {isOpen && (
+          <div className="fixed sm:absolute inset-0 sm:inset-auto sm:bottom-[68px] sm:right-6 w-full sm:w-[400px] h-full sm:h-[520px] pointer-events-auto">
+            <div className="h-full flex flex-col rounded-none sm:rounded-xl border border-[#2d2d2f] bg-[#131314] shadow-2xl shadow-black/50 overflow-hidden">
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 h-12 border-b border-[#2d2d2f] bg-[#131314]">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-[#81c995]" />
+                  <span className="text-sm font-medium text-[#e3e3e3]">AI Assistant</span>
+                </div>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="p-1 rounded-md hover:bg-[#1f1f21] text-[#8e918f] hover:text-[#e3e3e3] transition-colors duration-100"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Messages */}
+              <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-[85%] rounded-lg px-3 py-2 ${message.role === 'user'
+                        ? 'bg-[rgba(168,199,250,0.15)] text-[#e3e3e3]'
+                        : 'bg-[#1a1a1b] text-[#e3e3e3]'
+                      }`}
+                    >
+                      <p className="text-xs whitespace-pre-wrap leading-relaxed">{message.content || '...'}</p>
+                      <p className="text-[10px] mt-1 text-[#5f6368]">
+                        {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                    <span className="text-[10px] text-green-400 mr-2">Live</span>
-                    <button
-                      onClick={() => setIsOpen(false)}
-                      className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
-                    >
-                      <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
+                ))}
 
-                {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-3 sm:p-3 space-y-3">
-                  {messages.map((message) => (
-                    <motion.div
-                      key={message.id}
-                      initial={{ opacity: 0, y: 5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div
-                        className={`max-w-[85%] rounded-xl px-3 py-2 ${message.role === 'user'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-[var(--theme-bg-input)] text-[var(--theme-text)]'
-                        }`}
-                      >
-                        <p className="text-xs whitespace-pre-wrap leading-relaxed">{message.content || '...'}</p>
-                        <p className="text-[10px] mt-1 opacity-50">
-                          {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </p>
+                {isLoading && !isStreaming && (
+                  <div className="flex justify-start">
+                    <div className="bg-[#1a1a1b] rounded-lg px-3 py-2">
+                      <div className="flex gap-1">
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#a8c7fa] animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#a8c7fa] animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#a8c7fa] animate-bounce" style={{ animationDelay: '300ms' }} />
                       </div>
-                    </motion.div>
-                  ))}
-
-                  {isLoading && !isStreaming && (
-                    <div className="flex justify-start">
-                      <div className="bg-white/10 rounded-xl px-3 py-2">
-                        <div className="flex gap-1">
-                          <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                          <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                          <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-bounce" style={{ animationDelay: '300ms' }} />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div ref={messagesEndRef} />
-                </div>
-
-                {/* Quick Prompts */}
-                {messages.length === 1 && !isLoading && (
-                  <div className="px-3 pb-2">
-                    <p className="text-[10px] text-slate-400 mb-1.5">Ask me about your job search:</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {quickPrompts.map((prompt, index) => (
-                        <button
-                          key={index}
-                          onClick={() => { setInput(prompt); inputRef.current?.focus(); }}
-                          className={`text-[10px] px-2.5 py-1.5 rounded-full transition-colors ${isLight
-                            ? 'bg-gray-100 hover:bg-blue-50 text-gray-700 border border-gray-200 hover:border-blue-300'
-                            : 'bg-white/5 hover:bg-cyan-500/10 text-slate-300 border border-white/10 hover:border-cyan-500/30'
-                          }`}
-                        >
-                          {prompt}
-                        </button>
-                      ))}
                     </div>
                   </div>
                 )}
 
-                {/* Input */}
-                <div className="p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-[var(--theme-border)] bg-[var(--theme-bg-input)]">
-                  <div className="flex gap-2">
-                    <input
-                      ref={inputRef}
-                      type="text"
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      placeholder="Ask about your applications, interviews..."
-                      disabled={isLoading}
-                      className={`flex-1 rounded-lg px-3 py-2.5 sm:py-2 text-sm sm:text-xs outline-none transition-colors disabled:opacity-50 bg-[var(--theme-bg-card)] border border-[var(--theme-border)] text-[var(--theme-text)] placeholder-[var(--theme-text-muted)] focus:border-blue-500`}
-                    />
-                    <button
-                      onClick={handleSend}
-                      disabled={!input.trim() || isLoading}
-                      className="px-3.5 sm:px-3 py-2.5 sm:py-2 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                    >
-                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                      </svg>
-                    </button>
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Quick Prompts */}
+              {messages.length === 1 && !isLoading && (
+                <div className="px-3 pb-2">
+                  <div className="flex flex-wrap gap-1.5">
+                    {quickPrompts.map((prompt, index) => (
+                      <button
+                        key={index}
+                        onClick={() => { setInput(prompt); inputRef.current?.focus(); }}
+                        className="text-[10px] px-2.5 py-1.5 rounded-full bg-transparent text-[#8e918f] border border-[#2d2d2f] hover:border-[#444746] hover:text-[#e3e3e3] transition-colors duration-100"
+                      >
+                        {prompt}
+                      </button>
+                    ))}
                   </div>
                 </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              )}
 
-        {/* Toggle Button */}
-        <motion.button
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+              {/* Input */}
+              <div className="px-3 py-3 border-t border-[#2d2d2f]">
+                <div className="flex gap-2">
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Ask about your applications, interviews..."
+                    disabled={isLoading}
+                    className="flex-1 rounded-lg px-3 py-2 text-xs outline-none bg-[#1e1e1f] border border-[#2d2d2f] text-[#e3e3e3] placeholder-[#5f6368] focus:border-[#a8c7fa] disabled:opacity-50 transition-colors duration-100"
+                  />
+                  <button
+                    onClick={handleSend}
+                    disabled={!input.trim() || isLoading}
+                    className="px-3 py-2 rounded-lg bg-[#a8c7fa] text-[#0b0b0b] hover:bg-[#c2e7ff] disabled:opacity-30 disabled:cursor-not-allowed transition-colors duration-100"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Toggle Button — flat, minimal */}
+        <button
           onClick={() => setIsOpen(!isOpen)}
-          className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden shadow-lg hover:shadow-2xl transition-all flex items-center justify-center pointer-events-auto border-2 border-cyan-500/50"
-          style={{ boxShadow: '0 0 40px rgba(0, 245, 255, 0.3)' }}
+          className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 w-10 h-10 rounded-full bg-[#131314] border border-[#444746] flex items-center justify-center pointer-events-auto hover:bg-[#1f1f21] hover:border-[#a8c7fa] transition-colors duration-100 shadow-lg shadow-black/40"
         >
-          <AnimatePresence mode="wait">
-            {isOpen ? (
-              <motion.div
-                key="close"
-                initial={{ rotate: -90, opacity: 0 }}
-                animate={{ rotate: 0, opacity: 1 }}
-                exit={{ rotate: 90, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="w-full h-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center"
-              >
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="open"
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.8, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="relative w-full h-full"
-              >
-                <img src="/sona-avatar.png" alt="Chat with Sona" className="w-full h-full object-cover" />
-                <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-green-400 rounded-full border-2 border-white animate-pulse" />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.button>
+          {isOpen ? (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e3e3e3" strokeWidth="1.5">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8e918f" strokeWidth="1.5">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+          )}
+        </button>
       </div>
     </div>
   );

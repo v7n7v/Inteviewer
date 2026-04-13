@@ -13,15 +13,15 @@ import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
 import { saveAs } from 'file-saver';
 
 const STATUS_CONFIG = {
-    not_applied: { bg: 'bg-slate-500/20', border: 'border-slate-500/30', text: 'text-silver', label: 'Not Applied', icon: '📝', gradient: 'from-slate-500 to-slate-600' },
-    applied: { bg: 'bg-blue-500/20', border: 'border-blue-500/30', text: 'text-blue-300', label: 'Applied', icon: '🚀', gradient: 'from-blue-500 to-cyan-500' },
-    screening: { bg: 'bg-cyan-500/20', border: 'border-cyan-500/30', text: 'text-cyan-300', label: 'Screening', icon: '👀', gradient: 'from-cyan-500 to-teal-500' },
-    interview_scheduled: { bg: 'bg-cyan-500/20', border: 'border-cyan-500/30', text: 'text-cyan-300', label: 'Interview Scheduled', icon: '📅', gradient: 'from-cyan-500 to-indigo-500' },
-    interviewed: { bg: 'bg-indigo-500/20', border: 'border-indigo-500/30', text: 'text-indigo-300', label: 'Interviewed', icon: '🎤', gradient: 'from-indigo-500 to-violet-500' },
-    offer: { bg: 'bg-green-500/20', border: 'border-green-500/30', text: 'text-green-300', label: 'Offer Received', icon: '🎉', gradient: 'from-green-500 to-emerald-500' },
-    rejected: { bg: 'bg-red-500/20', border: 'border-red-500/30', text: 'text-red-300', label: 'Rejected', icon: '❌', gradient: 'from-red-500 to-rose-500' },
-    accepted: { bg: 'bg-emerald-500/20', border: 'border-emerald-500/30', text: 'text-emerald-300', label: 'Accepted', icon: '✅', gradient: 'from-emerald-500 to-green-500' },
-    withdrawn: { bg: 'bg-orange-500/20', border: 'border-orange-500/30', text: 'text-orange-300', label: 'Withdrawn', icon: '🔙', gradient: 'from-orange-500 to-amber-500' },
+    not_applied: { bg: 'bg-slate-500/20', border: 'border-slate-500/30', text: 'text-silver', label: 'Not Applied', icon: <span className="material-symbols-rounded text-[14px]">edit_document</span>, gradient: 'from-slate-500 to-slate-600' },
+    applied: { bg: 'bg-blue-500/20', border: 'border-blue-500/30', text: 'text-blue-300', label: 'Applied', icon: <span className="material-symbols-rounded text-[14px]">send</span>, gradient: 'from-blue-500 to-cyan-500' },
+    screening: { bg: 'bg-cyan-500/20', border: 'border-cyan-500/30', text: 'text-cyan-300', label: 'Screening', icon: <span className="material-symbols-rounded text-[14px]">visibility</span>, gradient: 'from-cyan-500 to-teal-500' },
+    interview_scheduled: { bg: 'bg-cyan-500/20', border: 'border-cyan-500/30', text: 'text-cyan-300', label: 'Interview Scheduled', icon: <span className="material-symbols-rounded text-[14px]">calendar_month</span>, gradient: 'from-cyan-500 to-indigo-500' },
+    interviewed: { bg: 'bg-indigo-500/20', border: 'border-indigo-500/30', text: 'text-indigo-300', label: 'Interviewed', icon: <span className="material-symbols-rounded text-[14px]">mic</span>, gradient: 'from-indigo-500 to-violet-500' },
+    offer: { bg: 'bg-green-500/20', border: 'border-green-500/30', text: 'text-green-300', label: 'Offer Received', icon: <span className="material-symbols-rounded text-[14px]">celebration</span>, gradient: 'from-green-500 to-emerald-500' },
+    rejected: { bg: 'bg-red-500/20', border: 'border-red-500/30', text: 'text-red-300', label: 'Rejected', icon: <span className="material-symbols-rounded text-[14px]">cancel</span>, gradient: 'from-red-500 to-rose-500' },
+    accepted: { bg: 'bg-emerald-500/20', border: 'border-emerald-500/30', text: 'text-emerald-300', label: 'Accepted', icon: <span className="material-symbols-rounded text-[14px]">check_circle</span>, gradient: 'from-emerald-500 to-green-500' },
+    withdrawn: { bg: 'bg-orange-500/20', border: 'border-orange-500/30', text: 'text-orange-300', label: 'Withdrawn', icon: <span className="material-symbols-rounded text-[14px]">undo</span>, gradient: 'from-orange-500 to-amber-500' },
 };
 
 type ViewMode = 'grid' | 'list';
@@ -86,13 +86,13 @@ export default function ApplicationsPage() {
         }
         const result = await updateApplicationStatus(app.id, newStatus, additionalData);
         if (result.success) {
-            showToast(`Status updated to: ${STATUS_CONFIG[newStatus].label}`, STATUS_CONFIG[newStatus].icon);
+            showToast(`Status updated to: ${STATUS_CONFIG[newStatus].label}`, 'check_circle');
             loadApplications();
             if (selectedApp?.id === app.id) {
                 setSelectedApp({ ...app, status: newStatus });
             }
         } else {
-            showToast('Failed to update status', '❌');
+            showToast('Failed to update status', 'cancel');
         }
     };
 
@@ -100,11 +100,11 @@ export default function ApplicationsPage() {
         if (!selectedApp) return;
         const result = await updateApplicationStatus(selectedApp.id, selectedApp.status, { notes: editingNotes });
         if (result.success) {
-            showToast('Notes saved!', '📝');
+            showToast('Notes saved!', 'edit_document');
             loadApplications();
             setSelectedApp({ ...selectedApp, notes: editingNotes });
         } else {
-            showToast('Failed to save notes', '❌');
+            showToast('Failed to save notes', 'cancel');
         }
     };
 
@@ -112,7 +112,7 @@ export default function ApplicationsPage() {
         if (!confirm('Delete this application? This cannot be undone.')) return;
         const result = await deleteJobApplication(id);
         if (result.success) {
-            showToast('Application deleted', '🗑️');
+            showToast('Application deleted', 'delete');
             loadApplications();
             if (selectedApp?.id === id) {
                 setShowDetailModal(false);
@@ -145,9 +145,9 @@ export default function ApplicationsPage() {
         setDownloading(true);
         try {
             await downloadResumePDF(linkedResume.content as any, { primary: '#0ea5e9', accent: '#06b6d4', text: '#1a202c' });
-            showToast('PDF downloaded!', '✅');
+            showToast('PDF downloaded!', 'check_circle');
         } catch (error: any) {
-            showToast(`PDF failed: ${error.message}`, '❌');
+            showToast(`PDF failed: ${error.message}`, 'cancel');
         }
         setDownloading(false);
     };
@@ -192,8 +192,8 @@ export default function ApplicationsPage() {
             });
             const blob = await Packer.toBlob(doc);
             saveAs(blob, `${resume.name?.replace(/\s+/g, '_') || 'resume'}.docx`);
-            showToast('Word document downloaded!', '✅');
-        } catch { showToast('Download failed', '❌'); }
+            showToast('Word document downloaded!', 'check_circle');
+        } catch { showToast('Download failed', 'cancel'); }
         setDownloading(false);
     };
 
@@ -225,16 +225,14 @@ export default function ApplicationsPage() {
                 </div>
                 <div className="relative z-10">
                     <div className="flex items-center gap-4 mb-4">
-                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-cyan-500/25">
-                            <span className="text-3xl">📊</span>
+                        <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 flex items-center justify-center shadow-inner">
+                            <span className="material-symbols-rounded text-3xl">bar_chart</span>
                         </div>
                         <div>
-                            <h1 className="text-4xl font-bold">
-                                <span className="bg-gradient-to-r from-cyan-400 to-cyan-400 bg-clip-text text-transparent">
-                                    Application Tracker
-                                </span>
+                            <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)]">
+                                Application Tracker
                             </h1>
-                            <p className="text-silver">Track and manage your job applications</p>
+                            <p className="text-[var(--text-secondary)] text-sm">Track and manage your job applications</p>
                         </div>
                     </div>
                 </div>
@@ -243,25 +241,27 @@ export default function ApplicationsPage() {
             {/* Stats Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 {[
-                    { label: 'Total Applications', value: stats.total, icon: '📝', color: 'from-slate-500 to-slate-600' },
-                    { label: 'Active', value: stats.active, icon: '🚀', color: 'from-blue-500 to-cyan-500' },
-                    { label: 'Interviews', value: stats.interviews, icon: '🎤', color: 'from-cyan-500 to-indigo-500' },
-                    { label: 'Offers', value: stats.offers, icon: '🎉', color: 'from-green-500 to-emerald-500' },
+                    { label: 'Total Applications', value: stats.total, icon: 'description', colorClass: 'bg-slate-500/10 border-slate-500/20 text-slate-500' },
+                    { label: 'Active', value: stats.active, icon: 'send', colorClass: 'bg-blue-500/10 border-blue-500/20 text-blue-500' },
+                    { label: 'Interviews', value: stats.interviews, icon: 'mic', colorClass: 'bg-violet-500/10 border-violet-500/20 text-violet-500' },
+                    { label: 'Offers', value: stats.offers, icon: 'celebration', colorClass: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' },
                 ].map((stat, i) => (
                     <motion.div
                         key={i}
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: i * 0.1 }}
-                        className="p-6 rounded-2xl glass-card hover:border-white/20 transition-all"
+                        className="p-5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] hover:border-[var(--text-muted)] hover:shadow-lg transition-all group cursor-default"
                     >
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-2xl">{stat.icon}</span>
-                            <span className={`text-3xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`}>
+                        <div className="flex items-center justify-between mb-4">
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center border shadow-inner transition-transform duration-300 group-hover:scale-110 ${stat.colorClass}`}>
+                                <span className="material-symbols-rounded text-[24px]">{stat.icon}</span>
+                            </div>
+                            <span className="text-3xl font-black text-[var(--text-primary)]">
                                 {stat.value}
                             </span>
                         </div>
-                        <p className="text-sm text-silver">{stat.label}</p>
+                        <p className="text-xs md:text-sm font-medium text-[var(--text-secondary)]">{stat.label}</p>
                     </motion.div>
                 ))}
             </div>
@@ -273,7 +273,7 @@ export default function ApplicationsPage() {
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="🔍 Search companies or positions..."
+                        placeholder="Search companies or positions..."
                         className="flex-1 px-4 py-3 rounded-xl glass-card text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20"
                     />
                     <select
@@ -290,18 +290,18 @@ export default function ApplicationsPage() {
 
                 <div className="flex gap-1 p-1 rounded-xl glass-card">
                     {[
-                        { mode: 'grid' as ViewMode, icon: '⊞', label: 'Grid' },
-                        { mode: 'list' as ViewMode, icon: '≡', label: 'List' },
+                        { mode: 'grid' as ViewMode, icon: 'grid_view', label: 'Grid' },
+                        { mode: 'list' as ViewMode, icon: 'view_list', label: 'List' },
                     ].map((v) => (
                         <button
                             key={v.mode}
                             onClick={() => setViewMode(v.mode)}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === v.mode
-                                ? 'bg-gradient-to-r from-cyan-500 to-cyan-500 text-white'
+                                ? 'bg-[var(--theme-bg-elevated)] border border-[var(--theme-border)] text-cyan-600 dark:text-cyan-400'
                                 : 'text-silver hover:text-white'
                                 }`}
                         >
-                            {v.icon} {v.label}
+                            <span className="material-symbols-rounded text-[14px] align-middle mr-1">{v.icon}</span> {v.label}
                         </button>
                     ))}
                 </div>
@@ -319,8 +319,8 @@ export default function ApplicationsPage() {
                     animate={{ opacity: 1, y: 0 }}
                     className="text-center py-16"
                 >
-                    <div className="w-24 h-24 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-cyan-500/20 flex items-center justify-center">
-                        <span className="text-5xl">📭</span>
+                    <div className="w-24 h-24 mx-auto mb-6 rounded-3xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-500 shadow-inner">
+                        <span className="material-symbols-rounded text-5xl">inventory_2</span>
                     </div>
                     <h3 className="text-2xl font-bold text-white mb-3">No Applications Yet</h3>
                     <p className="text-silver mb-6 max-w-md mx-auto">
@@ -328,9 +328,9 @@ export default function ApplicationsPage() {
                     </p>
                     <a
                         href="/suite/resume"
-                        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-500 text-white font-bold hover:shadow-lg hover:shadow-cyan-500/25 transition-all"
+                        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[var(--theme-bg-elevated)] border border-[var(--theme-border)] text-cyan-600 dark:text-cyan-400 font-bold hover:shadow-lg hover:shadow-cyan-500/25 transition-all"
                     >
-                        🔄 Morph a Resume
+                        <span className="material-symbols-rounded text-[18px]">transform</span> Morph a Resume
                     </a>
                 </motion.div>
             ) : viewMode === 'grid' ? (
@@ -370,7 +370,7 @@ export default function ApplicationsPage() {
                                 >
                                     <td className="p-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center text-lg font-bold text-white">
+                                            <div className={`w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-lg font-bold text-indigo-500`}>
                                                 {app.company_name[0]}
                                             </div>
                                             <span className="font-medium text-white">{app.company_name}</span>
@@ -384,7 +384,7 @@ export default function ApplicationsPage() {
                                                 className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium ${STATUS_CONFIG[app.status].bg} ${STATUS_CONFIG[app.status].border} border ${STATUS_CONFIG[app.status].text} hover:scale-105 transition-all cursor-pointer`}
                                             >
                                                 {STATUS_CONFIG[app.status].icon} {STATUS_CONFIG[app.status].label}
-                                                <span className="text-[10px] opacity-60 ml-1">▼</span>
+                                                <span className="text-[10px] opacity-60 ml-1"><span className="material-symbols-rounded text-inherit align-middle">arrow_drop_down</span></span>
                                             </button>
                                             <AnimatePresence>
                                                 {statusDropdownId === app.id && (
@@ -441,7 +441,7 @@ export default function ApplicationsPage() {
                                             onClick={(e) => { e.stopPropagation(); handleDelete(app.id); }}
                                             className="p-2 rounded-lg text-red-400 hover:bg-red-500/20 transition-colors"
                                         >
-                                            🗑️
+                                            <span className="material-symbols-rounded text-[16px]">delete</span>
                                         </button>
                                     </td>
                                 </tr>
@@ -471,7 +471,7 @@ export default function ApplicationsPage() {
                             >
                                 {/* Header */}
                                 <div className="p-5 border-b border-white/10 flex items-center gap-4 sticky top-0 bg-[var(--theme-bg-card)] z-10">
-                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center text-xl font-bold text-white">
+                                    <div className="w-12 h-12 rounded-[1.25rem] bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-xl font-bold text-indigo-500 shadow-inner">
                                         {selectedApp.company_name[0]}
                                     </div>
                                     <div className="flex-1 min-w-0">
@@ -487,7 +487,7 @@ export default function ApplicationsPage() {
                                         onClick={() => setShowDetailModal(false)}
                                         className="p-1.5 rounded-lg hover:bg-white/10 text-silver hover:text-white transition-colors"
                                     >
-                                        ✕
+                                        <span className="material-symbols-rounded align-middle mr-1">close</span>
                                     </button>
                                 </div>
 
@@ -499,7 +499,7 @@ export default function ApplicationsPage() {
                                                 key={key}
                                                 onClick={() => handleStatusUpdate(selectedApp, key as JobApplication['status'])}
                                                 className={`p-2 rounded-lg text-center transition-all ${selectedApp.status === key
-                                                    ? `bg-gradient-to-r ${config.gradient} text-white shadow-md`
+                                                    ? `${config.bg} border ${config.border} ${config.text} shadow-sm font-bold`
                                                     : 'bg-white/5 hover:bg-white/10 text-silver'
                                                     }`}
                                             >
@@ -514,7 +514,7 @@ export default function ApplicationsPage() {
                                                 key={key}
                                                 onClick={() => handleStatusUpdate(selectedApp, key as JobApplication['status'])}
                                                 className={`p-2 rounded-lg text-center transition-all ${selectedApp.status === key
-                                                    ? `bg-gradient-to-r ${config.gradient} text-white shadow-md`
+                                                    ? `${config.bg} border ${config.border} ${config.text} shadow-sm font-bold`
                                                     : 'bg-white/5 hover:bg-white/10 text-silver'
                                                     }`}
                                             >
@@ -529,7 +529,7 @@ export default function ApplicationsPage() {
                                 <div className="p-4 border-b border-white/10">
                                     <div className="flex items-center justify-between mb-3">
                                         <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                                            📄 Saved Resume
+                                            <span className="material-symbols-rounded text-[18px] text-[var(--text-muted)]">description</span> Saved Resume
                                         </h3>
                                         {linkedResume && (
                                             <button
@@ -550,8 +550,8 @@ export default function ApplicationsPage() {
                                         <div className="space-y-3">
                                             {/* Resume Info Bar */}
                                             <div className="flex items-center gap-3 p-3 rounded-xl glass-card">
-                                                <div className="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center">
-                                                    <span className="text-lg">📋</span>
+                                                <div className="w-10 h-10 rounded-lg bg-[var(--tag-cyan-bg)] text-[var(--tag-cyan-text)] flex items-center justify-center">
+                                                    <span className="material-symbols-rounded text-lg">description</span>
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-sm font-medium text-white truncate">
@@ -573,7 +573,7 @@ export default function ApplicationsPage() {
                                                     {downloading ? (
                                                         <div className="w-4 h-4 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin" />
                                                     ) : (
-                                                        <span>📥</span>
+                                                        <span className="material-symbols-rounded text-[18px]">picture_as_pdf</span>
                                                     )}
                                                     Download PDF
                                                 </button>
@@ -585,7 +585,7 @@ export default function ApplicationsPage() {
                                                     {downloading ? (
                                                         <div className="w-4 h-4 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin" />
                                                     ) : (
-                                                        <span>📄</span>
+                                                        <span className="material-symbols-rounded text-[18px]">description</span>
                                                     )}
                                                     Download Word
                                                 </button>
@@ -607,7 +607,7 @@ export default function ApplicationsPage() {
                                         </div>
                                     ) : (
                                         <div className="flex items-center gap-3 p-3 rounded-xl glass-card">
-                                            <span className="text-lg">📝</span>
+                                            <span className="material-symbols-rounded text-lg text-[var(--text-muted)]">edit_document</span>
                                             <div>
                                                 <p className="text-sm text-silver">No saved resume linked</p>
                                                 <a href="/suite/resume" className="text-xs text-cyan-400 hover:text-cyan-300">
@@ -632,7 +632,7 @@ export default function ApplicationsPage() {
                                             onClick={handleNotesUpdate}
                                             className="mt-2 px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-400 text-xs font-medium hover:bg-cyan-500/30 transition-colors"
                                         >
-                                            💾 Save
+                                            <span className="material-symbols-rounded text-[14px] align-middle">save</span> Save
                                         </button>
                                     )}
                                 </div>
@@ -640,11 +640,11 @@ export default function ApplicationsPage() {
                                 {/* Timeline */}
                                 <div className="p-4 flex items-center justify-between text-xs text-silver border-b border-white/10">
                                     <div className="flex items-center gap-4">
-                                        <span>📝 Created {new Date(selectedApp.created_at).toLocaleDateString()}</span>
-                                        {selectedApp.applied_at && <span>🚀 Applied {new Date(selectedApp.applied_at).toLocaleDateString()}</span>}
+                                        <span className="flex items-center gap-1.5"><span className="material-symbols-rounded text-[14px]">edit_document</span> Created {new Date(selectedApp.created_at).toLocaleDateString()}</span>
+                                        {selectedApp.applied_at && <span className="flex items-center gap-1.5"><span className="material-symbols-rounded text-[14px]">send</span> Applied {new Date(selectedApp.applied_at).toLocaleDateString()}</span>}
                                     </div>
-                                    <a href={`/suite/skill-bridge?applicationId=${selectedApp.id}`} className="px-3 py-1.5 rounded-lg bg-indigo-500/20 text-indigo-400 font-medium hover:bg-indigo-500/30 transition-colors">
-                                        🌉 Open Skill Bridge
+                                    <a href={`/suite/skill-bridge?applicationId=${selectedApp.id}`} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--tag-purple-bg)] text-[var(--tag-purple-text)] font-medium hover:opacity-80 transition-opacity">
+                                        <span className="material-symbols-rounded text-[16px]">route</span> Open Skill Bridge
                                     </a>
                                 </div>
 
@@ -652,9 +652,9 @@ export default function ApplicationsPage() {
                                 <div className="p-4 pt-0 flex gap-2">
                                     <button
                                         onClick={() => handleDelete(selectedApp.id)}
-                                        className="px-3 py-2 rounded-lg bg-red-500/10 text-red-400 text-xs font-medium hover:bg-red-500/20 transition-colors"
+                                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[var(--tag-red-bg)] text-[var(--tag-red-text)] text-xs font-medium hover:opacity-80 transition-opacity"
                                     >
-                                        🗑️ Delete
+                                        <span className="material-symbols-rounded text-[16px]">delete</span> Delete
                                     </button>
                                     <button
                                         onClick={() => setShowDetailModal(false)}
@@ -788,7 +788,7 @@ function ApplicationCard({
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3 cursor-pointer" onClick={() => onOpenDetail(app)}>
-                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center text-2xl font-bold text-white">
+                        <div className="w-14 h-14 rounded-[1.25rem] bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-2xl font-bold text-indigo-500 shadow-inner">
                             {app.company_name[0].toUpperCase()}
                         </div>
                         <div>
@@ -800,7 +800,7 @@ function ApplicationCard({
                         onClick={() => onDelete(app.id)}
                         className="p-2 rounded-lg text-silver hover:text-red-400 hover:bg-red-500/20 transition-all opacity-0 group-hover:opacity-100"
                     >
-                        🗑️
+                        <span className="material-symbols-rounded text-[16px]">delete</span>
                     </button>
                 </div>
 
@@ -819,7 +819,7 @@ function ApplicationCard({
                                     initial={{ width: 0 }}
                                     animate={{ width: `${app.talent_density_score}%` }}
                                     transition={{ duration: 1, delay: index * 0.1 }}
-                                    className={`h-full ${app.talent_density_score >= 80 ? 'bg-gradient-to-r from-green-500 to-emerald-500' : app.talent_density_score >= 60 ? 'bg-gradient-to-r from-cyan-500 to-blue-500' : 'bg-gradient-to-r from-yellow-500 to-orange-500'}`}
+                                    className={`h-full ${app.talent_density_score >= 80 ? 'bg-green-500' : app.talent_density_score >= 60 ? 'bg-cyan-500' : 'bg-yellow-500'}`}
                                 />
                             </div>
                         </div>
@@ -838,7 +838,7 @@ function ApplicationCard({
                                     initial={{ width: 0 }}
                                     animate={{ width: `${skillProgress}%` }}
                                     transition={{ duration: 1, delay: index * 0.1 }}
-                                    className={`h-full ${skillProgress >= 100 ? 'bg-gradient-to-r from-indigo-500 to-violet-500' : 'bg-gradient-to-r from-cyan-500 to-blue-500'}`}
+                                    className={`h-full ${skillProgress >= 100 ? 'bg-indigo-500' : 'bg-cyan-500'}`}
                                 />
                             </div>
                         </div>
@@ -852,7 +852,7 @@ function ApplicationCard({
                         className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium ${STATUS_CONFIG[app.status].bg} ${STATUS_CONFIG[app.status].border} border ${STATUS_CONFIG[app.status].text} hover:scale-105 transition-all`}
                     >
                         {STATUS_CONFIG[app.status].icon} {STATUS_CONFIG[app.status].label}
-                        <span className="text-xs opacity-60">▼</span>
+                        <span className="material-symbols-rounded text-[16px] opacity-60">arrow_drop_down</span>
                     </button>
 
                     <AnimatePresence>
@@ -890,8 +890,8 @@ function ApplicationCard({
 
                 {/* Dates */}
                 <div className="flex items-center gap-4 text-xs text-silver">
-                    <span>📅 {new Date(app.created_at).toLocaleDateString()}</span>
-                    {app.applied_at && <span>🚀 Applied {new Date(app.applied_at).toLocaleDateString()}</span>}
+                    <span><span className="material-symbols-rounded text-[14px] mr-1 align-middle">calendar_month</span> {new Date(app.created_at).toLocaleDateString()}</span>
+                    {app.applied_at && <span><span className="material-symbols-rounded text-[14px] mr-1 align-middle">rocket_launch</span> Applied {new Date(app.applied_at).toLocaleDateString()}</span>}
                 </div>
 
                 {/* View Details */}

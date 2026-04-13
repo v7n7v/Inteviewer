@@ -85,7 +85,7 @@ export default function CompanyInfoModal({ isOpen, onSubmit, onCancel, jobDescri
                             {/* Header */}
                             <div className="mb-6">
                                 <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center mb-4">
-                                    <span className="text-3xl">🏢</span>
+                                    <span className="text-3xl"><span className="material-symbols-rounded align-middle">domain</span></span>
                                 </div>
                                 <h2 className="text-2xl font-bold text-white mb-2">Company Information</h2>
                                 <p className="text-slate-400 text-sm">
@@ -152,7 +152,7 @@ export default function CompanyInfoModal({ isOpen, onSubmit, onCancel, jobDescri
                                             </>
                                         ) : (
                                             <>
-                                                <span>✨</span>
+                                                <span><span className="material-symbols-rounded">auto_awesome</span></span>
                                                 Extract from Job Description
                                             </>
                                         )}
@@ -179,7 +179,7 @@ export default function CompanyInfoModal({ isOpen, onSubmit, onCancel, jobDescri
 
                             {/* Helper text */}
                             <p className="text-xs text-slate-500 mt-4 text-center">
-                                💡 Your resume will be auto-saved as "Resume_{companyName}_{jobTitle}_{new Date().getFullYear()}"
+                                <span className="material-symbols-rounded align-middle mr-1">lightbulb</span> Your resume will be auto-saved as "Resume_{companyName}_{jobTitle}_{new Date().getFullYear()}"
                             </p>
                         </motion.div>
                     </div>

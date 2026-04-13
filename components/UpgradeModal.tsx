@@ -28,12 +28,12 @@ const PLANS = {
 } as const;
 
 const PRO_FEATURES = [
-  { icon: '⚡', text: '3x rate limits on all AI tools' },
-  { icon: '🎯', text: 'Priority AI processing queue' },
-  { icon: '📊', text: 'Advanced career analytics' },
+  { icon: 'bolt', text: '3x rate limits on all AI tools' },
+  { icon: 'my_location', text: 'Priority AI processing queue' },
+  { icon: 'bar_chart', text: 'Advanced career analytics' },
   { icon: '🔓', text: 'Premium resume templates' },
-  { icon: '💬', text: '3x Sona AI chat limits' },
-  { icon: '🛡️', text: 'Priority support' },
+  { icon: 'chat_bubble', text: '3x Sona AI chat limits' },
+  { icon: 'shield_person', text: 'Priority support' },
 ];
 
 export default function UpgradeModal({ isOpen, onClose, onSuccess }: UpgradeModalProps) {
@@ -127,7 +127,7 @@ export default function UpgradeModal({ isOpen, onClose, onSuccess }: UpgradeModa
             {/* Header */}
             <div className="px-6 pt-6 pb-4">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-lg">⚡</span>
+                <span className="material-symbols-rounded text-lg">bolt</span>
                 <h2 className="text-xl font-bold">Upgrade to Pro</h2>
               </div>
               <p className="text-sm text-[var(--theme-text-secondary)]">

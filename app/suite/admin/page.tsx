@@ -66,7 +66,7 @@ export default function AdminPage() {
         disabled: allUsers.filter((u: UserRecord) => u.disabled).length,
       });
     } catch (err: any) {
-      showToast(err.message || 'Failed to load users', '❌');
+      showToast(err.message || 'Failed to load users', 'cancel');
     }
     setLoading(false);
   }, [authFetch]);
@@ -85,10 +85,10 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      showToast(data.message, '✅');
+      showToast(data.message, 'check_circle');
       loadUsers(search);
     } catch (err: any) {
-      showToast(err.message || 'Action failed', '❌');
+      showToast(err.message || 'Action failed', 'cancel');
     }
     setActionLoading(null);
   };
@@ -106,8 +106,8 @@ export default function AdminPage() {
           animate={{ opacity: 1, scale: 1 }}
           className="text-center max-w-md"
         >
-          <div className="w-24 h-24 rounded-3xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-6">
-            <span className="text-5xl">🚫</span>
+          <div className="w-24 h-24 rounded-3xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-6 text-red-500">
+            <span className="material-symbols-rounded text-5xl">block</span>
           </div>
           <h1 className={`text-2xl font-bold mb-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>Access Denied</h1>
           <p className={`mb-6 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
@@ -138,8 +138,8 @@ export default function AdminPage() {
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-orange-500/20 rounded-full blur-3xl" />
           </div>
           <div className="relative z-10 flex items-center gap-4 pl-12 lg:pl-0">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg">
-              <span className="text-3xl">🛡️</span>
+            <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center shadow-inner">
+              <span className="material-symbols-rounded text-3xl">admin_panel_settings</span>
             </div>
             <div>
               <h1 className="text-3xl md:text-4xl font-bold">
@@ -160,14 +160,14 @@ export default function AdminPage() {
           className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
         >
           {[
-            { label: 'Total Users', value: stats.total, icon: '👥', color: 'cyan' },
-            { label: 'Pro Users', value: stats.pro, icon: '👑', color: 'amber' },
-            { label: 'Free Users', value: stats.free, icon: '🆓', color: 'slate' },
-            { label: 'Disabled', value: stats.disabled, icon: '🚫', color: 'red' },
+            { label: 'Total Users', value: stats.total, icon: 'group', color: 'cyan' },
+            { label: 'Pro Users', value: stats.pro, icon: 'verified_user', color: 'amber' },
+            { label: 'Free Users', value: stats.free, icon: 'person', color: 'slate' },
+            { label: 'Disabled', value: stats.disabled, icon: 'block', color: 'red' },
           ].map((stat) => (
             <div key={stat.label} className="glass-card rounded-2xl p-5">
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-2xl">{stat.icon}</span>
+              <div className="flex items-center gap-3 mb-2 text-[var(--theme-text-secondary)]">
+                <span className="material-symbols-rounded text-2xl">{stat.icon}</span>
                 <span className={`text-xs font-medium uppercase tracking-wider ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>{stat.label}</span>
               </div>
               <p className={`text-3xl font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>{stat.value}</p>
@@ -184,7 +184,7 @@ export default function AdminPage() {
         >
           <div className="flex gap-3">
             <div className="relative flex-1">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg">🔍</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg text-slate-400 material-symbols-rounded">search</span>
               <input
                 type="text"
                 value={search}
@@ -246,7 +246,7 @@ export default function AdminPage() {
           {/* Empty */}
           {!loading && users.length === 0 && (
             <div className="p-12 text-center">
-              <span className="text-4xl mb-4 block">🤷</span>
+              <span className="material-symbols-rounded text-4xl mb-4 block text-[var(--theme-text-tertiary)]">person_off</span>
               <p className={`${isLight ? 'text-slate-500' : 'text-slate-400'}`}>No users found</p>
             </div>
           )}
@@ -290,7 +290,9 @@ export default function AdminPage() {
                     : u.tier === 'pro' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                     : isLight ? 'bg-slate-100 text-slate-600 border border-slate-200' : 'bg-slate-500/20 text-slate-400 border border-slate-500/30'
                   }`}>
-                    {u.tier === 'admin' ? '👑 Admin' : u.tier === 'pro' ? '⭐ Pro' : '🆓 Free'}
+                    {u.tier === 'admin' ? <><span className="material-symbols-rounded text-[14px]">shield_person</span> Admin</> 
+                     : u.tier === 'pro' ? <><span className="material-symbols-rounded text-[14px]">star</span> Pro</> 
+                     : <><span className="material-symbols-rounded text-[14px]">person</span> Free</>}
                   </span>
                   {u.disabled && (
                     <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400">Disabled</span>
@@ -346,7 +348,7 @@ export default function AdminPage() {
                         }`}
                         title={u.disabled ? 'Enable user' : 'Disable user'}
                       >
-                        {actionLoading === `${u.uid}:${u.disabled ? 'enable' : 'disable'}` ? '...' : u.disabled ? '✓ Enable' : '✕ Disable'}
+                        {actionLoading === `${u.uid}:${u.disabled ? 'enable' : 'disable'}` ? '...' : u.disabled ? '✓ Enable' : <><span className="material-symbols-rounded align-middle mr-1">close</span> Disable</>}
                       </button>
                     </>
                   )}

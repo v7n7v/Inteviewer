@@ -11,14 +11,17 @@ export async function GET(req: NextRequest) {
     const snapshot = await db
       .collection('study_vault')
       .where('userId', '==', guard.user?.uid || 'anonymous')
-      .orderBy('createdAt', 'desc')
       .limit(50)
       .get();
 
-    const notes = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    const notes = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      // Sort client-side: newest first (avoids composite index requirement)
+      .sort((a: any, b: any) => {
+        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bTime - aTime;
+      });
 
     return NextResponse.json({ notes });
   } catch (error: unknown) {

@@ -64,7 +64,7 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
 
         if (data?.user) {
           setUser(data.user);
-          showToast('Account created! Welcome!', '✅');
+          showToast('Account created! Welcome!', 'check_circle');
           onClose();
         }
       } else {
@@ -97,7 +97,7 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
 
         if (data?.user) {
           setUser(data.user);
-          showToast('Login successful!', '✅');
+          showToast('Login successful!', 'check_circle');
           onClose();
         }
       }
@@ -132,7 +132,7 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
 
       if (data?.user) {
         setUser(data.user);
-        showToast('Login successful!', '✅');
+        showToast('Login successful!', 'check_circle');
         onClose();
       }
     } catch (err: any) {
@@ -152,7 +152,7 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
       if (error) throw error;
       if (data?.user) {
         setUser(data.user);
-        showToast('Signed in with Google!', '✅');
+        showToast('Signed in with Google!', 'check_circle');
         onClose();
       }
     } catch (err: any) {
@@ -178,7 +178,7 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
       if (error) throw error;
 
       setResetEmailSent(true);
-      showToast('Password reset email sent!', '📧');
+      showToast('Password reset email sent!', 'mail');
     } catch (err: any) {
       setError(err.message || 'Failed to send reset email');
     } finally {
@@ -269,7 +269,7 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
         <div className="glass-card p-8 max-w-md w-full">
           <div className="text-center">
             <div className="w-20 h-20 rounded-full bg-cyan-500/20 flex items-center justify-center mx-auto mb-6">
-              <span className="text-4xl">📧</span>
+              <span className="text-4xl"><span className="material-symbols-rounded">mail</span></span>
             </div>
             <h2 className="text-2xl font-bold text-white mb-3">Check Your Email!</h2>
             <p className="text-slate-400 mb-6">
@@ -290,7 +290,7 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
       <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div className="glass-card p-8 max-w-md w-full">
           <h2 className="text-xl font-semibold mb-2 flex items-center gap-2">
-            <span>🔑</span> Reset Password
+            <span><span className="material-symbols-rounded">key</span></span> Reset Password
           </h2>
           <p className="text-slate-400 text-sm mb-6">
             Enter your email and we'll send you a reset link.
@@ -341,7 +341,7 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="glass-card p-8 max-w-md w-full">
         <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-          <span>{mode === 'login' ? '🔐' : '✨'}</span>
+          <span>{mode === 'login' ? '🔐' : <span className="material-symbols-rounded text-cyan-400">auto_awesome</span>}</span>
           {mode === 'login' ? 'Login to TalentConsulting.io' : 'Create Account'}
         </h2>
 
@@ -372,7 +372,7 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
             <div className="w-full border-t border-white/10"></div>
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-4 bg-slate-900 text-slate-400">or continue with email</span>
+            <span className="px-4 bg-[var(--bg-surface)] text-slate-400">or continue with email</span>
           </div>
         </div>
 

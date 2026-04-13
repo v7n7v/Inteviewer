@@ -13,14 +13,27 @@ import type { PlanTier } from './pricing-tiers';
 export type UsageFeature = 'morphs' | 'gauntlets' | 'flashcards' | 'jdGenerations' | 'coverLetters' | 'resumeChecks' | 'linkedinProfiles';
 
 // ── Free Tier Lifetime Caps ──
+/** 3 forever — no resets, no exceptions for free tier */
 export const FREE_CAPS: Record<UsageFeature, number> = {
   morphs: 3,
   gauntlets: 3,
-  flashcards: 2,
+  flashcards: 3,
   jdGenerations: 3,
-  coverLetters: 2,
+  coverLetters: 3,
   resumeChecks: 3,
-  linkedinProfiles: 2,
+  linkedinProfiles: 3,
+};
+
+// ── Anonymous (No Account) Caps ──
+/** 1 taste test per tool — then force signup. In-memory per IP. */
+export const ANON_CAPS: Record<UsageFeature, number> = {
+  morphs: 1,
+  gauntlets: 1,
+  flashcards: 1,
+  jdGenerations: 1,
+  coverLetters: 1,
+  resumeChecks: 1,
+  linkedinProfiles: 1,
 };
 
 // ── Voice Minute Caps (per month) ──

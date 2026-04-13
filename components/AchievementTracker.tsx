@@ -186,15 +186,15 @@ export default function AchievementTracker({
   const achievements: Achievement[] = useMemo(() => [
     {
       id: 'resume_uploaded', title: 'Resume Ready', description: 'Upload your resume',
-      icon: '📄', unlocked: resumeUploaded, category: 'resume', celebrationColor: 'from-blue-400 to-cyan-500',
+      icon: 'description', unlocked: resumeUploaded, category: 'resume', celebrationColor: 'from-blue-400 to-cyan-500',
     },
     {
       id: 'jd_matched', title: 'Target Acquired', description: 'Match with a job description',
-      icon: '🎯', unlocked: jdMatched, category: 'resume', celebrationColor: 'from-amber-400 to-orange-500',
+      icon: 'my_location', unlocked: jdMatched, category: 'resume', celebrationColor: 'from-amber-400 to-orange-500',
     },
     {
       id: 'resume_morphed', title: 'Shape Shifter', description: 'Morph your resume to a JD',
-      icon: '🔄', unlocked: resumeMorphed, category: 'resume', celebrationColor: 'from-violet-400 to-purple-500',
+      icon: 'sync', unlocked: resumeMorphed, category: 'resume', celebrationColor: 'from-violet-400 to-purple-500',
     },
     {
       id: 'skills_started', title: 'Bridge Builder', description: 'Start training on your first skill',
@@ -202,7 +202,7 @@ export default function AchievementTracker({
     },
     {
       id: 'skills_half', title: 'Halfway Hero', description: `Complete ${Math.ceil(totalSkills / 2)} skill courses`,
-      icon: '⚡', unlocked: skillsBridged >= Math.ceil(totalSkills / 2), category: 'skills', celebrationColor: 'from-yellow-400 to-amber-500',
+      icon: 'bolt', unlocked: skillsBridged >= Math.ceil(totalSkills / 2), category: 'skills', celebrationColor: 'from-yellow-400 to-amber-500',
     },
     {
       id: 'gauntlet_warrior', title: 'Gauntlet Warrior', description: 'Complete 3+ practice sessions',
@@ -210,11 +210,11 @@ export default function AchievementTracker({
     },
     {
       id: 'perfect_morph', title: 'Perfect Match', description: 'Score 85%+ on a resume morph',
-      icon: '💎', unlocked: morphScore >= 85, category: 'resume', celebrationColor: 'from-emerald-400 to-teal-500',
+      icon: 'diamond', unlocked: morphScore >= 85, category: 'resume', celebrationColor: 'from-emerald-400 to-teal-500',
     },
     {
       id: 'all_skills', title: 'Skill Master', description: 'Complete all skill courses',
-      icon: '🏆', unlocked: skillsBridged >= totalSkills && totalSkills > 0, category: 'skills', celebrationColor: 'from-amber-500 to-yellow-400',
+      icon: 'emoji_events', unlocked: skillsBridged >= totalSkills && totalSkills > 0, category: 'skills', celebrationColor: 'from-amber-500 to-yellow-400',
     },
   ], [resumeUploaded, jdMatched, resumeMorphed, skillsBridged, totalSkills, gauntletSessions, morphScore]);
 
@@ -284,7 +284,7 @@ export default function AchievementTracker({
                 {achievements.find(a => a.id === showCelebration)?.icon}
               </motion.div>
               <p className={`text-lg font-black ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                Achievement Unlocked! 🎉
+                Achievement Unlocked! <span className="material-symbols-rounded align-middle mr-1">celebration</span>
               </p>
               <p className={`text-sm font-bold mt-1 ${isLight ? 'text-slate-700' : 'text-white/70'}`}>
                 {achievements.find(a => a.id === showCelebration)?.title}
@@ -338,7 +338,7 @@ export default function AchievementTracker({
                     : 'bg-white/[0.01] border border-white/[0.03] opacity-25'
               }`}
               disabled={!a.unlocked}
-              title={a.unlocked ? `🎉 ${a.title} — Click to replay!` : `🔒 ${a.description}`}
+              title={a.unlocked ? `${a.title} — Click to replay!` : a.description}
             >
               {a.unlocked && (
                 <motion.div
@@ -348,7 +348,7 @@ export default function AchievementTracker({
                 />
               )}
               <span className={`text-xl ${!a.unlocked ? 'grayscale' : ''}`}>
-                {a.unlocked ? a.icon : '🔒'}
+                {a.unlocked ? a.icon : 'lock'}
               </span>
               <p className={`text-[8px] font-bold mt-1 leading-tight truncate ${
                 a.unlocked
@@ -381,7 +381,7 @@ export default function AchievementTracker({
             />
           </div>
           <div className="flex justify-between mt-1">
-            {['📄 Resume', '🎯 Match', '🔄 Morph', '🌉 Bridge', '⚔️ Practice'].map((step, i) => {
+            {['Resume', 'Match', 'Morph', 'Bridge', 'Practice'].map((step, i) => {
               const stepThreshold = (i + 1) * 20;
               const active = journeyScore >= stepThreshold;
               return (

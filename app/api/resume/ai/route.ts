@@ -7,7 +7,7 @@ import { sanitizeForAI } from '@/lib/sanitize';
 
 export async function POST(req: NextRequest) {
   try {
-    const guard = await guardApiRoute(req, { rateLimit: 10, rateLimitWindow: 60_000 });
+    const guard = await guardApiRoute(req, { rateLimit: 10, rateLimitWindow: 60_000, allowAnonymous: true });
     if (guard.error) return guard.error;
 
     const validated = await validateBody(req, ResumeAISchema);

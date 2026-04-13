@@ -1,10 +1,5 @@
 'use client';
 
-/**
- * Upgrade Page — Full-page Stripe Embedded Checkout
- * Split-screen: left side = plan details & features, right side = checkout form.
- * Replaces the narrow modal with a spacious, premium upgrade experience.
- */
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { loadStripe } from '@stripe/stripe-js';
@@ -18,23 +13,85 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 type BillingInterval = 'month' | 'year';
 
 const PLANS = {
-  month: { price: '$2.99', period: '/mo', label: 'Monthly', savings: '', effective: '$2.99/mo', tagline: 'Less than a cup of coffee ☕' },
-  year: { price: '$24.99', period: '/yr', label: 'Annual', savings: 'Save 30%', effective: '$2.08/mo', tagline: 'Just $0.07/day — less than a penny per feature' },
+  month: {
+    price: '$4.99',
+    period: '/mo',
+    label: 'Monthly',
+    savings: '',
+    billed: 'Billed monthly — cancel anytime',
+    callout: 'Less than your morning coffee ☕',
+  },
+  year: {
+    price: '$49.99',
+    period: '/yr',
+    label: 'Annual',
+    savings: 'Save 17%',
+    billed: 'Billed once a year — $4.17/mo effective',
+    callout: '2 months free vs. monthly billing',
+  },
 } as const;
 
 const PRO_FEATURES = [
-  { icon: '⚡', title: '3x Rate Limits', desc: 'Triple the speed on all AI tools — morph, interview, and analyze faster.' },
-  { icon: '🎯', title: 'Priority AI Queue', desc: 'Skip the line. Your requests are processed before free-tier users.' },
-  { icon: '📊', title: 'Advanced Analytics', desc: 'Deep insights into your job search trends, success rates, and patterns.' },
-  { icon: '🔓', title: 'Premium Templates', desc: 'Access exclusive, recruiter-approved resume templates that stand out.' },
-  { icon: '💬', title: '3x Sona Chat', desc: 'More conversations with your AI career companion — personalized advice.' },
-  { icon: '🛡️', title: 'Priority Support', desc: 'Fast-track support when you need help with your career platform.' },
+  {
+    icon: 'bolt',
+    color: '#f59e0b',
+    title: '3× AI Speed & Volume',
+    desc: 'Triple the rate limits across all tools — morph more resumes, run more interviews, analyze more JDs.',
+  },
+  {
+    icon: 'auto_awesome',
+    color: '#3b82f6',
+    title: 'Resume AI Morphing — Unlimited',
+    desc: 'Tailor your resume to any job description with one click. Free users get 2 morphs/min, Pro gets 10.',
+  },
+  {
+    icon: 'mic',
+    color: '#a855f7',
+    title: 'Full Interview Simulator',
+    desc: 'Unlimited AI interview sessions with voice feedback, scoring, and personalized weak-area reports.',
+  },
+  {
+    icon: 'route',
+    color: '#10b981',
+    title: 'Skill Bridge — Priority Access',
+    desc: 'Generate learning paths for any skill gap. Pro members get priority AI queue and more plans per session.',
+  },
+  {
+    icon: 'troubleshoot',
+    color: '#a855f7',
+    title: 'Market Oracle — Full Intel',
+    desc: 'Decode any job description: fit score, salary range, red flags, and bridge skills — no daily cap.',
+  },
+  {
+    icon: 'folder_open',
+    color: '#f97316',
+    title: 'Unlimited Study Vault',
+    desc: 'Save every coaching note, study plan, and interview feedback. Free users get capped vault exports.',
+  },
+  {
+    icon: 'work',
+    color: '#22c55e',
+    title: 'Applications Tracker',
+    desc: 'Track unlimited job applications, interview stages, and follow-up reminders across every company.',
+  },
+  {
+    icon: 'verified_user',
+    color: '#06b6d4',
+    title: 'Priority Support',
+    desc: 'Jump the support queue. Get direct help from the team when you need it most.',
+  },
 ];
 
-const TESTIMONIALS = [
-  { name: 'Sarah M.', role: 'Software Engineer', text: 'Landed my dream job at a FAANG company. The AI interview prep was a game-changer.' },
-  { name: 'James K.', role: 'Product Manager', text: 'The resume morphing feature alone is worth 10x the price. Every application is now tailored.' },
-  { name: 'Priya R.', role: 'Data Scientist', text: 'I went from 2% callback rate to 15% after using the Pro resume templates and Sona\'s advice.' },
+const FREE_LIMITS = [
+  { label: 'Resume morphs', free: '3 lifetime', pro: 'Unlimited' },
+  { label: 'Interview sessions', free: '3 lifetime', pro: 'Unlimited' },
+  { label: 'Market Oracle queries', free: '3 lifetime', pro: 'Unlimited' },
+  { label: 'JD generations', free: '3 lifetime', pro: 'Unlimited' },
+  { label: 'Cover letters', free: '3 lifetime', pro: 'Unlimited' },
+  { label: 'Voice features', free: 'Not included', pro: 'Included' },
+  { label: 'Study Vault exports', free: '3 lifetime', pro: 'Unlimited' },
+  { label: 'Priority AI queue', free: '—', pro: '✓ Included' },
+  { label: 'Priority support', free: '—', pro: '✓ Included' },
 ];
 
 export default function UpgradePage() {
@@ -50,7 +107,6 @@ export default function UpgradePage() {
     setLoading(true);
     setError('');
     setClientSecret(null);
-
     try {
       const res = await authFetch('/api/stripe/subscribe', {
         method: 'POST',
@@ -79,66 +135,58 @@ export default function UpgradePage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row" style={{ background: isLight ? '#F8FAFC' : '#050505' }}>
+    <div
+      className="min-h-screen flex flex-col lg:flex-row"
+      style={{ background: isLight ? '#F8FAFC' : '#060608' }}
+    >
 
-      {/* ───── LEFT PANEL: Plan Details ───── */}
-      <div className="w-full lg:w-1/2 px-6 sm:px-10 lg:px-16 py-10 lg:py-16 flex flex-col">
+      {/* ───── LEFT PANEL ───── */}
+      <div className="w-full lg:w-[55%] px-6 sm:px-10 lg:px-14 py-10 lg:py-14 flex flex-col overflow-y-auto">
 
-        {/* Back button */}
+        {/* Back */}
         <button
           onClick={() => router.push('/suite')}
-          className="flex items-center gap-2 text-sm text-[var(--theme-text-secondary)] hover:text-[var(--theme-text)] transition-colors mb-8 w-fit"
+          className="flex items-center gap-1.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors mb-8 w-fit"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+          <span className="material-symbols-rounded text-[16px]">arrow_back</span>
           Back to Dashboard
         </button>
 
         {/* Hero */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-lg">
-              ⚡
-            </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold">Upgrade to Pro</h1>
-              <p className="text-sm text-[var(--theme-text-secondary)]">Supercharge your career with AI</p>
-            </div>
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-semibold mb-4"
+            style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)' }}>
+            <span className="material-symbols-rounded text-[12px]">bolt</span>
+            TALENT STUDIO PRO
           </div>
+          <h1 className="text-3xl sm:text-4xl font-bold text-[var(--text-primary)] mb-3 leading-tight">
+            Supercharge your<br />career intelligence
+          </h1>
+          <p className="text-[var(--text-secondary)] text-base max-w-md">
+            Every tool. No daily caps. 3× faster AI. Your unfair advantage in the job market — for less than a cup of coffee a week.
+          </p>
         </motion.div>
 
-        {/* Plan Toggle */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-8"
-        >
+        {/* Billing Toggle */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="mb-8">
           <div
-            className="inline-flex p-1.5 rounded-xl"
+            className="inline-flex p-1 rounded-xl gap-1"
             style={{ background: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)' }}
           >
             {(['month', 'year'] as BillingInterval[]).map((int) => (
               <button
                 key={int}
                 onClick={() => handleIntervalChange(int)}
-                className={`py-3 px-6 rounded-lg text-sm font-semibold transition-all ${
+                className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all relative ${
                   interval === int
-                    ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/25'
-                    : 'text-[var(--theme-text-secondary)] hover:text-[var(--theme-text)]'
+                    ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
                 {PLANS[int].label} — {PLANS[int].price}{PLANS[int].period}
                 {int === 'year' && (
-                  <span className={`ml-2 text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                    interval === 'year'
-                      ? 'bg-white/20 text-white'
-                      : 'bg-emerald-500/15 text-emerald-500'
+                  <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                    interval === 'year' ? 'bg-white/25 text-white' : 'bg-emerald-500/15 text-emerald-500'
                   }`}>
                     {PLANS[int].savings}
                   </span>
@@ -146,126 +194,119 @@ export default function UpgradePage() {
               </button>
             ))}
           </div>
-
-          {interval === 'year' && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-xs text-emerald-500 mt-2 ml-2"
-            >
-              💰 That's just $0.07/day — save $10.89 vs monthly
-            </motion.p>
-          )}
-          {interval === 'month' && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-xs text-emerald-500 mt-2 ml-2"
-            >
-              ☕ Less than a single cup of coffee — cancel anytime
-            </motion.p>
-          )}
-        </motion.div>
-
-        {/* Features Grid */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8"
-        >
-          {PRO_FEATURES.map((f, i) => (
-            <motion.div
-              key={f.title}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 + i * 0.05 }}
-              className="p-4 rounded-xl"
-              style={{
-                background: isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.03)',
-                border: `1px solid ${isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'}`,
-              }}
-            >
-              <div className="flex items-start gap-3">
-                <span className="text-xl mt-0.5">{f.icon}</span>
-                <div>
-                  <h3 className="text-sm font-semibold mb-0.5">{f.title}</h3>
-                  <p className="text-xs text-[var(--theme-text-secondary)] leading-relaxed">{f.desc}</p>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
-
-        {/* Testimonials */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="space-y-3 mt-auto"
-        >
-          <p className="text-xs font-semibold text-[var(--theme-text-secondary)] uppercase tracking-wider">
-            What Pro users say
+          <p className="text-xs text-emerald-500 mt-2 ml-1 flex items-center gap-1">
+            <span className="material-symbols-rounded text-[13px]">
+              {interval === 'year' ? 'trending_down' : 'local_cafe'}
+            </span>
+            {PLANS[interval].callout}
           </p>
-          {TESTIMONIALS.map((t) => (
-            <div
-              key={t.name}
-              className="p-3 rounded-lg text-xs"
-              style={{
-                background: isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)',
-              }}
-            >
-              <p className="text-[var(--theme-text-secondary)] italic mb-1.5">"{t.text}"</p>
-              <p className="font-semibold">{t.name} <span className="font-normal text-[var(--theme-text-tertiary)]">— {t.role}</span></p>
-            </div>
-          ))}
         </motion.div>
+
+        {/* Feature Grid */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }} className="mb-8">
+          <h2 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-4">Everything included in Pro</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {PRO_FEATURES.map((f, i) => (
+              <motion.div
+                key={f.title}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 + i * 0.04 }}
+                className="p-4 rounded-xl flex items-start gap-3"
+                style={{
+                  background: isLight ? 'rgba(0,0,0,0.025)' : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.07)'}`,
+                }}
+              >
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style={{ background: `${f.color}18`, color: f.color }}
+                >
+                  <span className="material-symbols-rounded text-[18px]">{f.icon}</span>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-0.5">{f.title}</h3>
+                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{f.desc}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Free vs Pro comparison table */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }} className="mb-6">
+          <h2 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-3">Free vs Pro at a glance</h2>
+          <div className="rounded-xl overflow-hidden border"
+            style={{ borderColor: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)' }}>
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ background: isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)' }}>
+                  <th className="text-left px-4 py-2.5 text-[var(--text-muted)] text-xs font-medium">Feature</th>
+                  <th className="text-center px-4 py-2.5 text-[var(--text-muted)] text-xs font-medium">Free</th>
+                  <th className="text-center px-4 py-2.5 text-emerald-500 text-xs font-bold">Pro</th>
+                </tr>
+              </thead>
+              <tbody>
+                {FREE_LIMITS.map((row, i) => (
+                  <tr key={row.label} style={{ borderTop: `1px solid ${isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)'}` }}>
+                    <td className="px-4 py-2.5 text-[var(--text-primary)] text-xs">{row.label}</td>
+                    <td className="px-4 py-2.5 text-center text-[var(--text-muted)] text-xs">{row.free}</td>
+                    <td className="px-4 py-2.5 text-center text-emerald-500 text-xs font-semibold">{row.pro}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </motion.div>
+
       </div>
 
       {/* ───── RIGHT PANEL: Stripe Checkout ───── */}
       <div
-        className="w-full lg:w-1/2 px-6 sm:px-10 lg:px-16 py-10 lg:py-16 flex flex-col justify-center"
+        className="w-full lg:w-[45%] px-6 sm:px-10 lg:px-12 py-10 lg:py-14 flex flex-col justify-start lg:sticky lg:top-0 lg:h-screen"
         style={{
-          background: isLight ? '#FFFFFF' : '#0A0A0A',
-          borderLeft: `1px solid ${isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'}`,
+          background: isLight ? '#FFFFFF' : '#0A0A0C',
+          borderLeft: `1px solid ${isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.07)'}`,
         }}
       >
-        <div className="max-w-md mx-auto w-full">
-          {/* Selected plan summary */}
+        <div className="max-w-sm mx-auto w-full">
+
+          {/* Plan summary card */}
           <div
-            className="p-5 rounded-xl mb-6"
+            className="p-5 rounded-2xl mb-6"
             style={{
-              background: isLight ? 'rgba(16,185,129,0.05)' : 'rgba(16,185,129,0.08)',
-              border: '1px solid rgba(16,185,129,0.15)',
+              background: isLight ? 'rgba(16,185,129,0.05)' : 'rgba(16,185,129,0.07)',
+              border: '1px solid rgba(16,185,129,0.18)',
             }}
           >
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-sm font-semibold">TalentConsulting Pro</span>
-              <span className="text-lg font-bold text-emerald-500">
-                {PLANS[interval].price}<span className="text-xs font-normal">{PLANS[interval].period}</span>
-              </span>
+            <div className="flex items-center justify-between mb-1.5">
+              <div>
+                <p className="text-xs text-[var(--text-secondary)] mb-0.5">You're getting</p>
+                <p className="text-base font-bold text-[var(--text-primary)]">Talent Studio Pro</p>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-black text-emerald-500">{PLANS[interval].price}</p>
+                <p className="text-[11px] text-[var(--text-muted)]">{PLANS[interval].period}</p>
+              </div>
             </div>
-            <p className="text-xs text-[var(--theme-text-secondary)]">
-              {interval === 'year'
-                ? 'Billed annually at $24.99 • Just $0.07/day'
-                : `Billed monthly at $2.99 — ${PLANS.month.tagline}`}
+            <p className="text-xs text-[var(--text-secondary)] mt-2 border-t pt-2"
+              style={{ borderColor: 'rgba(16,185,129,0.15)' }}>
+              {PLANS[interval].billed}
             </p>
           </div>
 
-          {/* Checkout form */}
+          {/* Checkout iframe */}
           {loading && (
             <div className="flex flex-col items-center justify-center py-20">
-              <div className="w-8 h-8 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin mb-4" />
-              <p className="text-sm text-[var(--theme-text-secondary)]">Preparing secure checkout...</p>
+              <div className="w-7 h-7 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin mb-4" />
+              <p className="text-sm text-[var(--text-secondary)]">Preparing secure checkout...</p>
             </div>
           )}
 
           {error && !loading && (
-            <div className="text-center py-16">
+            <div className="text-center py-12">
               <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
-                <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
+                <span className="material-symbols-rounded text-red-500">error</span>
               </div>
               <p className="text-sm text-red-500 mb-4">{error}</p>
               <button
@@ -278,16 +319,14 @@ export default function UpgradePage() {
           )}
 
           {clientSecret && !loading && (
-            <EmbeddedCheckoutProvider
-              stripe={stripePromise}
-              options={{ clientSecret }}
-            >
+            <EmbeddedCheckoutProvider stripe={stripePromise} options={{ clientSecret }}>
               <EmbeddedCheckout className="stripe-checkout-embed" />
             </EmbeddedCheckoutProvider>
           )}
 
-          <p className="text-[11px] text-center text-[var(--theme-text-tertiary)] mt-6">
-            🔒 Secure payment powered by Stripe • Cancel anytime • No hidden fees
+          <p className="text-[11px] text-center text-[var(--text-muted)] mt-6 flex justify-center items-center gap-1.5">
+            <span className="material-symbols-rounded text-[13px]">lock</span>
+            Secure · Powered by Stripe · Cancel anytime
           </p>
         </div>
       </div>

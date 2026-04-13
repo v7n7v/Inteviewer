@@ -1,9 +1,44 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { showToast } from '@/components/Toast';
 import { authFetch } from '@/lib/auth-fetch';
+
+const BENEFITS = [
+  { icon: 'auto_awesome', text: 'AI morphs resume to match any job', color: '#f59e0b' },
+  { icon: 'trending_up', text: 'Boosts ATS score in seconds', color: '#10b981' },
+  { icon: 'psychology', text: 'Dual-AI rewrites every bullet point', color: '#06b6d4' },
+  { icon: 'download', text: 'Download as Word or PDF instantly', color: '#a855f7' },
+];
+
+function BenefitTicker() {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setIdx(i => (i + 1) % BENEFITS.length), 2500);
+    return () => clearInterval(t);
+  }, []);
+  const b = BENEFITS[idx];
+  return (
+    <div className="h-7 flex items-center justify-center overflow-hidden">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={idx}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.3 }}
+          className="flex items-center gap-1.5 text-[12px] font-medium"
+          style={{ color: b.color }}
+        >
+          <span className="material-symbols-rounded text-[14px]">{b.icon}</span>
+          {b.text}
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
+}
+
 
 interface FileUploadDropzoneProps {
   onUploadSuccess: (text: string, fileName: string) => void;
@@ -40,7 +75,7 @@ export default function FileUploadDropzone({
     // 1. Check file size (5MB limit)
     const MAX_SIZE_MB = 5;
     if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-      showToast(`File is too large! Maximum is ${MAX_SIZE_MB}MB.`, '❌');
+      showToast(`File is too large! Maximum is ${MAX_SIZE_MB}MB.`, 'cancel');
       return;
     }
 
@@ -48,7 +83,7 @@ export default function FileUploadDropzone({
     const ext = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
     const validExtensions = ['.docx', '.doc', '.txt'];
     if (!validExtensions.includes(ext)) {
-      showToast('Please upload a Word or TXT file', '❌');
+      showToast('Please upload a Word or TXT file', 'cancel');
       return;
     }
 
@@ -87,7 +122,7 @@ export default function FileUploadDropzone({
       // through AI parsing. Parent will reset when fully done.
     } catch (error: any) {
       console.error('Upload error:', error);
-      showToast(error.message || 'Failed to process file', '❌');
+      showToast(error.message || 'Failed to process file', 'cancel');
       setIsUploading(false);
     }
   };
@@ -125,8 +160,8 @@ export default function FileUploadDropzone({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           rows={rows}
-          className={`w-full p-4 rounded-xl bg-[#111] border focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 text-white placeholder-silver/50 resize-none transition-all ${
-            dragActive ? 'border-cyan-500/80 bg-cyan-500/5' : 'border-white/10'
+          className={`w-full p-4 rounded-xl bg-[var(--bg-input)] border focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-dim)] text-[var(--text-primary)] placeholder-[var(--text-muted)] resize-none transition-all ${
+            dragActive ? 'border-[var(--accent)] bg-[var(--accent-dim)]' : 'border-[var(--border-subtle)]'
           }`}
         />
         <input 
@@ -139,9 +174,19 @@ export default function FileUploadDropzone({
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={isUploading}
-          className="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-white font-medium transition-all border border-white/10 flex items-center gap-1.5 z-10"
+          className="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-[var(--bg-hover)] hover:bg-[var(--border-subtle)] text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-medium transition-all border border-[var(--border-subtle)] flex items-center gap-1.5 z-10"
         >
-          {isUploading ? '⏳ Parsing...' : '📎 Upload File'}
+          {isUploading ? (
+            <>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="animate-spin text-[var(--accent)]"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+              Parsing...
+            </>
+          ) : (
+            <>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+              Upload File
+            </>
+          )}
         </button>
 
         {/* Drag Overlay for visual feedback */}
@@ -151,10 +196,11 @@ export default function FileUploadDropzone({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 z-20 rounded-xl bg-cyan-500/10 backdrop-blur-[2px] border-2 border-cyan-500/50 flex items-center justify-center pointer-events-none"
+              className="absolute inset-0 z-20 rounded-xl bg-[var(--accent-dim)] backdrop-blur-[2px] border-2 border-[var(--accent)] flex items-center justify-center pointer-events-none"
             >
-              <div className="bg-[var(--theme-bg-card)] px-4 py-2 rounded-lg border border-cyan-500/30 text-cyan-400 font-medium flex items-center gap-2 shadow-xl">
-                <span>📄</span> Drop to extract text
+              <div className="bg-[var(--bg-surface)] px-4 py-2 rounded-lg border border-[var(--accent-hover)] text-[var(--accent)] font-medium flex items-center gap-2 shadow-xl">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 18v-6"/><path d="M9 15l3-3 3 3"/></svg>
+                Drop to extract text
               </div>
             </motion.div>
           )}
@@ -179,10 +225,10 @@ export default function FileUploadDropzone({
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
-        className={`p-16 rounded-2xl border-2 border-dashed text-center cursor-pointer transition-all relative overflow-hidden ${
+        className={`py-14 px-8 md:py-16 md:px-16 text-center cursor-pointer transition-all relative overflow-hidden rounded-2xl ${
           dragActive 
-            ? 'border-cyan-500/50 bg-cyan-500/[0.05]' 
-            : 'border-white/[0.08] bg-[var(--theme-bg-card)] hover:border-white/[0.15]'
+            ? 'bg-cyan-500/[0.06]' 
+            : 'hover:bg-[var(--bg-hover)]'
         }`}
       >
         {/* Subtle glow effect when dragging */}
@@ -192,7 +238,8 @@ export default function FileUploadDropzone({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-gradient-to-t from-cyan-500/10 to-transparent pointer-events-none"
+              className="absolute inset-0 pointer-events-none"
+              style={{ background: 'linear-gradient(to top, var(--accent-dim), transparent)' }}
             />
           )}
         </AnimatePresence>
@@ -203,11 +250,14 @@ export default function FileUploadDropzone({
             animate={{ opacity: 1, scale: 1 }}
             className="relative z-10 w-full max-w-sm mx-auto"
           >
-            <span className="text-6xl block mb-4 animate-pulse">🧠</span>
-            <p className="text-xl text-white font-medium mb-1">
+            {/* AI Sparkle Icon from Google */}
+            <span className="material-symbols-rounded block text-[48px] mx-auto mb-4 text-[var(--accent)] animate-pulse">
+              auto_awesome
+            </span>
+            <p className="text-xl text-[var(--text-primary)] font-medium mb-1">
               {processingStage === 'parsing' ? 'Parsing with AI...' : processingStage === 'extracting' ? 'Extracting Text...' : 'Uploading File...'}
             </p>
-            <p className="text-sm text-silver mb-5">
+            <p className="text-sm text-[var(--text-secondary)] mb-5">
               {processingStage === 'parsing' ? 'Structuring your resume data' : processingStage === 'extracting' ? 'Reading document contents' : 'Preparing your file'}
             </p>
             {/* Stage indicators */}
@@ -220,17 +270,18 @@ export default function FileUploadDropzone({
                 return (
                   <div key={stage} className="flex items-center gap-1.5">
                     <div className={`w-2 h-2 rounded-full transition-all duration-500 ${
-                      isDone ? 'bg-cyan-400 scale-100' : isActive ? 'bg-cyan-400 animate-pulse scale-125' : 'bg-white/10 scale-100'
+                      isDone ? 'bg-[var(--accent)] scale-100' : isActive ? 'bg-[var(--accent)] animate-pulse scale-125' : 'bg-[var(--border-subtle)] scale-100'
                     }`} />
-                    {i < 2 && <div className={`w-6 h-px transition-colors duration-500 ${isDone ? 'bg-cyan-400/50' : 'bg-white/10'}`} />}
+                    {i < 2 && <div className={`w-6 h-px transition-colors duration-500 ${isDone ? 'bg-[var(--accent-hover)]' : 'bg-[var(--border-subtle)]'}`} />}
                   </div>
                 );
               })}
             </div>
             {/* Progress bar */}
-            <div className="w-full h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+            <div className="w-full h-1.5 rounded-full bg-[var(--bg-hover)] overflow-hidden">
               <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500"
+                className="h-full rounded-full"
+                style={{ backgroundColor: 'var(--accent)' }}
                 initial={{ width: '0%' }}
                 animate={{
                   width: processingStage === 'parsing' ? '90%' : processingStage === 'extracting' ? '50%' : '20%'
@@ -238,19 +289,121 @@ export default function FileUploadDropzone({
                 transition={{ duration: 2, ease: 'easeInOut' }}
               />
             </div>
-            <p className="text-[10px] text-slate-600 mt-2 uppercase tracking-wider font-medium">Step {processingStage === 'parsing' ? '3' : processingStage === 'extracting' ? '2' : '1'} of 3</p>
+            <p className="text-[10px] text-[var(--text-secondary)] mt-2 uppercase tracking-wider font-medium">Step {processingStage === 'parsing' ? '3' : processingStage === 'extracting' ? '2' : '1'} of 3</p>
           </motion.div>
         ) : (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="relative z-10"
+            className="relative z-10 flex flex-col items-center"
           >
-            <span className={`text-6xl block mb-4 transition-transform ${dragActive ? 'scale-110' : ''}`}>📄</span>
-            <p className="text-xl text-white mb-2 font-medium">
-              {dragActive ? 'Drop it here!' : 'Drop your file here'}
-            </p>
-            <p className="text-silver">or click to browse (Word, TXT, max 5MB)</p>
+            {/* ── Animated icon with rising particles ── */}
+            <div className="relative w-28 h-28 mx-auto mb-5 flex items-center justify-center">
+
+              {/* Breathing ring */}
+              <motion.div
+                className="absolute inset-0 rounded-full"
+                style={{ border: '1.5px solid rgba(6,182,212,0.25)' }}
+                animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0.15, 0.5] }}
+                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+              />
+
+              {/* Rising sparkle particles — staggered, drift up and fade */}
+              {[
+                { left: '15%', delay: 0, size: 3 },
+                { left: '75%', delay: 1.2, size: 2 },
+                { left: '45%', delay: 2.4, size: 4 },
+                { left: '85%', delay: 0.8, size: 2.5 },
+                { left: '25%', delay: 2, size: 3 },
+              ].map((p, i) => (
+                <motion.div
+                  key={i}
+                  className="absolute rounded-full"
+                  style={{
+                    width: p.size,
+                    height: p.size,
+                    left: p.left,
+                    bottom: '30%',
+                    background: 'rgba(6,182,212,0.6)',
+                    boxShadow: '0 0 4px rgba(6,182,212,0.4)',
+                  }}
+                  animate={{
+                    y: [0, -40, -60],
+                    opacity: [0, 0.8, 0],
+                  }}
+                  transition={{
+                    duration: 2.5,
+                    repeat: Infinity,
+                    delay: p.delay,
+                    ease: 'easeOut',
+                  }}
+                />
+              ))}
+
+              {/* Center icon with scan line */}
+              <motion.div
+                className="relative z-10 w-16 h-16 rounded-2xl flex items-center justify-center overflow-hidden"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(6,182,212,0.12) 0%, rgba(59,130,246,0.08) 100%)',
+                  border: '1px solid rgba(6,182,212,0.25)',
+                  boxShadow: '0 0 20px rgba(6,182,212,0.1)',
+                }}
+                animate={{ y: [0, -3, 0] }}
+                transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                <span className="material-symbols-rounded text-[28px]" style={{ color: '#06b6d4' }}>description</span>
+
+                {/* Scan line — sweeps down periodically */}
+                <motion.div
+                  className="absolute left-0 right-0 h-[2px] pointer-events-none"
+                  style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(6,182,212,0.5) 50%, transparent 100%)' }}
+                  animate={{ top: ['-10%', '110%'] }}
+                  transition={{ duration: 1.8, repeat: Infinity, repeatDelay: 2.5, ease: 'easeInOut' }}
+                />
+              </motion.div>
+            </div>
+
+            {/* ── Copy ── */}
+            {dragActive ? (
+              <motion.p
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-[17px] font-bold text-cyan-500"
+              >
+                Release to analyze
+              </motion.p>
+            ) : (
+              <>
+                <p className="text-[17px] font-semibold text-[var(--text-primary)] mb-1">
+                  Drop your resume here
+                </p>
+                <p className="text-[13px] text-[var(--text-secondary)] mb-5">
+                  or <span className="text-cyan-500 font-medium">click to browse</span> · Word, TXT · Max 5MB
+                </p>
+
+                {/* Gentle bouncing CTA */}
+                <motion.div
+                  animate={{ y: [0, 4, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                  className="mb-4"
+                >
+                  <div
+                    className="flex items-center gap-2 px-4 py-2 rounded-full text-[12px] font-semibold"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(6,182,212,0.1) 0%, rgba(59,130,246,0.06) 100%)',
+                      border: '1px solid rgba(6,182,212,0.2)',
+                      color: '#06b6d4',
+                    }}
+                  >
+                    <span className="material-symbols-rounded text-[14px]">upload</span>
+                    Start here
+                  </div>
+                </motion.div>
+
+                {/* Benefit ticker */}
+                <BenefitTicker />
+              </>
+            )}
           </motion.div>
         )}
       </div>

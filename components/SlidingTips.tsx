@@ -5,26 +5,26 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const TIPS = [
     // core features
-    { icon: '⌘K', text: 'Use Cmd+K to quickly jump anywhere' },
-    { icon: '📊', text: 'Track your market value in real-time with Market Oracle' },
-    { icon: '📄', text: 'Create targeted resumes with Liquid Resume' },
-    { icon: '🎴', text: 'Master concepts with AI-generated Study Cards' },
+    { icon: 'keyboard_command_key', text: 'Use Cmd+K to quickly jump anywhere' },
+    { icon: 'bar_chart', text: 'Track your market value in real-time with Market Oracle' },
+    { icon: 'description', text: 'Create targeted resumes with Liquid Resume' },
+    { icon: 'view_carousel', text: 'Master concepts with AI-generated Study Cards' },
 
     // analysis & tools
-    { icon: '🔍', text: 'Analyze any JD to find hidden requirements' },
-    { icon: '🎯', text: 'Get matched with the best job opportunities' },
-    { icon: '💼', text: 'Generate compelling job descriptions with AI' },
+    { icon: 'search', text: 'Analyze any JD to find hidden requirements' },
+    { icon: 'my_location', text: 'Get matched with the best job opportunities' },
+    { icon: 'work', text: 'Generate compelling job descriptions with AI' },
 
     // customization
-    { icon: '📝', text: 'Generate cover letters that match your resume tone' },
-    { icon: '🎨', text: 'Edit your portfolio theme in Settings' },
-    { icon: '🔄', text: 'Sync your LinkedIn profile for auto-updates' },
+    { icon: 'edit_document', text: 'Generate cover letters that match your resume tone' },
+    { icon: 'palette', text: 'Edit your portfolio theme in Settings' },
+    { icon: 'sync', text: 'Sync your LinkedIn profile for auto-updates' },
 
     // productivity
-    { icon: '⚡', text: 'Use shortcuts to navigate the dashboard faster' },
-    { icon: '📱', text: 'Talent Suite works great on mobile too' },
-    { icon: '🔔', text: 'Enable notifications for job alerts' },
-    { icon: '🤝', text: 'Share your verified profile with recruiters' }
+    { icon: 'bolt', text: 'Use shortcuts to navigate the dashboard faster' },
+    { icon: 'smartphone', text: 'Talent Suite works great on mobile too' },
+    { icon: 'notifications', text: 'Enable notifications for job alerts' },
+    { icon: 'handshake', text: 'Share your verified profile with recruiters' }
 ];
 
 export default function SlidingTips() {
@@ -63,7 +63,7 @@ export default function SlidingTips() {
                     <span className="text-xs text-silver font-medium whitespace-nowrap overflow-hidden text-ellipsis">
                         {TIPS[currentIndex].text}
                     </span>
-                    <span className="flex-shrink-0 w-6 text-center text-lg leading-none select-none grayscale opacity-60">
+                    <span className="flex-shrink-0 w-6 text-center text-lg leading-none select-none grayscale opacity-60 material-symbols-rounded">
                         {TIPS[currentIndex].icon}
                     </span>
                 </motion.div>

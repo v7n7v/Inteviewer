@@ -65,7 +65,7 @@ export default function Header({ onShowLogin, onShowSignup }: HeaderProps) {
                 onClick={onShowSignup}
                 className="btn-primary px-4 py-2 rounded-lg text-sm font-medium"
               >
-                ✨ Sign Up
+                <span className="material-symbols-rounded align-middle mr-1">auto_awesome</span> Sign Up
               </button>
             </div>
           )}

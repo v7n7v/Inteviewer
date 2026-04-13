@@ -1,13 +1,14 @@
 /**
  * API Route Auth Helper
- * Extracts and verifies Firebase ID token from the Authorization header.
- * Tier-aware rate limiting using pricing-tiers config.
+ * Verifies Firebase ID token from Authorization header.
+ * Free tier: lifetime cap of 3 uses per tool (Firestore-backed, never resets).
+ * Pro/GOD: per-minute rate limits only.
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyIdToken } from './firebase-admin';
-import { getAuth } from 'firebase-admin/auth';
 import { checkRateLimit } from './rate-limit';
 import { getUserTier, getRateLimit as getTierRateLimit, isMasterAccount, type PlanTier } from './pricing-tiers';
+import { checkUsageAllowed, incrementUsage, FREE_CAPS, ANON_CAPS, type UsageFeature } from './usage-tracker';
 
 interface AuthResult {
   uid: string;
@@ -15,15 +16,42 @@ interface AuthResult {
   tier: PlanTier;
 }
 
+/** Route → UsageFeature mapping for lifetime cap enforcement */
+const ROUTE_FEATURE_MAP: Record<string, UsageFeature> = {
+  '/api/resume/morph':            'morphs',
+  '/api/resume/ai':               'resumeChecks',
+  '/api/resume/parse':            'resumeChecks',
+  '/api/gauntlet/grade':          'gauntlets',
+  '/api/gauntlet/generate':       'gauntlets',
+  '/api/market-oracle':           'jdGenerations',
+  '/api/vault/export-plan':       'resumeChecks',
+  '/api/chat':                    'gauntlets',
+  '/api/ai':                      'gauntlets',
+};
+
+function getFeatureForRoute(pathname: string): UsageFeature | null {
+  for (const [route, feature] of Object.entries(ROUTE_FEATURE_MAP)) {
+    if (pathname.startsWith(route)) return feature;
+  }
+  return null;
+}
+
+/** Extract client IP — checks Cloudflare, proxy, and direct headers */
+function getClientIp(req: NextRequest): string {
+  return (
+    req.headers.get('cf-connecting-ip') ||
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    req.headers.get('x-real-ip') ||
+    'unknown'
+  );
+}
+
 /**
- * Authenticate an API request by verifying the Firebase ID token.
+ * Authenticate via Firebase ID token in Authorization header.
  */
 export async function authenticateRequest(req: NextRequest): Promise<Omit<AuthResult, 'tier'> | null> {
   const authHeader = req.headers.get('authorization');
-
-  if (!authHeader?.startsWith('Bearer ')) {
-    return null;
-  }
+  if (!authHeader?.startsWith('Bearer ')) return null;
 
   const token = authHeader.slice(7);
   if (!token) return null;
@@ -31,86 +59,152 @@ export async function authenticateRequest(req: NextRequest): Promise<Omit<AuthRe
   const decoded = await verifyIdToken(token);
   if (!decoded) return null;
 
-  return {
-    uid: decoded.uid,
-    email: decoded.email,
-  };
+  return { uid: decoded.uid, email: decoded.email };
 }
 
 /**
- * Guard an API route — checks auth, determines tier, applies tier-aware rate limits.
- * Master accounts (MASTER_EMAILS) bypass rate limits entirely.
+ * Guard an API route:
+ * 1. Requires valid Firebase auth (account required) unless allowAnonymous is set
+ * 2. Anonymous users: same 3-per-tool hard cap as free tier (in-memory, 24h rolling window per IP)
+ * 3. Free users: lifetime 3-use cap per tool (Firestore-persisted, never resets)
+ * 4. Pro/GOD: per-minute rate limits only
+ * 5. All unauthenticated requests: speed-throttled per IP
  */
 export async function guardApiRoute(
   req: NextRequest,
-  options?: { rateLimit?: number; rateLimitWindow?: number }
+  options?: { rateLimit?: number; rateLimitWindow?: number; feature?: UsageFeature; allowAnonymous?: boolean }
 ): Promise<{ user: AuthResult; error?: never } | { user?: never; error: NextResponse }> {
 
-  // Auth check first
+  const ip = getClientIp(req);
+  const pathname = new URL(req.url).pathname;
+
+  // Auth check
   const authUser = await authenticateRequest(req);
   if (!authUser) {
+    // Per-minute speed throttle for all unauthenticated requests
+    const anonLimit = options?.allowAnonymous ? (options.rateLimit ?? 5) : 20;
+    const { allowed: speedOk } = checkRateLimit(`unauth:${ip}`, anonLimit, options?.rateLimitWindow ?? 60_000);
+    if (!speedOk) {
+      return {
+        error: NextResponse.json(
+          { error: 'Too many requests. Create a free account to continue.', requiresAuth: true },
+          { status: 429, headers: { 'Retry-After': '60' } }
+        ),
+      };
+    }
+
+    // If route allows anonymous access (freemium try-before-buy)
+    if (options?.allowAnonymous) {
+      // ── ANONYMOUS HARD CAP: 1 taste test per tool — then force signup ──
+      // Tracked in-memory per IP. 30-day window = effectively permanent per server uptime.
+      // Only a server restart or IP change resets this — same friction as clearing cookies.
+      const feature = options.feature ?? getFeatureForRoute(pathname);
+      if (feature) {
+        const cap = ANON_CAPS[feature] ?? 1;
+        const capKey = `anon-cap:${ip}:${feature}`;
+        const { allowed: capOk } = checkRateLimit(capKey, cap, 30 * 24 * 60 * 60 * 1000); // 30-day window
+        if (!capOk) {
+          return {
+            error: NextResponse.json(
+              {
+                error: `You've used your free trial. Create an account to unlock ${FREE_CAPS[feature]} free uses and keep your progress.`,
+                requiresAuth: true,
+                limitReached: true,
+                feature,
+                used: cap,
+                cap,
+                remaining: 0,
+              },
+              { status: 429, headers: { 'X-Usage-Cap': String(cap), 'X-RateLimit-Tier': 'anonymous' } }
+            ),
+          };
+        }
+      }
+
+      return { user: { uid: `anon:${ip}`, email: undefined, tier: 'free' as PlanTier } };
+    }
+
     return {
       error: NextResponse.json(
-        { error: 'Authentication required. Please sign in.' },
+        { error: 'Account required. Sign in to use this feature.', requiresAuth: true },
         { status: 401 }
       ),
     };
   }
 
-  // Get user tier from Firestore (master emails auto-promoted)
+  // Resolve tier
   const tier = await getUserTier(authUser.uid, authUser.email);
 
-  // Master accounts bypass rate limiting entirely
+  // GOD/Master accounts bypass everything
   if (isMasterAccount(authUser.email)) {
     return { user: { ...authUser, tier } };
   }
 
-  // Determine rate limit: use tier-aware config or fallback to explicit options
-  const pathname = new URL(req.url).pathname;
-  const limit = options?.rateLimit ?? getTierRateLimit(pathname, tier);
+  // ── FREE TIER: Lifetime cap check ──
+  if (tier === 'free') {
+    const feature = options?.feature ?? getFeatureForRoute(pathname);
+    if (feature) {
+      const usage = await checkUsageAllowed(authUser.uid, feature, tier);
+      if (!usage.allowed) {
+        return {
+          error: NextResponse.json(
+            {
+              error: `You've used all 3 free ${feature.replace('_', ' ')} sessions. Upgrade to Pro for unlimited access.`,
+              limitReached: true,
+              feature,
+              used: usage.used,
+              cap: usage.cap,
+              remaining: 0,
+              upgradeUrl: '/suite/upgrade',
+              upgrade: 'Upgrade to Pro — $4.99/mo for unlimited access',
+            },
+            {
+              status: 429,
+              headers: {
+                'X-Usage-Cap': String(usage.cap),
+                'X-Usage-Used': String(usage.used),
+                'X-RateLimit-Tier': 'free',
+              },
+            }
+          ),
+        };
+      }
 
-  // Rate limiting by IP + UID combo
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-    || req.headers.get('x-real-ip')
-    || 'unknown';
-
-  const rateLimitKey = `${ip}:${authUser.uid}`;
-
-  const { allowed, remaining, resetIn } = checkRateLimit(
-    rateLimitKey,
-    limit,
-    options?.rateLimitWindow ?? 60_000
-  );
-
-  if (!allowed) {
-    const upgradeMsg = tier === 'free'
-      ? 'Unlock 3x more with Pro — $2.99/mo'
-      : 'Pro rate limit reached. Please wait a moment.';
-
-    return {
-      error: NextResponse.json(
-        {
-          error: 'Rate limit reached. Please wait a moment before trying again.',
-          upgrade: upgradeMsg,
-          tier,
-          retryAfter: Math.ceil(resetIn / 1000),
-        },
-        {
-          status: 429,
-          headers: {
-            'Retry-After': String(Math.ceil(resetIn / 1000)),
-            'X-RateLimit-Remaining': '0',
-            'X-RateLimit-Tier': tier,
-          },
-        }
-      ),
-    };
+      // Increment AFTER we confirm they're allowed — returns user context so route can use it
+      // The actual increment happens post-response in each route handler via incrementUsage()
+    }
   }
 
-  return {
-    user: {
-      ...authUser,
-      tier,
-    },
-  };
+  // ── PRO TIER: Per-minute rate limit (speed/abuse protection) ──
+  if (tier === 'pro') {
+    const limit = options?.rateLimit ?? getTierRateLimit(pathname, tier);
+    const rateLimitKey = `${ip}:${authUser.uid}`;
+    const { allowed, remaining, resetIn } = checkRateLimit(rateLimitKey, limit, options?.rateLimitWindow ?? 60_000);
+
+    if (!allowed) {
+      return {
+        error: NextResponse.json(
+          {
+            error: 'Rate limit reached. Please wait a moment before trying again.',
+            tier,
+            retryAfter: Math.ceil(resetIn / 1000),
+          },
+          {
+            status: 429,
+            headers: {
+              'Retry-After': String(Math.ceil(resetIn / 1000)),
+              'X-RateLimit-Remaining': String(remaining),
+              'X-RateLimit-Tier': tier,
+            },
+          }
+        ),
+      };
+    }
+  }
+
+  return { user: { ...authUser, tier } };
 }
+
+/** Helper: call this in route handlers after a successful free-tier response to record usage */
+export { incrementUsage };
+export type { UsageFeature };
