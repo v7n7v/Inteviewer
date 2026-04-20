@@ -735,36 +735,55 @@ function HeroHumanizer({ onShowSignup }: { onShowSignup: () => void }) {
 }
 
 // ═══════════════════════════════════════
-// TESTIMONIAL MARQUEE — Auto-scrolling social proof
+// TOOLS MARQUEE — All 22+ tools scrolling horizontally
 // ═══════════════════════════════════════
-function TestimonialMarquee() {
+const allToolsList = [
+  { icon: 'auto_awesome', label: 'Resume Studio' },
+  { icon: 'chat', label: 'Interview Simulator' },
+  { icon: 'ink_pen', label: 'AI Detector' },
+  { icon: 'auto_fix_high', label: 'AI Humanizer' },
+  { icon: 'troubleshoot', label: 'Market Oracle' },
+  { icon: 'radar', label: 'Job Search' },
+  { icon: 'work', label: 'Applications' },
+  { icon: 'route', label: 'Skill Bridge' },
+  { icon: 'edit_document', label: 'Cover Letter' },
+  { icon: 'scanner', label: 'ATS Preview' },
+  { icon: 'payments', label: 'Salary Coach' },
+  { icon: 'badge', label: 'LinkedIn Optimizer' },
+  { icon: 'neurology', label: 'Career Intelligence' },
+  { icon: 'rate_review', label: 'Interview Debrief' },
+  { icon: 'spellcheck', label: 'Grammar Checker' },
+  { icon: 'autorenew', label: 'Paraphraser' },
+  { icon: 'tag', label: 'Word Counter' },
+  { icon: 'format_quote', label: 'Citation Machine' },
+  { icon: 'psychology', label: 'Tone Analyzer' },
+  { icon: 'compress', label: 'Summarizer' },
+  { icon: 'mail', label: 'Email Composer' },
+  { icon: 'school', label: 'Thesis Generator' },
+];
+
+function ToolsMarquee() {
   const { theme } = useTheme();
   const isLight = theme === 'light';
-  const doubled = [...quotes, ...quotes];
+  const doubled = [...allToolsList, ...allToolsList];
 
   return (
-    <div className="relative overflow-hidden py-6">
-      {/* Fade edges */}
-      <div className={`absolute left-0 top-0 bottom-0 w-20 z-10 pointer-events-none ${isLight ? 'bg-gradient-to-r from-[var(--theme-bg)] to-transparent' : 'bg-gradient-to-r from-[var(--theme-bg)] to-transparent'}`} />
-      <div className={`absolute right-0 top-0 bottom-0 w-20 z-10 pointer-events-none ${isLight ? 'bg-gradient-to-l from-[var(--theme-bg)] to-transparent' : 'bg-gradient-to-l from-[var(--theme-bg)] to-transparent'}`} />
+    <div className="relative overflow-hidden py-4">
+      <div className={`absolute left-0 top-0 bottom-0 w-16 z-10 pointer-events-none bg-gradient-to-r from-[var(--theme-bg)] to-transparent`} />
+      <div className={`absolute right-0 top-0 bottom-0 w-16 z-10 pointer-events-none bg-gradient-to-l from-[var(--theme-bg)] to-transparent`} />
 
       <motion.div
-        className="flex gap-6"
+        className="flex gap-3"
         animate={{ x: ['0%', '-50%'] }}
-        transition={{ duration: 40, repeat: Infinity, ease: 'linear' }}
+        transition={{ duration: 35, repeat: Infinity, ease: 'linear' }}
       >
-        {doubled.map((q, i) => (
-          <div key={i} className={`flex-shrink-0 w-[320px] p-4 rounded-xl border ${isLight ? 'bg-white/60 border-black/[0.06]' : 'bg-white/[0.02] border-white/[0.04]'}`}>
-            <p className={`text-[12px] leading-relaxed mb-3 ${isLight ? 'text-gray-700' : 'text-white/40'}`}>&ldquo;{q.text}&rdquo;</p>
-            <div className="flex items-center gap-2">
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[8px] font-bold ${isLight ? 'bg-emerald-100 text-emerald-700' : 'bg-emerald-500/10 text-emerald-400'}`}>
-                {q.name[0]}
-              </div>
-              <div>
-                <p className={`text-[11px] font-semibold ${isLight ? 'text-gray-900' : 'text-white/60'}`}>{q.name}</p>
-                <p className={`text-[9px] ${isLight ? 'text-gray-400' : 'text-white/15'}`}>{q.title} · {q.co}</p>
-              </div>
-            </div>
+        {doubled.map((t, i) => (
+          <div key={i} className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full border whitespace-nowrap ${isLight
+            ? 'bg-white/80 border-black/[0.06] text-gray-700'
+            : 'bg-white/[0.03] border-white/[0.05] text-white/40'
+          }`}>
+            <span className="material-symbols-rounded text-[15px]" style={{ opacity: 0.6 }}>{t.icon}</span>
+            <span className="text-[12px] font-medium">{t.label}</span>
           </div>
         ))}
       </motion.div>
@@ -1572,8 +1591,8 @@ function FreeToolsHub({ onShowSignup }: { onShowSignup: () => void }) {
               onClick={handleSubmit}
               disabled={loading || !inputText.trim()}
               className={`text-[12px] font-semibold px-5 py-2 rounded-lg transition-all flex items-center gap-2 disabled:opacity-40 ${isLight
-                ? 'bg-gray-900 text-white hover:bg-gray-800'
-                : 'bg-white text-black hover:bg-white/90'
+                ? 'border border-black/[0.12] bg-black/[0.04] text-gray-900 hover:bg-black/[0.08]'
+                : 'border border-white/[0.12] bg-white/[0.06] text-white/80 hover:bg-white/[0.10]'
               }`}
             >
               {loading ? (
@@ -1751,12 +1770,6 @@ function FreeToolsHub({ onShowSignup }: { onShowSignup: () => void }) {
   );
 }
 
-const quotes = [
-  { text: "Went from zero callbacks to 3 interviews in a week. The resume morphing is genuinely magical.", name: "Sarah K.", title: "Senior → Staff Engineer", co: "FAANG" },
-  { text: "The Interview Simulator's killer mode made my actual Google interview feel easy.", name: "Marcus T.", title: "SDE II → Senior SDE", co: "Amazon" },
-  { text: "The AI Detector saved my thesis. Found patterns I never would have caught manually.", name: "Priya N.", title: "PhD Candidate", co: "Stanford" },
-  { text: "I was mass-applying with zero results. After one session with Resume Studio, I got 5 callbacks.", name: "Jamal R.", title: "New Grad → SWE", co: "Meta" },
-];
 
 // ═══════════════════════════════════════
 // PRO FEATURE LIST — Cycling Scanner Wave
@@ -2103,7 +2116,7 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
 
           {/* ── Social Proof Marquee ── */}
           <Reveal delay={0.2}>
-            <TestimonialMarquee />
+            <ToolsMarquee />
           </Reveal>
 
           {/* ── Process Showcase Carousel ── */}
