@@ -769,6 +769,9 @@ export default function LiquidResumePage() {
 
       setMorphedResume(validResume);
       setMatchScore(score);
+      // Clear stale enhance results from previous resume version
+      setResumeCheckResult(null);
+      setPreFixScore(null);
       setStep(isPro ? 'enhance' : 'template');
       showToast(`Resume morphed! ${score}% match`, 'check_circle');
       analytics.toolUse('resume_morph');
@@ -1339,6 +1342,42 @@ export default function LiquidResumePage() {
     } finally { setCoverLetterLoading(false); }
   };
 
+  // Helper: serialize skills whether they're [{category, items}] or flat ["string"]
+  const serializeSkills = (skills: any[]): string => {
+    if (!skills || skills.length === 0) return '';
+    // Check if first item is a string (flat) or object (structured)
+    if (typeof skills[0] === 'string') return skills.join(', ');
+    // Structured: [{category: "Technical", items: ["Python", "Java"]}]
+    return skills.map((s: any) => {
+      if (typeof s === 'string') return s;
+      const items = (s.items || []).join(', ');
+      return s.category ? `${s.category}: ${items}` : items;
+    }).filter(Boolean).join('; ');
+  };
+
+  // Helper: normalize flat skills array back to structured format
+  const normalizeSkills = (rawSkills: any[], originalSkills: any[]): any[] => {
+    if (!rawSkills || rawSkills.length === 0) return originalSkills || [];
+    // Already structured
+    if (typeof rawSkills[0] === 'object' && rawSkills[0].items) return rawSkills;
+    // Flat strings — group into original categories or a single "Skills" group
+    if (typeof rawSkills[0] === 'string') {
+      if (originalSkills?.length && typeof originalSkills[0] === 'object' && originalSkills[0].items) {
+        // Try to preserve original category structure
+        const originalFlat = new Set(originalSkills.flatMap((s: any) => (s.items || []).map((i: string) => i.toLowerCase().trim())));
+        const newSkills = rawSkills.filter((s: string) => !originalFlat.has(s.toLowerCase().trim()));
+        const result = originalSkills.map((cat: any) => ({ ...cat }));
+        // Add new skills to the first category
+        if (newSkills.length > 0 && result.length > 0) {
+          result[0] = { ...result[0], items: [...(result[0].items || []), ...newSkills] };
+        }
+        return result;
+      }
+      return [{ category: 'Skills', items: rawSkills }];
+    }
+    return rawSkills;
+  };
+
   const checkResume = async () => {
     const displayResume = getDisplayResume();
     if (!displayResume) return showToast('No resume data available', 'cancel');
@@ -1351,7 +1390,7 @@ export default function LiquidResumePage() {
         displayResume.summary,
         ...(displayResume.experience || []).map((e: any) => `${e.title} at ${e.company}: ${(e.achievements || []).join('. ')}`),
         ...(displayResume.education || []).map((e: any) => `${e.degree} from ${e.school}`),
-        'Skills: ' + (displayResume.skills || []).join(', '),
+        'Skills: ' + serializeSkills(displayResume.skills || []),
       ].filter(Boolean).join('\n');
 
       const res = await authFetch('/api/resume/check', {
@@ -1380,7 +1419,7 @@ export default function LiquidResumePage() {
         displayResume.summary,
         ...(displayResume.experience || []).map((e: any) => `${e.title} at ${e.company} (${e.duration || ''}): ${(e.achievements || []).join('. ')}`),
         ...(displayResume.education || []).map((e: any) => `${e.degree} from ${e.school}`),
-        'Skills: ' + (displayResume.skills || []).join(', '),
+        'Skills: ' + serializeSkills(displayResume.skills || []),
       ].filter(Boolean).join('\n');
 
       const res = await authFetch('/api/resume/linkedin', {
@@ -1411,7 +1450,7 @@ export default function LiquidResumePage() {
         currentResume.summary,
         ...(currentResume.experience || []).map((e: any) => `${e.title || e.role} at ${e.company} (${e.duration || ''}): ${(e.achievements || []).join('. ')}`),
         ...(currentResume.education || []).map((e: any) => `${e.degree} from ${e.school}`),
-        'Skills: ' + (currentResume.skills || []).join(', '),
+        'Skills: ' + serializeSkills(currentResume.skills || []),
       ].filter(Boolean).join('\n');
 
       setEnhancePipelineStage(2);
@@ -1443,6 +1482,8 @@ export default function LiquidResumePage() {
             role: exp.role || exp.title,
             title: exp.title || exp.role,
           })),
+          // Normalize skills back to structured format for template rendering
+          skills: normalizeSkills(data.improvedResume.skills, currentResume.skills),
         };
         if (mode === 'morph') setMorphedResume(improved);
         else setBuildResume(improved);
