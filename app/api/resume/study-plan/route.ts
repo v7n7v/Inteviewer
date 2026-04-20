@@ -20,9 +20,10 @@ export async function POST(req: NextRequest) {
 
     const validated = await validateBody(req, StudyPlanSchema);
     if (!validated.success) return validated.error;
-    const { skills, userContext } = validated.data;
+    const { skills, userContext, totalDays } = validated.data;
 
     const skillList = skills.slice(0, 8).join(', ');
+    const days = Math.min(Math.max(totalDays || 4, 2), 7);
 
     // Fetch Study Vault Insights
     let vaultContext = '';
@@ -42,57 +43,59 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const systemPrompt = `You are an elite career and skills coach for a universal Talent Intelligence platform.
-Generate a practical 7-day crash course study plan to get someone interview-ready for the given skills.
+    const systemPrompt = `You are a career skills coach. Generate a SHORT, focused ${days}-day study plan.
 
-CRITICAL DIRECTIVE: This platform supports ALL careers and industries (e.g., Healthcare, Finance, Sales, Human Resources, Engineering, Creative Arts, Trades, IT, etc.).
-- Do not assume the user is in Software Engineering unless their skills specify it.
-- Adapt your tone, structure, resources, and terminology to the specific field of the user's skills.
-- Use broad subsets (like Healthcare Compliance, Project Management, B2B Sales Strategies) instead of just specific individual technical courses.
+CRITICAL: Generate EXACTLY ${days} days. Not more, not less.
+
+This platform supports ALL careers (Healthcare, Finance, Sales, Engineering, Creative Arts, Trades, etc.).
+Adapt your tone and resources to the user's specific field.
 
 RULES:
-1. Each day should build on the previous day.
-2. Day 1-2: Core concepts, frameworks, and theory
-3. Day 3-4: Applied practice, scenarios, cases, or hands-on exercises
-4. Day 5-6: Real-world applications, advanced concepts, and broader subsets
-5. Day 7: Mock interview prep — practice explaining these skills confidently
-6. Keep daily time commitment realistic (1.5-3 hours per day)
-7. Prefer FREE applicable resources (YouTube, official guidelines, Coursera audit, industry articles)
-8. Include concrete, actionable tasks — not vague "learn about X"
-9. Resources should be real, well-known platforms with plausible URLs
-10. If the user provides "Recent Study Vault Weaknesses", you MUST tightly integrate tutorials resolving those specific weaknesses into Days 1-3.
+1. EXACTLY ${days} days, each 1.5-2.5 hours max
+2. Day 1: Core fundamentals
+3. Middle days: Applied practice + scenarios
+4. Final day: Interview prep — practice explaining the skill
+5. Keep tasks CONCISE — max 3 bullet points per day, each under 15 words
+6. Use FREE resources: YouTube, official docs, Coursera audit, Google NotebookLM
+7. ALWAYS include a Google NotebookLM resource on the final day for creating study notes
+8. Each resource needs a real, plausible URL
+9. Be SPECIFIC — no vague "learn about X"
 
-Return a JSON object:
+Return JSON:
 {
   "schedule": [
     {
       "day": 1,
-      "focus": "Broad Subset or Core Concept (e.g., Medical Terminology, B2B Pipeline)",
-      "tasks": ["Actionable task 1", "Actionable task 2"],
+      "focus": "Short focus title (max 8 words)",
+      "tasks": ["Concise task 1", "Concise task 2"],
       "resources": [
-        { "title": "Crash Course Video", "url": "https://youtube.com/results?search_query=topic", "type": "video" },
-        { "title": "Industry Guide", "url": "https://example.com/guide", "type": "article" }
+        { "title": "Resource Name", "url": "https://...", "type": "video" }
       ],
       "timeEstimate": "2h"
     }
   ],
-  "summary": "Brief 1-sentence summary of what the user will achieve in 7 days",
-  "interviewTips": ["Industry-specific interview tip 1", "Tip 2"]
+  "summary": "One sentence: what you'll achieve in ${days} days",
+  "interviewTips": ["Tip 1", "Tip 2"]
 }`;
 
-    const userPrompt = `Generate a 7-day crash course study plan for the following skill(s) or fields: ${skillList}
+    const userPrompt = `Generate a ${days}-day crash course for: ${skillList}
 
-${userContext ? `User context: ${userContext}` : 'The user is a professional who needs to get interview-ready.'}
+${userContext ? `User context: ${userContext}` : 'Professional getting interview-ready.'}
 
-${vaultContext ? `RECENT STUDY VAULT WEAKNESSES (Integrate into your curriculum):\n${vaultContext}\n` : ''}
+${vaultContext ? `STUDY VAULT WEAKNESSES (target these):\n${vaultContext}\n` : ''}
 
-Make the plan highly practical, focused on their specific industry, and interview-oriented.`;
+Keep it short, practical, interview-focused. Include a NotebookLM link on the final day.`;
 
     const result = await geminiJSONCompletion<{
       schedule: StudyDay[];
       summary: string;
       interviewTips: string[];
-    }>(systemPrompt, userPrompt, { temperature: 0.4, maxTokens: 3000 });
+    }>(systemPrompt, userPrompt, { temperature: 0.4, maxTokens: 2000 });
+
+    // Safety: ensure schedule length matches requested days
+    if (result.schedule && result.schedule.length > days) {
+      result.schedule = result.schedule.slice(0, days);
+    }
 
     return NextResponse.json(result);
   } catch (error: unknown) {
@@ -103,3 +106,4 @@ Make the plan highly practical, focused on their specific industry, and intervie
     );
   }
 }
+

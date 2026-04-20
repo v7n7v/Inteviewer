@@ -451,6 +451,9 @@ export async function saveStudyProgress(
     const now = new Date().toISOString();
     const docRef = doc(db, 'users', userId, 'study_progress', skillId);
 
+    // Determine total_days from plan data if available
+    const planDays = planData?.schedule?.length;
+
     // Check if progress already exists
     const existing = await withTimeout(getDoc(docRef));
     if (existing.exists()) {
@@ -458,7 +461,10 @@ export async function saveStudyProgress(
       const updates: any = { last_activity_at: now };
 
       // Always update plan_data if a new AI plan was generated
-      if (planData) updates.plan_data = planData;
+      if (planData) {
+        updates.plan_data = planData;
+        if (planDays) updates.total_days = planDays;
+      }
 
       let appIds = data.application_ids || [];
       if (applicationId && !appIds.includes(applicationId)) {
@@ -476,6 +482,7 @@ export async function saveStudyProgress(
           ...data,
           id: existing.id,
           plan_data: planData || data.plan_data,
+          total_days: planDays || data.total_days,
           application_ids: appIds,
         } as StudyProgress,
       };
@@ -486,7 +493,7 @@ export async function saveStudyProgress(
       skill,
       skill_id: skillId,
       category,
-      total_days: 7,
+      total_days: planDays || 4, // default to 4 if no plan
       completed_days: [],
       plan_data: planData || null,
       email_reminders: false,
@@ -545,8 +552,9 @@ export async function markDayComplete(
       last_activity_at: now,
     };
 
-    // Mark as completed if all 7 days done
-    if (completedDays.length >= 7) {
+    // Mark as completed if all days done
+    const totalDays = current.total_days || 7;
+    if (completedDays.length >= totalDays) {
       updates.completed_at = now;
     }
 

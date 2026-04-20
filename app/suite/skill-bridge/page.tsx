@@ -627,6 +627,17 @@ function SkillCard({ gap, completedDays, totalDays, onDayToggle, onCourseToggle,
           )}
 
           <div className="flex-1" />
+          <a
+            href={`https://notebooklm.google.com/?q=${encodeURIComponent(gap.skill + ' interview preparation study notes')}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`p-1.5 rounded-lg transition-all ${
+              isLight ? 'hover:bg-blue-50 text-blue-500' : 'hover:bg-blue-500/10 text-blue-400/60 hover:text-blue-400'
+            }`}
+            title={`Study "${gap.skill}" in NotebookLM`}
+          >
+            <span className="material-symbols-rounded text-[14px] align-middle">menu_book</span>
+          </a>
           <button
             onClick={() => onPractice(gap.skill)}
             className={`p-1.5 rounded-lg transition-all ${
@@ -876,22 +887,29 @@ function SkillBridgePageInner() {
   const handleGeneratePlan = async (skill: string) => {
     setLoadingPlans(prev => ({ ...prev, [skill]: true }));
     try {
+      const category = gaps.find(g => g.skill === skill)?.category || 'technical';
+      const days = getTrainingDays(skill, category);
       const res = await authFetch('/api/resume/study-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ skills: [skill] }),
+        body: JSON.stringify({ skills: [skill], totalDays: days }),
       });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `HTTP ${res.status}`);
+      }
       const data = await res.json();
-      if (data.schedule) {
-        const category = gaps.find(g => g.skill === skill)?.category || 'technical';
-        const days = getTrainingDays(skill, category);
+      if (data.schedule && data.schedule.length > 0) {
         await saveStudyProgress(skill, category, data, applicationId || undefined);
         setGeneratedPlans(prev => ({ ...prev, [skill]: true }));
         showToast(`${days}-Day plan for ${skill} created!`, 'calendar_month');
         loadProgress();
+      } else {
+        showToast('Plan generated but empty — try again', 'warning');
       }
-    } catch (err) {
-      showToast('Failed to generate plan', 'cancel');
+    } catch (err: any) {
+      console.error('[SkillBridge] Plan generation failed:', err);
+      showToast(err.message || 'Failed to generate plan', 'cancel');
     }
     setLoadingPlans(prev => ({ ...prev, [skill]: false }));
   };

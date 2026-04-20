@@ -735,6 +735,19 @@ export default function LiquidResumePage() {
       const data = await res.json();
       setBlueprintContent(data.blueprint);
       setShowBlueprintModal(true);
+      // Persist blueprint so it can be re-opened from Applications tracker
+      try {
+        const companyName = originalResume.experience?.[0]?.company || 'Unknown';
+        const savedBlueprints = JSON.parse(localStorage.getItem('tc_blueprints') || '[]');
+        savedBlueprints.unshift({
+          id: `bp_${Date.now()}`,
+          content: data.blueprint,
+          targetRole: originalResume.title || '',
+          createdAt: new Date().toISOString(),
+        });
+        // Keep only the last 10 blueprints
+        localStorage.setItem('tc_blueprints', JSON.stringify(savedBlueprints.slice(0, 10)));
+      } catch {}
       showToast('Day-Zero Blueprint ready!', 'check_circle');
     } catch (error) {
       console.error('Blueprint error:', error);
@@ -2048,8 +2061,10 @@ export default function LiquidResumePage() {
 
                   {/* Animated Pipeline Indicator */}
                   {enhancePipelineStage > 0 && (
-                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 p-4 rounded-xl bg-[var(--theme-bg-card)] border border-emerald-500/[0.1] overflow-hidden relative">
-                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/[0.02] via-cyan-500/[0.04] to-emerald-500/[0.02] animate-pulse" />
+                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className={`mb-6 p-4 rounded-xl border overflow-hidden relative ${
+                      isLight ? 'bg-white border-emerald-200 shadow-sm' : 'bg-[var(--theme-bg-card)] border-emerald-500/[0.1]'
+                    }`}>
+                      <div className={`absolute inset-0 animate-pulse ${isLight ? 'bg-gradient-to-r from-emerald-50/50 via-cyan-50/50 to-emerald-50/50' : 'bg-gradient-to-r from-emerald-500/[0.02] via-cyan-500/[0.04] to-emerald-500/[0.02]'}`} />
                       <div className="relative flex items-center gap-4">
                         {[
                           { label: 'GPT Writing', stage: 1 },
@@ -2058,16 +2073,16 @@ export default function LiquidResumePage() {
                         ].map((p) => (
                           <div key={p.stage} className="flex items-center gap-2">
                             <div className={`w-2.5 h-2.5 rounded-full transition-all duration-500 ${
-                              enhancePipelineStage > p.stage ? 'bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.6)]' :
-                              enhancePipelineStage === p.stage ? 'bg-cyan-400 animate-pulse shadow-[0_0_12px_rgba(6,182,212,0.8)]' :
-                              'bg-white/10'
+                              enhancePipelineStage > p.stage ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]' :
+                              enhancePipelineStage === p.stage ? (isLight ? 'bg-cyan-500 animate-pulse shadow-[0_0_12px_rgba(6,182,212,0.5)]' : 'bg-cyan-400 animate-pulse shadow-[0_0_12px_rgba(6,182,212,0.8)]') :
+                              isLight ? 'bg-slate-200' : 'bg-white/10'
                             }`} />
                             <span className={`text-xs font-medium ${
-                              enhancePipelineStage > p.stage ? 'text-emerald-400' :
-                              enhancePipelineStage === p.stage ? 'text-cyan-400' :
-                              'text-slate-600'
+                              enhancePipelineStage > p.stage ? (isLight ? 'text-emerald-600' : 'text-emerald-400') :
+                              enhancePipelineStage === p.stage ? (isLight ? 'text-cyan-600' : 'text-cyan-400') :
+                              isLight ? 'text-slate-400' : 'text-slate-600'
                             }`}>{p.label}</span>
-                            {p.stage < 3 && <div className={`w-8 h-px ${enhancePipelineStage > p.stage ? 'bg-emerald-500/40' : 'bg-white/10'}`} />}
+                            {p.stage < 3 && <div className={`w-8 h-px ${enhancePipelineStage > p.stage ? (isLight ? 'bg-emerald-300' : 'bg-emerald-500/40') : (isLight ? 'bg-slate-200' : 'bg-white/10')}`} />}
                           </div>
                         ))}
                       </div>
@@ -2078,13 +2093,13 @@ export default function LiquidResumePage() {
                     {/* Left: Resume Check + Auto-Fix */}
                     <div className="space-y-4">
                       {/* Resume Quality Check */}
-                      <div className="rounded-xl bg-[var(--theme-bg-card)] border border-amber-500/[0.1] p-5">
+                      <div className={`rounded-xl p-5 border ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-[var(--theme-bg-card)] border-amber-500/[0.1]'}`}>
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-white"><span className="material-symbols-rounded text-inherit align-middle">search</span> Resume Quality Check</span>
-                            <span className="text-[8px] px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-400 font-mono">Gemini Flash</span>
+                            <span className={`text-sm font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}><span className="material-symbols-rounded text-inherit align-middle">search</span> Resume Quality Check</span>
+                            <span className={`text-[8px] px-1.5 py-0.5 rounded font-mono ${isLight ? 'bg-amber-100 border border-amber-300 text-amber-700' : 'bg-amber-500/10 border border-amber-500/20 text-amber-400'}`}>Gemini Flash</span>
                           </div>
-                          <button onClick={() => { setEnhancePhase('checking'); setEnhancePipelineStage(2); checkResume(); }} disabled={resumeCheckLoading} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/15 transition-all disabled:opacity-50">
+                          <button onClick={() => { setEnhancePhase('checking'); setEnhancePipelineStage(2); checkResume(); }} disabled={resumeCheckLoading} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-50 ${isLight ? 'bg-amber-100 border border-amber-300 text-amber-700 hover:bg-amber-200' : 'bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/15'}`}>
                             {resumeCheckLoading ? <><span className="material-symbols-rounded text-[14px] align-middle mr-1">search</span> Analyzing...</> : resumeCheckResult ? <><span className="material-symbols-rounded text-[14px] align-middle mr-1">sync</span> Re-check</> : <><span className="material-symbols-rounded text-[14px] align-middle mr-1">play_arrow</span> Run Check</>}
                           </button>
                         </div>
@@ -2118,11 +2133,11 @@ export default function LiquidResumePage() {
                               </div>
                               <div className="flex-1">
                                 <div className="flex items-center justify-between text-sm">
-                                  <span className="text-white/50">ATS Score</span>
-                                  <span className="font-bold text-white">{resumeCheckResult.atsScore}/100</span>
+                                  <span className={isLight ? 'text-slate-500' : 'text-white/50'}>ATS Score</span>
+                                  <span className={`font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>{resumeCheckResult.atsScore}/100</span>
                                 </div>
-                                <div className="h-2 bg-white/5 rounded-full mt-1 overflow-hidden">
-                                  <motion.div initial={{ width: 0 }} animate={{ width: `${resumeCheckResult.atsScore}%` }} transition={{ duration: 1, ease: 'easeOut' }} className={`h-full rounded-full ${resumeCheckResult.atsScore >= 80 ? 'bg-green-400' : resumeCheckResult.atsScore >= 60 ? 'bg-amber-400' : 'bg-red-400'}`} />
+                                <div className={`h-2 rounded-full mt-1 overflow-hidden ${isLight ? 'bg-slate-100' : 'bg-white/5'}`}>
+                                  <motion.div initial={{ width: 0 }} animate={{ width: `${resumeCheckResult.atsScore}%` }} transition={{ duration: 1, ease: 'easeOut' }} className={`h-full rounded-full ${resumeCheckResult.atsScore >= 80 ? 'bg-green-500' : resumeCheckResult.atsScore >= 60 ? 'bg-amber-500' : 'bg-red-500'}`} />
                                 </div>
                               </div>
                             </div>
@@ -2131,9 +2146,9 @@ export default function LiquidResumePage() {
                             {resumeCheckResult.sectionScores && (
                               <div className="grid grid-cols-5 gap-1.5">
                                 {Object.entries(resumeCheckResult.sectionScores).map(([key, val]: [string, any]) => (
-                                  <div key={key} className="text-center p-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
-                                    <div className="text-[9px] text-white/40 capitalize">{key}</div>
-                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className={`text-sm font-bold ${val >= 80 ? 'text-green-400' : val >= 60 ? 'text-amber-400' : 'text-red-400'}`}>{val}</motion.div>
+                                  <div key={key} className={`text-center p-2 rounded-lg border ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-white/[0.02] border-white/[0.04]'}`}>
+                                    <div className={`text-[9px] capitalize ${isLight ? 'text-slate-500' : 'text-white/40'}`}>{key}</div>
+                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className={`text-sm font-bold ${val >= 80 ? (isLight ? 'text-green-600' : 'text-green-400') : val >= 60 ? (isLight ? 'text-amber-600' : 'text-amber-400') : (isLight ? 'text-red-600' : 'text-red-400')}`}>{val}</motion.div>
                                   </div>
                                 ))}
                               </div>
@@ -2142,10 +2157,10 @@ export default function LiquidResumePage() {
                             {/* Suggestions */}
                             {resumeCheckResult.suggestions?.length > 0 && (
                               <div className="space-y-1.5">
-                                <div className="text-xs font-semibold text-white/50"><span className="material-symbols-rounded text-inherit align-middle">lightbulb</span> Suggestions</div>
+                                <div className={`text-xs font-semibold ${isLight ? 'text-slate-500' : 'text-white/50'}`}><span className="material-symbols-rounded text-inherit align-middle">lightbulb</span> Suggestions</div>
                                 {resumeCheckResult.suggestions.map((s: string, i: number) => (
-                                  <motion.div key={i} initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }} className="text-[11px] text-white/60 flex gap-1.5 p-1.5 rounded bg-white/[0.01]">
-                                    <span className="text-amber-400 shrink-0">→</span> {s}
+                                  <motion.div key={i} initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }} className={`text-[11px] flex gap-1.5 p-2 rounded ${isLight ? 'text-slate-700 bg-amber-50 border border-amber-100' : 'text-white/60 bg-white/[0.02] border border-white/[0.04]'}`}>
+                                    <span className={`shrink-0 ${isLight ? 'text-amber-600' : 'text-amber-400'}`}>→</span> {s}
                                   </motion.div>
                                 ))}
                               </div>
@@ -2155,7 +2170,11 @@ export default function LiquidResumePage() {
                             <button
                               onClick={autoFixResume}
                               disabled={autoFixing}
-                              className="w-full py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-emerald-500/[0.1] to-cyan-500/[0.1] border border-emerald-500/[0.2] text-emerald-400 hover:from-emerald-500/[0.15] hover:to-cyan-500/[0.15] transition-all disabled:opacity-50 relative overflow-hidden"
+                              className={`w-full py-3 rounded-xl font-bold text-sm border transition-all disabled:opacity-50 relative overflow-hidden ${
+                                isLight
+                                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
+                                  : 'bg-gradient-to-r from-emerald-500/[0.1] to-cyan-500/[0.1] border-emerald-500/[0.2] text-emerald-400 hover:from-emerald-500/[0.15] hover:to-cyan-500/[0.15]'
+                              }`}
                             >
                               {autoFixing ? (
                                 <span className="flex items-center justify-center gap-2">
@@ -2165,14 +2184,18 @@ export default function LiquidResumePage() {
                               ) : (
                                 <><span className="material-symbols-rounded text-inherit align-middle">build</span> Auto-Fix Resume (Apply All Suggestions)</>
                               )}
-                              {autoFixing && <motion.div className="absolute bottom-0 left-0 h-0.5 bg-emerald-400" initial={{ width: '0%' }} animate={{ width: '100%' }} transition={{ duration: 15, ease: 'linear' }} />}
+                              {autoFixing && <motion.div className={`absolute bottom-0 left-0 h-0.5 ${isLight ? 'bg-emerald-500' : 'bg-emerald-400'}`} initial={{ width: '0%' }} animate={{ width: '100%' }} transition={{ duration: 15, ease: 'linear' }} />}
                             </button>
 
                             {/* Skill Bridge CTA */}
                             {resumeCheckResult && !autoFixing && (
                               <button
                                 onClick={() => router.push(`/suite/skill-bridge`)}
-                                className="w-full py-2.5 rounded-xl text-[11px] font-semibold bg-gradient-to-r from-cyan-500/[0.06] to-emerald-500/[0.06] border border-cyan-500/[0.12] text-cyan-400 hover:from-cyan-500/[0.1] hover:to-emerald-500/[0.1] transition-all flex items-center justify-center gap-2"
+                                className={`w-full py-2.5 rounded-xl text-[11px] font-semibold border transition-all flex items-center justify-center gap-2 ${
+                                  isLight
+                                    ? 'bg-cyan-50 border-cyan-200 text-cyan-700 hover:bg-cyan-100'
+                                    : 'bg-gradient-to-r from-cyan-500/[0.06] to-emerald-500/[0.06] border-cyan-500/[0.12] text-cyan-400 hover:from-cyan-500/[0.1] hover:to-emerald-500/[0.1]'
+                                }`}
                               >
                                 <span className="material-symbols-rounded text-[16px]">bridge</span> Bridge Your Gaps — Learn the Skills AI Enhanced
                               </button>
@@ -2487,16 +2510,18 @@ export default function LiquidResumePage() {
         <AnimatePresence>
           {showBlueprintModal && blueprintContent && (
             <>
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowBlueprintModal(false)} className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50" />
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowBlueprintModal(false)} className={`fixed inset-0 backdrop-blur-sm z-50 ${isLight ? 'bg-black/40' : 'bg-black/80'}`} />
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative w-full max-w-2xl max-h-[85vh] rounded-3xl overflow-hidden" style={{ background: 'var(--theme-bg-card, #111827)', border: '1px solid rgba(245, 158, 11, 0.15)' }}>
+                <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className={`relative w-full max-w-2xl max-h-[85vh] rounded-3xl overflow-hidden border ${
+                  isLight ? 'bg-white border-amber-200 shadow-2xl' : 'border-amber-500/15'
+                }`} style={isLight ? {} : { background: 'var(--theme-bg-card, #111827)' }}>
                   {/* Header */}
-                  <div className="relative p-6 border-b border-white/10">
-                    <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-orange-500/10" />
+                  <div className={`relative p-6 border-b ${isLight ? 'border-slate-200' : 'border-white/10'}`}>
+                    <div className={`absolute inset-0 ${isLight ? 'bg-gradient-to-br from-amber-50 to-orange-50' : 'bg-gradient-to-br from-amber-500/10 to-orange-500/10'}`} />
                     <div className="relative flex items-center justify-between">
                       <div>
-                        <h2 className="text-xl font-bold text-white flex items-center gap-2"><span className="material-symbols-rounded text-inherit align-middle">content_paste</span> Day-Zero Blueprint</h2>
-                        <p className="text-sm text-amber-400/80 mt-1">Your strategic "First 90 Days" proposal</p>
+                        <h2 className={`text-xl font-bold flex items-center gap-2 ${isLight ? 'text-slate-800' : 'text-white'}`}><span className="material-symbols-rounded text-inherit align-middle">content_paste</span> Day-Zero Blueprint</h2>
+                        <p className={`text-sm mt-1 ${isLight ? 'text-amber-700' : 'text-amber-400/80'}`}>Your strategic &quot;First 90 Days&quot; proposal</p>
                       </div>
                       <div className="flex items-center gap-2">
                         <button
@@ -2504,32 +2529,40 @@ export default function LiquidResumePage() {
                             navigator.clipboard.writeText(blueprintContent);
                             showToast('Blueprint copied to clipboard!', 'content_paste');
                           }}
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 transition-all"
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                            isLight ? 'bg-amber-100 border-amber-300 text-amber-700 hover:bg-amber-200' : 'bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20'
+                          }`}
                         >
                           Copy
                         </button>
-                        <button onClick={() => setShowBlueprintModal(false)} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-silver hover:text-white hover:bg-white/20 transition-all"><span className="material-symbols-rounded">close</span></button>
+                        <button onClick={() => setShowBlueprintModal(false)} className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                          isLight ? 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700' : 'bg-white/10 text-silver hover:text-white hover:bg-white/20'
+                        }`}><span className="material-symbols-rounded">close</span></button>
                       </div>
                     </div>
                   </div>
                   {/* Content */}
                   <div className="p-6 overflow-y-auto max-h-[65vh]">
-                    <div className="prose prose-invert prose-sm max-w-none">
+                    <div className={`prose prose-sm max-w-none ${isLight ? 'prose-slate' : 'prose-invert'}`}>
                       {blueprintContent.split('\n').map((line, i) => {
-                        if (line.startsWith('# ')) return <h1 key={i} className="text-xl font-bold text-white mt-2 mb-3">{line.slice(2)}</h1>;
-                        if (line.startsWith('## ')) return <h2 key={i} className="text-lg font-semibold text-amber-400 mt-4 mb-2">{line.slice(3)}</h2>;
-                        if (line.startsWith('### ')) return <h3 key={i} className="text-base font-semibold text-cyan-400 mt-4 mb-2">{line.slice(4)}</h3>;
-                        if (line.startsWith('**') && line.endsWith('**')) return <p key={i} className="font-semibold text-white/90 mt-2">{line.slice(2, -2)}</p>;
-                        if (line.startsWith('- ')) return <li key={i} className="text-silver ml-4 mb-1 list-disc">{line.slice(2)}</li>;
+                        if (line.startsWith('# ')) return <h1 key={i} className={`text-xl font-bold mt-2 mb-3 ${isLight ? 'text-slate-800' : 'text-white'}`}>{line.slice(2)}</h1>;
+                        if (line.startsWith('## ')) return <h2 key={i} className={`text-lg font-semibold mt-4 mb-2 ${isLight ? 'text-amber-700' : 'text-amber-400'}`}>{line.slice(3)}</h2>;
+                        if (line.startsWith('### ')) return <h3 key={i} className={`text-base font-semibold mt-4 mb-2 ${isLight ? 'text-cyan-700' : 'text-cyan-400'}`}>{line.slice(4)}</h3>;
+                        if (line.startsWith('**') && line.endsWith('**')) return <p key={i} className={`font-semibold mt-2 ${isLight ? 'text-slate-700' : 'text-white/90'}`}>{line.slice(2, -2)}</p>;
+                        if (line.startsWith('- ')) return <li key={i} className={`ml-4 mb-1 list-disc ${isLight ? 'text-slate-600' : 'text-silver'}`}>{line.slice(2)}</li>;
                         if (line.trim() === '') return <div key={i} className="h-2" />;
-                        return <p key={i} className="text-silver mb-1">{line}</p>;
+                        return <p key={i} className={`mb-1 ${isLight ? 'text-slate-600' : 'text-silver'}`}>{line}</p>;
                       })}
                     </div>
                   </div>
                   {/* Footer */}
-                  <div className="p-4 border-t border-white/10 bg-black/20 flex justify-between items-center">
-                    <span className="text-[10px] text-silver/50">Generated by TalentConsulting.io</span>
-                    <button onClick={() => setShowBlueprintModal(false)} className="px-4 py-2 rounded-xl text-sm font-medium bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 transition-all">
+                  <div className={`p-4 border-t flex justify-between items-center ${
+                    isLight ? 'border-slate-200 bg-slate-50' : 'border-white/10 bg-black/20'
+                  }`}>
+                    <span className={`text-[10px] ${isLight ? 'text-slate-400' : 'text-silver/50'}`}>Generated by TalentConsulting.io</span>
+                    <button onClick={() => setShowBlueprintModal(false)} className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
+                      isLight ? 'bg-amber-100 border-amber-300 text-amber-700 hover:bg-amber-200' : 'bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20'
+                    }`}>
                       Done
                     </button>
                   </div>
