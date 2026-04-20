@@ -894,7 +894,7 @@ function SonaShowcase() {
             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div className={`max-w-[85%] p-2.5 rounded-xl text-[11px] leading-relaxed ${msg.role === 'user'
-                ? isLight ? 'bg-gray-900 text-white' : 'bg-white/[0.08] text-white/70'
+                ? isLight ? 'bg-black/[0.04] text-gray-700 border border-black/[0.08]' : 'bg-white/[0.06] text-white/60 border border-white/[0.06]'
                 : isLight ? 'bg-emerald-50 text-gray-800 border border-emerald-100' : 'bg-emerald-500/[0.06] text-white/50 border border-emerald-500/10'
               }`}>
               {msg.text}
@@ -1776,21 +1776,25 @@ function FreeToolsHub({ onShowSignup }: { onShowSignup: () => void }) {
 // ═══════════════════════════════════════
 const proFeatures = [
   { text: 'Unlimited Resume Morphs', highlight: true },
-  { text: 'Unlimited Interview Sessions', highlight: true },
+  { text: 'Unlimited Interview Simulator', highlight: true },
   { text: 'Unlimited Market Oracle', highlight: true },
   { text: '3× AI Speed & Volume', highlight: true },
   { text: 'Voice Interview Mode', highlight: true },
   { text: 'Skill Bridge — Learning Paths', highlight: true },
   { text: 'AI Detection — 4,000 words/mo', highlight: true },
   { text: 'AI Humanizer — 4,000 words/mo', highlight: true },
-  { text: 'Tools Gallery — Pro Tools', highlight: false },
+  { text: 'Grammar Checker & Paraphraser', highlight: true },
+  { text: 'ATS Resume Score Checker', highlight: true },
+  { text: 'Cover Letter Generator', highlight: false },
   { text: 'Export to Word (.docx)', highlight: false },
   { text: 'Priority Support', highlight: false },
 ];
 
 const studioExtras = [
+  { text: 'Sona AI Career Agent', highlight: true },
   { text: 'AI Humanizer — 50,000 words/mo', highlight: true },
   { text: 'Unlimited AI Detection', highlight: true },
+  { text: 'Career Intelligence Dashboard', highlight: true },
   { text: 'Uniqueness Verification', highlight: true },
   { text: 'Priority+ Support', highlight: false },
 ];
@@ -2083,7 +2087,7 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
                 className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-5">
                 <button onClick={onGetStarted}
-                  className="group text-[13px] font-medium text-black bg-white hover:bg-white/90 px-5 py-2 rounded-lg transition-all flex items-center gap-2">
+                  className={`group text-[13px] font-medium px-5 py-2 rounded-lg transition-all flex items-center gap-2 border ${isLight ? 'text-gray-900 bg-black/[0.04] border-black/[0.12] hover:bg-black/[0.08]' : 'text-white/80 bg-white/[0.06] border-white/[0.10] hover:bg-white/[0.10]'}`}>
                   Get Started Free
                   <svg className="w-3 h-3 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -2353,9 +2357,11 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
                 <div className="space-y-2.5 mb-6 flex-1">
                   {[
                     { text: '3 Resume Morphs', sub: 'lifetime' },
-                    { text: '3 Interview Sessions', sub: 'lifetime' },
+                    { text: '3 Interview Sim Sessions', sub: 'lifetime' },
                     { text: '3 Market Oracle Queries', sub: 'lifetime' },
                     { text: 'Application Tracker', sub: 'unlimited' },
+                    { text: 'AI Detector (Free)', sub: '5/hr' },
+                    { text: 'Word Counter', sub: '∞' },
                     { text: 'Study Vault', sub: 'basic' },
                   ].map((item) => (
                     <div key={item.text} className="flex items-center gap-2.5">
@@ -2438,6 +2444,7 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
                     { text: 'Sona AI Career Agent' },
                     { text: 'AI Humanizer — 50K words/mo' },
                     { text: 'Unlimited AI Detection' },
+                    { text: 'Career Intelligence Dashboard' },
                     { text: 'Uniqueness Verification' },
                     { text: 'Export to Word (.docx)' },
                     { text: 'Priority+ Support' },
@@ -2470,7 +2477,7 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
             <h2 className={`text-xl font-bold tracking-tight mb-2 ${isLight ? 'text-gray-900' : 'text-white/80'}`}>Ready to start?</h2>
             <p className={`text-[13px] mb-5 ${isLight ? 'text-gray-500' : 'text-white/20'}`}>Free forever. No credit card needed.</p>
             <button onClick={onGetStarted}
-              className={`group text-[13px] font-medium px-6 py-2 rounded-lg transition-all inline-flex items-center gap-2 ${isLight ? 'text-white bg-gray-900 hover:bg-gray-800' : 'text-black bg-white hover:bg-white/90'}`}>
+              className={`group text-[13px] font-medium px-6 py-2 rounded-lg transition-all inline-flex items-center gap-2 border ${isLight ? 'text-gray-900 bg-black/[0.04] border-black/[0.12] hover:bg-black/[0.08]' : 'text-white/80 bg-white/[0.06] border-white/[0.10] hover:bg-white/[0.10]'}`}>
               Launch Dashboard
               <svg className="w-3 h-3 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
