@@ -13,21 +13,21 @@ export async function POST(req: NextRequest) {
     if (!validated.success) return validated.error;
     const { skill, schedule, summary: aiSummary, applicationId } = validated.data;
 
-    let markdown = `# 🌉 Skill Bridge: ${skill} Training Curriculum\n\n`;
+    let markdown = `# Skill Bridge: ${skill} Training Curriculum\n\n`;
     if (aiSummary) markdown += `*${aiSummary}*\n\n`;
     
     if (applicationId) {
-      markdown += `> 📌 **Context:** This curriculum was generated to bridge skill gaps for a specific Job Application. Keep track of your progress here!\n\n`;
+      markdown += `> **Context:** This curriculum was generated to bridge skill gaps for a specific Job Application. Keep track of your progress here!\n\n`;
     }
 
     markdown += `---\n\n`;
 
     schedule.forEach((day: any) => {
       markdown += `## Day ${day.day}: ${day.focus}\n`;
-      markdown += `**⏱️ Time Estimate:** ${day.timeEstimate || '1.5h'}\n\n`;
+      markdown += `**Time Estimate:** ${day.timeEstimate || '1.5h'}\n\n`;
       
       if (day.tasks && day.tasks.length > 0) {
-        markdown += `### 🎯 Action Items\n`;
+        markdown += `### Action Items\n`;
         day.tasks.forEach((task: string) => {
           markdown += `- [ ] ${task}\n`;
         });
@@ -35,10 +35,10 @@ export async function POST(req: NextRequest) {
       }
 
       if (day.resources && day.resources.length > 0) {
-        markdown += `### 📚 Required Resources\n`;
+        markdown += `### Required Resources\n`;
         day.resources.forEach((res: any) => {
-          const typeIcon = res.type === 'video' ? '📺' : res.type === 'article' ? '📰' : '📘';
-          markdown += `- ${typeIcon} [${res.title}](${res.url})\n`;
+          const typeLabel = res.type === 'video' ? '[Video]' : res.type === 'article' ? '[Article]' : '[Book]';
+          markdown += `- ${typeLabel} [${res.title}](${res.url})\n`;
         });
         markdown += `\n`;
       }

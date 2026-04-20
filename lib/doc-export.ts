@@ -82,7 +82,7 @@ async function generateDocx(text: string, options: ExportOptions): Promise<Blob>
     new Paragraph({
       children: [
         new TextRun({
-          text: `Generated with Inkwell Writing Suite • ${new Date().toLocaleDateString()}`,
+          text: `Generated with AI Detector Suite • ${new Date().toLocaleDateString()}`,
           size: 18,
           color: '999999',
           italics: true,
@@ -95,7 +95,7 @@ async function generateDocx(text: string, options: ExportOptions): Promise<Blob>
   );
 
   const doc = new Document({
-    creator: options.author || 'Inkwell Writing Suite',
+    creator: options.author || 'AI Detector Suite',
     title: options.title || 'Humanized Document',
     sections: [{ children: docParagraphs }],
   });
@@ -114,7 +114,7 @@ function generateTxt(text: string, options: ExportOptions): Blob {
     content += `${options.title}\n${'='.repeat(options.title.length)}\n\n`;
   }
   content += text;
-  content += `\n\n---\nGenerated with Inkwell Writing Suite • ${new Date().toLocaleDateString()}\n`;
+  content += `\n\n---\nGenerated with AI Detector Suite • ${new Date().toLocaleDateString()}\n`;
 
   return new Blob([content], { type: 'text/plain' });
 }

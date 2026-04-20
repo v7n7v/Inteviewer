@@ -22,7 +22,7 @@ const docs: DocSection[] = [
     {
         id: 'dashboard',
         title: 'Hub & Dashboard',
-        icon: '🏠',
+        icon: 'home',
         description: 'Master your command center with AI-powered insights.',
         color: 'from-[#EC4899] to-[#8B5CF6]',
         borderColor: 'border-[#EC4899]/30',
@@ -58,7 +58,7 @@ const docs: DocSection[] = [
     {
         id: 'talent-suite',
         title: 'Talent Suite',
-        icon: '✨',
+        icon: 'auto_awesome',
         description: 'Tools for job seekers to optimize their applications.',
         color: 'from-[#0070F3] to-[#0070F3]/60',
         borderColor: 'border-[#0070F3]/30',
@@ -95,7 +95,7 @@ const docs: DocSection[] = [
     {
         id: 'general',
         title: 'General & Settings',
-        icon: '⚙️',
+        icon: 'settings',
         description: 'Account management and platform configuration.',
         color: 'from-white/20 to-white/5',
         borderColor: 'border-white/20',
@@ -148,7 +148,7 @@ export default function HelpPage() {
                         className="inline-block"
                     >
                         <div className="w-20 h-20 mx-auto mb-6 rounded-2xl glass-card flex items-center justify-center">
-                            <span className="text-4xl">📚</span>
+                            <span className="material-symbols-rounded text-4xl text-cyan-400">menu_book</span>
                         </div>
                     </motion.div>
 
@@ -211,7 +211,7 @@ export default function HelpPage() {
 
                             <div className="relative p-6 h-full flex flex-col">
                                 <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${doc.color} flex items-center justify-center text-2xl mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                                    {doc.icon}
+                                    <span className="material-symbols-rounded text-2xl">{doc.icon}</span>
                                 </div>
 
                                 <h3 className="text-xl font-bold text-white mb-2 group-hover:text-white/90 transition-colors">
@@ -284,7 +284,7 @@ export default function HelpPage() {
 
                                 <div className="flex items-center gap-4">
                                     <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${selectedDoc.color} flex items-center justify-center text-3xl shadow-lg`}>
-                                        {selectedDoc.icon}
+                                        <span className="material-symbols-rounded text-3xl">{selectedDoc.icon}</span>
                                     </div>
                                     <div>
                                         <h2 className="text-2xl font-bold text-white">{selectedDoc.title}</h2>
@@ -321,7 +321,7 @@ export default function HelpPage() {
 
                                                 {section.tips && section.tips.length > 0 && (
                                                     <div className="mt-4 p-4 rounded-xl glass-card flex gap-4">
-                                                        <span className="text-xl">💡</span>
+                                                        <span className="material-symbols-rounded text-xl text-amber-400">lightbulb</span>
                                                         <div className="text-sm text-silver">
                                                             {section.tips.map((tip, tipIdx) => (
                                                                 <p key={tipIdx}>{tip}</p>

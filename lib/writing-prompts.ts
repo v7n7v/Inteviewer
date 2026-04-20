@@ -1,5 +1,5 @@
 /**
- * Inkwell Writing Pipeline — Prompt Templates
+ * AI Detector Writing Pipeline — Prompt Templates
  * Humanization + Uniqueness Check system prompts.
  * Incorporates 100+ patterns from slopbuster & humanizer-x research.
  */
@@ -39,11 +39,50 @@ const DOMAIN_RULES: Record<WritingDomain, string> = {
 - Include conversational asides and mid-thought pivots`,
 };
 
-/** Build the humanization system prompt with banned words and domain rules */
-export function buildHumanizePrompt(domain: WritingDomain = 'general'): string {
+export type HumanizeTone = 'professional' | 'creative' | 'casual' | 'academic' | 'confident';
+
+const TONE_RULES: Record<HumanizeTone, string> = {
+  professional: `
+- Maintain a polished, restrained voice — think senior professional writing a LinkedIn post, not a corporate memo
+- Use precise language without being stiff. Never sound robotic.
+- Keep contractions moderate (use "I've" and "don't" but not "gonna" or "y'all")
+- Sentences should feel purposeful and direct`,
+
+  creative: `
+- Maximum burstiness: fragments, long flowing sentences, one-word paragraphs
+- Inject sensory details and emotional anchoring
+- Use unexpected word choices (high perplexity) — surprise the reader
+- Include mid-thought pivots and conversational asides
+- Write like a thoughtful essayist, not a template`,
+
+  casual: `
+- Write like texting a smart friend — relaxed but substantive
+- Heavy contractions (it's, won't, they've, can't)
+- Start some sentences with "And," "But," "So,"
+- Shorter paragraphs, punchy rhythm
+- Use humor or self-deprecation where natural`,
+
+  academic: `
+- Maintain formal register appropriate for peer-reviewed publication
+- Vary sentence openings: avoid starting consecutive sentences the same way
+- Methods/Results sections may retain passive voice (expected in academia)
+- Discussion sections should interpret, not just restate findings
+- Preserve all citations, references, and technical terminology exactly`,
+
+  confident: `
+- Strong, assertive voice — no hedging or filler
+- Use power verbs: built, shipped, grew, cut, drove, designed
+- Short declarative sentences mixed with detailed evidence sentences
+- Take clear positions — avoid "it could be argued" or "one might say"
+- Sound like someone who's done the work, not someone describing it`,
+};
+
+/** Build the humanization system prompt with banned words, domain rules, and tone */
+export function buildHumanizePrompt(domain: WritingDomain = 'general', tone: HumanizeTone = 'professional'): string {
   const bannedWords = getBannedWordList();
   const bannedPhrases = getAIPhraseList();
   const domainRules = DOMAIN_RULES[domain];
+  const toneRules = TONE_RULES[tone];
 
   return `You are an expert text humanization engine. Your job is to rewrite flagged text so it reads as naturally written by a skilled human writer, while preserving the original meaning, tone, and factual accuracy.
 
@@ -58,6 +97,14 @@ Words you MUST NOT use: ${bannedWords}
 ## BANNED PHRASES (these are AI-tell phrase patterns)
 Phrases you MUST NOT use: ${bannedPhrases}
 
+## BANNED PUNCTUATION (AI fingerprints)
+- NEVER use em-dashes (— or --). Replace with commas, periods, or restructure the sentence.
+- NEVER use en-dashes (–) except in number ranges.
+- NEVER use semicolons more than once per 300 words. AI overuses them.
+- NEVER use ellipsis (...) unless it's dialogue.
+- Avoid parenthetical asides with dashes. Use commas or make it a separate sentence.
+- Do NOT start sentences with "Moreover," "Furthermore," "Additionally," "In conclusion,".
+
 ## VOICE INJECTION (removing AI patterns is half the job — add human signals)
 1. **Contractions**: Use contractions naturally (it's, don't, we've, they're). At least 40% of applicable cases.
 2. **Fragments**: Include 1-2 sentence fragments per paragraph ("Not ideal.", "Worth exploring.", "Big difference.")
@@ -65,6 +112,9 @@ Phrases you MUST NOT use: ${bannedPhrases}
 4. **Confidence Gradient**: State some claims firmly, hedge others, express open uncertainty on others. Don't be uniformly confident.
 5. **First-Person Markers**: Where appropriate, use "I think", "in my experience", rhetorical questions
 6. **Sensory Anchoring**: Replace abstract descriptions with concrete, sensory-grounded alternatives
+
+## TONE: ${tone.toUpperCase()}
+${toneRules}
 
 ## DOMAIN-SPECIFIC RULES (${domain}):
 ${domainRules}
@@ -80,7 +130,8 @@ Respond with a JSON object containing:
 - PRESERVE the overall argument structure and logical flow
 - DO NOT add new factual claims or invent information
 - MAINTAIN the same word count as the original (±5% tolerance). Do NOT pad text with filler or trim meaningful content. If the original is 67 words, aim for 64-70 words
-- If a paragraph is already scoring well (65+), make minimal changes`;
+- If a paragraph is already scoring well (65+), make minimal changes
+- FINAL CHECK: Re-read your output. If you see ANY em-dashes, semicolons in clusters, or banned words, fix them before responding.`;
 }
 
 /** Build the uniqueness check system prompt */

@@ -84,7 +84,7 @@ export default function ProGate({ feature, description, children }: ProGateProps
           style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', boxShadow: '0 4px 16px rgba(16,185,129,0.3)' }}
         >
           <span className="material-symbols-rounded text-[18px]">bolt</span>
-          Upgrade to Pro — $4.99/mo
+          Upgrade to Pro — $9.99/mo
         </button>
 
         <p className="text-[11px] text-[var(--text-muted)] mt-3">

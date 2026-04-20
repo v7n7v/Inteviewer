@@ -5,6 +5,7 @@ import { checkUsageAllowed, incrementUsage } from '@/lib/usage-tracker';
 import { validateBody } from '@/lib/validate';
 import { ResumeMorphSchema } from '@/lib/schemas';
 import { sanitizeForAI } from '@/lib/sanitize';
+import { quickClean } from '@/lib/humanize-guard';
 
 export async function POST(req: NextRequest) {
   try {
@@ -76,6 +77,21 @@ Return JSON:
       morphedData = result;
     } else {
       morphedData = { ...resume, summary: (resume as any).summary + ' [Optimized for target role]' };
+    }
+
+    // Apply humanization guard to all text fields
+    if (morphedData.summary) {
+      morphedData.summary = quickClean(morphedData.summary);
+    }
+    if (morphedData.experience && Array.isArray(morphedData.experience)) {
+      for (const exp of morphedData.experience) {
+        if (exp.bullets && Array.isArray(exp.bullets)) {
+          exp.bullets = exp.bullets.map((b: string) => quickClean(b));
+        }
+        if (exp.description) {
+          exp.description = quickClean(exp.description);
+        }
+      }
     }
 
     if (!isAnon) {

@@ -39,81 +39,203 @@ interface NavigationItem {
   color: { iconColor: string };
 }
 
-const navItems: NavigationItem[] = [
+interface NavigationGroup {
+  label: string;
+  icon: string;
+  items: NavigationItem[];
+}
+
+const navGroups: NavigationGroup[] = [
   {
-    id: 'resume',
-    label: 'Resume Studio',
-    description: 'Resume Builder',
-    path: '/suite/resume',
-    iconName: 'auto_awesome',
-    color: { iconColor: '#f59e0b' },
+    label: '',
+    icon: '',
+    items: [
+      {
+        id: 'agent',
+        label: 'Sona Agent',
+        description: 'Career Intelligence AI',
+        path: '/suite/agent',
+        badge: 'MAX',
+        iconName: 'auto_awesome',
+        color: { iconColor: '#f43f5e' },
+      },
+    ],
   },
   {
-    id: 'applications',
-    label: 'Applications',
-    description: 'Track Jobs',
-    path: '/suite/applications',
-    iconName: 'work',
-    color: { iconColor: '#22c55e' },
+    label: 'Intelligence',
+    icon: 'neurology',
+    items: [
+      {
+        id: 'intelligence',
+        label: 'Career Health',
+        description: 'Health Score + Insights',
+        path: '/suite/intelligence',
+        badge: '2.5',
+        iconName: 'neurology',
+        color: { iconColor: '#8b5cf6' },
+      },
+      {
+        id: 'pulse',
+        label: 'Career Pulse',
+        description: 'Weekly Health Check',
+        path: '/suite/pulse',
+        iconName: 'monitor_heart',
+        color: { iconColor: '#ec4899' },
+      },
+      {
+        id: 'analytics',
+        label: 'Analytics',
+        description: 'Pipeline Insights',
+        path: '/suite/analytics',
+        iconName: 'analytics',
+        color: { iconColor: '#0ea5e9' },
+      },
+    ],
   },
   {
-    id: 'flashcards',
-    label: 'Interview Simulator',
-    description: 'Interactive AI Interviews',
-    path: '/suite/flashcards',
-    iconName: 'chat',
-    color: { iconColor: '#3b82f6' },
+    label: 'Build & Apply',
+    icon: 'construction',
+    items: [
+      {
+        id: 'resume',
+        label: 'Resume Studio',
+        description: 'Resume Builder + Morph',
+        path: '/suite/resume',
+        iconName: 'auto_awesome',
+        color: { iconColor: '#f59e0b' },
+      },
+      {
+        id: 'cover-letter',
+        label: 'Cover Letter',
+        description: 'AI Letter Studio',
+        path: '/suite/cover-letter',
+        badge: 'PRO',
+        iconName: 'edit_document',
+        color: { iconColor: '#f43f5e' },
+      },
+      {
+        id: 'ats-preview',
+        label: 'ATS Preview',
+        description: 'Resume Parser Simulator',
+        path: '/suite/ats-preview',
+        iconName: 'scanner',
+        color: { iconColor: '#06b6d4' },
+      },
+      {
+        id: 'job-search',
+        label: 'Job Search',
+        description: 'Opportunity Radar',
+        path: '/suite/job-search',
+        badge: 'PRO',
+        iconName: 'radar',
+        color: { iconColor: '#06b6d4' },
+      },
+      {
+        id: 'applications',
+        label: 'Applications',
+        description: 'Track & Manage',
+        path: '/suite/applications',
+        iconName: 'work',
+        color: { iconColor: '#22c55e' },
+      },
+    ],
   },
   {
-    id: 'skill-bridge',
-    label: 'Skill Bridge',
-    description: 'From Resume to Ready',
-    path: '/suite/skill-bridge',
-    badge: 'PRO',
-    iconName: 'route',
-    color: { iconColor: '#10b981' },
+    label: 'Prepare',
+    icon: 'school',
+    items: [
+      {
+        id: 'flashcards',
+        label: 'Interview Sim',
+        description: 'AI Mock Interviews',
+        path: '/suite/flashcards',
+        iconName: 'chat',
+        color: { iconColor: '#3b82f6' },
+      },
+      {
+        id: 'interview-debrief',
+        label: 'Debrief',
+        description: 'Post-Interview Logger',
+        path: '/suite/interview-debrief',
+        iconName: 'rate_review',
+        color: { iconColor: '#8b5cf6' },
+      },
+      {
+        id: 'stories',
+        label: 'Story Bank',
+        description: 'STAR Stories + Answer RAG',
+        path: '/suite/agent/stories',
+        iconName: 'auto_stories',
+        color: { iconColor: '#10b981' },
+      },
+      {
+        id: 'skill-bridge',
+        label: 'Skill Bridge',
+        description: 'Gap-to-Ready Paths',
+        path: '/suite/skill-bridge',
+        badge: 'PRO',
+        iconName: 'route',
+        color: { iconColor: '#10b981' },
+      },
+      {
+        id: 'vault',
+        label: 'Study Vault',
+        description: 'Saved Practice Notes',
+        path: '/suite/vault',
+        iconName: 'folder_open',
+        color: { iconColor: '#f97316' },
+      },
+    ],
   },
   {
-    id: 'vault',
-    label: 'Study Vault',
-    description: 'Saved Practice Notes',
-    path: '/suite/vault',
-    iconName: 'folder_open',
-    color: { iconColor: '#f97316' },
-  },
-  {
-    id: 'oracle',
-    label: 'Market Oracle',
-    description: 'Career Intelligence',
-    path: '/suite/market-oracle',
-    iconName: 'troubleshoot',
-    color: { iconColor: '#a855f7' },
-  },
-  {
-    id: 'job-search',
-    label: 'Job Search',
-    description: 'Opportunity Radar',
-    path: '/suite/job-search',
-    badge: 'PRO',
-    iconName: 'radar',
-    color: { iconColor: '#06b6d4' },
-  },
-  {
-    id: 'writing-tools',
-    label: 'Inkwell Writing',
-    description: 'AI Humanizer Pipeline',
-    path: '/suite/writing-tools',
-    badge: 'PRO',
-    iconName: 'ink_pen',
-    color: { iconColor: '#f43f5e' },
-  },
-  {
-    id: 'gallery',
-    label: 'Tools Gallery',
-    description: 'One-Click Utilities',
-    path: '/suite/gallery',
-    iconName: 'build',
-    color: { iconColor: '#8b5cf6' },
+    label: 'Tools',
+    icon: 'build',
+    items: [
+      {
+        id: 'oracle',
+        label: 'Market Oracle',
+        description: 'JD Decoder + Fit Score',
+        path: '/suite/market-oracle',
+        iconName: 'troubleshoot',
+        color: { iconColor: '#a855f7' },
+      },
+      {
+        id: 'writing-tools',
+        label: 'AI Detector',
+        description: 'Detect & Humanize',
+        path: '/suite/writing-tools',
+        badge: 'PRO',
+        iconName: 'ink_pen',
+        color: { iconColor: '#f43f5e' },
+      },
+      {
+        id: 'negotiate',
+        label: 'Salary Coach',
+        description: 'Negotiation Strategy',
+        path: '/suite/negotiate',
+        badge: 'PRO',
+        iconName: 'payments',
+        color: { iconColor: '#10b981' },
+      },
+      {
+        id: 'linkedin',
+        label: 'LinkedIn',
+        description: 'Profile Optimizer',
+        path: '/suite/linkedin',
+        badge: 'PRO',
+        iconName: 'badge',
+        color: { iconColor: '#3b82f6' },
+      },
+      {
+        id: 'network',
+        label: 'Network CRM',
+        description: 'Contact Tracker',
+        path: '/suite/network',
+        badge: 'PRO',
+        iconName: 'contacts',
+        color: { iconColor: '#8b5cf6' },
+      },
+    ],
   },
 ];
 
@@ -220,6 +342,26 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
   const [showAuthModal, setShowAuthModal] = useState<'login' | 'signup' | null>(null);
   const jobCount = useJobCount();
 
+  // Collapsible section state — start with all open
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    navGroups.forEach(g => { if (g.label) initial[g.label] = true; });
+    return initial;
+  });
+
+  const toggleGroup = (label: string) => {
+    setExpandedGroups(prev => ({ ...prev, [label]: !prev[label] }));
+  };
+
+  // Auto-expand group containing the active page
+  useEffect(() => {
+    for (const group of navGroups) {
+      if (group.label && group.items.some(item => pathname?.startsWith(item.path))) {
+        setExpandedGroups(prev => prev[group.label] ? prev : { ...prev, [group.label]: true });
+      }
+    }
+  }, [pathname]);
+
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 1024);
     check();
@@ -323,55 +465,117 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
         {/* Divider */}
         <div className="mx-3 my-2 h-px bg-[var(--border-subtle)]" />
 
-        {/* Nav label */}
-        {!isCollapsed && (
-          <div className="px-4 py-1.5">
-            <span className="text-[11px] font-medium text-[var(--text-muted)] uppercase tracking-wider">Tools</span>
-          </div>
-        )}
+        {/* Navigation — grouped with collapsible sections */}
+        <nav className="flex-1 overflow-y-auto px-2 pb-2">
+          {navGroups.map((group, gi) => {
+            const isExpanded = !group.label || expandedGroups[group.label] !== false;
+            const hasActiveChild = group.items.some(item => isActive(item.path));
 
-        {/* Navigation items */}
-        <nav className="flex-1 overflow-y-auto px-2 space-y-0.5">
-          {navItems.map((item) => {
-            const active = isActive(item.path);
             return (
-              <button
-                key={item.id}
-                onClick={() => handleNav(item.path)}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors duration-100 text-[var(--sidebar-text)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] ${
-                  isCollapsed ? 'justify-center' : ''
-                } ${active ? 'bg-[var(--bg-hover)] text-[var(--text-primary)]' : ''}`}
-                title={isCollapsed ? item.label : ''}
-              >
-                {/* Icon — always shows brand color at full saturation */}
-                <span
-                  className="material-symbols-rounded flex-shrink-0 text-[18px] w-6 h-6 flex items-center justify-center rounded-md flex-none"
-                  style={{ color: item.color.iconColor }}
-                >
-                  {item.iconName}
-                </span>
-
-                {!isCollapsed && (
-                  <span className="flex-1 text-left truncate font-[450]">{item.label}</span>
+              <div key={gi}>
+                {/* Section header — clickable dropdown toggle */}
+                {group.label && !isCollapsed && (
+                  <button
+                    onClick={() => toggleGroup(group.label)}
+                    className="w-full flex items-center gap-2 px-2 pt-3 pb-1.5 group/header hover:opacity-100 transition-opacity"
+                  >
+                    <span
+                      className="material-symbols-rounded text-[14px] text-[var(--text-muted)] transition-transform duration-200"
+                      style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}
+                    >
+                      chevron_right
+                    </span>
+                    <span className="text-[12px] font-semibold text-[var(--text-secondary)] uppercase tracking-wider flex-1 text-left">
+                      {group.label}
+                    </span>
+                    {!isExpanded && hasActiveChild && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] flex-shrink-0" />
+                    )}
+                  </button>
+                )}
+                {group.label && isCollapsed && (
+                  <div className="mx-auto my-2 w-4 h-px bg-[var(--border-subtle)]" />
                 )}
 
-                {!isCollapsed && item.badge && (
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                    item.badge === 'PRO'
-                      ? 'bg-[var(--accent-dim)] text-[var(--accent)]'
-                      : 'bg-[var(--bg-hover)] text-[var(--text-muted)]'
-                  }`}>
-                    {item.badge}
-                  </span>
+                {/* Items — collapsible */}
+                {(isExpanded || isCollapsed) && (
+                  <div className="space-y-0.5">
+                    {group.items.map((item) => {
+                      const active = isActive(item.path);
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => handleNav(item.path)}
+                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors duration-100 text-[var(--sidebar-text)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] ${
+                            isCollapsed ? 'justify-center' : ''
+                          } ${active ? 'bg-[var(--bg-hover)] text-[var(--text-primary)]' : ''}`}
+                          title={isCollapsed ? item.label : item.description}
+                        >
+                          <span
+                            className="material-symbols-rounded flex-shrink-0 text-[18px] w-6 h-6 flex items-center justify-center rounded-md flex-none"
+                            style={{ color: item.color.iconColor }}
+                          >
+                            {item.iconName}
+                          </span>
+
+                          {!isCollapsed && (
+                            <span className="flex-1 text-left truncate font-[450]">{item.label}</span>
+                          )}
+
+                          {!isCollapsed && item.badge && (
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                              item.badge === 'PRO'
+                                ? 'bg-[var(--accent-dim)] text-[var(--accent)]'
+                                : item.badge === 'MAX'
+                                  ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                                  : 'bg-[var(--bg-hover)] text-[var(--text-muted)]'
+                            }`}>
+                              {item.badge}
+                            </span>
+                          )}
+                          {!isCollapsed && item.id === 'job-search' && jobCount > 0 && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-cyan-500/15 text-cyan-500 border border-cyan-500/20 tabular-nums">
+                              {jobCount}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 )}
-                {!isCollapsed && item.id === 'job-search' && jobCount > 0 && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-cyan-500/15 text-cyan-500 border border-cyan-500/20 tabular-nums">
-                    {jobCount}
-                  </span>
-                )}
-              </button>
+              </div>
             );
           })}
+
+          {/* Gallery — standalone at bottom */}
+          {!isCollapsed && (
+            <button
+              onClick={() => toggleGroup('More')}
+              className="w-full flex items-center gap-2 px-2 pt-3 pb-1.5"
+            >
+              <span
+                className="material-symbols-rounded text-[14px] text-[var(--text-muted)] transition-transform duration-200"
+                style={{ transform: expandedGroups['More'] !== false ? 'rotate(90deg)' : 'rotate(0deg)' }}
+              >
+                chevron_right
+              </span>
+              <span className="text-[12px] font-semibold text-[var(--text-secondary)] uppercase tracking-wider flex-1 text-left">More</span>
+            </button>
+          )}
+          {(expandedGroups['More'] !== false || isCollapsed) && (
+            <button
+              onClick={() => handleNav('/suite/gallery')}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors duration-100 text-[var(--sidebar-text)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] ${
+                isCollapsed ? 'justify-center' : ''
+              } ${isActive('/suite/gallery') ? 'bg-[var(--bg-hover)] text-[var(--text-primary)]' : ''}`}
+              title={isCollapsed ? 'Tools Gallery' : 'One-Click Utilities'}
+            >
+              <span className="material-symbols-rounded flex-shrink-0 text-[18px] w-6 h-6 flex items-center justify-center rounded-md flex-none" style={{ color: '#8b5cf6' }}>
+                widgets
+              </span>
+              {!isCollapsed && <span className="flex-1 text-left truncate font-[450]">Tools Gallery</span>}
+            </button>
+          )}
         </nav>
 
         {/* Bottom section */}
@@ -388,7 +592,7 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
               style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', boxShadow: '0 2px 12px rgba(16,185,129,0.25)' }}
             >
               <span className="material-symbols-rounded text-[16px]">bolt</span>
-              Upgrade to Pro · $4.99/mo
+              Upgrade to Pro · $9.99/mo
             </button>
           )}
           {!isPro && isCollapsed && (

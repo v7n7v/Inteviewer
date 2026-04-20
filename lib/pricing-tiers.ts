@@ -1,7 +1,7 @@
 /**
  * Pricing Tier Configuration
  * Free tier: limited trial access — account required
- * Pro tier ($4.99/mo): 3x free limits + priority queue
+ * Pro tier ($9.99/mo): 3x free limits + priority queue
  */
 
 import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs } from 'firebase/firestore';
@@ -36,10 +36,10 @@ export function isMasterAccount(email?: string): boolean {
 
 export const PLAN_PRICE = {
   free: 0,
-  pro_monthly: 4.99,
-  pro_annual: 49.99, // $4.17/mo effective — 17% discount vs monthly
-  studio_monthly: 9.99,
-  studio_annual: 89.99, // $7.50/mo effective — 25% discount vs monthly
+  pro_monthly: 9.99,
+  pro_annual: 99.99, // $8.33/mo effective — 17% discount vs monthly
+  studio_monthly: 19.99,
+  studio_annual: 179.99, // $15.00/mo effective — 25% discount vs monthly
 } as const;
 
 /** Rate limits per route per tier (requests per minute). GOD bypasses this entirely. */
@@ -58,10 +58,14 @@ export const RATE_LIMITS: Record<string, Record<Exclude<PlanTier, 'god'>, number
   '/api/chat':                  { free: 5,  pro: 30, studio: 30 },
   '/api/ai':                    { free: 5,  pro: 30, studio: 30 },
   '/api/jobs/search':           { free: 5,  pro: 30, studio: 30 },
+  '/api/jobs/suggestions':       { free: 2,  pro: 10, studio: 10 },
+  '/api/jobs/preferences':       { free: 10, pro: 30, studio: 30 },
+  '/api/jobs/notify':            { free: 1,  pro: 5,  studio: 5  },
   '/api/market-oracle':         { free: 2,  pro: 15, studio: 15 },
   '/api/dashboard/insights':    { free: 3,  pro: 15, studio: 15 },
   '/api/writing/humanize':      { free: 0,  pro: 5,  studio: 15 },
   '/api/writing/uniqueness':    { free: 0,  pro: 5,  studio: 15 },
+  '/api/agent/chat':            { free: 2,  pro: 5,  studio: 30 },
 } as const;
 
 /** Get rate limit for a route based on tier */

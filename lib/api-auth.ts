@@ -156,7 +156,7 @@ export async function guardApiRoute(
               cap: usage.cap,
               remaining: 0,
               upgradeUrl: '/suite/upgrade',
-              upgrade: 'Upgrade to Pro — $4.99/mo for unlimited access',
+              upgrade: 'Upgrade to Pro — $9.99/mo for unlimited access',
             },
             {
               status: 429,

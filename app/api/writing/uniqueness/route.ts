@@ -1,5 +1,5 @@
 /**
- * Inkwell Uniqueness Check API
+ * AI Detector Uniqueness Check API
  * Sends text to Gemini for originality / plagiarism-pattern analysis.
  * Lighter weight than humanize — still metered under writingTools usage.
  */

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { authHelpers } from '@/lib/firebase';
 import { useStore } from '@/lib/store';
 import { showToast } from '@/components/Toast';
+import { analytics } from '@/lib/analytics';
 import type { MultiFactorResolver } from 'firebase/auth';
 
 interface AuthModalProps {
@@ -64,6 +65,7 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
 
         if (data?.user) {
           setUser(data.user);
+          analytics.signUp('email');
           showToast('Account created! Welcome!', 'check_circle');
           onClose();
         }
@@ -97,6 +99,7 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
 
         if (data?.user) {
           setUser(data.user);
+          analytics.login('email');
           showToast('Login successful!', 'check_circle');
           onClose();
         }
@@ -132,6 +135,7 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
 
       if (data?.user) {
         setUser(data.user);
+        analytics.login('mfa');
         showToast('Login successful!', 'check_circle');
         onClose();
       }
@@ -152,6 +156,7 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
       if (error) throw error;
       if (data?.user) {
         setUser(data.user);
+        analytics.signUp('google');
         showToast('Signed in with Google!', 'check_circle');
         onClose();
       }

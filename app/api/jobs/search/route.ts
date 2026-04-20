@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { searchJobs, calculateFitScore, extractSkillsFromDescription, type JobSearchParams } from '@/lib/job-search-api';
 import { semanticMatchJobs, hybridScore } from '@/lib/semantic-match';
+import { searchCompanyJobs, KNOWN_BOARDS, type PortalJob } from '@/lib/portal-scanner';
 import { guardApiRoute } from '@/lib/api-auth';
+import { scoreAllGhostRisks } from '@/lib/ghost-filter';
 
 export async function GET(request: NextRequest) {
     try {
@@ -21,7 +23,46 @@ export async function GET(request: NextRequest) {
             resultsPerPage: parseInt(searchParams.get('limit') || '20'),
         };
 
-        const result = await searchJobs(params);
+        // ── Parallel fetch: Adzuna + Portal Scanner (if known company detected) ──
+        const queryLower = params.query.toLowerCase();
+        const detectedCompany = Object.keys(KNOWN_BOARDS).find(c => queryLower.includes(c));
+
+        const [adzunaResult, portalResult] = await Promise.allSettled([
+            searchJobs(params),
+            detectedCompany
+                ? searchCompanyJobs(detectedCompany, queryLower.replace(detectedCompany, '').trim() || undefined)
+                : Promise.resolve(null),
+        ]);
+
+        const result = adzunaResult.status === 'fulfilled' ? adzunaResult.value : { jobs: [], totalCount: 0, source: 'error' };
+
+        // Merge portal jobs into Adzuna results (deduped by title+company)
+        let portalCount = 0;
+        if (portalResult.status === 'fulfilled' && portalResult.value && portalResult.value.jobs.length > 0) {
+            const existingKeys = new Set(result.jobs.map(j => `${j.title.toLowerCase()}|${j.company.toLowerCase()}`));
+
+            const portalJobs = portalResult.value.jobs
+                .filter((pj: PortalJob) => !existingKeys.has(`${pj.title.toLowerCase()}|${pj.company.toLowerCase()}`))
+                .map((pj: PortalJob) => ({
+                    id: pj.id,
+                    title: pj.title,
+                    company: pj.company,
+                    location: pj.location,
+                    salary: { min: null, max: null, currency: 'USD' },
+                    description: pj.description || '',
+                    skills: [],
+                    url: pj.url,
+                    postedDate: pj.postedDate,
+                    employmentType: 'Full-time',
+                    category: pj.department,
+                    source: pj.source as any,
+                }));
+
+            // Prepend portal jobs (they're fresher/direct)
+            result.jobs = [...portalJobs, ...result.jobs];
+            result.totalCount += portalJobs.length;
+            portalCount = portalJobs.length;
+        }
 
         // Parse user skills
         const userSkillsParam = searchParams.get('userSkills');
@@ -87,15 +128,42 @@ export async function GET(request: NextRequest) {
             jobsWithKeywordScore.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
         }
 
+        // ── Ghost Job Scoring ──
+        const ghostAssessments = scoreAllGhostRisks(
+            jobsWithKeywordScore.map(j => ({
+                title: j.title,
+                company: j.company,
+                postedDate: j.postedDate,
+                description: j.description,
+                salary: j.salary,
+                url: j.url,
+                location: j.location,
+            }))
+        );
+
+        const jobsWithGhost = jobsWithKeywordScore.map((job, i) => ({
+            ...job,
+            ghostRisk: ghostAssessments[i],
+        }));
+
+        const ghostStats = {
+            high: ghostAssessments.filter(g => g.risk === 'high').length,
+            medium: ghostAssessments.filter(g => g.risk === 'medium').length,
+            fresh: ghostAssessments.filter(g => g.fresh).length,
+        };
+
         return NextResponse.json({
             success: true,
-            jobs: jobsWithKeywordScore,
+            jobs: jobsWithGhost,
             totalCount: result.totalCount,
             source: result.source,
             cached: result.cached || false,
             query: params.query,
             location: params.location,
             matchMethod,
+            portalCount,
+            portalCompany: detectedCompany || null,
+            ghostStats,
         });
     } catch (error) {
         console.error('Job search error:', error);

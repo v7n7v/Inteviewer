@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import { useStore } from '@/lib/store';
 import { showToast } from '@/components/Toast';
 import { authFetch } from '@/lib/auth-fetch';
+import PageHelp from '@/components/PageHelp';
 import FileUploadDropzone from '@/components/FileUploadDropzone';
 import { calculateFitScore, type RealJob } from '@/lib/job-search-api';
 import { useRouter } from 'next/navigation';
@@ -326,17 +327,20 @@ export default function MarketOraclePage() {
                   ))}
                 </div>
               </div>
-              <div className="relative z-10">
-                <motion.div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 mb-4">
-                  <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
-                  <span className="text-xs font-medium text-indigo-400">Career Intelligence Engine</span>
-                </motion.div>
-                <h1 className="text-2xl font-semibold mb-2 text-[var(--text-primary)]">
-                  Market Oracle
-                </h1>
-                <p className="text-silver text-sm max-w-2xl">
-                  Paste a job description + your resume → Dual-AI decodes your fit score, salary intel, red flags, and bridge skills in the 3D Starfield.
-                </p>
+              <div className="relative z-10 flex items-start justify-between">
+                <div>
+                  <motion.div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 mb-4">
+                    <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
+                    <span className="text-xs font-medium text-indigo-400">Career Intelligence Engine</span>
+                  </motion.div>
+                  <h1 className="text-2xl font-semibold mb-2 text-[var(--text-primary)]">
+                    Market Oracle
+                  </h1>
+                  <p className="text-silver text-sm max-w-2xl">
+                    Paste a job description + your resume → Dual-AI decodes your fit score, salary intel, red flags, and bridge skills in the 3D Starfield.
+                  </p>
+                </div>
+                <PageHelp toolId="market-oracle" />
               </div>
             </motion.div>
 

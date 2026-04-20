@@ -437,6 +437,71 @@ export function JDPDFDocument({ jd, editableText }: { jd?: GeneratedJD; editable
 }
 
 // ============================================================
+// ATS TEXT NORMALIZATION (inspired by career-ops)
+// Converts Unicode characters that ATS bots can't parse
+// ============================================================
+function atsNormalize(text: string): string {
+  if (!text) return '';
+  return text
+    // Em/en dashes → hyphen
+    .replace(/[\u2013\u2014\u2015]/g, '-')
+    // Smart quotes → straight quotes
+    .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')
+    .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'")
+    // Ellipsis → three dots
+    .replace(/\u2026/g, '...')
+    // Bullet → hyphen
+    .replace(/[\u2022\u2023\u25E6\u2043\u2219]/g, '-')
+    // Non-breaking space → regular space
+    .replace(/\u00A0/g, ' ')
+    // Thin/hair spaces → regular space
+    .replace(/[\u2009\u200A\u200B\u202F\u205F]/g, ' ')
+    // Trademark/registered/copyright → text
+    .replace(/\u2122/g, '(TM)')
+    .replace(/\u00AE/g, '(R)')
+    .replace(/\u00A9/g, '(c)')
+    // Fancy arrows → plain
+    .replace(/[\u2192\u2794\u27A4]/g, '->')
+    // Collapse multiple spaces
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+function atsNormalizeResume(resume: ResumeData): ResumeData {
+  return {
+    ...resume,
+    name: atsNormalize(resume.name),
+    title: atsNormalize(resume.title),
+    email: resume.email, // don't normalize emails
+    phone: resume.phone,
+    location: atsNormalize(resume.location),
+    linkedin: resume.linkedin,
+    website: resume.website,
+    summary: atsNormalize(resume.summary),
+    experience: (resume.experience || []).map(exp => ({
+      ...exp,
+      company: atsNormalize(exp.company),
+      role: atsNormalize(exp.role),
+      duration: atsNormalize(exp.duration),
+      achievements: (exp.achievements || []).map(a => atsNormalize(a)),
+    })),
+    education: (resume.education || []).map(edu => ({
+      ...edu,
+      degree: atsNormalize(edu.degree),
+      institution: atsNormalize(edu.institution),
+      year: edu.year,
+      details: edu.details ? atsNormalize(edu.details) : undefined,
+    })),
+    skills: (resume.skills || []).map(cat => ({
+      ...cat,
+      category: atsNormalize(cat.category),
+      items: cat.items.map(i => atsNormalize(i)),
+    })),
+    certifications: (resume.certifications || []).map(c => atsNormalize(c)),
+  };
+}
+
+// ============================================================
 // DOWNLOAD HELPERS
 // ============================================================
 export async function downloadResumePDF(
@@ -444,9 +509,11 @@ export async function downloadResumePDF(
   colors?: TemplateColors,
   filename?: string
 ) {
-  const doc = <ResumePDFDocument resume={resume} colors={colors} />;
+  // ATS normalization pass — convert Unicode that ATS bots can't parse
+  const normalized = atsNormalizeResume(resume);
+  const doc = <ResumePDFDocument resume={normalized} colors={colors} />;
   const blob = await pdf(doc).toBlob();
-  saveAs(blob, `${filename || resume.name?.replace(/\s+/g, '_') || 'resume'}.pdf`);
+  saveAs(blob, `${filename || normalized.name?.replace(/\s+/g, '_') || 'resume'}.pdf`);
 }
 
 export async function downloadJDPDF(
@@ -458,3 +525,4 @@ export async function downloadJDPDF(
   const blob = await pdf(doc).toBlob();
   saveAs(blob, `${filename || jd?.roleTitle?.replace(/\s+/g, '_') || 'job-description'}.pdf`);
 }
+

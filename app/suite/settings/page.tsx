@@ -147,7 +147,7 @@ function SubscriptionTab() {
                                         </h4>
                                         <p className="text-sm text-[var(--text-secondary)]">
                                             {isPro
-                                                ? '$4.99/month — Unlimited access'
+                                                ? '$9.99/month — Unlimited access'
                                                 : 'Limited usage — Upgrade for full access'}
                                         </p>
                                     </div>

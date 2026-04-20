@@ -17,6 +17,7 @@ import type { NextRequest } from 'next/server';
 const PUBLIC_API_PATHS = [
   '/api/auth',
   '/api/health',
+  '/api/contact',
   '/api/stripe/webhook',
   '/api/teams/interest',
 ];
@@ -54,7 +55,11 @@ export function middleware(request: NextRequest) {
     pathname === '/login' ||
     pathname === '/signup' ||
     pathname === '/forgot-password' ||
-    pathname === '/help'
+    pathname === '/help' ||
+    pathname.startsWith('/templates') ||
+    pathname.startsWith('/tools') ||
+    pathname.startsWith('/blog') ||
+    pathname.startsWith('/for-teams')
   ) {
     return addSecurityHeaders(NextResponse.next(), request);
   }

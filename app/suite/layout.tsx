@@ -5,6 +5,7 @@ import { authHelpers } from '@/lib/firebase';
 import { useStore } from '@/lib/store';
 import SuiteSidebar from '@/components/SuiteSidebar';
 import AIAssistant from '@/components/AIAssistant';
+import SonaFloatingOrb from '@/components/SonaFloatingOrb';
 
 export default function SuiteLayout({
   children,
@@ -39,6 +40,7 @@ export default function SuiteLayout({
         {children}
       </main>
       <AIAssistant />
+      <SonaFloatingOrb />
     </div>
   );
 }

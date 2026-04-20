@@ -10,6 +10,7 @@ import { dualAIGenerate } from '@/lib/ai/dual-ai';
 import { validateBody } from '@/lib/validate';
 import { CoverLetterSchema } from '@/lib/schemas';
 import { sanitizeForAI } from '@/lib/sanitize';
+import { guardOutput } from '@/lib/humanize-guard';
 
 export async function POST(req: NextRequest) {
   try {
@@ -89,9 +90,13 @@ Write a ${tone || 'professional'} cover letter that connects the candidate's exp
 
     await incrementUsage(guard.user.uid, 'coverLetters');
 
+    // Apply humanization guard to strip AI artifacts
+    const guarded = guardOutput(result.content);
+
     return NextResponse.json({
-      coverLetter: result.content,
+      coverLetter: guarded.text,
       score: result.score,
+      humanScore: guarded.aiScore,
       suggestions: result.validationNotes,
       refined: result.refined,
       modelAgreement: result.modelAgreement,

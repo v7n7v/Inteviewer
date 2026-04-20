@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { authFetch } from '@/lib/auth-fetch';
 import { showToast } from '@/components/Toast';
+import PageHelp from '@/components/PageHelp';
 import { sanitizeHtml } from '@/lib/sanitize';
 
 interface VaultNote {
@@ -146,17 +147,17 @@ export default function StudyVaultPage() {
       <div className="max-w-6xl mx-auto">
 
         {/* Header */}
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-end gap-4">
-          <div className="flex-1">
-            <h1 className="text-2xl font-semibold text-[var(--text-primary)] flex items-center gap-3">
-              <span className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(251,146,60,0.15)', color: '#fb923c' }}>
-                <span className="material-symbols-rounded text-[20px]">folder_open</span>
-              </span>
-              Study Vault
-            </h1>
-            <p className="text-[var(--text-secondary)] text-sm mt-1">
-              {notes.length === 0 ? 'Your AI coaching notes will appear here.' : `${notes.length} saved note${notes.length !== 1 ? 's' : ''} across all sessions.`}
-            </p>
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 flex flex-col sm:flex-row sm:items-end gap-4">
+          <div className="flex-1 flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
+              <span className="material-symbols-rounded text-white text-2xl">folder_open</span>
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-[var(--text-primary)]">Study Vault</h1>
+              <p className="text-sm text-[var(--text-tertiary)]">
+                {notes.length === 0 ? 'Your AI coaching notes will appear here' : `${notes.length} saved note${notes.length !== 1 ? 's' : ''} across all sessions`}
+              </p>
+            </div>
           </div>
 
           {/* Search */}
@@ -172,7 +173,8 @@ export default function StudyVaultPage() {
               />
             </div>
           )}
-        </div>
+          <PageHelp toolId="vault" />
+        </motion.div>
 
         {/* Filter Tabs */}
         {notes.length > 0 && (

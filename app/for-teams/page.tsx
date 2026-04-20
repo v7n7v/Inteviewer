@@ -38,11 +38,11 @@ export default function ForTeamsPage() {
     };
 
     const orgTypes = [
-        { id: 'university', icon: '🎓', label: 'University / Career Center' },
-        { id: 'enterprise', icon: '🏢', label: 'Enterprise HR / L&D' },
-        { id: 'staffing', icon: '👥', label: 'Staffing / Recruitment Agency' },
-        { id: 'government', icon: '🏛️', label: 'Government / Workforce Dev' },
-        { id: 'other', icon: '🌐', label: 'Other' },
+        { id: 'university', icon: 'school', label: 'University / Career Center' },
+        { id: 'enterprise', icon: 'domain', label: 'Enterprise HR / L&D' },
+        { id: 'staffing', icon: 'groups', label: 'Staffing / Recruitment Agency' },
+        { id: 'government', icon: 'account_balance', label: 'Government / Workforce Dev' },
+        { id: 'other', icon: 'language', label: 'Other' },
     ] as const;
 
     return (
@@ -96,19 +96,19 @@ export default function ForTeamsPage() {
                 >
                     {[
                         {
-                            icon: '🎓',
+                            icon: 'school',
                             title: 'Career Centers',
                             desc: 'Give every student access to AI-powered resume optimization and interview prep. Scale your career services without scaling your staff.',
                             stats: '10x more students served',
                         },
                         {
-                            icon: '🏢',
+                            icon: 'domain',
                             title: 'Enterprise L&D',
                             desc: 'Internal mobility programs, skills gap analysis, and career development — powered by the same AI that helps candidates land roles.',
                             stats: 'Reduce turnover by 30%',
                         },
                         {
-                            icon: '👥',
+                            icon: 'groups',
                             title: 'Staffing Agencies',
                             desc: 'Prep your candidates before client interviews. Higher placement rates, better candidate experience, stronger relationships.',
                             stats: '2x placement rate',
@@ -121,7 +121,7 @@ export default function ForTeamsPage() {
                             transition={{ delay: 0.3 + i * 0.1 }}
                             className="p-6 rounded-2xl bg-white/[0.03] border border-white/10 hover:border-white/20 transition-all"
                         >
-                            <span className="text-3xl block mb-4">{item.icon}</span>
+                            <span className="material-symbols-rounded text-3xl block mb-4 text-cyan-400">{item.icon}</span>
                             <h3 className="text-lg font-bold text-white mb-2">{item.title}</h3>
                             <p className="text-sm text-white/40 mb-4">{item.desc}</p>
                             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
@@ -141,15 +141,15 @@ export default function ForTeamsPage() {
                     <h2 className="text-2xl font-bold text-white mb-8 text-center">What Your Team Gets</h2>
                     <div className="grid md:grid-cols-2 gap-4">
                         {[
-                            { icon: '📄', title: 'AI Resume Morphing', desc: 'Dual-AI pipeline adapts resumes to any job description' },
-                            { icon: '⚔️', title: 'The Gauntlet', desc: '6 AI interviewer personas simulate real interviews with grading' },
-                            { icon: '🌉', title: 'Skill Bridge', desc: '7-day AI study plans bridge the gap between resume and reality' },
-                            { icon: '📊', title: 'Admin Dashboard', desc: 'Track team progress, usage analytics, and outcomes' },
-                            { icon: '🔒', title: 'SSO & Compliance', desc: 'SAML/OIDC, data residency, and SOC 2 compliance (roadmap)' },
-                            { icon: '💰', title: 'Volume Pricing', desc: 'Per-seat pricing that makes enterprise tools affordable for education' },
+                            { icon: 'description', title: 'AI Resume Morphing', desc: 'Dual-AI pipeline adapts resumes to any job description' },
+                            { icon: 'swords', title: 'The Gauntlet', desc: '6 AI interviewer personas simulate real interviews with grading' },
+                            { icon: 'route', title: 'Skill Bridge', desc: '7-day AI study plans bridge the gap between resume and reality' },
+                            { icon: 'monitoring', title: 'Admin Dashboard', desc: 'Track team progress, usage analytics, and outcomes' },
+                            { icon: 'lock', title: 'SSO & Compliance', desc: 'SAML/OIDC, data residency, and SOC 2 compliance (roadmap)' },
+                            { icon: 'payments', title: 'Volume Pricing', desc: 'Per-seat pricing that makes enterprise tools affordable for education' },
                         ].map((f) => (
                             <div key={f.title} className="flex items-start gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/5">
-                                <span className="text-xl flex-shrink-0 mt-0.5">{f.icon}</span>
+                                <span className="material-symbols-rounded text-xl flex-shrink-0 mt-0.5 text-cyan-400">{f.icon}</span>
                                 <div>
                                     <h4 className="text-sm font-bold text-white mb-1">{f.title}</h4>
                                     <p className="text-xs text-white/35">{f.desc}</p>
@@ -182,7 +182,7 @@ export default function ForTeamsPage() {
                                         transition={{ type: 'spring', bounce: 0.5 }}
                                         className="text-6xl mb-4"
                                     >
-                                        🎉
+                                        <span className="material-symbols-rounded text-6xl text-cyan-400">celebration</span>
                                     </motion.div>
                                     <h3 className="text-2xl font-bold text-white mb-2">We&apos;ll be in touch!</h3>
                                     <p className="text-white/40 mb-6">
@@ -257,7 +257,7 @@ export default function ForTeamsPage() {
                                                             : 'bg-white/5 border-white/10 text-white/40 hover:text-white/60 hover:bg-white/10'
                                                     }`}
                                                 >
-                                                    <span className="text-base block mb-1">{org.icon}</span>
+                                                    <span className="material-symbols-rounded text-base block mb-1" style={{ color: formData.orgType === org.id ? '#22d3ee' : 'rgba(255,255,255,0.4)' }}>{org.icon}</span>
                                                     <span className="text-[11px] font-medium">{org.label}</span>
                                                 </button>
                                             ))}
@@ -306,7 +306,7 @@ export default function ForTeamsPage() {
                                                 Sending...
                                             </>
                                         ) : (
-                                            '🚀 Request Early Access'
+                                            <><span className="material-symbols-rounded text-lg align-middle mr-1">rocket_launch</span> Request Early Access</>
                                         )}
                                     </button>
 

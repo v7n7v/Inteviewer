@@ -3,6 +3,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/components/ThemeProvider';
+import JobPreferencesPanel from './JobPreferencesPanel';
+import WeeklyPicksSection from './WeeklyPicksSection';
+import { analytics } from '@/lib/analytics';
+import { showToast } from '@/components/Toast';
+import PageHelp from '@/components/PageHelp';
 
 interface JobResult {
     id: string;
@@ -19,6 +24,7 @@ interface JobResult {
     source: string;
     matchScore: number | null;
     matchMethod?: 'keyword' | 'semantic' | 'hybrid';
+    ghostRisk?: { risk: 'low' | 'medium' | 'high'; score: number; reasons: string[]; fresh: boolean };
 }
 
 type SortOption = 'relevance' | 'salary' | 'date';
@@ -56,6 +62,17 @@ function getMatchColor(score: number): string {
     return '#ef4444';
 }
 
+// Ghost Job Detection — posting freshness badge (career-ops Block G)
+function getPostingFreshness(dateString: string): { label: string; color: string; icon: string; ghost: boolean } {
+    const days = Math.floor((Date.now() - new Date(dateString).getTime()) / 86400000);
+    if (days <= 3) return { label: 'Just posted', color: '#22c55e', icon: 'bolt', ghost: false };
+    if (days <= 7) return { label: 'Fresh', color: '#10b981', icon: 'schedule', ghost: false };
+    if (days <= 14) return { label: '1-2 weeks', color: '#3b82f6', icon: 'schedule', ghost: false };
+    if (days <= 30) return { label: 'Aging', color: '#f59e0b', icon: 'hourglass_top', ghost: false };
+    if (days <= 60) return { label: 'Stale', color: '#f97316', icon: 'warning', ghost: false };
+    return { label: 'Ghost risk', color: '#ef4444', icon: 'report', ghost: true };
+}
+
 function getMatchLabel(score: number): string {
     if (score >= 90) return 'Excellent Match';
     if (score >= 80) return 'Strong Match';
@@ -87,6 +104,12 @@ export default function JobSearchPage() {
     const [newJobsCount, setNewJobsCount] = useState(0);
     const [matchMethod, setMatchMethod] = useState<'keyword' | 'semantic' | 'hybrid'>('keyword');
     const searchRef = useRef<HTMLInputElement>(null);
+    const [showPrefsPanel, setShowPrefsPanel] = useState(false);
+    const [hasPrefs, setHasPrefs] = useState(false);
+    const [prefsChecked, setPrefsChecked] = useState(false);
+    const [applyingJobId, setApplyingJobId] = useState<string | null>(null);
+    const [applyStep, setApplyStep] = useState('');
+    const [hideGhosts, setHideGhosts] = useState(false);
 
     // ── Load saved preferences + resume context ──
     useEffect(() => {
@@ -171,6 +194,7 @@ export default function JobSearchPage() {
                 ).length;
                 localStorage.setItem(JOB_COUNT_KEY, curatedCount.toString());
                 window.dispatchEvent(new Event('job-count-updated'));
+                analytics.jobSearch(searchQuery, (data.jobs || []).length);
             } else if (data.error) {
                 console.warn('API error:', data.error);
             }
@@ -196,6 +220,9 @@ export default function JobSearchPage() {
 
         // Match threshold — only filter when skills are configured
         if (userSkills.length > 0 && job.matchScore !== null && job.matchScore < matchThreshold) return false;
+
+        // Ghost filter
+        if (hideGhosts && job.ghostRisk?.risk === 'high') return false;
 
         return true;
     });
@@ -226,6 +253,34 @@ export default function JobSearchPage() {
             skills: userSkills,
         }));
         window.location.href = '/suite/resume';
+    };
+
+    const handleApplyWithSona = async (job: JobResult) => {
+        setApplyingJobId(job.id);
+        setApplyStep('Morphing resume...');
+        try {
+            const res = await fetch('/api/agent/apply-pipeline', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    jobTitle: job.title,
+                    company: job.company,
+                    jobDescription: job.description,
+                    jobUrl: job.url,
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                showToast(data.error || 'Pipeline failed', 'cancel');
+                return;
+            }
+            setApplyStep('Done!');
+            showToast(`Application created for ${job.company}!`, 'check_circle');
+        } catch (e: any) {
+            showToast('Pipeline failed. Try again.', 'cancel');
+        } finally {
+            setTimeout(() => { setApplyingJobId(null); setApplyStep(''); }, 1500);
+        }
     };
 
     const filters: FilterType[] = ['All', 'Full-time', 'Contract', 'Remote'];
@@ -263,6 +318,18 @@ export default function JobSearchPage() {
                             </motion.div>
                         )}
                         <button
+                            onClick={() => setShowPrefsPanel(!showPrefsPanel)}
+                            className="px-3 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-all"
+                            style={{
+                                background: showPrefsPanel ? 'rgba(6,182,212,0.15)' : isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.05)',
+                                border: `1px solid ${showPrefsPanel ? 'rgba(6,182,212,0.3)' : isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)'}`,
+                                color: showPrefsPanel ? '#06b6d4' : 'var(--text-secondary)',
+                            }}
+                        >
+                            <span className="material-symbols-rounded text-lg">settings</span>
+                            Preferences {hasPrefs && <span className="w-2 h-2 rounded-full bg-emerald-500" />}
+                        </button>
+                        <button
                             onClick={() => setShowSkillsPanel(!showSkillsPanel)}
                             className="px-3 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-all"
                             style={{
@@ -274,6 +341,7 @@ export default function JobSearchPage() {
                             <span className="material-symbols-rounded text-lg">tune</span>
                             My Skills {userSkills.length > 0 && <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-cyan-500/20 text-cyan-400">{userSkills.length}</span>}
                         </button>
+                        <PageHelp toolId="job-search" />
                     </div>
                 </div>
 
@@ -355,6 +423,23 @@ export default function JobSearchPage() {
                     )}
                 </AnimatePresence>
 
+                {/* Job Preferences Panel */}
+                <JobPreferencesPanel
+                    visible={showPrefsPanel || (!prefsChecked ? false : !hasPrefs)}
+                    onPrefsLoaded={(prefs) => {
+                        setPrefsChecked(true);
+                        setHasPrefs(!!prefs);
+                        if (!prefs && !showPrefsPanel) setShowPrefsPanel(true);
+                    }}
+                    onClose={() => setShowPrefsPanel(false)}
+                />
+
+                {/* Weekly Picks */}
+                <WeeklyPicksSection
+                    hasPrefs={hasPrefs}
+                    onSetupClick={() => setShowPrefsPanel(true)}
+                />
+
                 {/* Search Bar */}
                 <form onSubmit={handleSearch} className="w-full flex flex-col sm:flex-row gap-2">
                     <div className="flex-1">
@@ -426,6 +511,22 @@ export default function JobSearchPage() {
                             <option value="salary">Salary</option>
                             <option value="date">Date</option>
                         </select>
+                        <button
+                            onClick={() => setHideGhosts(!hideGhosts)}
+                            className={`px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${
+                                hideGhosts
+                                    ? 'bg-amber-500/15 text-amber-400 border border-amber-500/25'
+                                    : 'text-[var(--text-secondary)]'
+                            }`}
+                            style={!hideGhosts ? {
+                                background: isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)',
+                                border: `1px solid ${isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'}`,
+                            } : {}}
+                            title="Hide jobs that are likely ghost/stale listings"
+                        >
+                            <span className="material-symbols-rounded text-sm">visibility_off</span>
+                            Ghost Filter
+                        </button>
                     </div>
                 </div>
 
@@ -550,13 +651,46 @@ export default function JobSearchPage() {
                                                         {job.matchScore}%
                                                     </span>
                                                 )}
-                                                <span className="text-[10px] text-[var(--text-tertiary)]">{timeAgo(job.postedDate)}</span>
+                                                <span className="text-[10px] font-medium flex items-center gap-0.5 px-1.5 py-0.5 rounded"
+                                                    style={{
+                                                        color: getPostingFreshness(job.postedDate).color,
+                                                        background: `${getPostingFreshness(job.postedDate).color}10`,
+                                                    }}
+                                                >
+                                                    <span className="material-symbols-rounded text-[10px]">{getPostingFreshness(job.postedDate).icon}</span>
+                                                    {timeAgo(job.postedDate)}
+                                                </span>
                                             </div>
                                         </div>
 
                                         {/* Title + Company */}
-                                        <h3 className="text-[13px] font-semibold text-[var(--text-primary)] mb-0.5 leading-snug line-clamp-2">{job.title}</h3>
-                                        <p className="text-xs text-[var(--text-secondary)] font-medium mb-3">{job.company}</p>
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div>
+                                                <h3 className="text-[13px] font-semibold text-[var(--text-primary)] mb-0.5 leading-snug line-clamp-2">{job.title}</h3>
+                                                <p className="text-xs text-[var(--text-secondary)] font-medium mb-3">{job.company}</p>
+                                            </div>
+                                            {job.ghostRisk && job.ghostRisk.risk !== 'low' && (
+                                                <span
+                                                    className={`shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                                                        job.ghostRisk.risk === 'high'
+                                                            ? 'bg-red-500/10 text-red-400 border border-red-500/20'
+                                                            : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                                    }`}
+                                                    title={job.ghostRisk.reasons.join(' • ')}
+                                                >
+                                                    <span className="material-symbols-rounded text-[10px]">
+                                                        {job.ghostRisk.risk === 'high' ? 'warning' : 'info'}
+                                                    </span>
+                                                    {job.ghostRisk.risk === 'high' ? 'Likely Ghost' : 'Caution'}
+                                                </span>
+                                            )}
+                                            {job.ghostRisk?.fresh && (
+                                                <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                                    <span className="material-symbols-rounded text-[10px]">bolt</span>
+                                                    Fresh
+                                                </span>
+                                            )}
+                                        </div>
 
                                         {/* Meta */}
                                         <div className="flex flex-col gap-1.5 mb-3">
@@ -706,8 +840,43 @@ export default function JobSearchPage() {
 
                             {/* Panel Body */}
                             <div className="flex-1 overflow-y-auto p-6 scrollbar-thin">
+                                {/* Ghost Job Warning */}
+                                {(() => {
+                                    const freshness = getPostingFreshness(selectedJob.postedDate);
+                                    if (freshness.ghost) return (
+                                        <div className="flex items-start gap-2.5 p-3 rounded-xl mb-4" style={{
+                                            background: 'rgba(239,68,68,0.06)',
+                                            border: '1px solid rgba(239,68,68,0.15)',
+                                        }}>
+                                            <span className="material-symbols-rounded text-lg text-red-500 mt-0.5">report</span>
+                                            <div>
+                                                <p className="text-xs font-bold text-red-500">Ghost Job Warning</p>
+                                                <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">
+                                                    This posting is over 60 days old. It may be a ghost listing — still visible but no longer actively hiring.
+                                                    Verify it&apos;s still open before investing time in an application.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    );
+                                    if (freshness.color === '#f97316') return (
+                                        <div className="flex items-start gap-2.5 p-3 rounded-xl mb-4" style={{
+                                            background: 'rgba(249,115,22,0.06)',
+                                            border: '1px solid rgba(249,115,22,0.15)',
+                                        }}>
+                                            <span className="material-symbols-rounded text-lg text-orange-500 mt-0.5">warning</span>
+                                            <div>
+                                                <p className="text-xs font-bold text-orange-500">Aging Posting</p>
+                                                <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">
+                                                    This job has been posted for 30-60 days. The role may be filled or have low response rates. Apply quickly if interested.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    );
+                                    return null;
+                                })()}
+
                                 {/* Key Details */}
-                                <div className="grid grid-cols-2 gap-3 mb-6">
+                                <div className="grid grid-cols-3 gap-3 mb-6">
                                     <div className="p-3 rounded-xl" style={{
                                         background: isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.03)',
                                         border: `1px solid ${isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'}`,
@@ -728,6 +897,16 @@ export default function JobSearchPage() {
                                             <span className="text-emerald-500">
                                                 {formatSalary(selectedJob.salary.min, selectedJob.salary.max) || 'Not disclosed'}
                                             </span>
+                                        </p>
+                                    </div>
+                                    <div className="p-3 rounded-xl" style={{
+                                        background: isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.03)',
+                                        border: `1px solid ${isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'}`,
+                                    }}>
+                                        <span className="text-[10px] uppercase tracking-wider font-bold text-[var(--text-tertiary)] block mb-1">Freshness</span>
+                                        <p className="text-sm font-medium flex items-center gap-1.5" style={{ color: getPostingFreshness(selectedJob.postedDate).color }}>
+                                            <span className="material-symbols-rounded text-base">{getPostingFreshness(selectedJob.postedDate).icon}</span>
+                                            {getPostingFreshness(selectedJob.postedDate).label}
                                         </p>
                                     </div>
                                 </div>
@@ -809,8 +988,31 @@ export default function JobSearchPage() {
                             }}>
                                 <div className="flex items-center gap-3">
                                     <button
+                                        onClick={() => handleApplyWithSona(selectedJob)}
+                                        disabled={applyingJobId === selectedJob.id}
+                                        className="flex-1 px-4 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 text-white transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg disabled:opacity-60"
+                                        style={{
+                                            background: applyingJobId === selectedJob.id
+                                                ? 'linear-gradient(135deg, #6366f1, #8b5cf6)'
+                                                : 'linear-gradient(135deg, #6366f1, #06b6d4)',
+                                            boxShadow: '0 4px 20px rgba(99,102,241,0.25)',
+                                        }}
+                                    >
+                                        {applyingJobId === selectedJob.id ? (
+                                            <>
+                                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                {applyStep}
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span className="material-symbols-rounded text-lg">auto_awesome</span>
+                                                Apply with Sona
+                                            </>
+                                        )}
+                                    </button>
+                                    <button
                                         onClick={() => handleTailorResume(selectedJob)}
-                                        className="flex-1 px-4 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                        className="px-4 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
                                         style={{
                                             background: isLight ? 'rgba(6,182,212,0.08)' : 'rgba(6,182,212,0.12)',
                                             border: '1px solid rgba(6,182,212,0.2)',
@@ -818,20 +1020,18 @@ export default function JobSearchPage() {
                                         }}
                                     >
                                         <span className="material-symbols-rounded text-lg">auto_fix_high</span>
-                                        Tailor Resume
                                     </button>
                                     <a
                                         href={selectedJob.url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="flex-1 px-4 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 text-white transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg"
+                                        className="px-4 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 text-white transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg"
                                         style={{
                                             background: 'linear-gradient(135deg, #06b6d4, #10b981)',
                                             boxShadow: '0 4px 20px rgba(6,182,212,0.25)',
                                         }}
                                     >
                                         <span className="material-symbols-rounded text-lg">open_in_new</span>
-                                        View & Apply
                                     </a>
                                 </div>
                             </div>

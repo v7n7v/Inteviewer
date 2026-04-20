@@ -23,6 +23,11 @@ const commands: Command[] = [
   { id: 'oracle', label: 'Market Oracle', icon: 'hub', description: 'JD Decoder + Career Intelligence', path: '/suite/market-oracle', category: 'navigation', keywords: ['market', 'career', 'salary', 'trends', 'job', 'description', 'decode', 'fit'] },
   { id: 'applications', label: 'Applications', icon: 'bar_chart', description: 'Track Your Jobs', path: '/suite/applications', category: 'navigation', keywords: ['track', 'apply', 'jobs', 'status'] },
   { id: 'job-search', label: 'Job Search', icon: 'search', description: 'Find Opportunities', path: '/suite/job-search', category: 'navigation', keywords: ['search', 'find', 'jobs', 'openings'] },
+  { id: 'negotiate', label: 'Salary Coach', icon: 'payments', description: 'Negotiation Strategy', path: '/suite/negotiate', category: 'navigation', keywords: ['salary', 'negotiate', 'offer', 'counter', 'compensation'] },
+  { id: 'linkedin', label: 'LinkedIn Optimizer', icon: 'badge', description: 'Profile Optimizer', path: '/suite/linkedin', category: 'navigation', keywords: ['linkedin', 'profile', 'headline', 'recruiter'] },
+  { id: 'cover-letter', label: 'Cover Letter Studio', icon: 'edit_document', description: 'AI Cover Letters', path: '/suite/cover-letter', category: 'navigation', keywords: ['cover', 'letter', 'write', 'application'] },
+  { id: 'network', label: 'Network CRM', icon: 'contacts', description: 'Contact Tracker', path: '/suite/network', category: 'navigation', keywords: ['network', 'contacts', 'recruiter', 'referral', 'crm'] },
+  { id: 'analytics', label: 'Analytics', icon: 'analytics', description: 'Pipeline Insights', path: '/suite/analytics', category: 'navigation', keywords: ['analytics', 'stats', 'funnel', 'pipeline', 'chart'] },
 
   // Quick Links
   { id: 'talent-suite', label: 'Talent Suite', icon: 'auto_awesome', description: 'AI Career Intelligence', path: '/suite/resume', category: 'suite', keywords: ['job', 'seeker', 'candidate'] },

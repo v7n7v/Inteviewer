@@ -7,6 +7,7 @@ import { useStore } from '@/lib/store';
 import { authFetch } from '@/lib/auth-fetch';
 import { useTheme } from '@/components/ThemeProvider';
 import { showToast } from '@/components/Toast';
+import PageHelp from '@/components/PageHelp';
 import ProGate from '@/components/ProGate';
 import {
   saveStudyProgress,
@@ -988,6 +989,7 @@ function SkillBridgePageInner() {
                 <span className={`text-[10px] font-semibold ${isLight ? 'text-slate-400' : 'text-white/30'}`}>Overall Progress</span>
               </div>
             )}
+            <PageHelp toolId="skill-bridge" />
           </div>
         </motion.div>
 

@@ -9,6 +9,7 @@ import {
 } from '@/lib/database-suite';
 import { downloadResumePDF } from '@/lib/pdf-templates';
 import { showToast } from '@/components/Toast';
+import PageHelp from '@/components/PageHelp';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
 import { saveAs } from 'file-saver';
 
@@ -24,7 +25,7 @@ const STATUS_CONFIG = {
     withdrawn: { bg: 'bg-orange-500/20', border: 'border-orange-500/30', text: 'text-orange-300', label: 'Withdrawn', icon: <span className="material-symbols-rounded text-[14px]">undo</span>, gradient: 'from-orange-500 to-amber-500' },
 };
 
-type ViewMode = 'grid' | 'list';
+type ViewMode = 'grid' | 'list' | 'kanban';
 
 export default function ApplicationsPage() {
     const { user } = useStore();
@@ -42,6 +43,14 @@ export default function ApplicationsPage() {
     const [showResumePreview, setShowResumePreview] = useState(false);
     const [downloading, setDownloading] = useState(false);
     const [statusDropdownId, setStatusDropdownId] = useState<string | null>(null);
+    // Follow-Up Engine
+    const [followUpLoading, setFollowUpLoading] = useState(false);
+    const [followUpDraft, setFollowUpDraft] = useState<{ subject: string; body: string; timing: string; daysSinceApplied: number } | null>(null);
+    const [showFollowUpModal, setShowFollowUpModal] = useState(false);
+    // Interview Prep
+    const [prepLoading, setPrepLoading] = useState(false);
+    const [prepData, setPrepData] = useState<{ questions: any[]; questionsToAsk: any[]; prepNotes: string } | null>(null);
+    const [showPrepCard, setShowPrepCard] = useState(false);
 
     useEffect(() => {
         loadApplications();
@@ -204,6 +213,72 @@ export default function ApplicationsPage() {
         return matchesSearch && matchesStatus;
     });
 
+    // Follow-Up: check if applied 5+ days ago
+    const canFollowUp = (app: JobApplication) => {
+        if (app.status !== 'applied') return false;
+        const appliedDate = app.applied_at || app.created_at;
+        const daysSince = Math.floor((Date.now() - new Date(appliedDate).getTime()) / (1000 * 60 * 60 * 24));
+        return daysSince >= 5;
+    };
+
+    const handleFollowUp = async (appId: string) => {
+        setFollowUpLoading(true);
+        try {
+            const res = await fetch('/api/agent/follow-up', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ applicationId: appId }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setFollowUpDraft(data);
+                setShowFollowUpModal(true);
+            } else {
+                showToast(data.error || 'Failed to draft follow-up', 'cancel');
+            }
+        } catch {
+            showToast('Failed to generate follow-up', 'cancel');
+        }
+        setFollowUpLoading(false);
+    };
+
+    const handleInterviewPrep = async (app: JobApplication) => {
+        setPrepLoading(true);
+        try {
+            const res = await fetch('/api/agent/interview-prep', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ applicationId: app.id }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setPrepData(data);
+                setShowPrepCard(true);
+            } else {
+                showToast(data.error || 'Failed to generate prep', 'cancel');
+            }
+        } catch {
+            showToast('Failed to load interview prep', 'cancel');
+        }
+        setPrepLoading(false);
+    };
+
+    // Quality Score: 1-5 stars based on pipeline depth
+    const computeQualityScore = (app: JobApplication): number => {
+        let score = 0;
+        if (app.resume_version_id) score++;           // Linked a morphed resume
+        if (app.talent_density_score) score++;         // Ran fit analysis
+        if ((app.talent_density_score || 0) >= 70) score++; // High-fit target
+        if (app.status !== 'not_applied') score++;     // Actually applied
+        if (app.notes && app.notes.length > 10) score++; // Took prep notes
+        return Math.max(1, Math.min(5, score));
+    };
+
+    const qualityScores = applications.map(a => computeQualityScore(a));
+    const avgQuality = qualityScores.length > 0
+        ? (qualityScores.reduce((s, v) => s + v, 0) / qualityScores.length).toFixed(1)
+        : '0';
+
     const stats = {
         total: applications.length,
         active: applications.filter(a => !['rejected', 'withdrawn', 'accepted'].includes(a.status)).length,
@@ -223,7 +298,7 @@ export default function ApplicationsPage() {
                     <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/30 rounded-full blur-3xl" />
                     <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/30 rounded-full blur-3xl" />
                 </div>
-                <div className="relative z-10">
+                <div className="relative z-10 flex items-start justify-between">
                     <div className="flex items-center gap-4 mb-4">
                         <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 flex items-center justify-center shadow-inner">
                             <span className="material-symbols-rounded text-3xl">bar_chart</span>
@@ -235,16 +310,18 @@ export default function ApplicationsPage() {
                             <p className="text-[var(--text-secondary)] text-sm">Track and manage your job applications</p>
                         </div>
                     </div>
+                    <PageHelp toolId="applications" />
                 </div>
             </motion.div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
                 {[
                     { label: 'Total Applications', value: stats.total, icon: 'description', colorClass: 'bg-slate-500/10 border-slate-500/20 text-slate-500' },
                     { label: 'Active', value: stats.active, icon: 'send', colorClass: 'bg-blue-500/10 border-blue-500/20 text-blue-500' },
                     { label: 'Interviews', value: stats.interviews, icon: 'mic', colorClass: 'bg-violet-500/10 border-violet-500/20 text-violet-500' },
                     { label: 'Offers', value: stats.offers, icon: 'celebration', colorClass: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' },
+                    { label: 'Avg Quality', value: avgQuality, icon: 'star', colorClass: 'bg-amber-500/10 border-amber-500/20 text-amber-500' },
                 ].map((stat, i) => (
                     <motion.div
                         key={i}
@@ -291,6 +368,7 @@ export default function ApplicationsPage() {
                 <div className="flex gap-1 p-1 rounded-xl glass-card">
                     {[
                         { mode: 'grid' as ViewMode, icon: 'grid_view', label: 'Grid' },
+                        { mode: 'kanban' as ViewMode, icon: 'view_kanban', label: 'Board' },
                         { mode: 'list' as ViewMode, icon: 'view_list', label: 'List' },
                     ].map((v) => (
                         <button
@@ -309,9 +387,25 @@ export default function ApplicationsPage() {
 
             {/* Applications Display */}
             {isLoading ? (
-                <div className="text-center py-12">
-                    <div className="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin mx-auto mb-4" />
-                    <p className="text-silver">Loading applications...</p>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[...Array(6)].map((_, i) => (
+                        <div key={i} className="h-[180px] rounded-2xl animate-pulse" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}>
+                            <div className="p-5 space-y-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 rounded-xl bg-[var(--bg-elevated)]" />
+                                    <div className="space-y-2 flex-1">
+                                        <div className="h-4 w-32 rounded bg-[var(--bg-elevated)]" />
+                                        <div className="h-3 w-24 rounded bg-[var(--bg-elevated)]" />
+                                    </div>
+                                </div>
+                                <div className="h-3 w-full rounded bg-[var(--bg-elevated)]" />
+                                <div className="flex gap-2">
+                                    <div className="h-6 w-16 rounded-lg bg-[var(--bg-elevated)]" />
+                                    <div className="h-6 w-12 rounded-lg bg-[var(--bg-elevated)]" />
+                                </div>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             ) : filteredApplications.length === 0 ? (
                 <motion.div
@@ -333,6 +427,98 @@ export default function ApplicationsPage() {
                         <span className="material-symbols-rounded text-[18px]">transform</span> Morph a Resume
                     </a>
                 </motion.div>
+            ) : viewMode === 'kanban' ? (
+                /* ── Kanban Board ── */
+                <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-thin min-h-[60vh]">
+                    {(['not_applied', 'applied', 'screening', 'interview_scheduled', 'interviewed', 'offer', 'accepted', 'rejected'] as const).map(status => {
+                        const config = STATUS_CONFIG[status];
+                        const columnApps = filteredApplications.filter(a => a.status === status);
+                        return (
+                            <div
+                                key={status}
+                                className="flex-shrink-0 w-[260px] flex flex-col rounded-2xl overflow-hidden"
+                                style={{
+                                    background: 'var(--bg-surface)',
+                                    border: '1px solid var(--border-subtle)',
+                                }}
+                            >
+                                {/* Column Header */}
+                                <div className={`px-3 py-2.5 border-b border-white/5 bg-gradient-to-r ${config.gradient} bg-opacity-10`}
+                                    style={{ background: `linear-gradient(135deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 100%)` }}
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <span className={`${config.text}`}>{config.icon}</span>
+                                            <span className={`text-xs font-bold ${config.text}`}>{config.label}</span>
+                                        </div>
+                                        <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${config.bg} ${config.text}`}>
+                                            {columnApps.length}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Column Body */}
+                                <div className="flex-1 p-2 space-y-2 overflow-y-auto scrollbar-thin max-h-[calc(100vh-300px)]">
+                                    {columnApps.length === 0 && (
+                                        <div className="py-8 text-center">
+                                            <span className="material-symbols-rounded text-2xl text-[var(--text-tertiary)] opacity-30">inbox</span>
+                                            <p className="text-[10px] text-[var(--text-tertiary)] mt-1">No applications</p>
+                                        </div>
+                                    )}
+                                    <AnimatePresence mode="popLayout">
+                                        {columnApps.map((app) => (
+                                            <motion.div
+                                                key={app.id}
+                                                layout
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, scale: 0.9 }}
+                                                onClick={() => openDetailModal(app)}
+                                                className="p-3 rounded-xl cursor-pointer group transition-all hover:scale-[1.02]"
+                                                style={{
+                                                    background: 'var(--bg-elevated, rgba(255,255,255,0.03))',
+                                                    border: '1px solid var(--border-subtle)',
+                                                }}
+                                                whileHover={{ y: -2 }}
+                                            >
+                                                {/* Company initial + name */}
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-xs font-bold text-indigo-400 shrink-0">
+                                                        {app.company_name[0]}
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-xs font-semibold text-[var(--text-primary)] truncate">{app.company_name}</p>
+                                                        <p className="text-[10px] text-[var(--text-tertiary)] truncate">{app.job_title || 'No title'}</p>
+                                                    </div>
+                                                </div>
+
+                                                {/* Score + Quality + Date row */}
+                                                <div className="flex items-center justify-between gap-1">
+                                                    <div className="flex items-center gap-1">
+                                                        {app.talent_density_score ? (
+                                                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                                                                app.talent_density_score >= 80 ? 'bg-green-500/10 text-green-400' :
+                                                                app.talent_density_score >= 60 ? 'bg-cyan-500/10 text-cyan-400' :
+                                                                'bg-yellow-500/10 text-yellow-400'
+                                                            }`}>{app.talent_density_score}%</span>
+                                                        ) : null}
+                                                        <span className="text-[10px] text-amber-400">
+                                                            {'★'.repeat(computeQualityScore(app))}
+                                                            <span className="text-[var(--text-tertiary)]">{'★'.repeat(5 - computeQualityScore(app))}</span>
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-[9px] text-[var(--text-tertiary)]">
+                                                        {new Date(app.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                    </span>
+                                                </div>
+                                            </motion.div>
+                                        ))}
+                                    </AnimatePresence>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
             ) : viewMode === 'grid' ? (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredApplications.map((app, i) => (
@@ -356,6 +542,7 @@ export default function ApplicationsPage() {
                                 <th className="text-left p-4 text-silver font-medium">Position</th>
                                 <th className="text-left p-4 text-silver font-medium">Status</th>
                                 <th className="text-left p-4 text-silver font-medium">Match</th>
+                                <th className="text-left p-4 text-silver font-medium">Quality</th>
                                 <th className="text-left p-4 text-silver font-medium">Skill Bridge</th>
                                 <th className="text-left p-4 text-silver font-medium">Date</th>
                                 <th className="text-right p-4 text-silver font-medium">Actions</th>
@@ -418,6 +605,12 @@ export default function ApplicationsPage() {
                                                 {app.talent_density_score}%
                                             </span>
                                         ) : '-'}
+                                    </td>
+                                    <td className="p-4">
+                                        <span className="text-sm text-amber-400 tracking-tight">
+                                            {'★'.repeat(computeQualityScore(app))}
+                                            <span className="text-[var(--text-tertiary)]">{'★'.repeat(5 - computeQualityScore(app))}</span>
+                                        </span>
                                     </td>
                                     <td className="p-4">
                                         {(() => {
@@ -648,6 +841,111 @@ export default function ApplicationsPage() {
                                     </a>
                                 </div>
 
+                                {/* Follow-Up Button */}
+                                {canFollowUp(selectedApp) && (
+                                    <div className="px-4 pb-4">
+                                        <button
+                                            onClick={() => handleFollowUp(selectedApp.id)}
+                                            disabled={followUpLoading}
+                                            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 text-amber-400 text-sm font-medium hover:border-amber-500/40 hover:bg-amber-500/15 transition-all disabled:opacity-50"
+                                        >
+                                            {followUpLoading ? (
+                                                <div className="w-4 h-4 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
+                                            ) : (
+                                                <span className="material-symbols-rounded text-[18px]">forward_to_inbox</span>
+                                            )}
+                                            {followUpLoading ? 'Drafting...' : `Follow Up — ${Math.floor((Date.now() - new Date(selectedApp.applied_at || selectedApp.created_at).getTime()) / 86400000)} days since applied`}
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Interview Prep Card */}
+                                {(selectedApp.status === 'interview_scheduled' || selectedApp.status === 'interviewed') && (
+                                    <div className="px-4 pb-4">
+                                        {!showPrepCard ? (
+                                            <button
+                                                onClick={() => handleInterviewPrep(selectedApp)}
+                                                disabled={prepLoading}
+                                                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-500/10 to-cyan-500/10 border border-indigo-500/20 text-indigo-400 text-sm font-medium hover:border-indigo-500/40 hover:bg-indigo-500/15 transition-all disabled:opacity-50"
+                                            >
+                                                {prepLoading ? (
+                                                    <div className="w-4 h-4 border-2 border-indigo-400/30 border-t-indigo-400 rounded-full animate-spin" />
+                                                ) : (
+                                                    <span className="material-symbols-rounded text-[18px]">psychology</span>
+                                                )}
+                                                {prepLoading ? 'Generating prep...' : 'Prep for Interview'}
+                                            </button>
+                                        ) : prepData && (
+                                            <div className="space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+                                                        <span className="material-symbols-rounded text-[18px] text-indigo-400">psychology</span>
+                                                        Interview Prep
+                                                    </h4>
+                                                    <button onClick={() => setShowPrepCard(false)} className="text-xs text-silver hover:text-white">
+                                                        Hide
+                                                    </button>
+                                                </div>
+
+                                                {/* Generated Questions */}
+                                                <div className="space-y-2">
+                                                    {prepData.questions.map((q: any, i: number) => (
+                                                        <div key={i} className="p-3 rounded-xl glass-card">
+                                                            <div className="flex items-start gap-2">
+                                                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 mt-0.5 ${
+                                                                    q.type === 'behavioral' ? 'bg-blue-500/20 text-blue-400' :
+                                                                    q.type === 'technical' ? 'bg-cyan-500/20 text-cyan-400' :
+                                                                    'bg-amber-500/20 text-amber-400'
+                                                                }`}>{q.type}</span>
+                                                                <div>
+                                                                    <p className="text-sm text-white font-medium">{q.question}</p>
+                                                                    <p className="text-xs text-silver mt-1">{q.tip}</p>
+                                                                    {q.matchedStory && (
+                                                                        <p className="text-xs text-indigo-400 mt-1 flex items-center gap-1">
+                                                                            <span className="material-symbols-rounded text-[12px]">auto_stories</span>
+                                                                            Story: {q.matchedStory}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+
+                                                {/* Questions to Ask */}
+                                                {prepData.questionsToAsk.length > 0 && (
+                                                    <div className="p-3 rounded-xl glass-card">
+                                                        <h5 className="text-xs font-bold text-emerald-400 mb-2 flex items-center gap-1">
+                                                            <span className="material-symbols-rounded text-[14px]">help</span>
+                                                            Questions to Ask
+                                                        </h5>
+                                                        {prepData.questionsToAsk.map((q: any, i: number) => (
+                                                            <div key={i} className="mb-1.5 last:mb-0">
+                                                                <p className="text-sm text-white">{q.question}</p>
+                                                                <p className="text-[10px] text-silver">{q.why}</p>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+
+                                                {/* Prep Notes */}
+                                                {prepData.prepNotes && (
+                                                    <div className="p-3 rounded-xl bg-indigo-500/5 border border-indigo-500/10">
+                                                        <p className="text-xs text-silver">{prepData.prepNotes}</p>
+                                                    </div>
+                                                )}
+
+                                                <a
+                                                    href="/suite/interview-prep"
+                                                    className="block text-center px-4 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-medium hover:bg-indigo-500/20 transition-all"
+                                                >
+                                                    Open Full Interview Prep →
+                                                </a>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                                 {/* Footer */}
                                 <div className="p-4 pt-0 flex gap-2">
                                     <button
@@ -659,6 +957,74 @@ export default function ApplicationsPage() {
                                     <button
                                         onClick={() => setShowDetailModal(false)}
                                         className="ml-auto px-4 py-2 rounded-lg bg-white/10 text-white text-sm font-medium hover:bg-white/20 transition-colors"
+                                    >
+                                        Close
+                                    </button>
+                                </div>
+                            </motion.div>
+                        </div>
+                    </>
+                )}
+            </AnimatePresence>
+
+            {/* Follow-Up Email Modal */}
+            <AnimatePresence>
+                {showFollowUpModal && followUpDraft && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setShowFollowUpModal(false)}
+                            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60]"
+                        />
+                        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                                className="relative w-full max-w-lg rounded-2xl glass-card overflow-hidden shadow-2xl"
+                            >
+                                <div className="p-5 border-b border-white/10 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                                            <span className="material-symbols-rounded">forward_to_inbox</span>
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-bold text-white">Follow-Up Draft</h3>
+                                            <p className="text-xs text-silver">{followUpDraft.daysSinceApplied} days since applied • Timing: {followUpDraft.timing}</p>
+                                        </div>
+                                    </div>
+                                    <button onClick={() => setShowFollowUpModal(false)} className="p-1.5 rounded-lg hover:bg-white/10 text-silver">
+                                        <span className="material-symbols-rounded">close</span>
+                                    </button>
+                                </div>
+
+                                <div className="p-5 space-y-4">
+                                    <div>
+                                        <label className="text-xs font-medium text-silver block mb-1.5">Subject</label>
+                                        <div className="px-3 py-2 rounded-lg glass-card text-sm text-white">{followUpDraft.subject}</div>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-medium text-silver block mb-1.5">Body</label>
+                                        <div className="px-3 py-3 rounded-lg glass-card text-sm text-white whitespace-pre-wrap leading-relaxed">{followUpDraft.body}</div>
+                                    </div>
+                                </div>
+
+                                <div className="p-4 border-t border-white/10 flex gap-2">
+                                    <button
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(`Subject: ${followUpDraft.subject}\n\n${followUpDraft.body}`);
+                                            showToast('Copied to clipboard!', 'content_copy');
+                                        }}
+                                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm font-medium hover:bg-amber-500/20 transition-all"
+                                    >
+                                        <span className="material-symbols-rounded text-[18px]">content_copy</span>
+                                        Copy Email
+                                    </button>
+                                    <button
+                                        onClick={() => setShowFollowUpModal(false)}
+                                        className="px-4 py-2.5 rounded-xl bg-white/10 text-white text-sm font-medium hover:bg-white/20 transition-all"
                                     >
                                         Close
                                     </button>
@@ -843,6 +1209,31 @@ function ApplicationCard({
                             </div>
                         </div>
                     )}
+                </div>
+
+                {/* Quality Score */}
+                <div className="mb-4 flex items-center gap-2">
+                    <span className="text-xs text-silver">Quality</span>
+                    {(() => {
+                        let score = 0;
+                        if (app.resume_version_id) score++;
+                        if (app.talent_density_score) score++;
+                        if ((app.talent_density_score || 0) >= 70) score++;
+                        if (app.status !== 'not_applied') score++;
+                        if (app.notes && app.notes.length > 10) score++;
+                        score = Math.max(1, Math.min(5, score));
+                        return (
+                            <div className="flex items-center gap-1">
+                                <span className="text-sm text-amber-400 tracking-tight">
+                                    {'★'.repeat(score)}
+                                    <span className="text-[var(--text-tertiary)]">{'★'.repeat(5 - score)}</span>
+                                </span>
+                                <span className="text-[10px] text-[var(--text-muted)]">
+                                    {score <= 2 ? 'Basic' : score <= 3 ? 'Good' : score <= 4 ? 'Strong' : 'Full Pipeline'}
+                                </span>
+                            </div>
+                        );
+                    })()}
                 </div>
 
                 {/* Status Badge */}

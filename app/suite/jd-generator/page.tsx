@@ -7,6 +7,7 @@ import { useAuthGate } from '@/hooks/useAuthGate';
 import { saveJDTemplate, getJDTemplates, type JDTemplate } from '@/lib/database-suite';
 import { useStore } from '@/lib/store';
 import { showToast } from '@/components/Toast';
+import PageHelp from '@/components/PageHelp';
 import { downloadJDPDF } from '@/lib/pdf-templates';
 
 // JD Structure
@@ -317,6 +318,7 @@ ${jd.benefits?.length ? `BENEFITS\n${jd.benefits.map(b => `• ${b}`).join('\n')
               className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-colors"
             >← New JD</button>
           )}
+          <PageHelp toolId="jd-generator" />
         </div>
       </motion.div>
 

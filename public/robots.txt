@@ -1,0 +1,9 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /suite/
+Disallow: /_next/
+
+# Sitemaps
+Sitemap: https://talentconsulting.io/sitemap.xml

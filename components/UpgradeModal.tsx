@@ -3,7 +3,7 @@
 /**
  * UpgradeModal — In-app Stripe Embedded Checkout modal
  * Uses Stripe Embedded Checkout (ui_mode: 'embedded') for PCI-compliant payment.
- * Supports monthly ($2.99) and annual ($24.99) billing with plan toggle.
+ * Supports monthly ($9.99) and annual ($99.99) billing with plan toggle.
  */
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -23,17 +23,17 @@ interface UpgradeModalProps {
 type BillingInterval = 'month' | 'year';
 
 const PLANS = {
-  month: { price: '$2.99', period: '/mo', label: 'Monthly', savings: '' },
-  year: { price: '$24.99', period: '/yr', label: 'Annual', savings: 'Save 30%' },
+  month: { price: '$9.99', period: '/mo', label: 'Monthly', savings: '' },
+  year: { price: '$99.99', period: '/yr', label: 'Annual', savings: 'Save 17%' },
 } as const;
 
 const PRO_FEATURES = [
-  { icon: 'bolt', text: '3x rate limits on all AI tools' },
-  { icon: 'my_location', text: 'Priority AI processing queue' },
-  { icon: 'bar_chart', text: 'Advanced career analytics' },
-  { icon: '🔓', text: 'Premium resume templates' },
-  { icon: 'chat_bubble', text: '3x Sona AI chat limits' },
-  { icon: 'shield_person', text: 'Priority support' },
+  { icon: 'bolt', text: 'Unlimited resume morphs' },
+  { icon: 'mic', text: 'Unlimited interview practice' },
+  { icon: 'search', text: 'AI Detection (4K words/mo)' },
+  { icon: 'edit_note', text: 'AI Humanizer (4K words/mo)' },
+  { icon: 'speed', text: '3× faster AI processing' },
+  { icon: 'download', text: 'Export to .docx' },
 ];
 
 export default function UpgradeModal({ isOpen, onClose, onSuccess }: UpgradeModalProps) {
@@ -210,7 +210,9 @@ export default function UpgradeModal({ isOpen, onClose, onSuccess }: UpgradeModa
                   stripe={stripePromise}
                   options={{ clientSecret }}
                 >
-                  <EmbeddedCheckout />
+                  <div style={{ colorScheme: isLight ? 'light' : 'dark' }}>
+                    <EmbeddedCheckout />
+                  </div>
                 </EmbeddedCheckoutProvider>
               )}
             </div>

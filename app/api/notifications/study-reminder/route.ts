@@ -54,11 +54,11 @@ function buildProgressEmail(data: {
 }) {
   const overallPercent = Math.round((data.totalCompleted / data.totalDays) * 100);
   const motivationalMessages = [
-    "You're building something no AI can fake — real knowledge. 💪",
-    "Every day you study is a day closer to landing that interview. 🎯",
-    "Skills aren't built overnight — but 7 days? That's doable. 🚀",
-    "The best candidates aren't the ones with the best resumes. They're the ones who can back it up. 💎",
-    "You're not just updating your resume — you're upgrading yourself. ⚡",
+    "You're building something no AI can fake -- real knowledge.",
+    "Every day you study is a day closer to landing that interview.",
+    "Skills aren't built overnight -- but 7 days? That's doable.",
+    "The best candidates aren't the ones with the best resumes. They're the ones who can back it up.",
+    "You're not just updating your resume -- you're upgrading yourself.",
   ];
   const motivation = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
 
@@ -67,15 +67,15 @@ function buildProgressEmail(data: {
     const filledBlocks = s.completedDays;
     const emptyBlocks = s.totalDays - s.completedDays;
     const progressBar = '█'.repeat(filledBlocks) + '░'.repeat(emptyBlocks);
-    const statusEmoji = pct === 100 ? '✅' : pct >= 50 ? '🔥' : '📖';
+    const statusEmoji = pct === 100 ? '[DONE]' : pct >= 50 ? '[>>]' : '[..]';
 
     return `
       <tr>
         <td style="padding: 12px 16px; border-bottom: 1px solid #f0f0f0;">
           <div style="font-weight: 600; color: #1a1a1a; margin-bottom: 4px;">${statusEmoji} ${s.skill}</div>
           <div style="font-family: monospace; font-size: 14px; color: #10b981; letter-spacing: 2px; margin-bottom: 4px;">${progressBar} ${pct}%</div>
-          <div style="font-size: 12px; color: #888;">Day ${s.completedDays} of ${s.totalDays}${s.completedDays >= s.totalDays ? ' — Complete! 🎉' : ''}</div>
-          ${s.todayFocus ? `<div style="font-size: 12px; color: #3b82f6; margin-top: 6px; font-weight: 500;">📅 Today: ${s.todayFocus}</div>` : ''}
+          <div style="font-size: 12px; color: #888;">Day ${s.completedDays} of ${s.totalDays}${s.completedDays >= s.totalDays ? ' -- Complete!' : ''}</div>
+          ${s.todayFocus ? `<div style="font-size: 12px; color: #3b82f6; margin-top: 6px; font-weight: 500;">Today: ${s.todayFocus}</div>` : ''}
           ${s.todayTasks?.length ? `<ul style="margin: 6px 0 0 16px; padding: 0; font-size: 12px; color: #666;">${s.todayTasks.map(t => `<li style="margin-bottom: 2px;">${t}</li>`).join('')}</ul>` : ''}
         </td>
       </tr>`;
@@ -89,7 +89,7 @@ function buildProgressEmail(data: {
     
     <!-- Header -->
     <div style="text-align: center; padding: 24px 0;">
-      <div style="font-size: 28px; margin-bottom: 8px;">🌉</div>
+      <div style="font-size: 16px; margin-bottom: 8px; font-weight: 800; color: #10b981;">SB</div>
       <h1 style="margin: 0; font-size: 22px; color: #0f172a;">Skill Bridge Daily</h1>
       <p style="margin: 4px 0 0; font-size: 14px; color: #64748b;">Your progress report for ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
     </div>
@@ -103,7 +103,7 @@ function buildProgressEmail(data: {
         </div>
         <div style="text-align: right;">
           <div style="font-size: 14px; font-weight: 600;">${data.totalCompleted}/${data.totalDays} days</div>
-          <div style="font-size: 12px; opacity: 0.6;">${data.streak} day streak 🔥</div>
+          <div style="font-size: 12px; opacity: 0.6;">${data.streak} day streak</div>
         </div>
       </div>
       <div style="background: rgba(255,255,255,0.15); border-radius: 8px; height: 8px; overflow: hidden;">
@@ -128,7 +128,7 @@ function buildProgressEmail(data: {
 
     <!-- CTA -->
     <div style="text-align: center; margin-top: 24px;">
-      <a href="https://talent-consulting-acf16.web.app/suite/skill-bridge" style="display: inline-block; background: linear-gradient(135deg, #f59e0b, #f97316); color: white; text-decoration: none; padding: 14px 32px; border-radius: 12px; font-weight: 700; font-size: 14px;">🌉 Continue Studying</a>
+      <a href="https://talent-consulting-acf16.web.app/suite/skill-bridge" style="display: inline-block; background: linear-gradient(135deg, #f59e0b, #f97316); color: white; text-decoration: none; padding: 14px 32px; border-radius: 12px; font-weight: 700; font-size: 14px;">Continue Studying</a>
     </div>
 
     <!-- Footer -->
@@ -159,10 +159,10 @@ export async function POST(req: NextRequest) {
 
     const overallPercent = Math.round((totalCompleted / totalDays) * 100);
     const subject = overallPercent >= 100
-      ? `🎉 You completed all your study plans!`
+      ? `You completed all your study plans!`
       : overallPercent >= 50
-        ? `🔥 ${overallPercent}% done — you're past the halfway mark!`
-        : `📖 Day ${totalCompleted + 1} awaits — keep the momentum going!`;
+        ? `${overallPercent}% done -- you're past the halfway mark!`
+        : `Day ${totalCompleted + 1} awaits -- keep the momentum going!`;
 
     const html = buildProgressEmail({
       userName: userName || 'there',

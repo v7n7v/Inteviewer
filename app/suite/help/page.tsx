@@ -297,6 +297,9 @@ export default function HelpPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [expandedGuide, setExpandedGuide] = useState<string | null>(null);
     const [expandedFaq, setExpandedFaq] = useState<string | null>(null);
+    const [contactForm, setContactForm] = useState({ name: '', email: '', category: 'general', message: '' });
+    const [contactStatus, setContactStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+    const [contactError, setContactError] = useState('');
 
     const filteredGuides = guides.filter(g =>
         g.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -537,9 +540,9 @@ export default function HelpPage() {
                         {/* Support Channels */}
                         <div className="grid md:grid-cols-3 gap-4">
                             {[
-                                { icon: <span className="material-symbols-rounded">mail</span>, title: 'Email Support', desc: 'Get help via email', action: 'support@talentconsulting.io', color: 'from-indigo-500/10 to-violet-500/10', border: 'border-indigo-500/20' },
+                                { icon: <span className="material-symbols-rounded">mail</span>, title: 'Email Support', desc: 'Get help within 24 hours', action: 'Use the form below', color: 'from-indigo-500/10 to-violet-500/10', border: 'border-indigo-500/20' },
                                 { icon: <span className="material-symbols-rounded">chat_bubble</span>, title: 'Live Chat', desc: 'Chat with our AI assistant', action: 'Click the AI bubble →', color: 'from-emerald-500/10 to-teal-500/10', border: 'border-emerald-500/20' },
-                                { icon: <span className="material-symbols-rounded">bug_report</span>, title: 'Report a Bug', desc: 'Help us improve', action: 'feedback@talentconsulting.io', color: 'from-red-500/10 to-rose-500/10', border: 'border-red-500/20' },
+                                { icon: <span className="material-symbols-rounded">bug_report</span>, title: 'Report a Bug', desc: 'Help us improve', action: 'Select "Bug Report" below', color: 'from-red-500/10 to-rose-500/10', border: 'border-red-500/20' },
                             ].map((channel, i) => (
                                 <div key={i} className={`rounded-2xl bg-gradient-to-br ${channel.color} border ${channel.border} p-6`}>
                                     <span className="text-2xl block mb-3 text-white/70">{channel.icon}</span>
@@ -557,28 +560,52 @@ export default function HelpPage() {
                                 <div className="grid md:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Your Name</label>
-                                        <input type="text" placeholder="Enter your name" className="w-full px-4 py-3 rounded-xl bg-[var(--theme-surface-hover)] border border-[var(--theme-border)] text-[var(--text-primary)] placeholder-slate-500 focus:outline-none focus:border-amber-500/50" />
+                                        <input type="text" placeholder="Enter your name" value={contactForm.name} onChange={(e) => setContactForm(f => ({ ...f, name: e.target.value }))} className="w-full px-4 py-3 rounded-xl bg-[var(--theme-surface-hover)] border border-[var(--theme-border)] text-[var(--text-primary)] placeholder-slate-500 focus:outline-none focus:border-amber-500/50" />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Email</label>
-                                        <input type="email" placeholder="your@email.com" className="w-full px-4 py-3 rounded-xl bg-[var(--theme-surface-hover)] border border-[var(--theme-border)] text-[var(--text-primary)] placeholder-slate-500 focus:outline-none focus:border-amber-500/50" />
+                                        <input type="email" placeholder="your@email.com" value={contactForm.email} onChange={(e) => setContactForm(f => ({ ...f, email: e.target.value }))} className="w-full px-4 py-3 rounded-xl bg-[var(--theme-surface-hover)] border border-[var(--theme-border)] text-[var(--text-primary)] placeholder-slate-500 focus:outline-none focus:border-amber-500/50" />
                                     </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Category</label>
-                                    <select className="w-full px-4 py-3 rounded-xl bg-[var(--theme-surface-hover)] border border-[var(--theme-border)] text-[var(--text-primary)] focus:outline-none focus:border-amber-500/50">
-                                        <option value="bug"><span className="material-symbols-rounded">bug_report</span> Bug Report</option>
-                                        <option value="feature"><span className="material-symbols-rounded">auto_awesome</span> Feature Request</option>
-                                        <option value="general"><span className="material-symbols-rounded">forum</span> General Feedback</option>
-                                        <option value="other"><span className="material-symbols-rounded">content_paste</span> Other</option>
+                                    <select value={contactForm.category} onChange={(e) => setContactForm(f => ({ ...f, category: e.target.value }))} className="w-full px-4 py-3 rounded-xl bg-[var(--theme-surface-hover)] border border-[var(--theme-border)] text-[var(--text-primary)] focus:outline-none focus:border-amber-500/50">
+                                        <option value="bug">Bug Report</option>
+                                        <option value="feature">Feature Request</option>
+                                        <option value="general">General Feedback</option>
+                                        <option value="other">Other</option>
                                     </select>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Message</label>
-                                    <textarea rows={4} placeholder="Tell us what's on your mind..." className="w-full px-4 py-3 rounded-xl bg-[var(--theme-surface-hover)] border border-[var(--theme-border)] text-[var(--text-primary)] placeholder-slate-500 focus:outline-none focus:border-amber-500/50 resize-none" />
+                                    <textarea rows={4} placeholder="Tell us what's on your mind..." value={contactForm.message} onChange={(e) => setContactForm(f => ({ ...f, message: e.target.value }))} className="w-full px-4 py-3 rounded-xl bg-[var(--theme-surface-hover)] border border-[var(--theme-border)] text-[var(--text-primary)] placeholder-slate-500 focus:outline-none focus:border-amber-500/50 resize-none" />
                                 </div>
-                                <button className="px-6 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 font-medium hover:bg-amber-500/20 hover:border-amber-500/30 transition-all flex items-center justify-center gap-2">
-                                    <span className="material-symbols-rounded">rocket_launch</span> Send Feedback
+                                {contactStatus === 'error' && <p className="text-sm text-red-500">{contactError}</p>}
+                                {contactStatus === 'sent' && <p className="text-sm text-emerald-500">✓ Feedback sent successfully. We'll get back to you soon.</p>}
+                                <button
+                                    disabled={contactStatus === 'sending'}
+                                    onClick={async () => {
+                                        setContactStatus('sending');
+                                        setContactError('');
+                                        try {
+                                            const res = await fetch('/api/contact', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify(contactForm),
+                                            });
+                                            const data = await res.json();
+                                            if (!res.ok) throw new Error(data.error || 'Failed to send');
+                                            setContactStatus('sent');
+                                            setContactForm({ name: '', email: '', category: 'general', message: '' });
+                                        } catch (err: any) {
+                                            setContactStatus('error');
+                                            setContactError(err.message);
+                                        }
+                                    }}
+                                    className="px-6 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 font-medium hover:bg-amber-500/20 hover:border-amber-500/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                >
+                                    <span className="material-symbols-rounded">{contactStatus === 'sending' ? 'hourglass_empty' : contactStatus === 'sent' ? 'check_circle' : 'rocket_launch'}</span>
+                                    {contactStatus === 'sending' ? 'Sending...' : contactStatus === 'sent' ? 'Sent!' : 'Send Feedback'}
                                 </button>
                             </div>
                         </div>

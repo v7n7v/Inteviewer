@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+/* Fonts loaded via next/font/google in layout.tsx — no @import needed */
 
 @tailwind base;
 @tailwind components;
@@ -947,13 +947,30 @@ button[class*="bg-gradient-to-r"] {
 .orb-2,
 .orb-3,
 .mesh-gradient,
-.theme-radial-glow,
-.theme-base-bg,
 .gradient-border::before,
 .pulse-ring::after,
-.float-animation,
-.text-shimmer {
+.float-animation {
   display: none !important;
+}
+
+/* Landing page theme classes — not decorative, used as containers */
+.theme-base-bg {
+  background: var(--bg-deep);
+}
+
+.theme-radial-glow {
+  background: radial-gradient(ellipse at 50% 0%, var(--accent-dim) 0%, transparent 70%);
+}
+
+/* Shimmer text animation for hero gradient text */
+@keyframes shimmer-text {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }
 
 /* ---- Compact padding for all tool containers ---- */

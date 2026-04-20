@@ -141,7 +141,7 @@ function MFASection({ addToast }: { addToast: (type: 'success' | 'error' | 'info
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
-                            <span className="text-2xl">🔐</span>
+                            <span className="material-symbols-rounded text-2xl text-white">enhanced_encryption</span>
                         </div>
                         <div>
                             <h2 className="text-xl font-bold text-white">Two-Factor Authentication</h2>
@@ -164,7 +164,7 @@ function MFASection({ addToast }: { addToast: (type: 'success' | 'error' | 'info
                         <div className="p-4 rounded-xl bg-green-500/5 border border-green-500/20">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                                    <span className="text-lg">🛡️</span>
+                                    <span className="material-symbols-rounded text-lg text-green-400">shield</span>
                                 </div>
                                 <div>
                                     <p className="text-white font-medium">Authenticator App</p>
@@ -441,9 +441,9 @@ export default function SettingsPage() {
                                 }`}
                         >
                             <div className="flex items-center gap-2">
-                                {toast.type === 'success' && <span>✓</span>}
-                                {toast.type === 'error' && <span>✕</span>}
-                                {toast.type === 'info' && <span>ℹ</span>}
+                                {toast.type === 'success' && <span className="material-symbols-rounded text-base">check_circle</span>}
+                                {toast.type === 'error' && <span className="material-symbols-rounded text-base">error</span>}
+                                {toast.type === 'info' && <span className="material-symbols-rounded text-base">info</span>}
                                 <span className="text-sm font-medium">{toast.message}</span>
                             </div>
                         </motion.div>
@@ -491,7 +491,7 @@ export default function SettingsPage() {
                         <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 blur-3xl" />
                         <div className="relative p-6">
                             <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-                                <span>👤</span>
+                                <span className="material-symbols-rounded text-xl text-cyan-400">person</span>
                                 Account Information
                             </h2>
                             <div className="space-y-3">
@@ -538,7 +538,7 @@ export default function SettingsPage() {
                                 className="w-full flex items-center justify-between text-left group"
                             >
                                 <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-                                    <span>📧</span>
+                                    <span className="material-symbols-rounded text-xl text-cyan-400">mail</span>
                                     Change Email Address
                                 </h2>
                                 <motion.svg
@@ -574,7 +574,7 @@ export default function SettingsPage() {
                                                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 transition-all"
                                             />
                                             <p className="mt-2 text-xs text-slate-500">
-                                                🔐 A verification link will be sent to your new email address. You must click the link to complete the change.
+                                                A verification link will be sent to your new email address. You must click the link to complete the change.
                                             </p>
                                         </div>
                                         <motion.button
@@ -616,7 +616,7 @@ export default function SettingsPage() {
                                 className="w-full flex items-center justify-between text-left group"
                             >
                                 <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-                                    <span>🔒</span>
+                                    <span className="material-symbols-rounded text-xl text-emerald-400">lock</span>
                                     Change Password
                                 </h2>
                                 <motion.svg
@@ -652,7 +652,7 @@ export default function SettingsPage() {
                                                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                                             />
                                             <p className="mt-2 text-xs text-slate-500">
-                                                🔒 Required to verify your identity
+                                                Required to verify your identity
                                             </p>
                                         </div>
                                         <div>
@@ -717,7 +717,7 @@ export default function SettingsPage() {
                                                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                                             />
                                             {confirmPassword && newPassword !== confirmPassword && (
-                                                <p className="mt-2 text-xs text-red-400">⚠️ Passwords do not match</p>
+                                                <p className="mt-2 text-xs text-red-400">Passwords do not match</p>
                                             )}
                                         </div>
                                         <motion.button

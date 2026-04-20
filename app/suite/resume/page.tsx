@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { saveResumeVersion, getResumeVersions, createJobApplication, deleteResumeVersion, type ResumeVersion } from '@/lib/database-suite';
 import { useStore } from '@/lib/store';
 import { showToast } from '@/components/Toast';
+import PageHelp from '@/components/PageHelp';
 import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
 import { downloadResumePDF } from '@/lib/pdf-templates';
@@ -14,6 +15,7 @@ import { useTheme } from '@/components/ThemeProvider';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, Table, TableRow, TableCell, WidthType, ShadingType, TableBorders } from 'docx';
 import { saveAs } from 'file-saver';
 import { authFetch } from '@/lib/auth-fetch';
+import { analytics } from '@/lib/analytics';
 import FileUploadDropzone from '@/components/FileUploadDropzone';
 import SkillGapWarningModal from '@/components/modals/SkillGapWarningModal';
 import UpgradeModal from '@/components/UpgradeModal';
@@ -756,6 +758,7 @@ export default function LiquidResumePage() {
       setMatchScore(score);
       setStep(isPro ? 'enhance' : 'template');
       showToast(`Resume morphed! ${score}% match`, 'check_circle');
+      analytics.toolUse('resume_morph');
 
       // ── Skill Gap Detection ──
       try {
@@ -936,6 +939,7 @@ export default function LiquidResumePage() {
     try {
       await downloadResumePDF(resume, selectedTemplate.colors);
       showToast('PDF downloaded!', 'check_circle');
+      analytics.resumeDownload('pdf');
       clearDraft();
     } catch (error: any) {
       console.error('PDF download error:', error);
@@ -1060,18 +1064,18 @@ export default function LiquidResumePage() {
         children = [
           new Paragraph({ spacing: { after: 30 }, children: [new TextRun({ text: `[${initials}]  `, bold: true, size: 28, color: 'FFFFFF', highlight: 'blue' as any }), new TextRun({ text: resume.name, bold: true, size: 52, color: p })] }),
           new Paragraph({ spacing: { after: 40 }, children: [new TextRun({ text: resume.title, size: 28, color: '666666' })] }),
-          new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: contact.map((c, i) => (i === 0 ? '✉ ' : i === 1 ? '☎ ' : '📍 ') + c).join('    '), size: 18, color: '555555' })] }),
+          new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: contact.map((c, i) => (i === 0 ? 'E: ' : i === 1 ? 'P: ' : 'L: ') + c).join('    '), size: 18, color: '555555' })] }),
           ...(resume.summary ? [new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: resume.summary, size: 20, color: '555555' })] })] : []),
           ...(resume.experience?.length ? [
-            new Paragraph({ spacing: { before: 200, after: 100 }, children: [new TextRun({ text: '💼  EXPERIENCE', bold: true, size: 24, color: p })] }),
+            new Paragraph({ spacing: { before: 200, after: 100 }, children: [new TextRun({ text: 'EXPERIENCE', bold: true, size: 24, color: p })] }),
             ...resume.experience.flatMap(exp => expBlock(exp, { bullet: 'arrow_right' })),
           ] : []),
           ...(resume.education?.length ? [
-            new Paragraph({ spacing: { before: 200, after: 100 }, children: [new TextRun({ text: '🎓  EDUCATION', bold: true, size: 24, color: p })] }),
+            new Paragraph({ spacing: { before: 200, after: 100 }, children: [new TextRun({ text: 'EDUCATION', bold: true, size: 24, color: p })] }),
             ...resume.education.map(edu => eduBlock(edu)),
           ] : []),
           ...(resume.skills?.length ? [
-            new Paragraph({ spacing: { before: 200, after: 100 }, children: [new TextRun({ text: '⚡  SKILLS', bold: true, size: 24, color: p })] }),
+            new Paragraph({ spacing: { before: 200, after: 100 }, children: [new TextRun({ text: 'SKILLS', bold: true, size: 24, color: p })] }),
             ...resume.skills.map(cat => skillBlock(cat)),
           ] : []),
         ];
@@ -1267,6 +1271,7 @@ export default function LiquidResumePage() {
       const blob = await Packer.toBlob(doc);
       saveAs(blob, `${resume.name?.replace(/\s+/g, '_') || 'resume'}.docx`);
       showToast('Word document downloaded!', 'check_circle');
+      analytics.resumeDownload('word');
       clearDraft();
     } catch (e) { console.error('Word download error:', e); showToast('Download failed', 'cancel'); }
     finally { setIsLoading(false); }
@@ -1539,7 +1544,10 @@ export default function LiquidResumePage() {
       <div className="min-h-screen pt-10 md:pt-16 p-4 md:p-8 flex flex-col items-center">
         <div className="w-full max-w-xl">
           {/* Header */}
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10 pl-10 lg:pl-0">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10 pl-10 lg:pl-0 relative">
+            <div className="absolute top-0 right-0">
+              <PageHelp toolId="resume" />
+            </div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold tracking-wide mb-4"
               style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.12) 0%, rgba(251,146,60,0.08) 100%)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.2)' }}>
               <span className="material-symbols-rounded text-[14px]">auto_awesome</span>
@@ -1691,9 +1699,12 @@ export default function LiquidResumePage() {
               <h1 className="text-xl md:text-2xl font-bold text-white">Morph Your Resume</h1>
               <p className="text-slate-500 text-sm">AI-powered resume optimization</p>
             </div>
-            <button onClick={resetAll} className="px-3 md:px-4 py-2 rounded-xl bg-[var(--theme-bg-elevated)] border border-[var(--theme-border)] text-[var(--theme-text-secondary)] hover:border-[var(--theme-border-hover)] hover:text-[var(--theme-text)] transition-all text-sm">
-              ← Start Over
-            </button>
+            <div className="flex items-center gap-3">
+              <button onClick={resetAll} className="px-3 md:px-4 py-2 rounded-xl bg-[var(--theme-bg-elevated)] border border-[var(--theme-border)] text-[var(--theme-text-secondary)] hover:border-[var(--theme-border-hover)] hover:text-[var(--theme-text)] transition-all text-sm">
+                ← Start Over
+              </button>
+              <PageHelp toolId="resume" />
+            </div>
           </div>
 
           {/* Progress Steps */}

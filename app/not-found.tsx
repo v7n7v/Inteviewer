@@ -148,7 +148,7 @@ export default function NotFound() {
                         }}
                         className="text-8xl"
                     >
-                        🧑‍🚀
+                        <span className="material-symbols-rounded text-8xl text-cyan-400">rocket_launch</span>
                     </motion.div>
                 </motion.div>
             </div>

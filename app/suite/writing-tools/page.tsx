@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/lib/store';
 import { showToast } from '@/components/Toast';
 import { authFetch } from '@/lib/auth-fetch';
+import PageHelp from '@/components/PageHelp';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import {
   detectAI,
@@ -16,7 +17,7 @@ import {
 } from '@/lib/ai-detection';
 import { exportDocument, downloadBlob, type ExportFormat } from '@/lib/doc-export';
 import mammoth from 'mammoth';
-import type { WritingDomain } from '@/lib/writing-prompts';
+import type { WritingDomain, HumanizeTone } from '@/lib/writing-prompts';
 
 // ── Types ──
 type PipelineStep = 'detect' | 'humanize' | 'check' | 'export';
@@ -26,6 +27,7 @@ interface HumanizeResult {
   changes: Array<{ original: string; rewritten: string; reason: string }>;
   stats: { sentenceLengthStdDev: number; bannedWordsRemoved: number; burstinessRange: number };
   wordUsage: { inputWords: number; outputWords: number; remaining: number; cap: number };
+  recheck?: { humanScore: number; verdict: string; flaggedCount: number };
 }
 
 interface UniquenessResult {
@@ -540,6 +542,7 @@ export default function WritingToolsPage() {
   const [currentStep, setCurrentStep] = useState<PipelineStep>('detect');
   const [inputText, setInputText] = useState('');
   const [domain, setDomain] = useState<WritingDomain>('general');
+  const [tone, setTone] = useState<HumanizeTone>('professional');
 
   // Results
   const [detection, setDetection] = useState<DetectionResult | null>(null);
@@ -637,6 +640,10 @@ export default function WritingToolsPage() {
       setOriginalDetection(result);
       setIsDetecting(false);
       showToast(`Human Score: ${result.humanScore}/100`, 'radar');
+      // Auto-advance to humanize step if AI detected
+      if (result.humanScore < 70) {
+        setCurrentStep('humanize');
+      }
     }, 500);
   }, [inputText]);
 
@@ -659,6 +666,7 @@ export default function WritingToolsPage() {
         body: JSON.stringify({
           text: inputText,
           domain,
+          tone,
           paragraphIndices: lowParagraphs.length > 0 ? lowParagraphs : undefined,
         }),
       });
@@ -759,6 +767,7 @@ export default function WritingToolsPage() {
     setUniqueness(null);
     setUploadedFileName(null);
     setSentenceAnalysis([]);
+    setTone('professional');
   };
 
   // ── Verdict info ──
@@ -792,22 +801,25 @@ export default function WritingToolsPage() {
           />
         </div>
 
-        <div className="relative z-10">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1 }}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/30 mb-4"
-          >
-            <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }} className="w-2 h-2 rounded-full bg-rose-500" />
-            <span className="text-xs font-medium text-rose-400">Inkwell Writing Suite</span>
-          </motion.div>
-          <h1 className="text-2xl font-semibold mb-2 text-[var(--text-primary)]">
-            AI Writing Pipeline
-          </h1>
-          <p className="text-[var(--text-secondary)] text-sm max-w-xl">
-            Detect → Humanize → Verify → Export. Four steps from AI-flagged to submission-ready.
-          </p>
+        <div className="relative z-10 flex items-start justify-between">
+          <div>
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/30 mb-4"
+            >
+              <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }} className="w-2 h-2 rounded-full bg-rose-500" />
+              <span className="text-xs font-medium text-rose-400">AI Detector</span>
+            </motion.div>
+            <h1 className="text-2xl font-semibold mb-2 text-[var(--text-primary)]">
+              AI Detection & Humanization Pipeline
+            </h1>
+            <p className="text-[var(--text-secondary)] text-sm max-w-xl">
+              Scan your writing for AI patterns, humanize flagged sections with Gemini, verify uniqueness, and export submission-ready documents — all in one pipeline.
+            </p>
+          </div>
+          <PageHelp toolId="writing-tools" />
         </div>
       </motion.div>
 
@@ -1023,15 +1035,58 @@ export default function WritingToolsPage() {
                       <h2 className="text-lg font-bold text-[var(--text-primary)]">Humanize Your Text</h2>
                       <p className="text-xs text-[var(--text-secondary)] mt-1">
                         Gemini 3 Flash will rewrite flagged paragraphs while preserving meaning.
-                        Domain: <span className="text-rose-400 capitalize">{domain}</span>
                       </p>
                     </div>
-                    {originalDetection && (
+                    <div className="flex items-center gap-3">
                       <div className="text-right">
-                        <span className={`text-2xl font-bold ${getScoreColor(originalDetection.humanScore)}`}>{originalDetection.humanScore}</span>
-                        <p className="text-[10px] text-[var(--text-secondary)]">Current Score</p>
+                        <span className="text-sm font-bold text-[var(--text-primary)]">{wordCount}</span>
+                        <p className="text-[9px] text-[var(--text-muted)]">words</p>
                       </div>
-                    )}
+                      {originalDetection && (
+                        <div className="text-right">
+                          <span className={`text-2xl font-bold ${getScoreColor(originalDetection.humanScore)}`}>{originalDetection.humanScore}</span>
+                          <p className="text-[10px] text-[var(--text-secondary)]">Current Score</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Tone Picker */}
+                  <div className="mb-4">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">Humanization Tone</p>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { value: 'professional' as HumanizeTone, label: 'Professional', icon: 'business_center', desc: '~same length' },
+                        { value: 'creative' as HumanizeTone, label: 'Creative', icon: 'palette', desc: '~+5% words' },
+                        { value: 'casual' as HumanizeTone, label: 'Casual', icon: 'emoji_people', desc: '~-5% words' },
+                        { value: 'academic' as HumanizeTone, label: 'Academic', icon: 'school', desc: '~same length' },
+                        { value: 'confident' as HumanizeTone, label: 'Confident', icon: 'bolt', desc: '~-10% words' },
+                      ].map(t => (
+                        <button
+                          key={t.value}
+                          onClick={() => setTone(t.value)}
+                          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                            tone === t.value
+                              ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
+                              : 'bg-white/[0.03] text-[var(--text-secondary)] border border-white/5 hover:border-white/10'
+                          }`}
+                        >
+                          <span className="material-symbols-rounded text-sm">{t.icon}</span>
+                          {t.label}
+                          <span className="text-[9px] opacity-60">{t.desc}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Paraphrase estimate */}
+                  <div className="mb-4 flex items-center gap-3 p-3 rounded-lg bg-white/[0.02] border border-white/5">
+                    <span className="material-symbols-rounded text-sm text-amber-400">info</span>
+                    <span className="text-xs text-[var(--text-secondary)]">
+                      Estimated output: ~{Math.round(wordCount * (tone === 'creative' ? 1.05 : tone === 'casual' ? 0.95 : tone === 'confident' ? 0.9 : 1.0))} words
+                      {' '}• Domain: <span className="text-rose-400 capitalize">{domain}</span>
+                      {' '}• Tone: <span className="text-rose-400 capitalize">{tone}</span>
+                    </span>
                   </div>
 
                   {/* Preview of flagged paragraphs */}
@@ -1056,7 +1111,7 @@ export default function WritingToolsPage() {
                     onClick={runHumanize}
                     className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-gradient-to-r from-rose-500 to-orange-500 text-white font-medium text-sm shadow-lg shadow-rose-500/20"
                   >
-                    <span className="material-symbols-rounded">brush</span> Humanize Now
+                    <span className="material-symbols-rounded">brush</span> Humanize Now — {tone.charAt(0).toUpperCase() + tone.slice(1)} Tone
                   </motion.button>
                 </div>
               )}
@@ -1075,11 +1130,32 @@ export default function WritingToolsPage() {
                     />
                   </div>
 
+                  {/* Recheck badge */}
+                  {humanizeResult.recheck && (
+                    <div className="flex justify-center">
+                      <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold ${
+                        humanizeResult.recheck.humanScore >= 70
+                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                          : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                      }`}>
+                        <span className="material-symbols-rounded text-sm">
+                          {humanizeResult.recheck.humanScore >= 70 ? 'verified' : 'warning'}
+                        </span>
+                        Auto-recheck: {humanizeResult.recheck.humanScore}/100
+                        {humanizeResult.recheck.flaggedCount > 0 && ` • ${humanizeResult.recheck.flaggedCount} paragraphs still flagged`}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Stats row */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                     <div className="rounded-xl glass-card p-3 text-center">
-                      <span className="text-lg font-bold text-emerald-400">{humanizeResult.stats.sentenceLengthStdDev.toFixed(1)}</span>
-                      <p className="text-[10px] text-[var(--text-secondary)] mt-0.5">Sentence σ</p>
+                      <span className="text-lg font-bold text-blue-400">{humanizeResult.wordUsage.inputWords}</span>
+                      <p className="text-[10px] text-[var(--text-secondary)] mt-0.5">Input Words</p>
+                    </div>
+                    <div className="rounded-xl glass-card p-3 text-center">
+                      <span className="text-lg font-bold text-emerald-400">{humanizeResult.wordUsage.outputWords}</span>
+                      <p className="text-[10px] text-[var(--text-secondary)] mt-0.5">Output Words</p>
                     </div>
                     <div className="rounded-xl glass-card p-3 text-center">
                       <span className="text-lg font-bold text-emerald-400">{humanizeResult.stats.bannedWordsRemoved}</span>
@@ -1091,7 +1167,7 @@ export default function WritingToolsPage() {
                     </div>
                     <div className="rounded-xl glass-card p-3 text-center">
                       <span className="text-lg font-bold text-amber-400">{humanizeResult.wordUsage.remaining.toLocaleString()}</span>
-                      <p className="text-[10px] text-[var(--text-secondary)] mt-0.5">Words Remaining</p>
+                      <p className="text-[10px] text-[var(--text-secondary)] mt-0.5">Words Left</p>
                     </div>
                   </div>
 

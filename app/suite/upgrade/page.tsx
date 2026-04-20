@@ -6,6 +6,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { EmbeddedCheckoutProvider, EmbeddedCheckout } from '@stripe/react-stripe-js';
 import { useTheme } from '@/components/ThemeProvider';
 import { authFetch } from '@/lib/auth-fetch';
+import { analytics } from '@/lib/analytics';
 import { useRouter } from 'next/navigation';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -16,22 +17,22 @@ type PlanOption = 'pro' | 'studio';
 const PLAN_CONFIG = {
   pro: {
     month: {
-      price: '$4.99', period: '/mo', label: 'Monthly',
-      billed: 'Billed monthly — cancel anytime',
-    },
-    year: {
-      price: '$49.99', period: '/yr', label: 'Annual', savings: 'Save 17%',
-      billed: 'Billed annually — $4.17/mo effective',
-    },
-  },
-  studio: {
-    month: {
       price: '$9.99', period: '/mo', label: 'Monthly',
       billed: 'Billed monthly — cancel anytime',
     },
     year: {
-      price: '$89.99', period: '/yr', label: 'Annual', savings: 'Save 25%',
-      billed: 'Billed annually — $7.50/mo effective',
+      price: '$99.99', period: '/yr', label: 'Annual', savings: 'Save 17%',
+      billed: 'Billed annually — $8.33/mo effective',
+    },
+  },
+  studio: {
+    month: {
+      price: '$19.99', period: '/mo', label: 'Monthly',
+      billed: 'Billed monthly — cancel anytime',
+    },
+    year: {
+      price: '$179.99', period: '/yr', label: 'Annual', savings: 'Save 25%',
+      billed: 'Billed annually — $15.00/mo effective',
     },
   },
 } as const;
@@ -48,7 +49,8 @@ const PRO_FEATURES = [
 ];
 
 const STUDIO_EXTRAS = [
-  { icon: 'ink_pen', color: '#f43f5e', title: 'Inkwell AI Humanizer', desc: '50,000 words/mo of AI-to-human rewriting with Gemini 3.' },
+  { icon: 'auto_awesome', color: '#f43f5e', title: 'Sona AI Agent', desc: 'Context-aware career strategist — unlimited conversations.' },
+  { icon: 'ink_pen', color: '#f43f5e', title: 'AI Humanizer', desc: '50,000 words/mo of AI-to-human rewriting with Gemini 3.' },
   { icon: 'verified', color: '#10b981', title: 'Uniqueness Verification', desc: 'AI-powered plagiarism pattern detection per document.' },
   { icon: 'download', color: '#3b82f6', title: 'Export to Word (.docx)', desc: 'Download formatted, submission-ready documents.' },
   { icon: 'radar', color: '#f59e0b', title: 'AI Detection Engine', desc: '100+ pattern heuristic analysis — instant, zero-cost.' },
@@ -60,7 +62,7 @@ const COMPARISON = [
   { label: 'Market Oracle', free: '3 lifetime', pro: 'Unlimited', studio: 'Unlimited' },
   { label: 'Gallery — Pro tools', free: '—', pro: '✓', studio: '✓' },
   { label: 'AI Detection', free: '—', pro: '4,000 words/mo', studio: '◆ Unlimited' },
-  { label: 'Inkwell Humanizer', free: '—', pro: '4,000 words/mo', studio: '◆ 50,000 words/mo' },
+  { label: 'AI Humanizer', free: '—', pro: '4,000 words/mo', studio: '◆ 50,000 words/mo' },
   { label: 'Uniqueness Check', free: '—', pro: '✓', studio: '✓' },
   { label: 'Export to .docx', free: '—', pro: '✓', studio: '✓' },
   { label: 'Priority support', free: '—', pro: '✓', studio: '✓ Priority+' },
@@ -89,6 +91,8 @@ export default function UpgradePage() {
       if (!res.ok) throw new Error(data.error || 'Failed to initialize payment');
       if (!data.clientSecret) throw new Error('No client secret returned');
       setClientSecret(data.clientSecret);
+      const price = parseFloat(PLAN_CONFIG[plan][int].price.replace('$', ''));
+      analytics.beginCheckout(plan, price);
     } catch (err: any) {
       setError(err.message || 'Something went wrong');
     } finally {
@@ -150,7 +154,7 @@ export default function UpgradePage() {
           </h1>
           <p className="text-[var(--text-secondary)] text-base max-w-md">
             {isStudio
-              ? 'Everything in Pro plus the Inkwell AI Humanizer pipeline — 50K words/month of AI-to-human rewriting.'
+              ? 'Everything in Pro plus the AI Humanizer pipeline — 50K words/month of AI-to-human rewriting.'
               : 'Every tool. No daily caps. 3× faster AI. Your unfair advantage in the job market.'}
           </p>
         </motion.div>
@@ -380,7 +384,9 @@ export default function UpgradePage() {
 
           {clientSecret && !loading && (
             <EmbeddedCheckoutProvider stripe={stripePromise} options={{ clientSecret }}>
-              <EmbeddedCheckout className="stripe-checkout-embed" />
+              <div style={{ colorScheme: isStudio ? 'dark' : (theme === 'light' ? 'light' : 'dark') }}>
+                <EmbeddedCheckout className="stripe-checkout-embed" />
+              </div>
             </EmbeddedCheckoutProvider>
           )}
 

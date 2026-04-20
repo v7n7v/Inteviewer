@@ -8,6 +8,7 @@ import { showToast } from '@/components/Toast';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 import { authFetch } from '@/lib/auth-fetch';
+import PageHelp from '@/components/PageHelp';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import FileUploadDropzone from '@/components/FileUploadDropzone';
 import { getResumeVersions, type ResumeVersion } from '@/lib/database-suite';
@@ -596,6 +597,7 @@ export default function GauntletPage() {
                             ← New Session
                         </motion.button>
                     )}
+                    <PageHelp toolId="flashcards" />
                 </div>
             </motion.div>
 
