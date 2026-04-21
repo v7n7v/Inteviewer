@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { authHelpers } from '@/lib/firebase';
 import { useStore } from '@/lib/store';
 import SuiteSidebar from '@/components/SuiteSidebar';
-import AIAssistant from '@/components/AIAssistant';
 import SonaFloatingOrb from '@/components/SonaFloatingOrb';
 
 export default function SuiteLayout({
@@ -39,7 +38,6 @@ export default function SuiteLayout({
       <main className="lg:ml-[250px] min-h-screen transition-[margin] duration-200">
         {children}
       </main>
-      <AIAssistant />
       <SonaFloatingOrb />
     </div>
   );

@@ -92,7 +92,8 @@ export const BlueprintSchema = z.object({
 export const StudyPlanSchema = z.object({
   skills: z.array(z.string().trim().max(200)).min(1).max(8),
   userContext: SafeString(5000).optional(),
-  totalDays: z.number().int().min(2).max(7).optional(),
+  totalDays: z.number().min(0.01).max(7).optional(),
+  platforms: z.array(z.string().trim().max(100)).max(10).optional(),
 });
 
 // ──────────────────────────────────────────────

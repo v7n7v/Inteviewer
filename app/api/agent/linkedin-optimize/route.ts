@@ -21,32 +21,46 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { headline, about, targetRole } = body;
+    const { headline, about, targetRole, resumeData } = body;
 
     const userId = guard.user.uid;
     const db = getAdminDb();
 
-    // Fetch resume
+    // Use client-provided resume (morphed) if available, otherwise fetch from Firestore
     let resumeContext = '';
-    const resumeSnap = await db
-      .collection('users').doc(userId)
-      .collection('resume_versions')
-      .orderBy('created_at', 'desc')
-      .limit(1)
-      .get();
+    if (resumeData) {
+      resumeContext = JSON.stringify({
+        name: resumeData.name,
+        title: resumeData.title,
+        summary: resumeData.summary,
+        skills: Array.isArray(resumeData.skills)
+          ? resumeData.skills.flatMap((c: any) => typeof c === 'string' ? [c] : c.items || [])
+          : [],
+        experience: (resumeData.experience || []).map((e: any) => ({
+          role: e.role || e.title, company: e.company, bullets: (e.bullets || e.achievements || []).slice(0, 3),
+        })),
+      });
+    } else {
+      const resumeSnap = await db
+        .collection('users').doc(userId)
+        .collection('resume_versions')
+        .orderBy('created_at', 'desc')
+        .limit(1)
+        .get();
 
-    if (!resumeSnap.empty) {
-      const resume = resumeSnap.docs[0].data()?.content;
-      if (resume) {
-        resumeContext = JSON.stringify({
-          name: resume.name,
-          title: resume.title,
-          summary: resume.summary,
-          skills: (resume.skills || []).flatMap((c: any) => c.items || []),
-          experience: (resume.experience || []).map((e: any) => ({
-            role: e.role, company: e.company, bullets: (e.bullets || []).slice(0, 3),
-          })),
-        });
+      if (!resumeSnap.empty) {
+        const resume = resumeSnap.docs[0].data()?.content;
+        if (resume) {
+          resumeContext = JSON.stringify({
+            name: resume.name,
+            title: resume.title,
+            summary: resume.summary,
+            skills: (resume.skills || []).flatMap((c: any) => c.items || []),
+            experience: (resume.experience || []).map((e: any) => ({
+              role: e.role, company: e.company, bullets: (e.bullets || []).slice(0, 3),
+            })),
+          });
+        }
       }
     }
 

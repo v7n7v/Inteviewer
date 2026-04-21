@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/lib/store';
 import { showToast } from '@/components/Toast';
@@ -58,6 +58,44 @@ export default function CoverLetterPage() {
   const [template, setTemplate] = useState('classic');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<CoverLetterResult | null>(null);
+  const [resumeContext, setResumeContext] = useState<any>(null);
+  const [hasResumeContext, setHasResumeContext] = useState(false);
+
+  // Auto-populate from Resume Studio draft (sessionStorage)
+  useEffect(() => {
+    try {
+      const draft = sessionStorage.getItem('talent-resume-draft');
+      if (!draft) return;
+      const parsed = JSON.parse(draft);
+
+      // Set resume context for API
+      if (parsed.morphedResume) {
+        setResumeContext(parsed.morphedResume);
+        setHasResumeContext(true);
+
+        // Auto-fill job title from resume
+        if (parsed.morphedResume.title && !jobTitle) {
+          // Don't set jobTitle — that's the target position, not resume title
+        }
+      }
+
+      // Auto-fill JD if available
+      if (parsed.jobDescription && !jobDescription) {
+        setJobDescription(parsed.jobDescription);
+
+        // Try to extract company name from JD
+        const jd = parsed.jobDescription;
+        const companyMatch = jd.match(/(?:at|@|company[:\s]+|employer[:\s]+)\s*([A-Z][A-Za-z0-9\s&.,']+?)(?:\s*[-–—]|\s*\n|\s*is\s|\s*,)/i);
+        if (companyMatch && !company) {
+          setCompany(companyMatch[1].trim());
+        }
+      }
+    } catch (e) {
+      // Silently fail — sessionStorage might not be available
+    }
+    // Only run on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleGenerate = async () => {
     if (!company || !jobTitle) {
@@ -70,7 +108,15 @@ export default function CoverLetterPage() {
       const res = await fetch('/api/agent/cover-letter', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ company, jobTitle, jobDescription, tone, template }),
+        body: JSON.stringify({
+          company,
+          jobTitle,
+          jobDescription,
+          tone,
+          template,
+          // Send morphed resume directly if available — API will use this instead of Firestore
+          ...(resumeContext ? { resumeData: resumeContext } : {}),
+        }),
       });
       const data = await res.json();
       if (data.success) {
@@ -99,7 +145,15 @@ export default function CoverLetterPage() {
               <p className="text-sm text-[var(--text-tertiary)]">AI-crafted cover letters from your resume</p>
             </div>
           </div>
-          <PageHelp toolId="cover-letter" />
+          <div className="flex items-center gap-3">
+            {hasResumeContext && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                <span className="material-symbols-rounded text-[14px] text-emerald-500">check_circle</span>
+                <span className="text-[11px] font-semibold text-emerald-500">Resume loaded</span>
+              </div>
+            )}
+            <PageHelp toolId="cover-letter" />
+          </div>
         </div>
       </motion.div>
 
@@ -210,7 +264,11 @@ export default function CoverLetterPage() {
                     <span className="material-symbols-rounded text-3xl text-rose-500">draw</span>
                   </div>
                   <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">Your Cover Letter</h3>
-                  <p className="text-sm text-[var(--text-tertiary)] max-w-xs">Choose your tone and template, then generate. We'll pull from your resume automatically.</p>
+                  <p className="text-sm text-[var(--text-tertiary)] max-w-xs">
+                    {hasResumeContext
+                      ? 'Your morphed resume is loaded. Choose tone & template, then generate.'
+                      : 'Choose your tone and template, then generate. We\'ll pull from your resume automatically.'}
+                  </p>
                 </div>
               </motion.div>
             ) : (

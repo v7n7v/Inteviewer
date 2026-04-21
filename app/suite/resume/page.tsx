@@ -10,6 +10,8 @@ import PageHelp from '@/components/PageHelp';
 import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
 import { downloadResumePDF } from '@/lib/pdf-templates';
+import { normalizeResume, serializeResumeToText } from '@/lib/resume-normalizer';
+import { ResumeTemplate as ResumeTemplateComponent } from '@/components/resume-templates';
 import { useUserTier } from '@/hooks/use-user-tier';
 import { useTheme } from '@/components/ThemeProvider';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, Table, TableRow, TableCell, WidthType, ShadingType, TableBorders } from 'docx';
@@ -57,26 +59,26 @@ const EMPTY_RESUME: ResumeData = {
 };
 
 const TEMPLATES = [
-  // ── FREE TEMPLATES (4) ──
-  { id: 'executive', name: 'Executive', description: 'Clean, professional design for senior roles', preview: 'bar_chart', tier: 'free' as const, colors: { primary: '#1a365d', accent: '#2b6cb0', text: '#1a202c' } },
-  { id: 'modern', name: 'Modern', description: 'Contemporary style with bold headers', preview: 'auto_awesome', tier: 'free' as const, colors: { primary: '#0d9488', accent: '#14b8a6', text: '#1e293b' } },
-  { id: 'minimal', name: 'Minimal', description: 'Simple and elegant, ATS-friendly', preview: 'my_location', tier: 'free' as const, colors: { primary: '#374151', accent: '#6b7280', text: '#111827' } },
-  { id: 'compact', name: 'Compact', description: 'Dense, ATS-optimized one-page format', preview: 'content_paste', tier: 'free' as const, colors: { primary: '#15803d', accent: '#16a34a', text: '#14532d' } },
-  // ── PRO TEMPLATES (14) ──
-  { id: 'creative', name: 'Creative', description: 'Stand out with unique layout', preview: 'palette', tier: 'pro' as const, colors: { primary: '#7c3aed', accent: '#8b5cf6', text: '#1f2937' } },
-  { id: 'technical', name: 'Technical', description: 'Optimized for tech roles', preview: 'computer', tier: 'pro' as const, colors: { primary: '#0369a1', accent: '#0284c7', text: '#0f172a' } },
-  { id: 'harvard', name: 'Harvard', description: 'Traditional achievement-focused format', preview: 'school', tier: 'pro' as const, colors: { primary: '#991b1b', accent: '#b91c1c', text: '#1c1917' } },
-  { id: 'cascade', name: 'Cascade', description: 'Spacious sidebar with skill showcase', preview: 'straighten', tier: 'pro' as const, colors: { primary: '#1e3a5f', accent: '#3b82f6', text: '#1e293b' } },
-  { id: 'elegant', name: 'Elegant', description: 'Serif typography, refined and luxurious', preview: 'edit', tier: 'pro' as const, colors: { primary: '#44403c', accent: '#78716c', text: '#292524' } },
-  { id: 'nordic', name: 'Nordic', description: 'Clean Scandinavian-inspired minimal design', preview: 'ac_unit', tier: 'pro' as const, colors: { primary: '#475569', accent: '#94a3b8', text: '#334155' } },
-  { id: 'ats-optimized', name: 'ATS Ultra', description: 'Maximum ATS compatibility, zero formatting risk', preview: 'smart_toy', tier: 'pro' as const, colors: { primary: '#0f766e', accent: '#14b8a6', text: '#134e4a' } },
-  { id: 'double-column', name: 'Double Column', description: 'Two-column layout with sidebar skills panel', preview: 'article', tier: 'pro' as const, colors: { primary: '#1e40af', accent: '#3b82f6', text: '#1e293b' } },
-  { id: 'infographic', name: 'Infographic', description: 'Visual skill bars, charts, and timeline layout', preview: 'trending_up', tier: 'pro' as const, colors: { primary: '#c026d3', accent: '#e879f9', text: '#1f2937' } },
-  { id: 'deloitte', name: 'Deloitte', description: 'Consulting-style format with impact metrics', preview: 'domain', tier: 'pro' as const, colors: { primary: '#86bc25', accent: '#0076a8', text: '#1a1a2e' } },
-  { id: 'faang', name: 'FAANG', description: 'Big Tech format with project highlights', preview: 'rocket_launch', tier: 'pro' as const, colors: { primary: '#4285f4', accent: '#34a853', text: '#202124' } },
-  { id: 'startup', name: 'Startup', description: 'Dynamic layout for fast-paced environments', preview: 'bolt', tier: 'pro' as const, colors: { primary: '#f97316', accent: '#fb923c', text: '#1c1917' } },
-  { id: 'federal', name: 'Federal', description: 'Government & defense format with clearance section', preview: 'account_balance', tier: 'pro' as const, colors: { primary: '#1e3a5f', accent: '#1d4ed8', text: '#111827' } },
-  { id: 'academic', name: 'Academic', description: 'Research-focused with publications & grants', preview: 'school', tier: 'pro' as const, colors: { primary: '#7c2d12', accent: '#c2410c', text: '#1c1917' } },
+  // ── FREE TEMPLATES (5) ──
+  { id: 'executive', name: 'Executive', description: 'Professional format for senior roles', preview: 'bar_chart', tier: 'free' as const, colors: { primary: '#1a365d', accent: '#2b6cb0', text: '#1a202c' } },
+  { id: 'modern', name: 'Modern', description: 'Rich header band with teal accents', preview: 'auto_awesome', tier: 'free' as const, colors: { primary: '#0d9488', accent: '#14b8a6', text: '#1e293b' } },
+  { id: 'minimal', name: 'Minimal', description: 'Clean and elegant, maximum readability', preview: 'my_location', tier: 'free' as const, colors: { primary: '#374151', accent: '#6b7280', text: '#111827' } },
+  { id: 'compact', name: 'Compact', description: 'Dense one-page, fits more content', preview: 'content_paste', tier: 'free' as const, colors: { primary: '#15803d', accent: '#16a34a', text: '#14532d' } },
+  { id: 'technical', name: 'Technical', description: 'Code-style layout for engineering roles', preview: 'computer', tier: 'free' as const, colors: { primary: '#0369a1', accent: '#0284c7', text: '#0f172a' } },
+  // ── PRO TEMPLATES (13) ──
+  { id: 'creative', name: 'Creative', description: 'Initials badge with colored chips', preview: 'palette', tier: 'pro' as const, colors: { primary: '#7c3aed', accent: '#8b5cf6', text: '#1f2937' } },
+  { id: 'harvard', name: 'Harvard', description: 'Traditional education-first format', preview: 'school', tier: 'pro' as const, colors: { primary: '#991b1b', accent: '#b91c1c', text: '#1c1917' } },
+  { id: 'cascade', name: 'Cascade', description: 'Timeline dots with visual flow', preview: 'straighten', tier: 'pro' as const, colors: { primary: '#1e3a5f', accent: '#3b82f6', text: '#1e293b' } },
+  { id: 'elegant', name: 'Elegant', description: 'Serif typography with decorative dividers', preview: 'edit', tier: 'pro' as const, colors: { primary: '#44403c', accent: '#78716c', text: '#292524' } },
+  { id: 'nordic', name: 'Nordic', description: 'Scandinavian-inspired generous whitespace', preview: 'ac_unit', tier: 'pro' as const, colors: { primary: '#475569', accent: '#94a3b8', text: '#334155' } },
+  { id: 'ats-optimized', name: 'ATS Ultra', description: 'Maximum ATS compliance, zero risk', preview: 'smart_toy', tier: 'pro' as const, colors: { primary: '#0f766e', accent: '#14b8a6', text: '#134e4a' } },
+  { id: 'double-column', name: 'Columnist', description: 'Skills showcase at top, then experience', preview: 'article', tier: 'pro' as const, colors: { primary: '#1e40af', accent: '#3b82f6', text: '#1e293b' } },
+  { id: 'infographic', name: 'Metro', description: 'Bold color blocks with accent bars', preview: 'trending_up', tier: 'pro' as const, colors: { primary: '#c026d3', accent: '#e879f9', text: '#1f2937' } },
+  { id: 'deloitte', name: 'Consultant', description: 'Impact-first format with expertise grid', preview: 'domain', tier: 'pro' as const, colors: { primary: '#86bc25', accent: '#0076a8', text: '#1a1a2e' } },
+  { id: 'faang', name: 'FAANG', description: 'Big Tech format with timeline accents', preview: 'rocket_launch', tier: 'pro' as const, colors: { primary: '#4285f4', accent: '#34a853', text: '#202124' } },
+  { id: 'startup', name: 'Startup', description: 'Bold and energetic for fast movers', preview: 'bolt', tier: 'pro' as const, colors: { primary: '#f97316', accent: '#fb923c', text: '#1c1917' } },
+  { id: 'federal', name: 'Federal', description: 'Government format with clearance section', preview: 'account_balance', tier: 'pro' as const, colors: { primary: '#1e3a5f', accent: '#1d4ed8', text: '#111827' } },
+  { id: 'academic', name: 'Academic', description: 'Research-focused with publications section', preview: 'school', tier: 'pro' as const, colors: { primary: '#7c2d12', accent: '#c2410c', text: '#1c1917' } },
 ];
 
 const SKILL_CATEGORIES = [
@@ -528,6 +530,7 @@ export default function LiquidResumePage() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [saveVersionName, setSaveVersionName] = useState('');
   const [saveCompanyName, setSaveCompanyName] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [applicationData, setApplicationData] = useState({ companyName: '', jobTitle: '', notes: '' });
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -618,6 +621,8 @@ export default function LiquidResumePage() {
 
   // ===== DATA LOADING =====
   const loadVersions = async () => {
+    // Guard: don't hit Firestore without authentication
+    if (!user) return;
     const result = await getResumeVersions();
     if (result.success && result.data) setVersions(result.data);
   };
@@ -767,7 +772,7 @@ export default function LiquidResumePage() {
       // CRITICAL: Always ensure we have valid data before proceeding
       const validResume = hasResumeData(morphed) ? morphed : originalResume;
 
-      setMorphedResume(validResume);
+      setMorphedResume(normalizeResume(validResume, originalResume) as any);
       setMatchScore(score);
       // Clear stale enhance results from previous resume version
       setResumeCheckResult(null);
@@ -833,42 +838,61 @@ export default function LiquidResumePage() {
   };
 
   const confirmSave = async () => {
-    if (!saveVersionName.trim() || !saveCompanyName.trim()) return;
-    const resume = getDisplayResume();
-    if (!resume) {
-      showToast('No resume data to save', 'cancel');
+    if (!saveCompanyName.trim()) {
+      showToast('Enter a company name to track this application', 'cancel');
       return;
     }
-    setIsLoading(true);
+    // Use a local variable for version name since setState is async
+    const versionName = saveVersionName.trim() || getDisplayResume()?.title || 'My Resume';
+    if (!saveVersionName.trim()) {
+      setSaveVersionName(versionName);
+    }
+    const resume = getDisplayResume();
+    if (!resume) {
+      showToast('No resume data to save — generate or upload a resume first', 'cancel');
+      return;
+    }
+    setIsSaving(true);
     try {
       // 1. Save the resume version
+      console.log('[Save & Track] Saving resume version:', versionName, 'for', saveCompanyName);
       const result = await saveResumeVersion(
-        `${saveVersionName} — ${saveCompanyName}`,
+        `${versionName} — ${saveCompanyName}`,
         resume as any,
         { matchScore, template: selectedTemplate.id, morphPercentage },
         'technical'
       );
       if (!result.success) {
-        showToast(result.error || 'Save failed', 'cancel');
-        setIsLoading(false);
+        console.error('[Save & Track] Save failed:', result.error);
+        showToast(result.error || 'Save failed — check your connection', 'cancel');
+        setIsSaving(false);
         return;
       }
+      console.log('[Save & Track] Resume saved, creating application entry...');
 
       // 2. Auto-create an application entry
-      await createJobApplication({
+      const appResult = await createJobApplication({
         companyName: saveCompanyName,
-        jobTitle: resume.title || saveVersionName,
+        jobTitle: resume.title || versionName,
         jobDescription: jobDescription || undefined,
         resumeVersionId: result.data?.id,
-        morphedResumeName: saveVersionName,
+        morphedResumeName: versionName,
         talentDensityScore: matchScore || undefined,
       });
+      
+      if (!appResult.success) {
+        console.warn('[Save & Track] Application creation failed:', appResult.error);
+        // Resume was saved, just the application entry failed — still proceed
+        showToast(`Resume saved for ${saveCompanyName}! (Application tracking may need retry)`, 'check_circle');
+      } else {
+        console.log('[Save & Track] Application created successfully');
+        showToast(`Saved & tracked for ${saveCompanyName}!`, 'check_circle');
+      }
 
       // 3. Show success state & clear draft
       clearDraft();
       setSaveSuccess(true);
       loadVersions();
-      showToast(`Saved & tracked for ${saveCompanyName}!`, 'check_circle');
 
       // Auto-close after brief visual confirmation
       setTimeout(() => {
@@ -878,10 +902,10 @@ export default function LiquidResumePage() {
         setSaveSuccess(false);
       }, 1500);
     } catch (error: any) {
-      console.error('Save error:', error);
-      showToast(`Save failed: ${error.message || 'Unknown error'}`, 'cancel');
+      console.error('[Save & Track] Unexpected error:', error);
+      showToast(`Save failed: ${error.message || 'Unknown error — check console'}`, 'cancel');
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
     }
   };
 
@@ -953,7 +977,7 @@ export default function LiquidResumePage() {
     }
     setIsLoading(true);
     try {
-      await downloadResumePDF(resume, selectedTemplate.colors);
+      await downloadResumePDF(resume, selectedTemplate.colors, undefined, selectedTemplate.id);
       showToast('PDF downloaded!', 'check_circle');
       analytics.resumeDownload('pdf');
       clearDraft();
@@ -1342,41 +1366,8 @@ export default function LiquidResumePage() {
     } finally { setCoverLetterLoading(false); }
   };
 
-  // Helper: serialize skills whether they're [{category, items}] or flat ["string"]
-  const serializeSkills = (skills: any[]): string => {
-    if (!skills || skills.length === 0) return '';
-    // Check if first item is a string (flat) or object (structured)
-    if (typeof skills[0] === 'string') return skills.join(', ');
-    // Structured: [{category: "Technical", items: ["Python", "Java"]}]
-    return skills.map((s: any) => {
-      if (typeof s === 'string') return s;
-      const items = (s.items || []).join(', ');
-      return s.category ? `${s.category}: ${items}` : items;
-    }).filter(Boolean).join('; ');
-  };
-
-  // Helper: normalize flat skills array back to structured format
-  const normalizeSkills = (rawSkills: any[], originalSkills: any[]): any[] => {
-    if (!rawSkills || rawSkills.length === 0) return originalSkills || [];
-    // Already structured
-    if (typeof rawSkills[0] === 'object' && rawSkills[0].items) return rawSkills;
-    // Flat strings — group into original categories or a single "Skills" group
-    if (typeof rawSkills[0] === 'string') {
-      if (originalSkills?.length && typeof originalSkills[0] === 'object' && originalSkills[0].items) {
-        // Try to preserve original category structure
-        const originalFlat = new Set(originalSkills.flatMap((s: any) => (s.items || []).map((i: string) => i.toLowerCase().trim())));
-        const newSkills = rawSkills.filter((s: string) => !originalFlat.has(s.toLowerCase().trim()));
-        const result = originalSkills.map((cat: any) => ({ ...cat }));
-        // Add new skills to the first category
-        if (newSkills.length > 0 && result.length > 0) {
-          result[0] = { ...result[0], items: [...(result[0].items || []), ...newSkills] };
-        }
-        return result;
-      }
-      return [{ category: 'Skills', items: rawSkills }];
-    }
-    return rawSkills;
-  };
+  // Skills serialization and normalization are handled by lib/resume-normalizer.ts
+  // Use normalizeResume() for data, serializeResumeToText() for AI prompts
 
   const checkResume = async () => {
     const displayResume = getDisplayResume();
@@ -1385,13 +1376,7 @@ export default function LiquidResumePage() {
     setResumeCheckResult(null);
     setShowResumeCheckPanel(true);
     try {
-      const resumeText = [
-        displayResume.name, displayResume.title, displayResume.email, displayResume.phone,
-        displayResume.summary,
-        ...(displayResume.experience || []).map((e: any) => `${e.title} at ${e.company}: ${(e.achievements || []).join('. ')}`),
-        ...(displayResume.education || []).map((e: any) => `${e.degree} from ${e.school}`),
-        'Skills: ' + serializeSkills(displayResume.skills || []),
-      ].filter(Boolean).join('\n');
+      const resumeText = serializeResumeToText(normalizeResume(displayResume));
 
       const res = await authFetch('/api/resume/check', {
         method: 'POST',
@@ -1414,13 +1399,7 @@ export default function LiquidResumePage() {
     setLinkedinResult(null);
     setShowLinkedinPanel(true);
     try {
-      const resumeText = [
-        displayResume.name, displayResume.title, displayResume.email,
-        displayResume.summary,
-        ...(displayResume.experience || []).map((e: any) => `${e.title} at ${e.company} (${e.duration || ''}): ${(e.achievements || []).join('. ')}`),
-        ...(displayResume.education || []).map((e: any) => `${e.degree} from ${e.school}`),
-        'Skills: ' + serializeSkills(displayResume.skills || []),
-      ].filter(Boolean).join('\n');
+      const resumeText = serializeResumeToText(normalizeResume(displayResume));
 
       const res = await authFetch('/api/resume/linkedin', {
         method: 'POST',
@@ -1445,13 +1424,7 @@ export default function LiquidResumePage() {
     setEnhancePipelineStage(1);
     setPreFixScore(resumeCheckResult.atsScore);
     try {
-      const resumeText = [
-        currentResume.name, currentResume.title, currentResume.email, currentResume.phone,
-        currentResume.summary,
-        ...(currentResume.experience || []).map((e: any) => `${e.title || e.role} at ${e.company} (${e.duration || ''}): ${(e.achievements || []).join('. ')}`),
-        ...(currentResume.education || []).map((e: any) => `${e.degree} from ${e.school}`),
-        'Skills: ' + serializeSkills(currentResume.skills || []),
-      ].filter(Boolean).join('\n');
+      const resumeText = serializeResumeToText(normalizeResume(currentResume));
 
       setEnhancePipelineStage(2);
       const res = await authFetch('/api/resume/auto-fix', {
@@ -1472,19 +1445,11 @@ export default function LiquidResumePage() {
       setEnhancePipelineStage(3);
       // Apply improved resume data
       if (data.improvedResume) {
-        const improved = {
+        // Use centralized normalizer — handles skills format, field names, etc.
+        const improved = normalizeResume({
           ...currentResume,
           ...data.improvedResume,
-          // Normalize field names
-          title: data.improvedResume.title || currentResume.title,
-          experience: (data.improvedResume.experience || []).map((exp: any) => ({
-            ...exp,
-            role: exp.role || exp.title,
-            title: exp.title || exp.role,
-          })),
-          // Normalize skills back to structured format for template rendering
-          skills: normalizeSkills(data.improvedResume.skills, currentResume.skills),
-        };
+        }, currentResume) as any;
         if (mode === 'morph') setMorphedResume(improved);
         else setBuildResume(improved);
         showToast(`Resume auto-fixed! Score: ${data.score}/100 ${data.refined ? '(Dual-AI refined <span className="material-symbols-rounded align-middle mr-1">auto_awesome</span>)' : ''}`, 'check_circle');
@@ -1884,7 +1849,7 @@ export default function LiquidResumePage() {
 
                   {/* JD Input */}
                   <div className="space-y-4">
-                    <div className="p-4 rounded-xl glass-card">
+                    <div className={`p-4 rounded-xl border ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-white/[0.02] border-white/[0.06]'}`}>
                       <div className="flex items-center gap-2 mb-3">
                         <span className="text-xl"><span className="material-symbols-rounded text-inherit align-middle">work</span></span>
                         <label className={`font-semibold ${isLight ? 'text-slate-800' : 'text-white'}`}>Job Description</label>
@@ -1893,24 +1858,24 @@ export default function LiquidResumePage() {
                         value={jobDescription}
                         onChange={(e) => setJobDescription(e.target.value)}
                         placeholder="Paste the full job description here..."
-                        className="w-full h-44 px-4 py-3 rounded-xl glass-card text-white placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none resize-none"
+                        className={`w-full h-44 px-4 py-3 rounded-xl border focus:outline-none resize-none ${isLight ? 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400 focus:border-indigo-300' : 'bg-white/[0.02] border-white/[0.06] text-white placeholder-slate-500 focus:border-indigo-500/50'}`}
                       />
                     </div>
 
                     {/* Morph Intensity */}
-                    <div className="p-4 rounded-xl glass-card">
+                    <div className={`p-4 rounded-xl border ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-white/[0.02] border-white/[0.06]'}`}>
                       <div className="flex justify-between items-center mb-3">
                         <label className={`font-semibold ${isLight ? 'text-slate-800' : 'text-white'}`}>Morph Intensity</label>
                         <span className={`text-lg font-bold px-3 py-1 rounded-lg ${
                           morphPercentage < 50 
-                            ? (isLight ? 'bg-green-100 text-green-700' : 'bg-green-500/20 text-green-400')
+                            ? (isLight ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20')
                             : morphPercentage < 75 
-                              ? (isLight ? 'bg-amber-100 text-amber-700' : 'bg-yellow-500/20 text-yellow-400')
-                              : (isLight ? 'bg-red-100 text-red-700' : 'bg-red-500/20 text-red-400')
+                              ? (isLight ? 'bg-slate-100 text-slate-700 border border-slate-200' : 'bg-white/5 text-white/70 border border-white/10')
+                              : (isLight ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-red-500/10 text-red-400 border border-red-500/20')
                           }`}>{morphPercentage}%</span>
                       </div>
                       <div className="relative">
-                        <div className="absolute inset-0 h-3 rounded-full bg-gradient-to-r from-green-500 via-yellow-500 to-red-500 opacity-30" />
+                        <div className={`absolute inset-0 h-3 rounded-full opacity-20 ${isLight ? 'bg-gradient-to-r from-emerald-400 via-slate-300 to-red-400' : 'bg-gradient-to-r from-emerald-500 via-slate-500 to-red-500'}`} />
                         <input
                           type="range"
                           min="25"
@@ -1923,14 +1888,14 @@ export default function LiquidResumePage() {
                           }}
                           className="relative w-full h-3 rounded-full appearance-none cursor-pointer"
                           style={{
-                            background: `linear-gradient(to right, #22c55e ${0}%, #22c55e ${((morphPercentage - 25) / 75) * 33}%, #eab308 ${((morphPercentage - 25) / 75) * 66}%, #ef4444 ${((morphPercentage - 25) / 75) * 100}%)`,
+                            background: `linear-gradient(to right, #10b981 ${0}%, #10b981 ${((morphPercentage - 25) / 75) * 33}%, #64748b ${((morphPercentage - 25) / 75) * 66}%, #ef4444 ${((morphPercentage - 25) / 75) * 100}%)`,
                           }}
                         />
                       </div>
                       <div className="flex justify-between text-xs mt-2">
-                        <span className={`font-medium ${isLight ? 'text-green-700' : 'text-green-400'}`}><span className="material-symbols-rounded text-inherit align-middle">psychiatry</span> Light Touch</span>
-                        <span className={`font-medium ${isLight ? 'text-amber-700' : 'text-yellow-400'}`}><span className="material-symbols-rounded text-inherit align-middle">bolt</span> Moderate</span>
-                        <span className={`font-medium ${isLight ? 'text-red-700' : 'text-red-400'}`}><span className="material-symbols-rounded text-inherit align-middle">local_fire_department</span> Aggressive</span>
+                        <span className={`font-medium ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`}><span className="material-symbols-rounded text-inherit align-middle">psychiatry</span> Light Touch</span>
+                        <span className={`font-medium ${isLight ? 'text-slate-500' : 'text-white/50'}`}><span className="material-symbols-rounded text-inherit align-middle">bolt</span> Moderate</span>
+                        <span className={`font-medium ${isLight ? 'text-red-600' : 'text-red-400'}`}><span className="material-symbols-rounded text-inherit align-middle">local_fire_department</span> Aggressive</span>
                       </div>
 
                       {/* AI Detection Warning at 80%+ */}
@@ -2026,7 +1991,9 @@ export default function LiquidResumePage() {
                           <button
                             key={pc}
                             onClick={() => setTargetPageCount(pc)}
-                            className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${targetPageCount === pc ? 'bg-cyan-500 text-white' : 'bg-white/10 text-silver hover:bg-white/20'
+                            className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${targetPageCount === pc 
+                              ? (isLight ? 'bg-indigo-600 text-white shadow-md' : 'bg-indigo-500 text-white shadow-md') 
+                              : (isLight ? 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200' : 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10')
                               }`}
                           >
                             {pc === 'auto' ? 'Auto' : `${pc} Page${pc > 1 ? 's' : ''}`}
@@ -2048,8 +2015,8 @@ export default function LiquidResumePage() {
                               ? 'bg-red-600 border-2 border-red-700 text-white shadow-[0_2px_10px_rgba(220,38,38,0.3)] cursor-not-allowed'
                               : 'bg-red-600 border-2 border-red-500 text-white shadow-[0_2px_15px_rgba(239,68,68,0.4)] cursor-not-allowed')
                           : (isLight
-                              ? 'bg-cyan-600 border border-cyan-700 text-white hover:bg-cyan-700 shadow-[0_2px_8px_rgba(6,182,212,0.3)] disabled:opacity-50'
-                              : 'bg-cyan-600 border border-cyan-500 text-white hover:bg-cyan-500 shadow-[0_2px_12px_rgba(6,182,212,0.3)] disabled:opacity-50')
+                              ? 'bg-indigo-600 border border-indigo-700 text-white hover:bg-indigo-700 shadow-[0_2px_8px_rgba(99,102,241,0.3)] disabled:opacity-50'
+                              : 'bg-indigo-600 border border-indigo-500 text-white hover:bg-indigo-500 shadow-[0_2px_12px_rgba(99,102,241,0.3)] disabled:opacity-50')
                       }`}
                     >
                       {isLoading ? <><span className="material-symbols-rounded align-middle mr-1">psychology</span> AI is Rewriting...</> : !jobDescription.trim() ? <><span className="material-symbols-rounded align-middle mr-1">warning</span> Paste Job Description First</> : (morphPercentage >= 80 && !acceptedRisk) ? <><span className="material-symbols-rounded align-middle mr-1">emergency</span> Check &quot;I accept&quot; to Proceed</> : <><span className="material-symbols-rounded align-middle mr-1">psychology</span> Morph Resume to Match JD</>}
@@ -2062,11 +2029,11 @@ export default function LiquidResumePage() {
                       className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
                         !jobDescription.trim()
                           ? (isLight 
-                              ? 'bg-slate-200 border border-slate-300 text-slate-500 cursor-not-allowed shadow-none'
+                              ? 'bg-slate-100 border border-slate-200 text-slate-400 cursor-not-allowed shadow-none'
                               : 'bg-slate-800/50 border border-slate-700 text-slate-500 cursor-not-allowed shadow-none')
                           : isLight
-                          ? 'bg-gradient-to-r from-amber-500 to-orange-500 border border-amber-600 text-white shadow-[0_2px_10px_rgba(245,158,11,0.3)] hover:from-amber-600 hover:to-orange-600 disabled:opacity-50'
-                          : 'bg-gradient-to-r from-amber-600 to-orange-600 border border-amber-500 text-white shadow-[0_2px_15px_rgba(245,158,11,0.25)] hover:from-amber-500 hover:to-orange-500 disabled:opacity-50'
+                          ? 'bg-slate-50 border border-slate-300 text-slate-700 shadow-sm hover:bg-slate-100 hover:border-slate-400 disabled:opacity-50'
+                          : 'bg-white/[0.04] border border-white/[0.1] text-white/80 hover:bg-white/[0.08] disabled:opacity-50'
                       }`}
                     >
                       {!jobDescription.trim() ? (
@@ -2095,7 +2062,7 @@ export default function LiquidResumePage() {
                       </div>
                       <p className="text-sm text-slate-400 mt-1">Check, fix, and generate — powered by two AI models</p>
                     </div>
-                    <button onClick={() => setStep('template')} className="px-4 py-2 rounded-xl font-medium text-sm bg-cyan-500/[0.08] border border-cyan-500/[0.15] text-cyan-400 hover:bg-cyan-500/[0.12] transition-all">
+                    <button onClick={() => setStep('template')} className={`px-4 py-2 rounded-xl font-medium text-sm transition-all ${isLight ? 'bg-indigo-50 border border-indigo-200 text-indigo-600 hover:bg-indigo-100' : 'bg-indigo-500/[0.08] border border-indigo-500/[0.15] text-indigo-400 hover:bg-indigo-500/[0.12]'}`}>
                       Continue to Template →
                     </button>
                   </div>
@@ -2103,9 +2070,9 @@ export default function LiquidResumePage() {
                   {/* Animated Pipeline Indicator */}
                   {enhancePipelineStage > 0 && (
                     <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className={`mb-6 p-4 rounded-xl border overflow-hidden relative ${
-                      isLight ? 'bg-white border-emerald-200 shadow-sm' : 'bg-[var(--theme-bg-card)] border-emerald-500/[0.1]'
+                      isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-white/[0.02] border-white/[0.06]'
                     }`}>
-                      <div className={`absolute inset-0 animate-pulse ${isLight ? 'bg-gradient-to-r from-emerald-50/50 via-cyan-50/50 to-emerald-50/50' : 'bg-gradient-to-r from-emerald-500/[0.02] via-cyan-500/[0.04] to-emerald-500/[0.02]'}`} />
+                      <div className={`absolute inset-0 ${isLight ? 'bg-gradient-to-r from-slate-50/50 via-indigo-50/30 to-slate-50/50' : 'bg-gradient-to-r from-white/[0.01] via-indigo-500/[0.02] to-white/[0.01]'}`} />
                       <div className="relative flex items-center gap-4">
                         {[
                           { label: 'GPT Writing', stage: 1 },
@@ -2134,13 +2101,13 @@ export default function LiquidResumePage() {
                     {/* Left: Resume Check + Auto-Fix */}
                     <div className="space-y-4">
                       {/* Resume Quality Check */}
-                      <div className={`rounded-xl p-5 border ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-[var(--theme-bg-card)] border-amber-500/[0.1]'}`}>
+                      <div className={`rounded-xl p-5 border ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-white/[0.02] border-white/[0.06]'}`}>
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-2">
                             <span className={`text-sm font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}><span className="material-symbols-rounded text-inherit align-middle">search</span> Resume Quality Check</span>
-                            <span className={`text-[8px] px-1.5 py-0.5 rounded font-mono ${isLight ? 'bg-amber-100 border border-amber-300 text-amber-700' : 'bg-amber-500/10 border border-amber-500/20 text-amber-400'}`}>Gemini Flash</span>
+                            <span className={`text-[8px] px-1.5 py-0.5 rounded font-mono ${isLight ? 'bg-slate-100 border border-slate-200 text-slate-500' : 'bg-white/5 border border-white/10 text-white/40'}`}>Gemini Flash</span>
                           </div>
-                          <button onClick={() => { setEnhancePhase('checking'); setEnhancePipelineStage(2); checkResume(); }} disabled={resumeCheckLoading} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-50 ${isLight ? 'bg-amber-100 border border-amber-300 text-amber-700 hover:bg-amber-200' : 'bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/15'}`}>
+                          <button onClick={() => { setEnhancePhase('checking'); setEnhancePipelineStage(2); checkResume(); }} disabled={resumeCheckLoading} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-50 ${isLight ? 'bg-indigo-50 border border-indigo-200 text-indigo-600 hover:bg-indigo-100' : 'bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/15'}`}>
                             {resumeCheckLoading ? <><span className="material-symbols-rounded text-[14px] align-middle mr-1">search</span> Analyzing...</> : resumeCheckResult ? <><span className="material-symbols-rounded text-[14px] align-middle mr-1">sync</span> Re-check</> : <><span className="material-symbols-rounded text-[14px] align-middle mr-1">play_arrow</span> Run Check</>}
                           </button>
                         </div>
@@ -2150,8 +2117,8 @@ export default function LiquidResumePage() {
                           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3 py-4">
                             {['Parsing resume structure...', 'Analyzing ATS compatibility...', 'Scoring keywords & formatting...', 'Generating suggestions...'].map((text, i) => (
                               <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.8 }} className="flex items-center gap-2">
-                                <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="w-3 h-3 border-2 border-amber-400/30 border-t-amber-400 rounded-full" />
-                                <span className="text-xs text-amber-400/70">{text}</span>
+                                <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className={`w-3 h-3 border-2 rounded-full ${isLight ? 'border-indigo-200 border-t-indigo-500' : 'border-indigo-500/30 border-t-indigo-400'}`} />
+                                <span className={`text-xs ${isLight ? 'text-slate-500' : 'text-white/40'}`}>{text}</span>
                               </motion.div>
                             ))}
                           </motion.div>
@@ -2200,8 +2167,8 @@ export default function LiquidResumePage() {
                               <div className="space-y-1.5">
                                 <div className={`text-xs font-semibold ${isLight ? 'text-slate-500' : 'text-white/50'}`}><span className="material-symbols-rounded text-inherit align-middle">lightbulb</span> Suggestions</div>
                                 {resumeCheckResult.suggestions.map((s: string, i: number) => (
-                                  <motion.div key={i} initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }} className={`text-[11px] flex gap-1.5 p-2 rounded ${isLight ? 'text-slate-700 bg-amber-50 border border-amber-100' : 'text-white/60 bg-white/[0.02] border border-white/[0.04]'}`}>
-                                    <span className={`shrink-0 ${isLight ? 'text-amber-600' : 'text-amber-400'}`}>→</span> {s}
+                                  <motion.div key={i} initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }} className={`text-[11px] flex gap-1.5 p-2.5 rounded-lg ${isLight ? 'text-slate-700 bg-slate-50 border border-slate-200' : 'text-white/60 bg-white/[0.02] border border-white/[0.05]'}`}>
+                                    <span className={`shrink-0 ${isLight ? 'text-indigo-500' : 'text-indigo-400'}`}>→</span> {s}
                                   </motion.div>
                                 ))}
                               </div>
@@ -2245,13 +2212,13 @@ export default function LiquidResumePage() {
                         )}
                       </div>
 
-                      {/* ── Gallery CTAs: Cover Letter & LinkedIn ── */}
+                      {/* ── Next Steps: Cover Letter & LinkedIn ── */}
                       <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5">
-                        <div className="text-xs font-semibold text-[var(--text-muted)] mb-3 uppercase tracking-wider">Continue in Tools Gallery</div>
+                        <div className="text-xs font-semibold text-[var(--text-muted)] mb-3 uppercase tracking-wider">Continue With Your Resume</div>
                         <div className="space-y-2.5">
                           <button
                             onClick={() => {
-                              // Save context for Gallery to pick up
+                              // Save context for Cover Letter page to pick up
                               const displayResume = getDisplayResume();
                               if (displayResume) {
                                 sessionStorage.setItem('talent-resume-draft', JSON.stringify({
@@ -2260,7 +2227,7 @@ export default function LiquidResumePage() {
                                   jobDescription: jobDescription,
                                 }));
                               }
-                              router.push('/suite/gallery?tool=cover-letter');
+                              router.push('/suite/cover-letter');
                             }}
                             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] hover:border-[var(--border)] transition-all group text-left"
                           >
@@ -2283,7 +2250,7 @@ export default function LiquidResumePage() {
                                   jobDescription: jobDescription,
                                 }));
                               }
-                              router.push('/suite/gallery?tool=linkedin');
+                              router.push('/suite/linkedin');
                             }}
                             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] hover:border-[var(--border)] transition-all group text-left"
                           >
@@ -2300,22 +2267,22 @@ export default function LiquidResumePage() {
                       </div>
 
                       {/* Quick Stats */}
-                      <div className="rounded-xl glass-card p-4">
-                        <div className="text-xs font-semibold text-white/40 mb-3">Session Summary</div>
+                      <div className={`rounded-xl p-4 border ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-white/[0.02] border-white/[0.06]'}`}>
+                        <div className={`text-xs font-semibold mb-3 ${isLight ? 'text-slate-400' : 'text-white/40'}`}>Session Summary</div>
                         <div className="grid grid-cols-1 gap-3 text-center">
-                          <div className="p-2 rounded-lg bg-white/[0.02]">
-                            <div className="text-lg font-bold text-white">{resumeCheckResult?.atsScore || '—'}</div>
-                            <div className="text-[9px] text-white/40">ATS Score</div>
+                          <div className={`p-3 rounded-lg ${isLight ? 'bg-slate-50' : 'bg-white/[0.03]'}`}>
+                            <div className={`text-2xl font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>{resumeCheckResult?.atsScore || '—'}</div>
+                            <div className={`text-[9px] mt-1 ${isLight ? 'text-slate-400' : 'text-white/40'}`}>ATS Score</div>
                           </div>
                         </div>
                       </div>
 
                       {/* Navigation */}
                       <div className="flex gap-3">
-                        <button onClick={() => setStep('jd')} className="flex-1 py-3 rounded-xl glass-card text-slate-400 hover:border-white/[0.12] text-sm font-medium transition-all">
+                        <button onClick={() => setStep('jd')} className={`flex-1 py-3 rounded-xl border text-sm font-medium transition-all ${isLight ? 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50' : 'bg-white/[0.02] border-white/[0.06] text-slate-400 hover:border-white/[0.12]'}`}>
                           ← Back to JD
                         </button>
-                        <button onClick={() => setStep('template')} className="flex-1 py-3 rounded-xl bg-cyan-500/[0.08] border border-cyan-500/[0.15] text-cyan-400 font-bold text-sm hover:bg-cyan-500/[0.12] transition-all">
+                        <button onClick={() => setStep('template')} className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${isLight ? 'bg-indigo-50 border border-indigo-200 text-indigo-600 hover:bg-indigo-100' : 'bg-indigo-500/[0.08] border border-indigo-500/[0.15] text-indigo-400 hover:bg-indigo-500/[0.12]'}`}>
                           Choose Template →
                         </button>
                       </div>
@@ -2498,7 +2465,7 @@ export default function LiquidResumePage() {
 
                     <div className="lg:col-span-2">
                       <div className="rounded-xl glass-card p-4">
-                        <div ref={resumeRef} className="bg-white rounded-xl overflow-hidden" style={{ minHeight: '800px' }}>
+                        <div ref={resumeRef} className="bg-white rounded-xl" style={{ minHeight: '800px' }}>
                           <ResumeTemplate resume={displayResume} template={selectedTemplate} />
                         </div>
                       </div>
@@ -2655,7 +2622,7 @@ export default function LiquidResumePage() {
         <AnimatePresence>
           {showSaveModal && (
             <>
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { if (!isLoading) { setShowSaveModal(false); setSaveVersionName(''); setSaveCompanyName(''); }}} className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50" />
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { if (!isSaving) { setShowSaveModal(false); setSaveVersionName(''); setSaveCompanyName(''); }}} className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50" />
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                 <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative w-full max-w-md rounded-3xl glass-card overflow-hidden">
                   {saveSuccess ? (
@@ -2690,9 +2657,9 @@ export default function LiquidResumePage() {
                         </div>
                       </div>
                       <div className="p-6 pt-0 flex gap-3">
-                        <button onClick={() => { setShowSaveModal(false); setSaveVersionName(''); setSaveCompanyName(''); }} className="flex-1 px-4 py-3 rounded-xl bg-[var(--theme-bg-elevated)] text-silver hover:bg-white/10 transition-colors font-medium">Cancel</button>
-                        <button onClick={confirmSave} disabled={!saveVersionName.trim() || !saveCompanyName.trim() || isLoading} className="flex-1 px-4 py-3 rounded-xl bg-[var(--theme-bg-elevated)] border border-[var(--theme-border)] text-[var(--theme-fg)] font-bold disabled:opacity-50 hover:bg-white/[0.05] transition-all">
-                          {isLoading ? <><span className="material-symbols-rounded text-[14px] align-middle mr-1">hourglass_top</span> Saving...</> : <><span className="material-symbols-rounded text-[14px] align-middle mr-1">save</span> Save & Track</>}
+                        <button onClick={() => { setShowSaveModal(false); setSaveVersionName(''); setSaveCompanyName(''); }} disabled={isSaving} className={`flex-1 px-4 py-3 rounded-xl font-medium transition-colors ${isLight ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}>Cancel</button>
+                        <button onClick={confirmSave} disabled={!saveCompanyName.trim() || isSaving} className={`flex-1 px-4 py-3 rounded-xl font-bold transition-all disabled:opacity-50 ${isLight ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md' : 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-md'}`}>
+                          {isSaving ? <><span className="material-symbols-rounded text-[14px] align-middle mr-1 animate-spin">hourglass_top</span> Saving...</> : <><span className="material-symbols-rounded text-[14px] align-middle mr-1">save</span> Save & Track</>}
                         </button>
                       </div>
                     </>
@@ -2859,7 +2826,7 @@ export default function LiquidResumePage() {
         <AnimatePresence>
           {showSaveModal && (
             <>
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { if (!isLoading) { setShowSaveModal(false); setSaveVersionName(''); setSaveCompanyName(''); }}} className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50" />
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { if (!isSaving) { setShowSaveModal(false); setSaveVersionName(''); setSaveCompanyName(''); }}} className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50" />
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                 <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative w-full max-w-md rounded-3xl glass-card overflow-hidden">
                   {saveSuccess ? (
@@ -2894,9 +2861,9 @@ export default function LiquidResumePage() {
                         </div>
                       </div>
                       <div className="p-6 pt-0 flex gap-3">
-                        <button onClick={() => { setShowSaveModal(false); setSaveVersionName(''); setSaveCompanyName(''); }} className="flex-1 px-4 py-3 rounded-xl bg-[var(--theme-bg-elevated)] text-silver hover:bg-white/10 transition-colors font-medium">Cancel</button>
-                        <button onClick={confirmSave} disabled={!saveVersionName.trim() || !saveCompanyName.trim() || isLoading} className="flex-1 px-4 py-3 rounded-xl bg-[var(--theme-bg-elevated)] border border-[var(--theme-border)] text-[var(--theme-fg)] font-bold disabled:opacity-50 hover:bg-white/[0.05] transition-all">
-                          {isLoading ? <><span className="material-symbols-rounded text-[14px] align-middle mr-1">hourglass_top</span> Saving...</> : <><span className="material-symbols-rounded text-[14px] align-middle mr-1">save</span> Save & Track</>}
+                        <button onClick={() => { setShowSaveModal(false); setSaveVersionName(''); setSaveCompanyName(''); }} disabled={isSaving} className={`flex-1 px-4 py-3 rounded-xl font-medium transition-colors ${isLight ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}>Cancel</button>
+                        <button onClick={confirmSave} disabled={!saveCompanyName.trim() || isSaving} className={`flex-1 px-4 py-3 rounded-xl font-bold transition-all disabled:opacity-50 ${isLight ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md' : 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-md'}`}>
+                          {isSaving ? <><span className="material-symbols-rounded text-[14px] align-middle mr-1 animate-spin">hourglass_top</span> Saving...</> : <><span className="material-symbols-rounded text-[14px] align-middle mr-1">save</span> Save & Track</>}
                         </button>
                       </div>
                     </>
@@ -2915,729 +2882,15 @@ export default function LiquidResumePage() {
 }
 
 // ============ RESUME TEMPLATE COMPONENT ============
+// Delegates to the extracted ATS-safe templates in components/resume-templates/
 function ResumeTemplate({ resume, template }: { resume: ResumeData; template: typeof TEMPLATES[0] }) {
-  const { primary, accent, text } = template.colors;
-
-  if (template.id === 'executive') {
-    return (
-      <div className="p-10 font-serif" style={{ color: text }}>
-        <div className="border-b-4 pb-6 mb-6" style={{ borderColor: primary }}>
-          <h1 className="text-4xl font-bold tracking-tight" style={{ color: primary }}>{resume.name}</h1>
-          <p className="text-xl mt-1" style={{ color: accent }}>{resume.title}</p>
-          <div className="flex gap-6 mt-3 text-sm text-gray-600">
-            {resume.email && <span>{resume.email}</span>}
-            {resume.phone && <span>{resume.phone}</span>}
-            {resume.location && <span>{resume.location}</span>}
-          </div>
-        </div>
-        {resume.summary && (
-          <div className="mb-6">
-            <h2 className="text-lg font-bold uppercase tracking-wider mb-2" style={{ color: primary }}>Professional Summary</h2>
-            <p className="text-gray-700 leading-relaxed">{resume.summary}</p>
-          </div>
-        )}
-        {resume.experience?.length > 0 && (
-          <div className="mb-6">
-            <h2 className="text-lg font-bold uppercase tracking-wider mb-3" style={{ color: primary }}>Experience</h2>
-            {resume.experience.map((exp, i) => (
-              <div key={i} className="mb-4">
-                <div className="flex justify-between items-start">
-                  <div><h3 className="font-bold text-gray-900">{exp.role}</h3><p className="text-gray-600">{exp.company}</p></div>
-                  <span className="text-sm text-gray-500">{exp.duration}</span>
-                </div>
-                <ul className="mt-2 space-y-1">
-                  {exp.achievements?.map((a, j) => <li key={j} className="text-sm text-gray-700 pl-4 relative before:content-['•'] before:absolute before:left-0 before:text-gray-400">{a}</li>)}
-                </ul>
-              </div>
-            ))}
-          </div>
-        )}
-        <div className="grid grid-cols-2 gap-6">
-          {resume.education?.length > 0 && (
-            <div>
-              <h2 className="text-lg font-bold uppercase tracking-wider mb-2" style={{ color: primary }}>Education</h2>
-              {resume.education.map((edu, i) => (
-                <div key={i} className="mb-2">
-                  <p className="font-semibold text-gray-900">{edu.degree}</p>
-                  <p className="text-sm text-gray-600">{edu.institution} • {edu.year}</p>
-                </div>
-              ))}
-            </div>
-          )}
-          {resume.skills?.length > 0 && (
-            <div>
-              <h2 className="text-lg font-bold uppercase tracking-wider mb-2" style={{ color: primary }}>Skills</h2>
-              {resume.skills.map((cat, i) => (
-                <div key={i} className="mb-2">
-                  <p className="text-sm font-semibold text-gray-700">{cat.category}</p>
-                  <p className="text-sm text-gray-600">{cat.items?.join(' • ')}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  if (template.id === 'modern') {
-    return (
-      <div className="flex min-h-full" style={{ color: text }}>
-        <div className="w-1/3 p-6" style={{ backgroundColor: primary }}>
-          <h1 className="text-2xl font-bold text-white mb-1">{resume.name}</h1>
-          <p className="text-sm text-white/80 mb-6">{resume.title}</p>
-          <div className="space-y-4 text-sm text-white/90">
-            {resume.email && <div><p className="text-xs uppercase tracking-wider text-white/60 mb-1">Email</p>{resume.email}</div>}
-            {resume.phone && <div><p className="text-xs uppercase tracking-wider text-white/60 mb-1">Phone</p>{resume.phone}</div>}
-            {resume.location && <div><p className="text-xs uppercase tracking-wider text-white/60 mb-1">Location</p>{resume.location}</div>}
-          </div>
-          {resume.skills?.length > 0 && (
-            <div className="mt-8">
-              <h3 className="text-xs uppercase tracking-wider text-white/60 mb-3">Skills</h3>
-              {resume.skills.map((cat, i) => (
-                <div key={i} className="mb-3">
-                  <p className="text-sm font-semibold text-white mb-1">{cat.category}</p>
-                  <div className="flex flex-wrap gap-1">{cat.items?.map((s, j) => <span key={j} className="px-2 py-1 text-xs bg-white/20 rounded">{s}</span>)}</div>
-                </div>
-              ))}
-            </div>
-          )}
-          {resume.education?.length > 0 && (
-            <div className="mt-8">
-              <h3 className="text-xs uppercase tracking-wider text-white/60 mb-3">Education</h3>
-              {resume.education.map((edu, i) => (
-                <div key={i} className="mb-3 text-sm text-white/90">
-                  <p className="font-semibold">{edu.degree}</p>
-                  <p className="text-white/70">{edu.institution}</p>
-                  <p className="text-xs text-white/60">{edu.year}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        <div className="w-2/3 p-8">
-          {resume.summary && (
-            <div className="mb-6">
-              <h2 className="text-lg font-bold mb-2" style={{ color: primary }}>About Me</h2>
-              <p className="text-gray-700 leading-relaxed">{resume.summary}</p>
-            </div>
-          )}
-          {resume.experience?.length > 0 && (
-            <div>
-              <h2 className="text-lg font-bold mb-4" style={{ color: primary }}>Experience</h2>
-              {resume.experience.map((exp, i) => (
-                <div key={i} className="mb-5 pl-4 border-l-2" style={{ borderColor: accent }}>
-                  <div className="flex justify-between"><h3 className="font-bold text-gray-900">{exp.role}</h3><span className="text-sm text-gray-500">{exp.duration}</span></div>
-                  <p className="text-sm text-gray-600 mb-2">{exp.company}</p>
-                  <ul className="space-y-1">{exp.achievements?.map((a, j) => <li key={j} className="text-sm text-gray-700">• {a}</li>)}</ul>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  if (template.id === 'minimal') {
-    return (
-      <div className="p-10" style={{ color: text }}>
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-light tracking-wide">{resume.name}</h1>
-          <p className="text-gray-500 mt-1">{resume.title}</p>
-          <div className="flex justify-center gap-4 mt-3 text-sm text-gray-500">
-            {resume.email && <span>{resume.email}</span>}
-            {resume.phone && <><span>•</span><span>{resume.phone}</span></>}
-            {resume.location && <><span>•</span><span>{resume.location}</span></>}
-          </div>
-        </div>
-        {resume.summary && <div className="border-t border-gray-200 pt-6 mb-6"><p className="text-gray-700 text-center max-w-2xl mx-auto">{resume.summary}</p></div>}
-        {resume.experience?.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-sm uppercase tracking-widest text-gray-400 mb-4">Experience</h2>
-            {resume.experience.map((exp, i) => (
-              <div key={i} className="mb-5">
-                <div className="flex justify-between items-baseline">
-                  <h3 className="font-medium">{exp.role} <span className="font-normal text-gray-500">at {exp.company}</span></h3>
-                  <span className="text-sm text-gray-400">{exp.duration}</span>
-                </div>
-                <ul className="mt-2 space-y-1">{exp.achievements?.map((a, j) => <li key={j} className="text-sm text-gray-600 pl-4 relative before:content-['–'] before:absolute before:left-0 before:text-gray-400">{a}</li>)}</ul>
-              </div>
-            ))}
-          </div>
-        )}
-        <div className="grid grid-cols-2 gap-8">
-          {resume.education?.length > 0 && (
-            <div>
-              <h2 className="text-sm uppercase tracking-widest text-gray-400 mb-3">Education</h2>
-              {resume.education.map((edu, i) => <div key={i} className="mb-2"><p className="font-medium">{edu.degree}</p><p className="text-sm text-gray-500">{edu.institution} • {edu.year}</p></div>)}
-            </div>
-          )}
-          {resume.skills?.length > 0 && (
-            <div>
-              <h2 className="text-sm uppercase tracking-widest text-gray-400 mb-3">Skills</h2>
-              <div className="flex flex-wrap gap-2">{resume.skills.flatMap(s => s.items).map((skill, i, arr) => <span key={i} className="text-sm text-gray-600">{skill}{i < arr.length - 1 ? ',' : ''}</span>)}</div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  if (template.id === 'creative') {
-    return (
-      <div className="p-8" style={{ color: text }}>
-        <div className="flex items-start gap-6 mb-8">
-          <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-bold text-white" style={{ backgroundColor: primary }}>
-            {resume.name?.split(' ').map(n => n[0]).join('').slice(0, 2)}
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold" style={{ color: primary }}>{resume.name}</h1>
-            <p className="text-xl text-gray-600">{resume.title}</p>
-            <div className="flex gap-4 mt-2 text-sm text-gray-500">
-              {resume.email && <span><span className="material-symbols-rounded text-inherit align-middle">email</span> {resume.email}</span>}
-              {resume.phone && <span><span className="material-symbols-rounded text-inherit align-middle">smartphone</span> {resume.phone}</span>}
-              {resume.location && <span><span className="material-symbols-rounded text-inherit align-middle">pin_drop</span> {resume.location}</span>}
-            </div>
-          </div>
-        </div>
-        {resume.summary && <div className="mb-6 p-4 rounded-xl" style={{ backgroundColor: `${primary}10` }}><p className="text-gray-700">{resume.summary}</p></div>}
-        {resume.experience?.length > 0 && (
-          <div className="mb-6">
-            <h2 className="text-lg font-bold mb-4 flex items-center gap-2" style={{ color: primary }}>
-              <span className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm" style={{ backgroundColor: primary }}><span className="material-symbols-rounded text-inherit align-middle">work</span></span>Experience
-            </h2>
-            {resume.experience.map((exp, i) => (
-              <div key={i} className="mb-4 p-4 rounded-xl bg-gray-50">
-                <div className="flex justify-between"><div><h3 className="font-bold text-gray-900">{exp.role}</h3><p className="text-sm" style={{ color: accent }}>{exp.company}</p></div><span className="text-sm px-3 py-1 rounded-full bg-white text-gray-500">{exp.duration}</span></div>
-                <ul className="mt-3 space-y-1">{exp.achievements?.map((a, j) => <li key={j} className="text-sm text-gray-700 flex items-start gap-2"><span style={{ color: accent }}><span className="material-symbols-rounded text-inherit align-middle">arrow_right</span></span>{a}</li>)}</ul>
-              </div>
-            ))}
-          </div>
-        )}
-        <div className="grid grid-cols-2 gap-6">
-          {resume.education?.length > 0 && (
-            <div>
-              <h2 className="text-lg font-bold mb-3 flex items-center gap-2" style={{ color: primary }}>
-                <span className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm" style={{ backgroundColor: primary }}><span className="material-symbols-rounded text-inherit align-middle">school</span></span>Education
-              </h2>
-              {resume.education.map((edu, i) => <div key={i} className="mb-2 p-3 rounded-lg bg-gray-50"><p className="font-semibold">{edu.degree}</p><p className="text-sm text-gray-600">{edu.institution} • {edu.year}</p></div>)}
-            </div>
-          )}
-          {resume.skills?.length > 0 && (
-            <div>
-              <h2 className="text-lg font-bold mb-3 flex items-center gap-2" style={{ color: primary }}>
-                <span className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm" style={{ backgroundColor: primary }}><span className="material-symbols-rounded text-inherit align-middle">bolt</span></span>Skills
-              </h2>
-              <div className="flex flex-wrap gap-2">{resume.skills.flatMap(s => s.items).map((skill, i) => <span key={i} className="px-3 py-1 rounded-full text-sm text-white" style={{ backgroundColor: accent }}>{skill}</span>)}</div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  if (template.id === 'harvard') {
-    return (
-      <div className="p-10 font-serif" style={{ color: text }}>
-        <div className="text-center border-b-2 pb-5 mb-6" style={{ borderColor: primary }}>
-          <h1 className="text-3xl font-bold tracking-tight" style={{ color: primary }}>{resume.name}</h1>
-          <div className="flex justify-center gap-3 mt-2 text-sm text-gray-600">
-            {resume.email && <span>{resume.email}</span>}
-            {resume.phone && <><span>|</span><span>{resume.phone}</span></>}
-            {resume.location && <><span>|</span><span>{resume.location}</span></>}
-          </div>
-        </div>
-        {resume.education?.length > 0 && (
-          <div className="mb-5">
-            <h2 className="text-sm font-bold uppercase tracking-wider border-b pb-1 mb-3" style={{ color: primary, borderColor: `${primary}40` }}>Education</h2>
-            {resume.education.map((edu, i) => (
-              <div key={i} className="flex justify-between mb-2">
-                <div><p className="font-bold text-gray-900">{edu.institution}</p><p className="text-sm italic text-gray-700">{edu.degree}</p></div>
-                <span className="text-sm text-gray-500 text-right">{edu.year}</span>
-              </div>
-            ))}
-          </div>
-        )}
-        {resume.experience?.length > 0 && (
-          <div className="mb-5">
-            <h2 className="text-sm font-bold uppercase tracking-wider border-b pb-1 mb-3" style={{ color: primary, borderColor: `${primary}40` }}>Experience</h2>
-            {resume.experience.map((exp, i) => (
-              <div key={i} className="mb-4">
-                <div className="flex justify-between items-baseline">
-                  <div><span className="font-bold text-gray-900">{exp.company}</span><span className="text-gray-500">, </span><span className="italic text-gray-700">{exp.role}</span></div>
-                  <span className="text-sm text-gray-500">{exp.duration}</span>
-                </div>
-                <ul className="mt-1.5 space-y-1">{exp.achievements?.map((a, j) => <li key={j} className="text-sm text-gray-700 pl-4 relative before:content-['•'] before:absolute before:left-0 before:text-gray-400">{a}</li>)}</ul>
-              </div>
-            ))}
-          </div>
-        )}
-        {resume.skills?.length > 0 && (
-          <div className="mb-5">
-            <h2 className="text-sm font-bold uppercase tracking-wider border-b pb-1 mb-3" style={{ color: primary, borderColor: `${primary}40` }}>Skills & Interests</h2>
-            {resume.skills.map((cat, i) => (
-              <div key={i} className="flex gap-2 mb-1.5 text-sm">
-                <span className="font-bold text-gray-700 min-w-[120px]">{cat.category}:</span>
-                <span className="text-gray-600">{cat.items?.join(', ')}</span>
-              </div>
-            ))}
-          </div>
-        )}
-        {resume.summary && (
-          <div>
-            <h2 className="text-sm font-bold uppercase tracking-wider border-b pb-1 mb-3" style={{ color: primary, borderColor: `${primary}40` }}>Summary</h2>
-            <p className="text-sm text-gray-700 leading-relaxed">{resume.summary}</p>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  if (template.id === 'cascade') {
-    return (
-      <div className="flex min-h-full" style={{ color: text }}>
-        <div className="w-[38%] p-7" style={{ backgroundColor: primary }}>
-          <div className="mb-8">
-            <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-2xl font-bold text-white mb-4">
-              {resume.name?.split(' ').map(n => n[0]).join('').slice(0, 2)}
-            </div>
-            <h1 className="text-xl font-bold text-white">{resume.name}</h1>
-            <p className="text-sm text-white/70 mt-1">{resume.title}</p>
-          </div>
-          <div className="space-y-5 text-sm">
-            <div>
-              <h3 className="text-xs uppercase tracking-widest text-white/50 mb-3 font-semibold">Contact</h3>
-              <div className="space-y-2 text-white/80">
-                {resume.email && <p className="break-all">{resume.email}</p>}
-                {resume.phone && <p>{resume.phone}</p>}
-                {resume.location && <p>{resume.location}</p>}
-              </div>
-            </div>
-            {resume.skills?.length > 0 && (
-              <div>
-                <h3 className="text-xs uppercase tracking-widest text-white/50 mb-3 font-semibold">Skills</h3>
-                {resume.skills.map((cat, i) => (
-                  <div key={i} className="mb-3">
-                    <p className="text-white font-semibold text-xs mb-1.5">{cat.category}</p>
-                    <div className="space-y-1.5">{cat.items?.map((s, j) => (
-                      <div key={j} className="flex items-center gap-2">
-                        <div className="flex-1 h-1 bg-white/20 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{ width: `${70 + Math.random() * 30}%`, backgroundColor: accent }} /></div>
-                        <span className="text-xs text-white/70 min-w-0">{s}</span>
-                      </div>
-                    ))}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-            {resume.education?.length > 0 && (
-              <div>
-                <h3 className="text-xs uppercase tracking-widest text-white/50 mb-3 font-semibold">Education</h3>
-                {resume.education.map((edu, i) => (
-                  <div key={i} className="mb-3 text-white/80">
-                    <p className="font-semibold text-white text-sm">{edu.degree}</p>
-                    <p className="text-xs">{edu.institution}</p>
-                    <p className="text-xs text-white/50">{edu.year}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="w-[62%] p-8">
-          {resume.summary && (
-            <div className="mb-7">
-              <h2 className="text-sm font-bold uppercase tracking-wider mb-2" style={{ color: primary }}>Profile</h2>
-              <p className="text-sm text-gray-600 leading-relaxed">{resume.summary}</p>
-            </div>
-          )}
-          {resume.experience?.length > 0 && (
-            <div>
-              <h2 className="text-sm font-bold uppercase tracking-wider mb-4" style={{ color: primary }}>Work Experience</h2>
-              {resume.experience.map((exp, i) => (
-                <div key={i} className="mb-5 relative pl-5">
-                  <div className="absolute left-0 top-1.5 w-2 h-2 rounded-full" style={{ backgroundColor: accent }} />
-                  {i < resume.experience.length - 1 && <div className="absolute left-[3px] top-4 bottom-0 w-px bg-gray-200" />}
-                  <div className="flex justify-between items-baseline">
-                    <h3 className="font-bold text-gray-900">{exp.role}</h3>
-                    <span className="text-xs text-gray-400 ml-2 whitespace-nowrap">{exp.duration}</span>
-                  </div>
-                  <p className="text-sm mb-1.5" style={{ color: accent }}>{exp.company}</p>
-                  <ul className="space-y-1">{exp.achievements?.map((a, j) => <li key={j} className="text-sm text-gray-600">• {a}</li>)}</ul>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  if (template.id === 'elegant') {
-    return (
-      <div className="p-10 font-serif" style={{ color: text }}>
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-light tracking-[0.2em] uppercase" style={{ color: primary }}>{resume.name}</h1>
-          <div className="flex justify-center items-center gap-4 mt-3">
-            <div className="h-px flex-1 max-w-[80px]" style={{ backgroundColor: accent }} />
-            <p className="text-sm tracking-wider uppercase" style={{ color: accent }}>{resume.title}</p>
-            <div className="h-px flex-1 max-w-[80px]" style={{ backgroundColor: accent }} />
-          </div>
-          <div className="flex justify-center gap-6 mt-4 text-xs text-gray-500 tracking-wider">
-            {resume.email && <span>{resume.email}</span>}
-            {resume.phone && <span>{resume.phone}</span>}
-            {resume.location && <span>{resume.location}</span>}
-          </div>
-        </div>
-        {resume.summary && (
-          <div className="mb-8 max-w-xl mx-auto text-center">
-            <p className="text-sm text-gray-600 leading-relaxed italic">&ldquo;{resume.summary}&rdquo;</p>
-          </div>
-        )}
-        {resume.experience?.length > 0 && (
-          <div className="mb-8">
-            <div className="flex items-center gap-4 mb-5">
-              <div className="h-px flex-1" style={{ backgroundColor: `${accent}40` }} />
-              <h2 className="text-xs uppercase tracking-[0.3em] font-semibold" style={{ color: primary }}>Experience</h2>
-              <div className="h-px flex-1" style={{ backgroundColor: `${accent}40` }} />
-            </div>
-            {resume.experience.map((exp, i) => (
-              <div key={i} className="mb-5">
-                <div className="flex justify-between items-baseline">
-                  <div><h3 className="font-semibold text-gray-900">{exp.role}</h3><p className="text-sm" style={{ color: accent }}>{exp.company}</p></div>
-                  <span className="text-xs tracking-wider text-gray-400">{exp.duration}</span>
-                </div>
-                <ul className="mt-2 space-y-1">{exp.achievements?.map((a, j) => <li key={j} className="text-sm text-gray-600 pl-3 relative before:content-['—'] before:absolute before:left-0 before:text-gray-300 before:text-xs">{a}</li>)}</ul>
-              </div>
-            ))}
-          </div>
-        )}
-        <div className="grid grid-cols-2 gap-8">
-          {resume.education?.length > 0 && (
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="h-px flex-1" style={{ backgroundColor: `${accent}40` }} />
-                <h2 className="text-xs uppercase tracking-[0.3em] font-semibold" style={{ color: primary }}>Education</h2>
-                <div className="h-px flex-1" style={{ backgroundColor: `${accent}40` }} />
-              </div>
-              {resume.education.map((edu, i) => <div key={i} className="mb-3 text-center"><p className="font-semibold text-gray-900 text-sm">{edu.degree}</p><p className="text-xs text-gray-500">{edu.institution} — {edu.year}</p></div>)}
-            </div>
-          )}
-          {resume.skills?.length > 0 && (
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="h-px flex-1" style={{ backgroundColor: `${accent}40` }} />
-                <h2 className="text-xs uppercase tracking-[0.3em] font-semibold" style={{ color: primary }}>Expertise</h2>
-                <div className="h-px flex-1" style={{ backgroundColor: `${accent}40` }} />
-              </div>
-              <div className="flex flex-wrap justify-center gap-x-3 gap-y-1">{resume.skills.flatMap(s => s.items).map((skill, i) => <span key={i} className="text-xs text-gray-500 tracking-wider">{skill}</span>)}</div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  if (template.id === 'compact') {
-    return (
-      <div className="p-6 text-xs" style={{ color: text }}>
-        <div className="flex justify-between items-end border-b-2 pb-3 mb-4" style={{ borderColor: primary }}>
-          <div>
-            <h1 className="text-2xl font-bold" style={{ color: primary }}>{resume.name}</h1>
-            <p className="text-sm text-gray-600 mt-0.5">{resume.title}</p>
-          </div>
-          <div className="text-right text-gray-500 space-y-0.5">
-            {resume.email && <p>{resume.email}</p>}
-            {resume.phone && <p>{resume.phone}</p>}
-            {resume.location && <p>{resume.location}</p>}
-          </div>
-        </div>
-        {resume.summary && (
-          <div className="mb-3 p-2.5 rounded" style={{ backgroundColor: `${primary}08` }}>
-            <p className="text-gray-700 leading-relaxed">{resume.summary}</p>
-          </div>
-        )}
-        {resume.skills?.length > 0 && (
-          <div className="mb-3">
-            <h2 className="font-bold uppercase tracking-wider mb-1.5 text-[10px]" style={{ color: primary }}>Core Competencies</h2>
-            <div className="flex flex-wrap gap-1">{resume.skills.flatMap(s => s.items).map((skill, i) => <span key={i} className="px-2 py-0.5 rounded text-[10px] border" style={{ borderColor: `${primary}30`, color: primary }}>{skill}</span>)}</div>
-          </div>
-        )}
-        {resume.experience?.length > 0 && (
-          <div className="mb-3">
-            <h2 className="font-bold uppercase tracking-wider mb-2 text-[10px]" style={{ color: primary }}>Professional Experience</h2>
-            {resume.experience.map((exp, i) => (
-              <div key={i} className="mb-3">
-                <div className="flex justify-between items-baseline">
-                  <div className="flex items-baseline gap-2"><h3 className="font-bold text-gray-900 text-sm">{exp.role}</h3><span className="text-gray-500">@ {exp.company}</span></div>
-                  <span className="text-gray-400 whitespace-nowrap ml-2">{exp.duration}</span>
-                </div>
-                <ul className="mt-1 space-y-0.5 columns-1">{exp.achievements?.map((a, j) => (
-                  <li key={j} className="text-gray-600 pl-3 relative">
-                    <span className="absolute left-0 top-0.5 w-1 h-1 rounded-full" style={{ backgroundColor: accent }} />
-                    {a}
-                  </li>
-                ))}</ul>
-              </div>
-            ))}
-          </div>
-        )}
-        <div className="grid grid-cols-2 gap-4">
-          {resume.education?.length > 0 && (
-            <div>
-              <h2 className="font-bold uppercase tracking-wider mb-1.5 text-[10px]" style={{ color: primary }}>Education</h2>
-              {resume.education.map((edu, i) => <div key={i} className="mb-1.5"><p className="font-semibold text-gray-900">{edu.degree}</p><p className="text-gray-500">{edu.institution} • {edu.year}</p></div>)}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  if (template.id === 'nordic') {
-    return (
-      <div className="p-12" style={{ color: text }}>
-        <div className="mb-10">
-          <h1 className="text-3xl font-light tracking-wide">{resume.name}</h1>
-          <p className="text-lg mt-1" style={{ color: accent }}>{resume.title}</p>
-          <div className="flex gap-6 mt-4 text-sm" style={{ color: accent }}>
-            {resume.email && <span>{resume.email}</span>}
-            {resume.phone && <span>{resume.phone}</span>}
-            {resume.location && <span>{resume.location}</span>}
-          </div>
-          <div className="mt-6 h-px w-full" style={{ backgroundColor: `${accent}30` }} />
-        </div>
-        {resume.summary && (
-          <div className="mb-10">
-            <p className="text-sm leading-7 max-w-[85%]" style={{ color: `${text}cc` }}>{resume.summary}</p>
-          </div>
-        )}
-        {resume.experience?.length > 0 && (
-          <div className="mb-10">
-            <h2 className="text-[11px] uppercase tracking-[0.25em] font-medium mb-6" style={{ color: accent }}>Experience</h2>
-            {resume.experience.map((exp, i) => (
-              <div key={i} className="mb-6 grid grid-cols-[140px_1fr] gap-6">
-                <div className="text-sm" style={{ color: accent }}>
-                  <p>{exp.duration}</p>
-                  <p className="text-xs mt-0.5">{exp.company}</p>
-                </div>
-                <div>
-                  <h3 className="font-medium text-gray-900 mb-2">{exp.role}</h3>
-                  <ul className="space-y-1.5">{exp.achievements?.map((a, j) => <li key={j} className="text-sm text-gray-600 leading-relaxed">{a}</li>)}</ul>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        <div className="grid grid-cols-[140px_1fr] gap-6">
-          {resume.education?.length > 0 && (
-            <>
-              <div><h2 className="text-[11px] uppercase tracking-[0.25em] font-medium" style={{ color: accent }}>Education</h2></div>
-              <div className="space-y-3">
-                {resume.education.map((edu, i) => <div key={i}><p className="font-medium text-gray-900">{edu.degree}</p><p className="text-sm text-gray-500">{edu.institution} — {edu.year}</p></div>)}
-              </div>
-            </>
-          )}
-        </div>
-        {resume.skills?.length > 0 && (
-          <div className="mt-8 grid grid-cols-[140px_1fr] gap-6">
-            <div><h2 className="text-[11px] uppercase tracking-[0.25em] font-medium" style={{ color: accent }}>Skills</h2></div>
-            <div className="flex flex-wrap gap-3">
-              {resume.skills.flatMap(s => s.items).map((skill, i) => <span key={i} className="text-sm text-gray-600">{skill}</span>)}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // Technical (default)
+  // Normalize to canonical format before rendering — guarantees {category, items} skills etc.
+  const normalized = normalizeResume(resume);
   return (
-    <div className="p-8 font-mono text-sm" style={{ color: text }}>
-      <div className="border-b-2 pb-4 mb-6" style={{ borderColor: primary }}>
-        <h1 className="text-2xl font-bold" style={{ color: primary }}>{resume.name}</h1>
-        <p className="text-lg" style={{ color: accent }}>{resume.title}</p>
-        <div className="flex gap-4 mt-2 text-gray-600">
-          {resume.email && <span>{resume.email}</span>}
-          {resume.phone && <><span>|</span><span>{resume.phone}</span></>}
-          {resume.location && <><span>|</span><span>{resume.location}</span></>}
-        </div>
-      </div>
-      {resume.summary && (
-        <div className="mb-6">
-          <h2 className="font-bold uppercase tracking-wider mb-2" style={{ color: primary }}>// Summary</h2>
-          <p className="text-gray-700 bg-gray-50 p-3 rounded border-l-4" style={{ borderColor: accent }}>{resume.summary}</p>
-        </div>
-      )}
-      {resume.skills?.length > 0 && (
-        <div className="mb-6">
-          <h2 className="font-bold uppercase tracking-wider mb-3" style={{ color: primary }}>// Technical Skills</h2>
-          <div className="grid grid-cols-2 gap-3">
-            {resume.skills.map((cat, i) => <div key={i} className="p-3 bg-gray-50 rounded"><p className="font-bold text-gray-700 mb-1">{cat.category}:</p><p className="text-gray-600">{cat.items?.join(', ')}</p></div>)}
-          </div>
-        </div>
-      )}
-      {resume.experience?.length > 0 && (
-        <div className="mb-6">
-          <h2 className="font-bold uppercase tracking-wider mb-3" style={{ color: primary }}>// Experience</h2>
-          {resume.experience.map((exp, i) => (
-            <div key={i} className="mb-4 p-4 bg-gray-50 rounded">
-              <div className="flex justify-between items-start mb-2">
-                <div><h3 className="font-bold text-gray-900">{exp.role}</h3><p className="text-gray-600">{exp.company}</p></div>
-                <code className="px-2 py-1 bg-gray-200 rounded text-xs">{exp.duration}</code>
-              </div>
-              <ul className="space-y-1">{exp.achievements?.map((a, j) => <li key={j} className="text-gray-700 pl-4 relative before:content-['→'] before:absolute before:left-0">{a}</li>)}</ul>
-            </div>
-          ))}
-        </div>
-      )}
-      {resume.education?.length > 0 && (
-        <div>
-          <h2 className="font-bold uppercase tracking-wider mb-3" style={{ color: primary }}>// Education</h2>
-          {resume.education.map((edu, i) => <div key={i} className="mb-2"><p className="font-bold">{edu.degree}</p><p className="text-gray-600">{edu.institution} ({edu.year})</p></div>)}
-        </div>
-      )}
-    </div>
-  );
-
-  // ── GENERIC PREMIUM TEMPLATES ──
-  // Handles: ats-optimized, double-column, infographic, deloitte, faang, startup, federal, academic
-  const isSidebar = ['double-column', 'cascade', 'infographic', 'deloitte'].includes(template.id);
-  const isTimeline = ['faang', 'startup', 'academic'].includes(template.id);
-
-  if (isSidebar) {
-    return (
-      <div className="flex min-h-[800px]" style={{ color: text }}>
-        {/* Sidebar */}
-        <div className="w-[220px] p-6 shrink-0 text-white" style={{ backgroundColor: primary }}>
-          <h1 className="text-xl font-bold mb-1">{resume.name}</h1>
-          <p className="text-sm opacity-80 mb-4">{resume.title}</p>
-          <div className="text-xs space-y-1 opacity-70 mb-6">
-            {resume.email && <p><span className="material-symbols-rounded text-inherit align-middle">mail</span> {resume.email}</p>}
-            {resume.phone && <p><span className="material-symbols-rounded text-inherit align-middle">call</span> {resume.phone}</p>}
-            {resume.location && <p><span className="material-symbols-rounded text-inherit align-middle">pin_drop</span> {resume.location}</p>}
-          </div>
-          {resume.skills?.length > 0 && (
-            <div>
-              <h2 className="text-xs font-bold uppercase tracking-wider mb-3 opacity-60">Skills</h2>
-              {resume.skills.map((cat, i) => (
-                <div key={i} className="mb-3">
-                  <p className="text-xs font-semibold opacity-90 mb-1.5">{cat.category}</p>
-                  {cat.items?.map((item, j) => (
-                    <div key={j} className="mb-1">
-                      <p className="text-xs opacity-70">{item}</p>
-                      <div className="w-full h-1 rounded-full bg-white/10 mt-0.5">
-                        <div className="h-full rounded-full" style={{ width: `${70 + Math.random() * 25}%`, backgroundColor: accent }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          )}
-          {resume.education?.length > 0 && (
-            <div className="mt-6">
-              <h2 className="text-xs font-bold uppercase tracking-wider mb-3 opacity-60">Education</h2>
-              {resume.education.map((edu, i) => <div key={i} className="mb-2 text-xs"><p className="font-semibold opacity-90">{edu.degree}</p><p className="opacity-60">{edu.institution} • {edu.year}</p></div>)}
-            </div>
-          )}
-        </div>
-        {/* Main Content */}
-        <div className="flex-1 p-8">
-          {resume.summary && (
-            <div className="mb-6">
-              <h2 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: primary }}>Profile</h2>
-              <p className="text-sm text-gray-600 leading-relaxed">{resume.summary}</p>
-            </div>
-          )}
-          {resume.experience?.length > 0 && (
-            <div>
-              <h2 className="text-xs font-bold uppercase tracking-wider mb-4" style={{ color: primary }}>Experience</h2>
-              {resume.experience.map((exp, i) => (
-                <div key={i} className="mb-5 pl-4 border-l-2" style={{ borderColor: accent }}>
-                  <div className="flex justify-between items-baseline"><h3 className="font-bold text-gray-900">{exp.role}</h3><span className="text-xs text-gray-400">{exp.duration}</span></div>
-                  <p className="text-sm text-gray-500 mb-1">{exp.company}</p>
-                  <ul className="space-y-1">{exp.achievements?.map((a, j) => <li key={j} className="text-sm text-gray-700 pl-3 relative before:content-['•'] before:absolute before:left-0 before:text-gray-400">{a}</li>)}</ul>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // Default: Clean single-column layout for ats-optimized, federal, startup, faang, academic
-  return (
-    <div className="p-10" style={{ color: text }}>
-      <div className="mb-6 pb-4 border-b-2" style={{ borderColor: primary }}>
-        <h1 className="text-2xl font-bold" style={{ color: primary }}>{resume.name}</h1>
-        <p className="text-sm mt-0.5" style={{ color: accent }}>{resume.title}</p>
-        <div className="flex flex-wrap gap-4 mt-3 text-xs text-gray-500">
-          {resume.email && <span>{resume.email}</span>}
-          {resume.phone && <span>•  {resume.phone}</span>}
-          {resume.location && <span>•  {resume.location}</span>}
-          {resume.linkedin && <span>•  {resume.linkedin}</span>}
-        </div>
-      </div>
-      {resume.summary && (
-        <div className="mb-6">
-          <h2 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: primary }}>
-            {template.id === 'academic' ? 'Research Statement' : template.id === 'federal' ? 'Professional Summary' : 'Summary'}
-          </h2>
-          <p className="text-sm text-gray-600 leading-relaxed">{resume.summary}</p>
-        </div>
-      )}
-      {resume.experience?.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: primary }}>
-            {template.id === 'academic' ? 'Academic Positions' : 'Professional Experience'}
-          </h2>
-          {resume.experience.map((exp, i) => (
-            <div key={i} className={`mb-4 ${isTimeline ? 'pl-4 border-l-2' : ''}`} style={isTimeline ? { borderColor: accent } : {}}>
-              <div className="flex justify-between items-baseline">
-                <h3 className="font-bold text-gray-900">{exp.role}</h3>
-                <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: `${accent}15`, color: accent }}>{exp.duration}</span>
-              </div>
-              <p className="text-sm text-gray-500 mb-1">{exp.company}</p>
-              <ul className="space-y-1">{exp.achievements?.map((a, j) => <li key={j} className="text-sm text-gray-700 pl-3 relative before:content-['arrow_right'] before:absolute before:left-0" style={{ '--tw-content': `'arrow_right'` } as any}>{a}</li>)}</ul>
-            </div>
-          ))}
-        </div>
-      )}
-      {resume.skills?.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: primary }}>
-            {template.id === 'ats-optimized' ? 'Core Competencies' : 'Skills'}
-          </h2>
-          <div className="grid grid-cols-2 gap-3">
-            {resume.skills.map((cat, i) => (
-              <div key={i} className="p-3 rounded" style={{ backgroundColor: `${primary}08` }}>
-                <p className="text-xs font-bold mb-1" style={{ color: primary }}>{cat.category}</p>
-                <p className="text-xs text-gray-600">{cat.items?.join(' • ')}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      {resume.education?.length > 0 && (
-        <div>
-          <h2 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: primary }}>Education</h2>
-          {resume.education.map((edu, i) => (
-            <div key={i} className="mb-2">
-              <p className="font-semibold text-gray-900">{edu.degree}</p>
-              <p className="text-sm text-gray-500">{edu.institution} • {edu.year}</p>
-              {edu.details && <p className="text-xs text-gray-400 mt-0.5">{edu.details}</p>}
-            </div>
-          ))}
-        </div>
-      )}
-      {template.id === 'federal' && resume.certifications && (resume.certifications as any[]).length > 0 && (
-        <div className="mt-6">
-          <h2 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: primary }}>Certifications & Clearances</h2>
-          <ul className="space-y-1">{(resume.certifications || []).map((c, i) => <li key={i} className="text-sm text-gray-700">✓ {c}</li>)}</ul>
-        </div>
-      )}
-    </div>
+    <ResumeTemplateComponent
+      resume={normalized}
+      templateId={template.id}
+      colors={template.colors}
+    />
   );
 }

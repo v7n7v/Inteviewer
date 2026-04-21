@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { jobTitle, company, jobDescription, tone, template } = body;
+    const { jobTitle, company, jobDescription, tone, template, resumeData } = body;
 
     if (!company || !jobTitle) {
       return NextResponse.json({ error: 'company and jobTitle are required' }, { status: 400 });
@@ -31,31 +31,51 @@ export async function POST(req: NextRequest) {
     const userId = guard.user.uid;
     const db = getAdminDb();
 
-    // Fetch resume
+    // Use client-provided resume (morphed) if available, otherwise fetch from Firestore
     let resumeContext = '';
-    const resumeSnap = await db
-      .collection('users').doc(userId)
-      .collection('resume_versions')
-      .orderBy('created_at', 'desc')
-      .limit(1)
-      .get();
+    if (resumeData) {
+      // Client sent the morphed resume directly — use it
+      resumeContext = JSON.stringify({
+        name: resumeData.name,
+        title: resumeData.title,
+        summary: resumeData.summary,
+        skills: Array.isArray(resumeData.skills)
+          ? resumeData.skills.flatMap((c: any) => typeof c === 'string' ? [c] : c.items || [])
+          : [],
+        experience: (resumeData.experience || []).map((e: any) => ({
+          role: e.role || e.title,
+          company: e.company,
+          dates: e.dates,
+          bullets: (e.bullets || e.achievements || []).slice(0, 4),
+        })),
+        education: resumeData.education,
+      });
+    } else {
+      // Fallback: fetch latest saved version from Firestore
+      const resumeSnap = await db
+        .collection('users').doc(userId)
+        .collection('resume_versions')
+        .orderBy('created_at', 'desc')
+        .limit(1)
+        .get();
 
-    if (!resumeSnap.empty) {
-      const resume = resumeSnap.docs[0].data()?.content;
-      if (resume) {
-        resumeContext = JSON.stringify({
-          name: resume.name,
-          title: resume.title,
-          summary: resume.summary,
-          skills: (resume.skills || []).flatMap((c: any) => c.items || []),
-          experience: (resume.experience || []).map((e: any) => ({
-            role: e.role,
-            company: e.company,
-            dates: e.dates,
-            bullets: (e.bullets || []).slice(0, 3),
-          })),
-          education: resume.education,
-        });
+      if (!resumeSnap.empty) {
+        const resume = resumeSnap.docs[0].data()?.content;
+        if (resume) {
+          resumeContext = JSON.stringify({
+            name: resume.name,
+            title: resume.title,
+            summary: resume.summary,
+            skills: (resume.skills || []).flatMap((c: any) => c.items || []),
+            experience: (resume.experience || []).map((e: any) => ({
+              role: e.role,
+              company: e.company,
+              dates: e.dates,
+              bullets: (e.bullets || []).slice(0, 3),
+            })),
+            education: resume.education,
+          });
+        }
       }
     }
 

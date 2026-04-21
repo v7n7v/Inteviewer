@@ -179,12 +179,40 @@ function getTrainingDays(skill: string, category: 'technical' | 'soft' | 'domain
   return 4;
 }
 
-const DURATION_LABELS: Record<number, { label: string; icon: string }> = {
-  2: { label: '2-Day Sprint', icon: 'bolt' },
-  3: { label: '3-Day Focus', icon: 'my_location' },
-  4: { label: '4-Day Plan', icon: 'calendar_month' },
-  5: { label: '5-Day Deep Dive', icon: 'science' },
-};
+// Duration options: fractional = hours (stored as day fraction), integer = days
+// 0.08 ≈ 2h, 0.17 ≈ 4h, 0.33 ≈ 8h
+interface DurationOption {
+  value: number;     // planDays state value
+  label: string;     // Button label
+  fullLabel: string; // Card/header display
+  icon: string;
+  isHours: boolean;
+  hours?: number;    // For hour-based durations
+}
+
+const DURATION_OPTIONS: DurationOption[] = [
+  { value: 0.08, label: '2h',  fullLabel: '2-Hour Recap',    icon: 'bolt',           isHours: true, hours: 2 },
+  { value: 0.17, label: '4h',  fullLabel: '4-Hour Sprint',   icon: 'bolt',           isHours: true, hours: 4 },
+  { value: 0.33, label: '8h',  fullLabel: '8-Hour Crash Course', icon: 'speed',       isHours: true, hours: 8 },
+  { value: 1,    label: '1d',  fullLabel: '1-Day Focus',     icon: 'today',          isHours: false },
+  { value: 2,    label: '2d',  fullLabel: '2-Day Sprint',    icon: 'bolt',           isHours: false },
+  { value: 3,    label: '3d',  fullLabel: '3-Day Focus',     icon: 'my_location',    isHours: false },
+  { value: 5,    label: '5d',  fullLabel: '5-Day Deep Dive', icon: 'science',        isHours: false },
+  { value: 7,    label: '7d',  fullLabel: '7-Day Mastery',   icon: 'workspace_premium', isHours: false },
+];
+
+function getDurationInfo(planDays: number): { label: string; fullLabel: string; icon: string; isHours: boolean; hours?: number } {
+  const opt = DURATION_OPTIONS.find(o => o.value === planDays);
+  if (opt) return opt;
+  // Fallback for legacy integer values
+  return { label: `${planDays}d`, fullLabel: `${planDays}-Day Plan`, icon: 'calendar_month', isHours: false };
+}
+
+// Legacy compat: still used by SkillCard for display
+const DURATION_LABELS: Record<number, { label: string; icon: string }> = {};
+DURATION_OPTIONS.forEach(o => {
+  DURATION_LABELS[o.value] = { label: o.fullLabel, icon: o.icon };
+});
 
 // ═══════════════════════════════════════
 // CURATED STUDY PLANS (per-day with platforms)
@@ -627,17 +655,6 @@ function SkillCard({ gap, completedDays, totalDays, onDayToggle, onCourseToggle,
           )}
 
           <div className="flex-1" />
-          <a
-            href={`https://notebooklm.google.com/?q=${encodeURIComponent(gap.skill + ' interview preparation study notes')}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`p-1.5 rounded-lg transition-all ${
-              isLight ? 'hover:bg-blue-50 text-blue-500' : 'hover:bg-blue-500/10 text-blue-400/60 hover:text-blue-400'
-            }`}
-            title={`Study "${gap.skill}" in NotebookLM`}
-          >
-            <span className="material-symbols-rounded text-[14px] align-middle">menu_book</span>
-          </a>
           <button
             onClick={() => onPractice(gap.skill)}
             className={`p-1.5 rounded-lg transition-all ${
@@ -666,7 +683,7 @@ function SkillCard({ gap, completedDays, totalDays, onDayToggle, onCourseToggle,
                 <p className={`text-[10px] font-semibold uppercase tracking-wider ${
                   isLight ? 'text-slate-400' : 'text-white/25'
                 }`}>
-                  <span className="material-symbols-rounded text-[14px] align-middle">calendar_month</span> {totalDays}-Day Study Plan
+                  <span className="material-symbols-rounded text-[14px] align-middle">calendar_month</span> {getDurationInfo(totalDays).fullLabel || `${totalDays}-Day Study Plan`}
                 </p>
                 <div className="flex items-center gap-3">
                   {hasPlanData && planData.summary && (
@@ -802,6 +819,11 @@ function SkillBridgePageInner() {
   const [generatedPlans, setGeneratedPlans] = useState<Record<string, boolean>>({});
   const [dismissedSkills, setDismissedSkills] = useState<string[]>([]);
 
+  // Plan Config Modal State
+  const [planConfigSkill, setPlanConfigSkill] = useState<string | null>(null);
+  const [planDays, setPlanDays] = useState(2);
+  const [planPlatforms, setPlanPlatforms] = useState<string[]>(['YouTube', 'Official Docs', 'Coursera']);
+
   // Load gaps from localStorage
   useEffect(() => {
     try {
@@ -883,16 +905,31 @@ function SkillBridgePageInner() {
     }
   };
 
-  // Generate study plan
-  const handleGeneratePlan = async (skill: string) => {
+  // Generate study plan — opens config modal first
+  const handleGeneratePlan = (skill: string) => {
+    const category = gaps.find(g => g.skill === skill)?.category || 'technical';
+    const defaultDays = getTrainingDays(skill, category);
+    setPlanDays(defaultDays);
+    setPlanPlatforms(['YouTube', 'Official Docs', 'Coursera']);
+    setPlanConfigSkill(skill);
+  };
+
+  // Actually generate after user confirms config
+  const handleConfirmGeneratePlan = async () => {
+    const skill = planConfigSkill;
+    if (!skill) return;
+    setPlanConfigSkill(null);
     setLoadingPlans(prev => ({ ...prev, [skill]: true }));
     try {
       const category = gaps.find(g => g.skill === skill)?.category || 'technical';
-      const days = getTrainingDays(skill, category);
       const res = await authFetch('/api/resume/study-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ skills: [skill], totalDays: days }),
+        body: JSON.stringify({
+          skills: [skill],
+          totalDays: planDays,
+          platforms: planPlatforms,
+        }),
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
@@ -902,7 +939,7 @@ function SkillBridgePageInner() {
       if (data.schedule && data.schedule.length > 0) {
         await saveStudyProgress(skill, category, data, applicationId || undefined);
         setGeneratedPlans(prev => ({ ...prev, [skill]: true }));
-        showToast(`${days}-Day plan for ${skill} created!`, 'calendar_month');
+        showToast(`${getDurationInfo(planDays).fullLabel} for ${skill} created!`, 'calendar_month');
         loadProgress();
       } else {
         showToast('Plan generated but empty — try again', 'warning');
@@ -968,6 +1005,163 @@ function SkillBridgePageInner() {
 
   return (
     <div className={`min-h-screen ${isLight ? 'bg-white' : 'bg-[var(--theme-bg)]'}`}>
+
+      {/* ── PLAN CONFIG MODAL ────────────── */}
+      <AnimatePresence>
+        {planConfigSkill && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: isLight ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.6)' }}
+            onClick={() => setPlanConfigSkill(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+              className={`w-full max-w-md rounded-3xl overflow-hidden ${
+                isLight
+                  ? 'bg-white border border-slate-200 shadow-2xl'
+                  : 'bg-[#0f1117] border border-white/10 shadow-2xl'
+              }`}
+            >
+              {/* Header */}
+              <div className={`px-6 pt-6 pb-4 border-b ${isLight ? 'border-slate-100' : 'border-white/[0.06]'}`}>
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                    isLight ? 'bg-indigo-50' : 'bg-indigo-500/10'
+                  }`}>
+                    <span className={`material-symbols-rounded text-lg ${isLight ? 'text-indigo-600' : 'text-indigo-400'}`}>auto_awesome</span>
+                  </div>
+                  <div>
+                    <h3 className={`text-base font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                      Configure Plan: {planConfigSkill}
+                    </h3>
+                    <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-white/40'}`}>
+                      Customize your study plan before generating
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="px-6 py-5 space-y-6">
+                {/* Duration */}
+                <div>
+                  <label className={`text-xs font-bold uppercase tracking-wider mb-3 block ${isLight ? 'text-slate-500' : 'text-white/30'}`}>
+                    <span className="material-symbols-rounded text-[14px] align-middle mr-1">calendar_month</span>
+                    Plan Duration
+                  </label>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {DURATION_OPTIONS.map(opt => (
+                      <button
+                        key={opt.value}
+                        onClick={() => setPlanDays(opt.value)}
+                        className={`px-3 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                          planDays === opt.value
+                            ? isLight
+                              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                              : 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20'
+                            : isLight
+                              ? 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100'
+                              : 'bg-white/[0.04] text-white/50 border border-white/[0.08] hover:bg-white/[0.08]'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className={`text-[10px] mt-2 ${isLight ? 'text-slate-400' : 'text-white/20'}`}>
+                    {planDays < 1 ? 'Quick recap — crash course essentials' : planDays <= 2 ? 'Sprint — quick tool adoption' : planDays <= 4 ? 'Focused — framework proficiency' : 'Deep Dive — comprehensive mastery'}
+                  </p>
+                </div>
+
+                {/* Platform Preferences */}
+                <div>
+                  <label className={`text-xs font-bold uppercase tracking-wider mb-3 block ${isLight ? 'text-slate-500' : 'text-white/30'}`}>
+                    <span className="material-symbols-rounded text-[14px] align-middle mr-1">devices</span>
+                    Preferred Platforms
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { name: 'YouTube', icon: 'smart_display' },
+                      { name: 'Coursera', icon: 'school' },
+                      { name: 'Official Docs', icon: 'menu_book' },
+                      { name: 'LinkedIn Learning', icon: 'work' },
+                      { name: 'freeCodeCamp', icon: 'code' },
+                      { name: 'Udemy', icon: 'play_circle' },
+                      { name: 'Hands-on Labs', icon: 'build' },
+                      { name: 'Kaggle', icon: 'bar_chart' },
+                    ].map(p => {
+                      const isSelected = planPlatforms.includes(p.name);
+                      return (
+                        <button
+                          key={p.name}
+                          onClick={() => {
+                            if (isSelected) {
+                              if (planPlatforms.length > 1) {
+                                setPlanPlatforms(prev => prev.filter(x => x !== p.name));
+                              }
+                            } else {
+                              setPlanPlatforms(prev => [...prev, p.name]);
+                            }
+                          }}
+                          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                            isSelected
+                              ? isLight
+                                ? 'bg-indigo-50 text-indigo-700 border-2 border-indigo-400 shadow-sm'
+                                : 'bg-indigo-500/15 text-indigo-300 border-2 border-indigo-500/40'
+                              : isLight
+                                ? 'bg-slate-50 text-slate-500 border border-slate-200 hover:border-slate-300'
+                                : 'bg-white/[0.03] text-white/40 border border-white/[0.06] hover:border-white/[0.12]'
+                          }`}
+                        >
+                          <span className="material-symbols-rounded text-[14px]">{p.icon}</span>
+                          {p.name}
+                          {isSelected && <span className="text-[10px]">✓</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className={`text-[10px] mt-2 ${isLight ? 'text-slate-400' : 'text-white/20'}`}>
+                    Select at least 1 platform. AI will prioritize resources from these.
+                  </p>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className={`px-6 py-4 flex items-center justify-end gap-3 border-t ${isLight ? 'border-slate-100 bg-slate-50/50' : 'border-white/[0.06] bg-white/[0.02]'}`}>
+                <button
+                  onClick={() => setPlanConfigSkill(null)}
+                  className={`px-4 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                    isLight
+                      ? 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                      : 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10'
+                  }`}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmGeneratePlan}
+                  className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                    isLight
+                      ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-500/20'
+                      : 'bg-indigo-500 text-white hover:bg-indigo-400 shadow-lg shadow-indigo-500/20'
+                  }`}
+                >
+                  <span className="material-symbols-rounded text-[14px]">auto_awesome</span>
+                  Generate {getDurationInfo(planDays).fullLabel.replace(/\d+-/, '').trim() ? getDurationInfo(planDays).fullLabel : `${planDays}-Day Plan`}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="max-w-5xl mx-auto px-6 py-8">
         {/* ── HERO ────────────────────────────── */}
         <motion.div

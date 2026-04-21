@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/lib/store';
 import { showToast } from '@/components/Toast';
@@ -68,6 +68,30 @@ export default function LinkedInOptimizerPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<OptimizeResult | null>(null);
   const [activeSection, setActiveSection] = useState<'headline' | 'about'>('headline');
+  const [resumeContext, setResumeContext] = useState<any>(null);
+  const [hasResumeContext, setHasResumeContext] = useState(false);
+
+  // Auto-populate from Resume Studio draft (sessionStorage)
+  useEffect(() => {
+    try {
+      const draft = sessionStorage.getItem('talent-resume-draft');
+      if (!draft) return;
+      const parsed = JSON.parse(draft);
+
+      if (parsed.morphedResume) {
+        setResumeContext(parsed.morphedResume);
+        setHasResumeContext(true);
+
+        // Auto-fill target role from resume title
+        if (parsed.morphedResume.title && !targetRole) {
+          setTargetRole(parsed.morphedResume.title);
+        }
+      }
+    } catch (e) {
+      // Silently fail
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleOptimize = async () => {
     setLoading(true);
@@ -76,7 +100,13 @@ export default function LinkedInOptimizerPage() {
       const res = await fetch('/api/agent/linkedin-optimize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ headline, about, targetRole }),
+        body: JSON.stringify({
+          headline,
+          about,
+          targetRole,
+          // Send morphed resume directly if available
+          ...(resumeContext ? { resumeData: resumeContext } : {}),
+        }),
       });
       const data = await res.json();
       if (data.success) {
@@ -105,7 +135,15 @@ export default function LinkedInOptimizerPage() {
               <p className="text-sm text-[var(--text-tertiary)]">Get found by recruiters — optimize your headline & about</p>
             </div>
           </div>
-          <PageHelp toolId="linkedin" />
+          <div className="flex items-center gap-3">
+            {hasResumeContext && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                <span className="material-symbols-rounded text-[14px] text-emerald-500">check_circle</span>
+                <span className="text-[11px] font-semibold text-emerald-500">Resume loaded</span>
+              </div>
+            )}
+            <PageHelp toolId="linkedin" />
+          </div>
         </div>
       </motion.div>
 
@@ -118,7 +156,7 @@ export default function LinkedInOptimizerPage() {
           }}>
             <h3 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
               <span className="material-symbols-rounded text-blue-500 text-lg">edit</span>
-              Paste Your Current LinkedIn
+              {hasResumeContext ? 'Your resume is loaded — paste your current LinkedIn to compare, or leave blank to generate fresh.' : 'Paste Your Current LinkedIn'}
             </h3>
 
             <div>
@@ -161,7 +199,9 @@ export default function LinkedInOptimizerPage() {
             <div className="p-3 rounded-xl bg-blue-500/5 border border-blue-500/10">
               <p className="text-[11px] text-[var(--text-secondary)] flex items-start gap-1.5">
                 <span className="material-symbols-rounded text-[14px] text-blue-400 mt-0.5 shrink-0">lightbulb</span>
-                Leave fields blank to auto-generate from your resume in Vault. We'll pull your latest version.
+                {hasResumeContext
+                  ? 'Your morphed resume is loaded. Leave fields blank to auto-generate — we\'ll use your latest resume data.'
+                  : 'Leave fields blank to auto-generate from your resume in Vault. We\'ll pull your latest version.'}
               </p>
             </div>
 
@@ -204,7 +244,11 @@ export default function LinkedInOptimizerPage() {
                     <span className="material-symbols-rounded text-3xl text-blue-500">person_search</span>
                   </div>
                   <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">Enter Your Profile</h3>
-                  <p className="text-sm text-[var(--text-tertiary)] max-w-xs">Paste your headline & about, or let us generate from your resume.</p>
+                  <p className="text-sm text-[var(--text-tertiary)] max-w-xs">
+                    {hasResumeContext
+                      ? 'Your resume is loaded. Paste your headline & about to compare, or let us generate fresh.'
+                      : 'Paste your headline & about, or let us generate from your resume.'}
+                  </p>
                 </div>
               </motion.div>
             ) : (
