@@ -13,7 +13,7 @@ import { geminiJSONCompletion } from '@/lib/ai/gemini-client';
 import { buildHumanizePrompt } from '@/lib/writing-prompts';
 import { countWords, checkWritingWordsAllowed, recordWritingWords, incrementUsage } from '@/lib/usage-tracker';
 import { detectAI } from '@/lib/ai-detection';
-import { normalizeText } from '@/lib/sanitize';
+import { normalizeText, sanitizeForAI } from '@/lib/sanitize';
 
 /** Strip AI-telltale punctuation from humanized text */
 function cleanAIPunctuation(text: string): string {
@@ -70,8 +70,8 @@ export async function POST(req: NextRequest) {
     if (!validated.success) return validated.error;
     const { text: rawText, domain, tone, paragraphIndices } = validated.data;
 
-    // Normalize input — homoglyph defense + invisible character stripping
-    const text = normalizeText(rawText);
+    // Sanitize + normalize input — prompt injection defense + homoglyph stripping
+    const text = normalizeText(sanitizeForAI(rawText));
 
     const wordCount = countWords(text);
     if (wordCount < 10) {

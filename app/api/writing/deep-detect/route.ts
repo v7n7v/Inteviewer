@@ -7,8 +7,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { guardApiRoute } from '@/lib/api-auth';
 import { deepDetect } from '@/lib/ai-detection-server';
-import { normalizeText } from '@/lib/sanitize';
+import { normalizeText, sanitizeForAI } from '@/lib/sanitize';
 import { incrementUsage } from '@/lib/usage-tracker';
+import { validateBody } from '@/lib/validate';
+import { z } from 'zod';
+
+const DeepDetectSchema = z.object({
+  text: z.string().trim().min(50, 'Text must be at least 50 characters').max(50_000),
+});
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,17 +26,10 @@ export async function POST(req: NextRequest) {
     });
     if (guard.error) return guard.error;
 
-    const body = await req.json();
-    const text = body?.text;
+    const validated = await validateBody(req, DeepDetectSchema);
+    if (!validated.success) return validated.error;
 
-    if (!text || typeof text !== 'string' || text.trim().length < 50) {
-      return NextResponse.json(
-        { error: 'Text must be at least 50 characters for deep analysis' },
-        { status: 400 }
-      );
-    }
-
-    const normalized = normalizeText(text);
+    const normalized = normalizeText(sanitizeForAI(validated.data.text));
     const result = await deepDetect(normalized);
 
     await incrementUsage(guard.user.uid, 'writingTools');

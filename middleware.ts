@@ -98,7 +98,7 @@ export function middleware(request: NextRequest) {
  * These supplement the headers in next.config.js (which only apply to static responses).
  * Middleware headers apply to ALL responses including API routes.
  */
-function addSecurityHeaders(response: NextResponse, _request: NextRequest): NextResponse {
+function addSecurityHeaders(response: NextResponse, request: NextRequest): NextResponse {
   // Prevent clickjacking
   response.headers.set('X-Frame-Options', 'DENY');
   // Prevent MIME-type sniffing
@@ -109,6 +109,12 @@ function addSecurityHeaders(response: NextResponse, _request: NextRequest): Next
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(self), geolocation=(), payment=(self)');
   // HSTS — force HTTPS for 2 years
   response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+  // Cross-Origin isolation
+  response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
+  // Restrict cross-origin resource access for API routes
+  if (request.nextUrl.pathname.startsWith('/api/')) {
+    response.headers.set('Cross-Origin-Resource-Policy', 'same-origin');
+  }
   // Prevent leaking server info
   response.headers.delete('X-Powered-By');
   response.headers.delete('Server');

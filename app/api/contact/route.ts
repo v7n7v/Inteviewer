@@ -9,6 +9,16 @@ import { Resend } from 'resend';
 const CONTACT_EMAIL = 'alula.gebre@gmail.com';
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+/** Escape HTML entities to prevent injection in email templates */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
 // Simple in-memory rate limit: max 3 submissions per IP per hour
 const rateMap = new Map<string, number[]>();
 
@@ -46,11 +56,16 @@ export async function POST(req: NextRequest) {
       other: 'Other',
     } as Record<string, string>)[category] || 'General';
 
+    // Sanitize all user input for HTML injection
+    const safeName = escapeHtml(name.slice(0, 200));
+    const safeEmail = escapeHtml(email.slice(0, 320));
+    const safeMessage = escapeHtml(message);
+
     await resend.emails.send({
       from: 'TalentConsulting <hello@talentconsulting.io>',
       to: [CONTACT_EMAIL],
-      replyTo: email,
-      subject: `[TalentConsulting] ${categoryLabel} from ${name}`,
+      replyTo: email.slice(0, 320),
+      subject: `[TalentConsulting] ${categoryLabel} from ${safeName}`,
       html: `
         <div style="font-family: -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
           <div style="background: linear-gradient(135deg, #059669, #0d9488); padding: 20px 24px; border-radius: 12px 12px 0 0;">
@@ -60,11 +75,11 @@ export async function POST(req: NextRequest) {
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
                 <td style="padding: 8px 0; color: #6b7280; font-size: 14px; width: 80px;">From:</td>
-                <td style="padding: 8px 0; font-size: 14px; font-weight: 600;">${name}</td>
+                <td style="padding: 8px 0; font-size: 14px; font-weight: 600;">${safeName}</td>
               </tr>
               <tr>
                 <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Email:</td>
-                <td style="padding: 8px 0; font-size: 14px;"><a href="mailto:${email}" style="color: #059669;">${email}</a></td>
+                <td style="padding: 8px 0; font-size: 14px;"><a href="mailto:${safeEmail}" style="color: #059669;">${safeEmail}</a></td>
               </tr>
               <tr>
                 <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Category:</td>
@@ -72,9 +87,9 @@ export async function POST(req: NextRequest) {
               </tr>
             </table>
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 16px 0;" />
-            <div style="font-size: 14px; line-height: 1.6; color: #1f2937; white-space: pre-wrap;">${message}</div>
+            <div style="font-size: 14px; line-height: 1.6; color: #1f2937; white-space: pre-wrap;">${safeMessage}</div>
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 16px 0;" />
-            <p style="font-size: 11px; color: #9ca3af; margin: 0;">Sent from TalentConsulting.io contact form • IP: ${ip}</p>
+            <p style="font-size: 11px; color: #9ca3af; margin: 0;">Sent from TalentConsulting.io contact form</p>
           </div>
         </div>
       `,
