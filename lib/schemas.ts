@@ -266,3 +266,12 @@ export const GalleryToolSchema = z.object({
   options: z.record(z.string(), z.unknown()).optional(),
 });
 
+// ──────────────────────────────────────────────
+// /api/resume/ats-score
+// ──────────────────────────────────────────────
+
+export const ATSScoreSchema = z.object({
+  resumeText: SafeText(100_000),
+  jobDescription: SafeText(30_000),
+});
+

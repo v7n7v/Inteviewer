@@ -93,6 +93,14 @@ const navGroups: NavigationGroup[] = [
         color: { iconColor: '#06b6d4' },
       },
       {
+        id: 'ats-score',
+        label: 'ATS Match Score',
+        description: 'Keyword Gap Analysis',
+        path: '/suite/ats-score',
+        iconName: 'analytics',
+        color: { iconColor: '#0ea5e9' },
+      },
+      {
         id: 'linkedin',
         label: 'LinkedIn',
         description: 'Profile Optimizer',
