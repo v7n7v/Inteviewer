@@ -13,6 +13,7 @@ import { geminiJSONCompletion } from '@/lib/ai/gemini-client';
 import { buildHumanizePrompt } from '@/lib/writing-prompts';
 import { countWords, checkWritingWordsAllowed, recordWritingWords, incrementUsage } from '@/lib/usage-tracker';
 import { detectAI } from '@/lib/ai-detection';
+import { normalizeText } from '@/lib/sanitize';
 
 /** Strip AI-telltale punctuation from humanized text */
 function cleanAIPunctuation(text: string): string {
@@ -67,7 +68,10 @@ export async function POST(req: NextRequest) {
 
     const validated = await validateBody(req, HumanizeSchema);
     if (!validated.success) return validated.error;
-    const { text, domain, tone, paragraphIndices } = validated.data;
+    const { text: rawText, domain, tone, paragraphIndices } = validated.data;
+
+    // Normalize input — homoglyph defense + invisible character stripping
+    const text = normalizeText(rawText);
 
     const wordCount = countWords(text);
     if (wordCount < 10) {
@@ -118,22 +122,65 @@ Rewrite the full text with the flagged paragraphs humanized. Tone: ${tone}.`;
       userPrompt = `Humanize this entire text with a ${tone} tone:\n\n${text}`;
     }
 
-    const result = await geminiJSONCompletion<{
+
+    type HumanizeResult = {
       rewritten: string;
       changes: Array<{ original: string; rewritten: string; reason: string }>;
       stats: { sentenceLengthStdDev: number; bannedWordsRemoved: number; burstinessRange: number };
-    }>(systemPrompt, userPrompt, {
-      temperature: tone === 'creative' ? 0.85 : tone === 'casual' ? 0.8 : 0.7,
-      maxTokens: Math.min(16384, Math.max(8192, wordCount * 8)),
+    };
+
+    const maxTokens = Math.min(16384, Math.max(8192, wordCount * 8));
+    const temp = tone === 'creative' ? 0.85 : tone === 'casual' ? 0.8 : 0.7;
+
+    // Pass 1: Initial humanization
+    let result = await geminiJSONCompletion<HumanizeResult>(systemPrompt, userPrompt, {
+      temperature: temp, maxTokens,
     });
 
-    // Post-process: strip AI punctuation artifacts
-    const cleanedText = cleanAIPunctuation(result.rewritten || '');
+    let cleanedText = cleanAIPunctuation(result.rewritten || '');
+    let recheckResult = detectAI(cleanedText);
+    let retryCount = 0;
 
-    // Auto-recheck with detection engine
-    const recheckResult = detectAI(cleanedText);
+    // Iterative refinement: retry low-scoring paragraphs (max 2 retries)
+    while (recheckResult.humanScore <= 60 && retryCount < 2) {
+      retryCount++;
+      const lowParagraphs = recheckResult.paragraphScores
+        .filter(p => p.score < 60)
+        .slice(0, 5); // limit to 5 worst paragraphs
 
-    // Record usage after successful humanization
+      if (lowParagraphs.length === 0) break;
+
+      const diagnostics = lowParagraphs.map(p => {
+        const issues = p.flags.length > 0 ? p.flags.join('; ') : 'Low overall score';
+        return `[Paragraph ${p.index + 1}] Score: ${p.score}/100. Issues: ${issues}\nText: "${p.text.slice(0, 200)}"`;
+      }).join('\n\n');
+
+      const retryPrompt = `The previous humanization attempt still scores as AI-generated (score: ${recheckResult.humanScore}/100).
+
+These paragraphs specifically need more work:
+
+${diagnostics}
+
+Rewrite the FULL text again. Focus especially on the flagged paragraphs. Key fixes needed:
+- Increase sentence length variance (mix 4-word fragments with 25+ word sentences)
+- Remove any remaining AI-tell words
+- Add natural contractions and first-person markers
+- Vary paragraph lengths more
+
+Tone: ${tone}
+
+Full text to re-humanize:
+${cleanedText}`;
+
+      result = await geminiJSONCompletion<HumanizeResult>(systemPrompt, retryPrompt, {
+        temperature: Math.min(0.95, temp + 0.1 * retryCount), maxTokens,
+      });
+
+      cleanedText = cleanAIPunctuation(result.rewritten || '');
+      recheckResult = detectAI(cleanedText);
+    }
+
+    // Record usage after successful humanization (only count final output)
     const outputWords = countWords(cleanedText);
     await recordWritingWords(guard.user.uid, outputWords);
     await incrementUsage(guard.user.uid, 'writingTools');
@@ -146,6 +193,7 @@ Rewrite the full text with the flagged paragraphs humanized. Tone: ${tone}.`;
         verdict: recheckResult.verdict,
         flaggedCount: recheckResult.paragraphScores.filter(p => p.score < 60).length,
       },
+      retries: retryCount,
       wordUsage: {
         inputWords: wordCount,
         outputWords,

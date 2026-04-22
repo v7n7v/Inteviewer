@@ -5,6 +5,8 @@
  * Runs entirely in the browser — zero API cost.
  */
 
+import { normalizeText } from './sanitize';
+
 // ── Severity-Ranked AI-Tell Vocabulary ──
 
 export const CRITICAL_WORDS = [
@@ -81,6 +83,9 @@ export interface DetectionResult {
     burstiness: number;
     vocabulary: number;
     structure: number;
+    zipf: number;
+    ngramRepetition: number;
+    contractionEntropy: number;
   };
   flags: DetectionFlag[];
   paragraphScores: ParagraphScore[];
@@ -378,6 +383,126 @@ function scoreStructure(text: string): { score: number; flags: DetectionFlag[] }
   return { score: Math.max(0, Math.min(100, structureScore)), flags };
 }
 
+/** Zipf's Law conformity: human word frequency follows power-law distribution, AI is more uniform */
+function scoreZipf(text: string): { score: number; flags: DetectionFlag[] } {
+  const flags: DetectionFlag[] = [];
+  const words = text.toLowerCase().split(/\s+/).filter(Boolean);
+  if (words.length < 50) return { score: 65, flags };
+
+  // Count word frequencies
+  const freq = new Map<string, number>();
+  for (const w of words) freq.set(w, (freq.get(w) || 0) + 1);
+
+  // Sort by frequency descending
+  const sorted = [...freq.values()].sort((a, b) => b - a);
+  if (sorted.length < 10) return { score: 65, flags };
+
+  // Calculate correlation with ideal Zipf curve (freq ∝ 1/rank)
+  const topN = Math.min(30, sorted.length);
+  const maxFreq = sorted[0];
+  let sumXY = 0, sumX2 = 0, sumY2 = 0;
+
+  for (let i = 0; i < topN; i++) {
+    const actual = sorted[i] / maxFreq; // normalize to 0-1
+    const ideal = 1 / (i + 1);          // Zipf's ideal
+    sumXY += actual * ideal;
+    sumX2 += actual * actual;
+    sumY2 += ideal * ideal;
+  }
+
+  const correlation = sumXY / (Math.sqrt(sumX2) * Math.sqrt(sumY2));
+
+  // Human: r > 0.85 | AI: r < 0.75
+  let score: number;
+  if (correlation > 0.90) score = 90;
+  else if (correlation > 0.85) score = 75;
+  else if (correlation > 0.80) score = 60;
+  else if (correlation > 0.75) score = 40;
+  else score = 20;
+
+  if (score < 40) {
+    flags.push({
+      type: 'medium',
+      category: 'vocabulary',
+      message: `Word frequency distribution is unusually flat (Zipf r=${correlation.toFixed(2)})`,
+    });
+  }
+
+  return { score, flags };
+}
+
+/** N-gram repetition density: AI reuses 3-gram phrases at higher rates */
+function scoreNgramRepetition(text: string): { score: number; flags: DetectionFlag[] } {
+  const flags: DetectionFlag[] = [];
+  const words = text.toLowerCase().split(/\s+/).filter(Boolean);
+  if (words.length < 30) return { score: 65, flags };
+
+  // Build 3-grams
+  const ngrams: string[] = [];
+  for (let i = 0; i <= words.length - 3; i++) {
+    ngrams.push(`${words[i]} ${words[i + 1]} ${words[i + 2]}`);
+  }
+
+  if (ngrams.length === 0) return { score: 65, flags };
+
+  const unique = new Set(ngrams);
+  const ratio = unique.size / ngrams.length;
+
+  // Human: ratio > 0.90 | AI: ratio < 0.80
+  let score: number;
+  if (ratio > 0.95) score = 95;
+  else if (ratio > 0.90) score = 80;
+  else if (ratio > 0.85) score = 60;
+  else if (ratio > 0.80) score = 40;
+  else score = 15;
+
+  if (ratio < 0.80) {
+    flags.push({
+      type: 'high',
+      category: 'structure',
+      message: `High phrase repetition (${((1 - ratio) * 100).toFixed(0)}% of 3-grams are repeated)`,
+    });
+  }
+
+  return { score, flags };
+}
+
+/** Contraction entropy: humans use contractions inconsistently across paragraphs; AI is uniform */
+function scoreContractionEntropy(text: string): { score: number; flags: DetectionFlag[] } {
+  const flags: DetectionFlag[] = [];
+  const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim().length > 30);
+  if (paragraphs.length < 3) return { score: 60, flags };
+
+  // Measure contraction rate per paragraph
+  const rates = paragraphs.map(p => {
+    const words = p.split(/\s+/).filter(Boolean);
+    const contractions = (p.match(/\b\w+'(t|s|re|ve|d|ll|m)\b/gi) || []).length;
+    return words.length > 0 ? contractions / words.length : 0;
+  });
+
+  // Calculate variance
+  const mean = rates.reduce((a, b) => a + b, 0) / rates.length;
+  const variance = rates.reduce((a, b) => a + (b - mean) ** 2, 0) / rates.length;
+
+  // Human: high variance (inconsistent usage) | AI: near-zero variance (uniform)
+  let score: number;
+  if (variance > 0.003) score = 90;
+  else if (variance > 0.001) score = 70;
+  else if (variance > 0.0005) score = 50;
+  else if (mean === 0) score = 25; // zero contractions = very AI-like
+  else score = 30;
+
+  if (variance < 0.0005 && mean > 0) {
+    flags.push({
+      type: 'medium',
+      category: 'structure',
+      message: 'Contraction usage is suspiciously uniform across paragraphs',
+    });
+  }
+
+  return { score, flags };
+}
+
 // ── Main Detection Function ──
 
 export function detectAI(text: string): DetectionResult {
@@ -385,23 +510,32 @@ export function detectAI(text: string): DetectionResult {
     return {
       humanScore: 50,
       verdict: 'mixed',
-      breakdown: { perplexity: 50, burstiness: 50, vocabulary: 50, structure: 50 },
+      breakdown: { perplexity: 50, burstiness: 50, vocabulary: 50, structure: 50, zipf: 50, ngramRepetition: 50, contractionEntropy: 50 },
       flags: [],
       paragraphScores: [],
     };
   }
 
-  const perplexity = scorePerplexity(text);
-  const burstiness = scoreBurstiness(text);
-  const vocabulary = scoreVocabulary(text);
-  const structure = scoreStructure(text);
+  // Normalize input — defends against homoglyph injection and zero-width characters
+  const normalized = normalizeText(text);
 
-  // Weighted composite
+  const perplexity = scorePerplexity(normalized);
+  const burstiness = scoreBurstiness(normalized);
+  const vocabulary = scoreVocabulary(normalized);
+  const structure = scoreStructure(normalized);
+  const zipf = scoreZipf(normalized);
+  const ngramRep = scoreNgramRepetition(normalized);
+  const contrEntropy = scoreContractionEntropy(normalized);
+
+  // Weighted composite — 7 signals
   const humanScore = Math.round(
-    perplexity.score * 0.35 +
-    burstiness.score * 0.30 +
-    vocabulary.score * 0.20 +
-    structure.score * 0.15
+    perplexity.score * 0.20 +
+    burstiness.score * 0.20 +
+    vocabulary.score * 0.15 +
+    structure.score * 0.10 +
+    zipf.score * 0.15 +
+    ngramRep.score * 0.10 +
+    contrEntropy.score * 0.10
   );
 
   const verdict: DetectionResult['verdict'] =
@@ -410,14 +544,17 @@ export function detectAI(text: string): DetectionResult {
     'likely_ai';
 
   // Per-paragraph scoring
-  const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim().length > 20);
+  const paragraphs = normalized.split(/\n\s*\n/).filter(p => p.trim().length > 20);
   const paragraphScores: ParagraphScore[] = paragraphs.map((para, i) => {
     const pPerp = scorePerplexity(para);
     const pBurst = scoreBurstiness(para);
     const pVocab = scoreVocabulary(para);
     const pStruct = scoreStructure(para);
+    const pZipf = scoreZipf(para);
+    const pNgram = scoreNgramRepetition(para);
     const pScore = Math.round(
-      pPerp.score * 0.35 + pBurst.score * 0.30 + pVocab.score * 0.20 + pStruct.score * 0.15
+      pPerp.score * 0.20 + pBurst.score * 0.20 + pVocab.score * 0.15 +
+      pStruct.score * 0.10 + pZipf.score * 0.15 + pNgram.score * 0.10 + 60 * 0.10
     );
     return {
       index: i,
@@ -435,6 +572,9 @@ export function detectAI(text: string): DetectionResult {
     ...burstiness.flags,
     ...perplexity.flags,
     ...structure.flags,
+    ...zipf.flags,
+    ...ngramRep.flags,
+    ...contrEntropy.flags,
   ].sort((a, b) => {
     const order = { critical: 0, high: 1, medium: 2, low: 3 };
     return order[a.type] - order[b.type];
@@ -448,6 +588,9 @@ export function detectAI(text: string): DetectionResult {
       burstiness: burstiness.score,
       vocabulary: vocabulary.score,
       structure: structure.score,
+      zipf: zipf.score,
+      ngramRepetition: ngramRep.score,
+      contractionEntropy: contrEntropy.score,
     },
     flags: allFlags,
     paragraphScores,

@@ -38,6 +38,32 @@ export function sanitizeForAI(text: string, maxLength = 50_000): string {
 }
 
 /**
+ * Normalize text for accurate AI detection and processing.
+ * Defends against homoglyph injection, zero-width characters, and encoding tricks.
+ */
+export function normalizeText(text: string): string {
+  // 1. Unicode NFKC — collapses visually identical characters (Cyrillic "е" → Latin "e")
+  let normalized = text.normalize('NFKC');
+
+  // 2. Strip zero-width and invisible formatting characters
+  normalized = normalized.replace(/[\u200B\u200C\u200D\u200E\u200F\uFEFF\u00AD\u2060\u2061\u2062\u2063\u2064\u206A\u206B\u206C\u206D\u206E\u206F]/g, '');
+
+  // 3. Normalize whitespace — collapse tabs/multiple spaces
+  normalized = normalized.replace(/[\t\v\f]+/g, ' ');
+  normalized = normalized.replace(/ {2,}/g, ' ');
+
+  // 4. Normalize smart quotes → straight quotes
+  normalized = normalized.replace(/[\u2018\u2019\u201A]/g, "'");
+  normalized = normalized.replace(/[\u201C\u201D\u201E]/g, '"');
+
+  // 5. Normalize line endings
+  normalized = normalized.replace(/\r\n/g, '\n');
+  normalized = normalized.replace(/\r/g, '\n');
+
+  return normalized.trim();
+}
+
+/**
  * Wrap user content with delimiter markers to reduce prompt injection risk.
  * The AI model treats content between delimiters as data, not instructions.
  */

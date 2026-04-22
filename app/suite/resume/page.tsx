@@ -2225,6 +2225,8 @@ export default function LiquidResumePage() {
                                   morphedResume: displayResume,
                                   originalResume: originalResume,
                                   jobDescription: jobDescription,
+                                  companyName: applicationData.companyName || '',
+                                  jobTitle: displayResume.title || applicationData.jobTitle || '',
                                 }));
                               }
                               router.push('/suite/cover-letter');
@@ -2248,6 +2250,8 @@ export default function LiquidResumePage() {
                                   morphedResume: displayResume,
                                   originalResume: originalResume,
                                   jobDescription: jobDescription,
+                                  companyName: applicationData.companyName || '',
+                                  jobTitle: displayResume.title || applicationData.jobTitle || '',
                                 }));
                               }
                               router.push('/suite/linkedin');

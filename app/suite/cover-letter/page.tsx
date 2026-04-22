@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/lib/store';
 import { showToast } from '@/components/Toast';
 import PageHelp from '@/components/PageHelp';
+import { getResumeVersions, type ResumeVersion, saveCoverLetter, getCoverLetters, deleteCoverLetter, type CoverLetter } from '@/lib/database-suite';
+import { exportDocument, downloadBlob } from '@/lib/doc-export';
 
 function CopyButton({ text, label = 'Copy', className: cn }: { text: string; label?: string; className?: string }) {
   const [copied, setCopied] = useState(false);
@@ -61,6 +63,20 @@ export default function CoverLetterPage() {
   const [resumeContext, setResumeContext] = useState<any>(null);
   const [hasResumeContext, setHasResumeContext] = useState(false);
 
+  // Resume library state
+  const [savedResumes, setSavedResumes] = useState<ResumeVersion[]>([]);
+  const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null);
+  const [selectedResumeName, setSelectedResumeName] = useState<string>('');
+  const [showResumeLibrary, setShowResumeLibrary] = useState(false);
+
+  // Cover letter persistence
+  const [savedLetters, setSavedLetters] = useState<CoverLetter[]>([]);
+  const [showSavedLetters, setShowSavedLetters] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Preview mode
+  const [showPreview, setShowPreview] = useState(false);
+
   // Auto-populate from Resume Studio draft (sessionStorage)
   useEffect(() => {
     try {
@@ -72,23 +88,27 @@ export default function CoverLetterPage() {
       if (parsed.morphedResume) {
         setResumeContext(parsed.morphedResume);
         setHasResumeContext(true);
+      }
 
-        // Auto-fill job title from resume
-        if (parsed.morphedResume.title && !jobTitle) {
-          // Don't set jobTitle — that's the target position, not resume title
-        }
+      // Auto-fill company from explicit field, then fallback to regex
+      if (parsed.companyName) {
+        setCompany(parsed.companyName);
+      } else if (parsed.jobDescription) {
+        const jd = parsed.jobDescription;
+        const companyMatch = jd.match(/(?:at|@|company[:\s]+|employer[:\s]+)\s*([A-Z][A-Za-z0-9\s&.,']+?)(?:\s*[-–—]|\s*\n|\s*is\s|\s*,)/i);
+        if (companyMatch) setCompany(companyMatch[1].trim());
+      }
+
+      // Auto-fill job title from explicit field or morphed resume title
+      if (parsed.jobTitle) {
+        setJobTitle(parsed.jobTitle);
+      } else if (parsed.morphedResume?.title) {
+        setJobTitle(parsed.morphedResume.title);
       }
 
       // Auto-fill JD if available
-      if (parsed.jobDescription && !jobDescription) {
+      if (parsed.jobDescription) {
         setJobDescription(parsed.jobDescription);
-
-        // Try to extract company name from JD
-        const jd = parsed.jobDescription;
-        const companyMatch = jd.match(/(?:at|@|company[:\s]+|employer[:\s]+)\s*([A-Z][A-Za-z0-9\s&.,']+?)(?:\s*[-–—]|\s*\n|\s*is\s|\s*,)/i);
-        if (companyMatch && !company) {
-          setCompany(companyMatch[1].trim());
-        }
       }
     } catch (e) {
       // Silently fail — sessionStorage might not be available
@@ -96,6 +116,85 @@ export default function CoverLetterPage() {
     // Only run on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Load saved resumes and cover letters
+  useEffect(() => {
+    if (!user) return;
+    getResumeVersions().then(r => { if (r.success && r.data) setSavedResumes(r.data); });
+    getCoverLetters().then(r => { if (r.success && r.data) setSavedLetters(r.data); });
+  }, [user]);
+
+  const selectResume = (rv: ResumeVersion) => {
+    setResumeContext(rv.content);
+    setHasResumeContext(true);
+    setSelectedResumeId(rv.id);
+    setSelectedResumeName(rv.version_name);
+    showToast(`Loaded: ${rv.version_name}`, 'check_circle');
+  };
+
+  const handleSaveLetter = async () => {
+    if (!result || !company) return;
+    setSaving(true);
+    try {
+      const res = await saveCoverLetter({
+        resumeVersionId: selectedResumeId || undefined,
+        company,
+        jobTitle,
+        content: result.coverLetter,
+        subject: result.subject,
+        tone,
+        template,
+        keyHighlights: result.keyHighlights,
+        wordCount: result.wordCount,
+        toneScore: result.toneScore,
+        jobDescription: jobDescription || undefined,
+      });
+      if (res.success) {
+        showToast('Cover letter saved!', 'check_circle');
+        getCoverLetters().then(r => { if (r.success && r.data) setSavedLetters(r.data); });
+      } else {
+        showToast(res.error || 'Save failed', 'cancel');
+      }
+    } catch { showToast('Save failed', 'cancel'); }
+    setSaving(false);
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!result) return;
+    try {
+      const { blob, filename } = await exportDocument(result.coverLetter, {
+        title: `Cover Letter - ${company} - ${jobTitle}`,
+        format: 'docx',
+      });
+      downloadBlob(blob, filename);
+      showToast('Downloaded!', 'download');
+    } catch { showToast('Download failed', 'cancel'); }
+  };
+
+  const loadSavedLetter = (letter: CoverLetter) => {
+    setResult({
+      coverLetter: letter.content,
+      subject: letter.subject,
+      keyHighlights: letter.key_highlights || [],
+      wordCount: letter.word_count,
+      toneScore: letter.tone_score,
+    });
+    setCompany(letter.company);
+    setJobTitle(letter.job_title);
+    setTone(letter.tone);
+    setTemplate(letter.template);
+    if (letter.job_description) setJobDescription(letter.job_description);
+    setShowSavedLetters(false);
+    showToast(`Loaded letter for ${letter.company}`, 'check_circle');
+  };
+
+  const handleDeleteLetter = async (id: string) => {
+    const res = await deleteCoverLetter(id);
+    if (res.success) {
+      setSavedLetters(prev => prev.filter(l => l.id !== id));
+      showToast('Deleted', 'check_circle');
+    }
+  };
 
   const handleGenerate = async () => {
     if (!company || !jobTitle) {
@@ -145,17 +244,104 @@ export default function CoverLetterPage() {
               <p className="text-sm text-[var(--text-tertiary)]">AI-crafted cover letters from your resume</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {hasResumeContext && (
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
                 <span className="material-symbols-rounded text-[14px] text-emerald-500">check_circle</span>
-                <span className="text-[11px] font-semibold text-emerald-500">Resume loaded</span>
+                <span className="text-[11px] font-semibold text-emerald-500 max-w-[120px] truncate">
+                  {selectedResumeName || 'Resume loaded'}
+                </span>
               </div>
+            )}
+            {savedLetters.length > 0 && (
+              <button onClick={() => setShowSavedLetters(!showSavedLetters)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 transition-colors">
+                <span className="material-symbols-rounded text-[14px] text-rose-500">folder</span>
+                <span className="text-[11px] font-semibold text-rose-500">{savedLetters.length} Saved</span>
+              </button>
+            )}
+            {user && savedResumes.length > 0 && (
+              <button onClick={() => setShowResumeLibrary(!showResumeLibrary)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 transition-colors">
+                <span className="material-symbols-rounded text-[14px] text-blue-500">description</span>
+                <span className="text-[11px] font-semibold text-blue-500">Resumes</span>
+              </button>
             )}
             <PageHelp toolId="cover-letter" />
           </div>
         </div>
       </motion.div>
+
+      {/* Resume Library Panel */}
+      <AnimatePresence>
+        {showResumeLibrary && savedResumes.length > 0 && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mb-6 overflow-hidden">
+            <div className="rounded-2xl p-5" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
+                  <span className="material-symbols-rounded text-blue-500 text-lg">description</span>
+                  Your Resumes — Select one to generate a cover letter
+                </h3>
+                <button onClick={() => setShowResumeLibrary(false)} className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)]">
+                  <span className="material-symbols-rounded text-lg">close</span>
+                </button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                {savedResumes.map(rv => (
+                  <button key={rv.id} onClick={() => selectResume(rv)}
+                    className={`p-3 rounded-xl text-left transition-all border ${
+                      selectedResumeId === rv.id
+                        ? 'border-blue-500/40 bg-blue-500/10'
+                        : 'border-[var(--border-subtle)] hover:border-[var(--text-tertiary)]'
+                    }`}
+                    style={{ background: selectedResumeId === rv.id ? undefined : 'var(--bg-elevated)' }}
+                  >
+                    <p className="text-[12px] font-bold text-[var(--text-primary)] truncate">{rv.version_name}</p>
+                    <p className="text-[10px] text-[var(--text-tertiary)] mt-0.5">
+                      {new Date(rv.created_at).toLocaleDateString()}
+                      {rv.matchScore ? ` • ${rv.matchScore}% match` : ''}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Saved Cover Letters Panel */}
+      <AnimatePresence>
+        {showSavedLetters && savedLetters.length > 0 && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mb-6 overflow-hidden">
+            <div className="rounded-2xl p-5" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
+                  <span className="material-symbols-rounded text-rose-500 text-lg">folder</span>
+                  Saved Cover Letters
+                </h3>
+                <button onClick={() => setShowSavedLetters(false)} className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)]">
+                  <span className="material-symbols-rounded text-lg">close</span>
+                </button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-64 overflow-y-auto">
+                {savedLetters.map(letter => (
+                  <div key={letter.id} className="p-3 rounded-xl border border-[var(--border-subtle)] group relative" style={{ background: 'var(--bg-elevated)' }}>
+                    <button onClick={() => loadSavedLetter(letter)} className="text-left w-full">
+                      <p className="text-[12px] font-bold text-[var(--text-primary)] truncate">{letter.company}</p>
+                      <p className="text-[10px] text-[var(--text-tertiary)]">{letter.job_title}</p>
+                      <p className="text-[9px] text-[var(--text-tertiary)] mt-1">{new Date(letter.created_at).toLocaleDateString()} • {letter.word_count} words</p>
+                    </button>
+                    <button onClick={() => handleDeleteLetter(letter.id)}
+                      className="absolute top-2 right-2 w-6 h-6 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-red-500/10 text-red-500 hover:bg-red-500/20">
+                      <span className="material-symbols-rounded text-[14px]">delete</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Input Panel */}
@@ -273,7 +459,7 @@ export default function CoverLetterPage() {
               </motion.div>
             ) : (
               <motion.div key="result" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-                {/* Meta bar */}
+                {/* Meta bar + Actions */}
                 <div className="rounded-2xl p-4 flex items-center justify-between" style={{
                   background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)',
                 }}>
@@ -288,7 +474,26 @@ export default function CoverLetterPage() {
                       <p className="text-[9px] text-[var(--text-tertiary)]">tone score</p>
                     </div>
                   </div>
-                  <CopyButton text={result.coverLetter} label="Copy All" />
+                  <div className="flex items-center gap-1.5">
+                    <CopyButton text={result.coverLetter} label="Copy" />
+                    <button onClick={handleDownloadPDF}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all bg-blue-500/10 text-blue-500 border-blue-500/20 hover:bg-blue-500/20">
+                      <span className="material-symbols-rounded text-[14px]">download</span>DOCX
+                    </button>
+                    {user && (
+                      <button onClick={handleSaveLetter} disabled={saving}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20 disabled:opacity-50">
+                        <span className="material-symbols-rounded text-[14px]">{saving ? 'hourglass_top' : 'save'}</span>Save
+                      </button>
+                    )}
+                    <button onClick={() => setShowPreview(!showPreview)}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
+                        showPreview ? 'bg-rose-500/20 text-rose-500 border-rose-500/30' : 'bg-[var(--bg-elevated)] text-[var(--text-secondary)] border-[var(--border-subtle)] hover:border-rose-500/30'
+                      }`}>
+                      <span className="material-symbols-rounded text-[14px]">{showPreview ? 'edit_note' : 'preview'}</span>
+                      {showPreview ? 'Raw' : 'Preview'}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Subject line */}
@@ -302,14 +507,32 @@ export default function CoverLetterPage() {
                   <CopyButton text={result.subject} label="" className="p-1.5 rounded-lg text-[var(--text-tertiary)] hover:text-rose-500 hover:bg-rose-500/10 transition-all" />
                 </div>
 
-                {/* Cover Letter */}
-                <div className="rounded-2xl p-5" style={{
-                  background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)',
-                }}>
-                  <div className="prose prose-sm max-w-none text-[var(--text-secondary)] leading-relaxed whitespace-pre-wrap text-sm">
-                    {result.coverLetter}
+                {/* Cover Letter — Preview or Raw */}
+                {showPreview ? (
+                  <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border-subtle)' }}>
+                    <div className="bg-white p-8 md:p-12 text-slate-800 min-h-[400px]" style={{ fontFamily: "'Georgia', serif" }}>
+                      {/* Letter header */}
+                      <div className="mb-8">
+                        <p className="text-sm text-slate-500">{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                        <p className="text-sm text-slate-500 mt-1">{company} Hiring Team</p>
+                      </div>
+                      {/* Letter body */}
+                      <div className="space-y-4 text-[15px] leading-relaxed text-slate-700">
+                        {result.coverLetter.split('\n\n').filter(Boolean).map((para, i) => (
+                          <p key={i}>{para}</p>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="rounded-2xl p-5" style={{
+                    background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)',
+                  }}>
+                    <div className="prose prose-sm max-w-none text-[var(--text-secondary)] leading-relaxed whitespace-pre-wrap text-sm">
+                      {result.coverLetter}
+                    </div>
+                  </div>
+                )}
 
                 {/* Key Highlights */}
                 {result.keyHighlights.length > 0 && (

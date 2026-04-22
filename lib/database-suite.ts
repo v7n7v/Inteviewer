@@ -415,6 +415,96 @@ export async function getJDTemplates(): Promise<{
 }
 
 // ============================================
+// COVER LETTERS
+// ============================================
+
+export interface CoverLetter {
+  id: string;
+  user_id: string;
+  resume_version_id?: string;
+  company: string;
+  job_title: string;
+  content: string;
+  subject: string;
+  tone: string;
+  template: string;
+  key_highlights: string[];
+  word_count: number;
+  tone_score: number;
+  job_description?: string;
+  created_at: string;
+}
+
+export async function saveCoverLetter(data: {
+  resumeVersionId?: string;
+  company: string;
+  jobTitle: string;
+  content: string;
+  subject: string;
+  tone: string;
+  template: string;
+  keyHighlights: string[];
+  wordCount: number;
+  toneScore: number;
+  jobDescription?: string;
+}): Promise<{ success: boolean; data?: CoverLetter; error?: string }> {
+  try {
+    const userId = getUserId();
+    const now = new Date().toISOString();
+    const docData = {
+      user_id: userId,
+      resume_version_id: data.resumeVersionId || null,
+      company: data.company,
+      job_title: data.jobTitle,
+      content: data.content,
+      subject: data.subject,
+      tone: data.tone,
+      template: data.template,
+      key_highlights: data.keyHighlights,
+      word_count: data.wordCount,
+      tone_score: data.toneScore,
+      job_description: data.jobDescription || null,
+      created_at: now,
+    };
+    const colRef = collection(db, 'users', userId, 'cover_letters');
+    const docRef = await withTimeout(addDoc(colRef, docData));
+    return { success: true, data: { id: docRef.id, ...docData } as CoverLetter };
+  } catch (error: any) {
+    console.error('saveCoverLetter error:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getCoverLetters(): Promise<{
+  success: boolean;
+  data?: CoverLetter[];
+  error?: string;
+}> {
+  try {
+    const userId = getUserId();
+    const colRef = collection(db, 'users', userId, 'cover_letters');
+    const snapshot = await withTimeout(getDocs(colRef));
+    const data = snapshot.docs
+      .map(d => ({ id: d.id, ...d.data() } as CoverLetter))
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return { success: true, data };
+  } catch (error: any) {
+    console.error('getCoverLetters error:', error.message);
+    return { success: false, data: [], error: error.message };
+  }
+}
+
+export async function deleteCoverLetter(id: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const userId = getUserId();
+    await withTimeout(deleteDoc(doc(db, 'users', userId, 'cover_letters', id)));
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+// ============================================
 // STUDY PROGRESS (Skill Bridge)
 // ============================================
 
