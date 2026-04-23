@@ -3,9 +3,8 @@
 /**
  * ThemeToggle — Animated sun/moon toggle switch
  * 
- * A small pill-shaped toggle that smoothly morphs between a sun and moon icon.
+ * Night: twinkling stars on dark sky. Day: warm sun with radiating glow.
  * The "knob" slides left (dark/moon) or right (light/sun) with a spring animation.
- * The background color transitions between deep navy and warm sky blue.
  */
 import { motion } from 'framer-motion';
 import { useTheme } from '@/components/ThemeProvider';
@@ -46,18 +45,21 @@ export default function ThemeToggle({ size = 'sm', className = '' }: ThemeToggle
         }}
         transition={{ duration: 0.5, ease: 'easeInOut' }}
       >
-        {/* Stars (visible in dark mode) */}
+        {/* Stars (visible in dark mode) — twinkling */}
         <motion.div
           className="absolute inset-0"
           animate={{ opacity: isLight ? 0 : 1 }}
           transition={{ duration: 0.3 }}
         >
           {[
-            { x: '20%', y: '25%', s: 2 },
-            { x: '35%', y: '60%', s: 1.5 },
-            { x: '55%', y: '20%', s: 1 },
-            { x: '15%', y: '70%', s: 1.5 },
-            { x: '70%', y: '45%', s: 1 },
+            { x: '18%', y: '22%', s: 2.5 },
+            { x: '32%', y: '65%', s: 2 },
+            { x: '50%', y: '18%', s: 1.5 },
+            { x: '12%', y: '72%', s: 2 },
+            { x: '68%', y: '40%', s: 1.5 },
+            { x: '42%', y: '48%', s: 1 },
+            { x: '75%', y: '22%', s: 1.5 },
+            { x: '25%', y: '42%', s: 1 },
           ].map((star, i) => (
             <motion.div
               key={i}
@@ -69,11 +71,12 @@ export default function ThemeToggle({ size = 'sm', className = '' }: ThemeToggle
                 height: star.s,
               }}
               animate={{
-                opacity: isLight ? 0 : [0.4, 1, 0.4],
+                opacity: isLight ? 0 : [0.3, 1, 0.3],
+                scale: isLight ? 0.5 : [0.8, 1.3, 0.8],
               }}
               transition={{
-                duration: 2,
-                delay: i * 0.3,
+                duration: 1.5 + i * 0.2,
+                delay: i * 0.15,
                 repeat: Infinity,
                 repeatType: 'reverse',
               }}
@@ -81,37 +84,38 @@ export default function ThemeToggle({ size = 'sm', className = '' }: ThemeToggle
           ))}
         </motion.div>
 
-        {/* Clouds (visible in light mode) */}
+        {/* Sun glow rays (visible in light mode) */}
         <motion.div
           className="absolute inset-0"
-          animate={{ opacity: isLight ? 0.6 : 0 }}
+          animate={{ opacity: isLight ? 0.7 : 0 }}
           transition={{ duration: 0.3 }}
         >
+          {/* Warm ambient glow behind the sun */}
+          <motion.div
+            className="absolute rounded-full"
+            style={{
+              width: 20,
+              height: 20,
+              background: 'radial-gradient(circle, rgba(253,184,19,0.4) 0%, transparent 70%)',
+              right: '-2%',
+              top: '-5%',
+            }}
+            animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+          />
+          {/* Small floating cloud */}
           <motion.div
             className="absolute rounded-full"
             style={{
               width: 12,
-              height: 6,
+              height: 5,
               background: 'rgba(255,255,255,0.5)',
               borderRadius: 10,
               bottom: '30%',
-              left: '15%',
+              left: '12%',
             }}
-            animate={{ x: [0, 3, 0] }}
+            animate={{ x: [0, 4, 0] }}
             transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-          />
-          <motion.div
-            className="absolute rounded-full"
-            style={{
-              width: 8,
-              height: 4,
-              background: 'rgba(255,255,255,0.4)',
-              borderRadius: 10,
-              top: '25%',
-              left: '55%',
-            }}
-            animate={{ x: [0, -2, 0] }}
-            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
           />
         </motion.div>
       </motion.div>
@@ -129,8 +133,8 @@ export default function ThemeToggle({ size = 'sm', className = '' }: ThemeToggle
             ? 'linear-gradient(135deg, #FDB813 0%, #F59E0B 100%)'
             : 'linear-gradient(135deg, #E2E8F0 0%, #CBD5E1 100%)',
           boxShadow: isLight
-            ? '0 0 8px 2px rgba(253,184,19,0.4), inset 0 -1px 2px rgba(0,0,0,0.1)'
-            : '0 0 6px 1px rgba(200,210,230,0.3), inset 0 -1px 2px rgba(0,0,0,0.15)',
+            ? '0 0 10px 3px rgba(253,184,19,0.5), inset 0 -1px 2px rgba(0,0,0,0.1)'
+            : '0 0 8px 2px rgba(200,210,230,0.35), inset 0 -1px 2px rgba(0,0,0,0.15)',
         }}
         transition={{
           x: { type: 'spring', stiffness: 400, damping: 30 },
@@ -183,3 +187,4 @@ export default function ThemeToggle({ size = 'sm', className = '' }: ThemeToggle
     </motion.button>
   );
 }
+

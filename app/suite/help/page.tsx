@@ -260,7 +260,7 @@ const faqs = [
         questions: [
             { q: 'Can I use this on my phone?', a: 'Yes! The platform is fully responsive and works on mobile browsers. Your data syncs across all devices.' },
             { q: 'Is there a dark mode?', a: 'The platform is dark mode by default — designed for reduced eye strain during long job search sessions.' },
-            { q: 'What AI model powers the platform?', a: 'We use Google Gemini AI for resume morphing, summary generation, achievement suggestions, and career intelligence analysis.' },
+            { q: 'What AI model powers the platform?', a: 'We use advanced proprietary AI models for resume morphing, summary generation, achievement suggestions, and career intelligence analysis.' },
             { q: 'Is my resume data used to train AI?', a: 'No. Your personal data is never used to train any AI models. It\'s only processed temporarily to generate your results.' },
         ],
     },
@@ -616,7 +616,7 @@ export default function HelpPage() {
                             <div className="grid md:grid-cols-2 gap-3">
                                 {[
                                     { label: 'Version', value: 'Talent Suite v1.0' },
-                                    { label: 'AI Engine', value: 'Google Gemini' },
+                                    { label: 'AI Engine', value: 'Proprietary AI' },
                                     { label: 'Cloud Storage', value: 'Firebase Firestore' },
                                     { label: 'Auth Provider', value: 'Firebase Auth' },
                                 ].map((info, i) => (

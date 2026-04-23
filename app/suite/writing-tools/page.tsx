@@ -277,7 +277,7 @@ function HumanizeAnimation() {
   const [phase, setPhase] = useState(0);
   const phases = [
     { label: 'Scanning AI patterns…', icon: 'radar', desc: 'Identifying flagged sentences and banned vocabulary' },
-    { label: 'Rewriting with Gemini 3 Flash…', icon: 'edit_note', desc: 'Humanizing sentence structure and word choices' },
+    { label: 'Rewriting with AI Engine…', icon: 'edit_note', desc: 'Humanizing sentence structure and word choices' },
     { label: 'Polishing & verifying…', icon: 'auto_fix_high', desc: 'Adjusting burstiness and sentence variance' },
   ];
 
@@ -816,7 +816,7 @@ export default function WritingToolsPage() {
               AI Detection & Humanization Pipeline
             </h1>
             <p className="text-[var(--text-secondary)] text-sm max-w-xl">
-              Scan your writing for AI patterns, humanize flagged sections with Gemini, verify uniqueness, and export submission-ready documents — all in one pipeline.
+              Scan your writing for AI patterns, humanize flagged sections with our AI Engine, verify uniqueness, and export submission-ready documents — all in one pipeline.
             </p>
           </div>
           <PageHelp toolId="writing-tools" />
@@ -1034,7 +1034,7 @@ export default function WritingToolsPage() {
                     <div>
                       <h2 className="text-lg font-bold text-[var(--text-primary)]">Humanize Your Text</h2>
                       <p className="text-xs text-[var(--text-secondary)] mt-1">
-                        Gemini 3 Flash will rewrite flagged paragraphs while preserving meaning.
+                        Our AI Engine will rewrite flagged paragraphs while preserving meaning.
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
@@ -1218,7 +1218,7 @@ export default function WritingToolsPage() {
                   <span className="material-symbols-rounded text-4xl text-emerald-400 mb-3">verified</span>
                   <h2 className="text-lg font-bold text-[var(--text-primary)] mb-2">Uniqueness Verification</h2>
                   <p className="text-xs text-[var(--text-secondary)] mb-6 max-w-md mx-auto">
-                    Gemini will analyze your humanized text for originality and flag any phrasing that mirrors common AI templates.
+                    The AI Engine will analyze your humanized text for originality and flag any phrasing that mirrors common AI templates.
                   </p>
 
                   <motion.button

@@ -520,7 +520,7 @@ export default function LiquidResumePage() {
 
   // Enhance step state
   const [enhancePhase, setEnhancePhase] = useState<'idle' | 'checking' | 'fixing' | 'cover-letter' | 'linkedin'>('idle');
-  const [enhancePipelineStage, setEnhancePipelineStage] = useState(0); // 0=idle, 1=GPT writing, 2=Gemini checking, 3=refining
+  const [enhancePipelineStage, setEnhancePipelineStage] = useState(0); // 0=idle, 1=AI writing, 2=AI checking, 3=refining
   const [autoFixing, setAutoFixing] = useState(false);
   const [preFixScore, setPreFixScore] = useState<number | null>(null);
 
@@ -2058,7 +2058,7 @@ export default function LiquidResumePage() {
                     <div>
                       <div className="flex items-center gap-3">
                         <h2 className="text-2xl font-bold text-white"><span className="material-symbols-rounded text-inherit align-middle">auto_awesome</span> AI Enhancement</h2>
-                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono font-bold">DUAL-AI: GPT × Gemini</span>
+                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono font-bold">DUAL-AI: Advanced Engine</span>
                       </div>
                       <p className="text-sm text-slate-400 mt-1">Check, fix, and generate — powered by two AI models</p>
                     </div>
@@ -2075,8 +2075,8 @@ export default function LiquidResumePage() {
                       <div className={`absolute inset-0 ${isLight ? 'bg-gradient-to-r from-slate-50/50 via-indigo-50/30 to-slate-50/50' : 'bg-gradient-to-r from-white/[0.01] via-indigo-500/[0.02] to-white/[0.01]'}`} />
                       <div className="relative flex items-center gap-4">
                         {[
-                          { label: 'GPT Writing', stage: 1 },
-                          { label: 'Gemini Checking', stage: 2 },
+                          { label: 'AI Writing', stage: 1 },
+                          { label: 'AI Checking', stage: 2 },
                           { label: 'Refining', stage: 3 },
                         ].map((p) => (
                           <div key={p.stage} className="flex items-center gap-2">
@@ -2105,7 +2105,7 @@ export default function LiquidResumePage() {
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-2">
                             <span className={`text-sm font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}><span className="material-symbols-rounded text-inherit align-middle">search</span> Resume Quality Check</span>
-                            <span className={`text-[8px] px-1.5 py-0.5 rounded font-mono ${isLight ? 'bg-slate-100 border border-slate-200 text-slate-500' : 'bg-white/5 border border-white/10 text-white/40'}`}>Gemini Flash</span>
+                            <span className={`text-[8px] px-1.5 py-0.5 rounded font-mono ${isLight ? 'bg-slate-100 border border-slate-200 text-slate-500' : 'bg-white/5 border border-white/10 text-white/40'}`}>AI Flash</span>
                           </div>
                           <button onClick={() => { setEnhancePhase('checking'); setEnhancePipelineStage(2); checkResume(); }} disabled={resumeCheckLoading} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-50 ${isLight ? 'bg-indigo-50 border border-indigo-200 text-indigo-600 hover:bg-indigo-100' : 'bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/15'}`}>
                             {resumeCheckLoading ? <><span className="material-symbols-rounded text-[14px] align-middle mr-1">search</span> Analyzing...</> : resumeCheckResult ? <><span className="material-symbols-rounded text-[14px] align-middle mr-1">sync</span> Re-check</> : <><span className="material-symbols-rounded text-[14px] align-middle mr-1">play_arrow</span> Run Check</>}

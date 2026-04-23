@@ -29,6 +29,8 @@ const FREEMIUM_API_PATHS = [
   '/api/chat',
   '/api/ai',
   '/api/jobs/search',
+  '/api/writing/humanize-free',
+  '/api/tools/free',
 ];
 
 // Known scanner/exploit paths to reject instantly

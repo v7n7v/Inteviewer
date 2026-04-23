@@ -506,8 +506,8 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
               {/* Pipeline Stages */}
               <div className="space-y-3 mb-6">
                 {[
-                  { stage: 1, label: 'GPT-OSS 120B', desc: 'Extracting skills, parsing JD, detecting red flags', icon: 'memory' },
-                  { stage: 2, label: 'Gemini 3 Flash', desc: 'Cross-validating, scoring fit, refining salary intel', icon: 'auto_awesome' },
+                  { stage: 1, label: 'AI Processor', desc: 'Extracting skills, parsing JD, detecting red flags', icon: 'memory' },
+                  { stage: 2, label: 'AI Validator', desc: 'Cross-validating, scoring fit, refining salary intel', icon: 'auto_awesome' },
                   { stage: 3, label: 'Market Scan', desc: 'Mapping job opportunities in 3D space', icon: 'scatter_plot' },
                 ].map((s) => (
                   <motion.div
@@ -850,7 +850,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                           <span className="text-xl"><span className="material-symbols-rounded">content_paste</span></span>
                           <div>
                             <h3 className="text-sm font-bold text-white">JD Intelligence Report</h3>
-                            <p className="text-[10px] text-silver">Dual-AI Analysis • GPT + Gemini</p>
+                            <p className="text-[10px] text-silver">Dual-AI Analysis</p>
                           </div>
                         </div>
                         <button

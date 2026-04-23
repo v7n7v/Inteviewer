@@ -50,7 +50,7 @@ const PRO_FEATURES = [
 
 const STUDIO_EXTRAS = [
   { icon: 'auto_awesome', color: '#f43f5e', title: 'Sona AI Agent', desc: 'Context-aware career strategist — unlimited conversations.' },
-  { icon: 'ink_pen', color: '#f43f5e', title: 'AI Humanizer', desc: '50,000 words/mo of AI-to-human rewriting with Gemini 3.' },
+  { icon: 'ink_pen', color: '#f43f5e', title: 'AI Humanizer', desc: '50,000 words/mo of AI-to-human rewriting.' },
   { icon: 'verified', color: '#10b981', title: 'Uniqueness Verification', desc: 'AI-powered plagiarism pattern detection per document.' },
   { icon: 'download', color: '#3b82f6', title: 'Export to Word (.docx)', desc: 'Download formatted, submission-ready documents.' },
   { icon: 'radar', color: '#f59e0b', title: 'AI Detection Engine', desc: '100+ pattern heuristic analysis — instant, zero-cost.' },

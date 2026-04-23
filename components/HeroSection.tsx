@@ -123,7 +123,7 @@ function WorkflowAnimation() {
                   className="text-lg mt-1"
                   animate={isActive ? { scale: [1, 1.15, 1] } : {}}
                   transition={{ duration: 0.6 }}
-                >{ws.icon}</motion.div>
+                ><span className="material-symbols-rounded">{ws.icon}</span></motion.div>
                 <h3 className={`text-[11px] font-semibold mt-1 transition-colors ${isActive ? (isLight ? 'text-gray-900' : 'text-white') : (isLight ? 'text-gray-900' : 'text-white/40')}`}>{ws.title}</h3>
                 <p className={`text-[9px] mt-0.5 transition-colors ${isActive ? (isLight ? 'font-bold text-gray-900' : 'text-white/40') : (isLight ? 'text-gray-900' : 'text-white/15')}`}>{ws.desc}</p>
               </div>
@@ -223,7 +223,7 @@ function WorkflowAnimation() {
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className={`text-[13px] font-semibold mb-1.5 ${isLight ? 'text-gray-900' : 'text-white'}`}>Resume Ready</motion.div>
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }} className="flex items-center gap-2.5">
                 <span className={`px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-medium flex items-center gap-1 ${isLight ? 'font-bold text-emerald-700' : 'text-emerald-400'}`}><span className="material-symbols-rounded align-middle mr-1">description</span> PDF</span>
-                <span className={`px-2.5 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-[10px] font-medium flex items-center gap-1 ${isLight ? 'font-bold text-blue-700' : 'text-blue-400'}`}><span className="material-symbols-rounded align-middle mr-1">edit_document</span> Word</span>
+                <span className={`px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-medium flex items-center gap-1 ${isLight ? 'font-bold text-emerald-700' : 'text-emerald-400'}`}><span className="material-symbols-rounded align-middle mr-1">edit_document</span> Word</span>
                 <span className={`text-[10px] font-bold ${isLight ? 'text-emerald-700' : 'text-emerald-400'}`}>92% Match</span>
               </motion.div>
             </motion.div>
@@ -236,13 +236,13 @@ function WorkflowAnimation() {
 
 // ═══════════════════════════════════════
 // DUAL-AI ENHANCE ANIMATION — Expanded PRO Workflow
-// Shows the full enhance pipeline: Check → GPT → Gemini → Fix → Cover Letter → Done
+// Shows the full enhance pipeline: Check → AI Write → AI Val → Fix → Cover Letter → Done
 // ═══════════════════════════════════════
 function DualAIAnimation() {
   const { theme } = useTheme();
   const isLight = theme === 'light';
   const [stage, setStage] = useState(0);
-  // 0: resume check, 1: GPT rewriting, 2: gemini validating, 3: auto-fix, 4: cover letter, 5: done
+  // 0: resume check, 1: AI rewriting, 2: AI validating, 3: auto-fix, 4: cover letter, 5: done
   const totalStages = 6;
 
   useEffect(() => {
@@ -255,11 +255,11 @@ function DualAIAnimation() {
 
   const pipelineSteps = [
     { label: 'Check', icon: 'search', color: '#f59e0b' },
-    { label: 'GPT Write', icon: 'psychology', color: '#f59e0b' },
-    { label: 'Gemini Val', icon: 'auto_awesome', color: '#22c55e' },
-    { label: 'Auto-Fix', icon: 'build', color: '#8b5cf6' },
-    { label: 'Cover Letter', icon: 'edit_document', color: '#3b82f6' },
-    { label: 'Complete', icon: 'rocket_launch', color: '#06b6d4' },
+    { label: 'AI Write', icon: 'psychology', color: '#f59e0b' },
+    { label: 'AI Val', icon: 'auto_awesome', color: '#22c55e' },
+    { label: 'Auto-Fix', icon: 'build', color: '#10b981' },
+    { label: 'Cover Letter', icon: 'edit_document', color: '#10b981' },
+    { label: 'Complete', icon: 'rocket_launch', color: '#10b981' },
   ];
 
   return (
@@ -269,7 +269,7 @@ function DualAIAnimation() {
         <div className="flex items-center gap-2">
           <span className="text-sm"><span className="material-symbols-rounded">auto_awesome</span></span>
           <span className={`text-[11px] font-semibold ${isLight ? 'text-gray-900' : 'text-white/50'}`}>Dual-AI Enhance Pipeline</span>
-          <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium border ${isLight ? 'font-bold bg-cyan-50 border-cyan-200 text-cyan-600' : 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400'}`}>PRO</span>
+          <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium border ${isLight ? 'font-bold bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'}`}>PRO</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className={`text-[9px] font-mono ${isLight ? 'text-gray-900' : 'text-white/20'}`}>{stage + 1}/{totalStages}</span>
@@ -290,7 +290,7 @@ function DualAIAnimation() {
                   }`}
                 style={stage === i ? { borderColor: `${p.color}60`, boxShadow: `0 0 10px ${p.color}30` } : {}}
               >
-                {stage > i ? <span className="text-[7px]">✓</span> : <span className="text-[7px]">{p.icon}</span>}
+                {stage > i ? <span className="text-[7px]">✓</span> : <span className="material-symbols-rounded text-[7px]">{p.icon}</span>}
               </motion.div>
               {i < 5 && <div className={`flex-1 h-px ${stage > i ? (isLight ? 'bg-emerald-300' : 'bg-emerald-500/30') : (isLight ? 'bg-gray-200' : 'bg-white/[0.04]')}`} />}
             </div>
@@ -327,17 +327,17 @@ function DualAIAnimation() {
                 ))}
               </div>
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2.2 }}
-                className={`mt-2 text-[9px] font-medium ${isLight ? 'font-bold text-amber-700' : 'text-amber-400/60'}`}>Found 3 issues → sending to GPT...</motion.div>
+                className={`mt-2 text-[9px] font-medium ${isLight ? 'font-bold text-amber-700' : 'text-amber-400/60'}`}>Found 3 issues → sending to AI...</motion.div>
             </motion.div>
           )}
 
           {stage === 1 && (
-            <motion.div key="gpt" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+            <motion.div key="ai" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
               className="p-3 rounded-lg bg-amber-500/[0.03] border border-amber-500/10">
               <div className="flex items-center gap-2 mb-2.5">
                 <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
                   className="w-3.5 h-3.5 border-2 border-amber-500/30 border-t-amber-500 rounded-full" />
-                <span className={`text-[10px] font-medium ${isLight ? 'font-bold text-amber-600' : 'text-amber-400'}`}>GPT-OSS 120B rewriting bullets...</span>
+                <span className={`text-[10px] font-medium ${isLight ? 'font-bold text-amber-600' : 'text-amber-400'}`}>AI rewriting bullets...</span>
               </div>
               {/* Before/after comparison */}
               <div className="space-y-2">
@@ -362,12 +362,12 @@ function DualAIAnimation() {
           )}
 
           {stage === 2 && (
-            <motion.div key="gemini" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+            <motion.div key="ai2" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
               className="p-3 rounded-lg bg-emerald-500/[0.03] border border-emerald-500/10">
               <div className="flex items-center gap-2 mb-2.5">
                 <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
                   className="w-3.5 h-3.5 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full" />
-                <span className={`text-[10px] font-medium ${isLight ? 'font-bold text-emerald-700' : 'text-emerald-400'}`}>Gemini 3 Flash cross-validating...</span>
+                <span className={`text-[10px] font-medium ${isLight ? 'font-bold text-emerald-700' : 'text-emerald-400'}`}>AI cross-validating...</span>
               </div>
               <div className="space-y-1.5">
                 {[
@@ -378,7 +378,7 @@ function DualAIAnimation() {
                 ].map((item, i) => (
                   <motion.div key={item.text} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 + i * 0.5 }}
                     className={`text-[9px] flex items-center gap-1.5 ${isLight ? 'font-bold text-gray-900' : 'text-white/25'}`}>
-                    <span className="text-[8px]">{item.icon}</span>
+                    <span className="material-symbols-rounded text-[8px]">{item.icon}</span>
                     <span>{item.text}</span>
                     {i < 2 && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 + i * 0.5 }}
                       className="text-emerald-400/40 text-[7px] ml-auto">done</motion.span>}
@@ -390,11 +390,11 @@ function DualAIAnimation() {
 
           {stage === 3 && (
             <motion.div key="fix" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-              className="p-3 rounded-lg bg-violet-500/[0.03] border border-violet-500/10">
+              className="p-3 rounded-lg bg-emerald-500/[0.03] border border-emerald-500/10">
               <div className="flex items-center gap-2 mb-2.5">
                 <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
-                  className="w-3.5 h-3.5 border-2 border-violet-500/30 border-t-violet-500 rounded-full" />
-                <span className={`text-[10px] font-medium ${isLight ? 'font-bold text-violet-700' : 'text-violet-400'}`}>Auto-applying fixes to resume...</span>
+                  className="w-3.5 h-3.5 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full" />
+                <span className={`text-[10px] font-medium ${isLight ? 'font-bold text-emerald-700' : 'text-emerald-400'}`}>Auto-applying fixes to resume...</span>
               </div>
               <div className="space-y-1">
                 {[
@@ -412,17 +412,17 @@ function DualAIAnimation() {
                 ))}
               </div>
               <motion.div initial={{ width: 0 }} animate={{ width: '100%' }} transition={{ duration: 2, delay: 0.5 }}
-                className="h-1 rounded-full bg-gradient-to-r from-violet-500/30 to-emerald-500/30 mt-2.5" />
+                className="h-1 rounded-full bg-gradient-to-r from-emerald-500/30 to-teal-500/30 mt-2.5" />
             </motion.div>
           )}
 
           {stage === 4 && (
             <motion.div key="cover" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-              className="p-3 rounded-lg bg-blue-500/[0.03] border border-blue-500/10">
+              className="p-3 rounded-lg bg-emerald-500/[0.03] border border-emerald-500/10">
               <div className="flex items-center gap-2 mb-2.5">
                 <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
-                  className="w-3.5 h-3.5 border-2 border-blue-500/30 border-t-blue-500 rounded-full" />
-                <span className={`text-[10px] font-medium ${isLight ? 'font-bold text-blue-700' : 'text-blue-400'}`}>Generating tailored cover letter...</span>
+                  className="w-3.5 h-3.5 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full" />
+                <span className={`text-[10px] font-medium ${isLight ? 'font-bold text-emerald-700' : 'text-emerald-400'}`}>Generating tailored cover letter...</span>
               </div>
               <div className={`p-2 rounded font-mono border ${isLight ? 'bg-black/[0.02] border-black/[0.04]' : 'bg-white/[0.01] border-white/[0.04]'}`}>
                 <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
@@ -439,20 +439,20 @@ function DualAIAnimation() {
 
           {stage === 5 && (
             <motion.div key="done" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-              className="p-3 rounded-lg bg-cyan-500/[0.03] border border-cyan-500/10 text-center">
+              className="p-3 rounded-lg bg-emerald-500/[0.03] border border-emerald-500/10 text-center">
               <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200 }}
-                className="w-10 h-10 rounded-full bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mx-auto mb-2">
-                <svg className="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-2">
+                <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               </motion.div>
               <p className={`text-[11px] font-semibold ${isLight ? 'text-gray-900' : 'text-white/70'}`}>Full Enhancement Complete</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">
                 {[
-                  { label: 'ATS Score', value: '94%', color: isLight ? 'text-cyan-700' : 'text-cyan-400' },
+                  { label: 'ATS Score', value: '94%', color: isLight ? 'text-emerald-700' : 'text-emerald-400' },
                   { label: 'Keywords', value: '+12', color: isLight ? 'text-emerald-700' : 'text-emerald-400' },
-                  { label: 'Bullets', value: '8 fixed', color: isLight ? 'text-amber-700' : 'text-amber-400' },
-                  { label: 'Docs', value: '3 ready', color: isLight ? 'text-blue-700' : 'text-blue-400' },
+                  { label: 'Bullets', value: '8 fixed', color: isLight ? 'text-emerald-700' : 'text-emerald-400' },
+                  { label: 'Docs', value: '3 ready', color: isLight ? 'text-emerald-700' : 'text-emerald-400' },
                 ].map((stat) => (
                   <motion.div key={stat.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }} className="text-center">
@@ -509,7 +509,7 @@ function ProcessCarousel() {
                   : 'text-white/30 hover:text-white/50'
               }`}
           >
-            <span>{s.icon}</span> {s.label}
+            <span className="material-symbols-rounded">{s.icon}</span> {s.label}
             {/* Progress bar under active tab */}
             {activeSlide === i && (
               <motion.div
@@ -564,12 +564,15 @@ function HeroHumanizer({ onShowSignup }: { onShowSignup: () => void }) {
   const handleHumanize = async () => {
     if (!inputText.trim() || overLimit || loading) return;
 
-    // Check localStorage daily limit
-    const lastUse = localStorage.getItem('tc_humanize_last');
+    // Check localStorage daily limit (3 free per day)
+    const usageKey = 'tc_humanize_uses';
+    const dateKey = 'tc_humanize_date';
     const today = new Date().toDateString();
-    if (lastUse === today) {
+    const storedDate = localStorage.getItem(dateKey);
+    const usedCount = storedDate === today ? parseInt(localStorage.getItem(usageKey) || '0', 10) : 0;
+    if (usedCount >= 3) {
       setLimitReached(true);
-      setError('Daily free limit reached. Create an account for more.');
+      setError('Daily free limit reached (3/day). Create an account for more.');
       return;
     }
 
@@ -596,7 +599,8 @@ function HeroHumanizer({ onShowSignup }: { onShowSignup: () => void }) {
         return;
       }
 
-      localStorage.setItem('tc_humanize_last', today);
+      localStorage.setItem(dateKey, today);
+      localStorage.setItem(usageKey, String(usedCount + 1));
       setResult({
         rewritten: data.rewritten,
         before: data.before,
@@ -618,8 +622,8 @@ function HeroHumanizer({ onShowSignup }: { onShowSignup: () => void }) {
         className="absolute -inset-[1px] rounded-2xl z-0"
         style={{
           background: isLight
-            ? 'linear-gradient(135deg, #10b981, #06b6d4, #10b981)'
-            : 'linear-gradient(135deg, #10b981, #06b6d4, #3b82f6, #10b981)',
+            ? 'linear-gradient(135deg, #10b981, #14b8a6, #10b981)'
+            : 'linear-gradient(135deg, #10b981, #14b8a6, #059669, #10b981)',
           backgroundSize: '200% 200%',
         }}
         animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
@@ -670,20 +674,20 @@ function HeroHumanizer({ onShowSignup }: { onShowSignup: () => void }) {
               {/* Action row */}
               <div className="mt-3 flex items-center justify-between">
                 <div className={`flex items-center gap-3 text-[10px] ${isLight ? 'text-gray-400' : 'text-white/15'}`}>
-                  <span className="flex items-center gap-1"><span className="w-1 h-1 rounded-full bg-emerald-500" />Powered by Gemini</span>
+                  <span className="flex items-center gap-1"><span className="w-1 h-1 rounded-full bg-emerald-500" />Powered by AI</span>
                   <span>•</span>
-                  <span>1 free/day</span>
+                  <span>3 free/day</span>
                 </div>
                 {limitReached ? (
                   <button onClick={onShowSignup}
-                    className="text-[12px] font-semibold px-4 py-2 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all">
+                    className={`text-[12px] font-semibold px-4 py-2 rounded-lg transition-all duration-300 border ${isLight ? 'bg-emerald-50 text-emerald-700 border-2 border-emerald-500 hover:bg-emerald-100 hover:shadow-[0_0_16px_rgba(16,185,129,0.2)]' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/60 hover:bg-emerald-500/20 hover:border-emerald-400 hover:shadow-[0_0_16px_rgba(16,185,129,0.25)]'}`}>
                     Sign Up Free →
                   </button>
                 ) : (
                   <button onClick={handleHumanize} disabled={!inputText.trim() || overLimit || loading}
-                    className={`text-[12px] font-semibold px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${!inputText.trim() || overLimit
-                        ? isLight ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white/[0.04] text-white/15 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30'
+                    className={`text-[12px] font-semibold px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 border ${!inputText.trim() || overLimit
+                        ? isLight ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'bg-white/[0.04] text-white/15 border-white/[0.06] cursor-not-allowed'
+                        : isLight ? 'bg-emerald-50 text-emerald-700 border-2 border-emerald-500 hover:bg-emerald-100 hover:shadow-[0_0_16px_rgba(16,185,129,0.2)]' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/60 hover:bg-emerald-500/20 hover:border-emerald-400 hover:shadow-[0_0_16px_rgba(16,185,129,0.25)]'
                       }`}>
                     {loading && <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }} className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full" />}
                     {loading ? 'Humanizing...' : 'Humanize ✨'}
@@ -721,7 +725,7 @@ function HeroHumanizer({ onShowSignup }: { onShowSignup: () => void }) {
                   ← Try another
                 </button>
                 <button onClick={onShowSignup}
-                  className="text-[12px] font-semibold px-4 py-2 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/20">
+                  className={`text-[12px] font-semibold px-4 py-2 rounded-lg transition-all duration-300 border ${isLight ? 'bg-emerald-50 text-emerald-700 border-2 border-emerald-500 hover:bg-emerald-100 hover:shadow-[0_0_16px_rgba(16,185,129,0.2)]' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/60 hover:bg-emerald-500/20 hover:border-emerald-400 hover:shadow-[0_0_16px_rgba(16,185,129,0.25)]'}`}>
                   Get Unlimited Free →
                 </button>
               </div>
@@ -769,8 +773,14 @@ function ToolsMarquee() {
 
   return (
     <div className="relative overflow-hidden py-4">
-      <div className={`absolute left-0 top-0 bottom-0 w-16 z-10 pointer-events-none bg-gradient-to-r from-[var(--theme-bg)] to-transparent`} />
-      <div className={`absolute right-0 top-0 bottom-0 w-16 z-10 pointer-events-none bg-gradient-to-l from-[var(--theme-bg)] to-transparent`} />
+      <div
+        className="absolute left-0 top-0 bottom-0 w-16 z-10 pointer-events-none"
+        style={{ background: `linear-gradient(to right, ${isLight ? '#ffffff' : '#0b0b0b'}, transparent)` }}
+      />
+      <div
+        className="absolute right-0 top-0 bottom-0 w-16 z-10 pointer-events-none"
+        style={{ background: `linear-gradient(to left, ${isLight ? '#ffffff' : '#0b0b0b'}, transparent)` }}
+      />
 
       <motion.div
         className="flex gap-3"
@@ -855,42 +865,82 @@ const sonaChatMessages = [
   { role: 'assistant', text: 'Based on your profile: 87% fit score. Your React + TypeScript experience is a strong match. Gap: their require GraphQL — I\'d add it to your Skill Bridge queue. Salary range looks $165k-$195k for your level.' },
   { role: 'user', text: 'Draft a cover letter for it' },
   { role: 'assistant', text: 'Done — tailored to Stripe\'s engineering culture. I highlighted your fintech experience and included 3 ATS keywords from their JD. Check your Cover Letter tool.' },
+  { role: 'user', text: 'What about the interview? Any prep tips?' },
+  { role: 'assistant', text: 'Stripe favors system design + culture fit. I\'ve loaded 8 behavioral questions from their past interviews into your Simulator. Start with the "design a payment flow" prompt — it\'s their #1 asked question this quarter.' },
 ];
 
 function SonaShowcase() {
   const { theme } = useTheme();
   const isLight = theme === 'light';
-  const [visibleMsgs, setVisibleMsgs] = useState(0);
+  
+  const [msgIdx, setMsgIdx] = useState(0);
+  const [phase, setPhase] = useState<'idle' | 'typing_indicator' | 'typing'>('idle');
+  const [charIdx, setCharIdx] = useState(0);
 
   useEffect(() => {
-    const timers = sonaChatMessages.map((_, i) =>
-      setTimeout(() => setVisibleMsgs(v => Math.max(v, i + 1)), 800 + i * 1800)
-    );
-    // Reset cycle
-    const reset = setTimeout(() => setVisibleMsgs(0), 800 + sonaChatMessages.length * 1800 + 3000);
-    return () => { timers.forEach(clearTimeout); clearTimeout(reset); };
-  }, [visibleMsgs === 0 ? 'reset' : 'running']);
+    let timer: ReturnType<typeof setTimeout>;
+    
+    const msg = sonaChatMessages[msgIdx];
+    if (!msg) {
+      // Cycle complete, wait 3 seconds and restart
+      timer = setTimeout(() => {
+        setMsgIdx(0);
+        setPhase('idle');
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+
+    if (phase === 'idle') {
+      timer = setTimeout(() => {
+        if (msg.role === 'assistant') {
+          setPhase('typing_indicator');
+        } else {
+          setPhase('typing');
+          setCharIdx(0);
+        }
+      }, msgIdx === 0 ? 1000 : 400);
+    } else if (phase === 'typing_indicator') {
+      timer = setTimeout(() => {
+        setPhase('typing');
+        setCharIdx(0);
+      }, 1200);
+    } else if (phase === 'typing') {
+      if (charIdx < msg.text.length) {
+        const speed = msg.role === 'assistant' ? 12 : 25;
+        timer = setTimeout(() => {
+          setCharIdx(c => c + 1);
+        }, speed);
+      } else {
+        timer = setTimeout(() => {
+          setMsgIdx(prev => prev + 1);
+          setPhase('idle');
+        }, 800);
+      }
+    }
+
+    return () => clearTimeout(timer);
+  }, [msgIdx, phase, charIdx]);
 
   return (
     <div className={`rounded-xl overflow-hidden border ${isLight ? 'bg-white/60 border-black/[0.06]' : 'bg-white/[0.02] border-white/[0.06]'}`}>
       {/* Chat header */}
       <div className={`px-4 py-2.5 border-b flex items-center gap-2 ${isLight ? 'border-black/[0.06]' : 'border-white/[0.04]'}`}>
-        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
+        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
           <span className="text-white text-[10px] font-bold">S</span>
         </div>
         <span className={`text-[12px] font-semibold ${isLight ? 'text-gray-900' : 'text-white/70'}`}>Sona</span>
-        <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium border ${isLight ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400'}`}>AI Agent</span>
+        <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium border ${isLight ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'}`}>AI Agent</span>
         <motion.div className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-500" animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
       </div>
 
       {/* Chat messages */}
-      <div className="p-4 space-y-3 min-h-[200px]">
-        {sonaChatMessages.slice(0, visibleMsgs).map((msg, i) => (
+      <div className="p-4 space-y-3 min-h-[260px]">
+        {/* Fully typed previous messages */}
+        {sonaChatMessages.slice(0, msgIdx).map((msg, i) => (
           <motion.div
             key={i}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div className={`max-w-[85%] p-2.5 rounded-xl text-[11px] leading-relaxed ${msg.role === 'user'
@@ -902,13 +952,33 @@ function SonaShowcase() {
           </motion.div>
         ))}
 
-        {/* Typing indicator */}
-        {visibleMsgs > 0 && visibleMsgs < sonaChatMessages.length && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-1 px-3 py-2">
-            {[0, 1, 2].map(i => (
-              <motion.div key={i} className={`w-1.5 h-1.5 rounded-full ${isLight ? 'bg-gray-300' : 'bg-white/10'}`}
-                animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1, delay: i * 0.2, repeat: Infinity }} />
-            ))}
+        {/* Typing Indicator */}
+        {msgIdx < sonaChatMessages.length && phase === 'typing_indicator' && (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex justify-start">
+            <div className={`flex gap-1.5 px-3 py-3 rounded-xl ${isLight ? 'bg-emerald-50 border border-emerald-100' : 'bg-emerald-500/[0.06] border border-emerald-500/10'}`}>
+              {[0, 1, 2].map(i => (
+                <motion.div key={i} className={`w-1.5 h-1.5 rounded-full ${isLight ? 'bg-emerald-400' : 'bg-emerald-500/50'}`}
+                  animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1, delay: i * 0.2, repeat: Infinity }} />
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Current message typing */}
+        {msgIdx < sonaChatMessages.length && phase === 'typing' && (
+          <motion.div
+            key={`typing-${msgIdx}`}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`flex ${sonaChatMessages[msgIdx].role === 'user' ? 'justify-end' : 'justify-start'}`}
+          >
+            <div className={`max-w-[85%] p-2.5 rounded-xl text-[11px] leading-relaxed ${sonaChatMessages[msgIdx].role === 'user'
+                ? isLight ? 'bg-black/[0.04] text-gray-700 border border-black/[0.08]' : 'bg-white/[0.06] text-white/60 border border-white/[0.06]'
+                : isLight ? 'bg-emerald-50 text-gray-800 border border-emerald-100' : 'bg-emerald-500/[0.06] text-white/50 border border-emerald-500/10'
+              }`}>
+              {sonaChatMessages[msgIdx].text.substring(0, charIdx)}
+              <span className={`inline-block w-1.5 h-3 ml-0.5 align-middle animate-pulse ${sonaChatMessages[msgIdx].role === 'user' ? (isLight ? 'bg-gray-400' : 'bg-white/40') : 'bg-emerald-500/50'}`} />
+            </div>
           </motion.div>
         )}
       </div>
@@ -916,121 +986,7 @@ function SonaShowcase() {
   );
 }
 
-// ═══════════════════════════════════════
-// LIVE AI TERMINAL — Processing Animation
-// ═══════════════════════════════════════
-const terminalCycles = [
-  [
-    { text: '$ scanning resume_v3.pdf', color: '#10B981', delay: 0 },
-    { text: '  → 3 pages parsed, 847 tokens extracted', color: '#6B7280', delay: 600 },
-    { text: '  → skills: React, TypeScript, Node.js +9', color: '#22C55E', delay: 1200 },
-    { text: '$ matching against target JD...', color: '#10B981', delay: 2000 },
-    { text: '  → role: Senior Frontend Engineer', color: '#00F5FF', delay: 2600 },
-    { text: '  → keyword overlap: 87% ████████░░', color: '#F59E0B', delay: 3200 },
-    { text: '  ✓ ATS score: 94/100', color: '#22C55E', delay: 3800 },
-  ],
-  [
-    { text: '$ morphing resume → target role', color: '#10B981', delay: 0 },
-    { text: '  → injecting 12 keywords from JD', color: '#6B7280', delay: 600 },
-    { text: '  → reordering skills by relevance', color: '#00F5FF', delay: 1200 },
-    { text: '  → optimizing bullet points ⟳', color: '#6B7280', delay: 1800 },
-    { text: '  → formatting for ATS compliance', color: '#F59E0B', delay: 2400 },
-    { text: '  ✓ morphed_resume.pdf ready', color: '#22C55E', delay: 3000 },
-    { text: '  ✓ match improved: 67% → 94%', color: '#22C55E', delay: 3600 },
-  ],
-  [
-    { text: '$ analyzing market position', color: '#10B981', delay: 0 },
-    { text: '  → benchmarking against 12,847 roles', color: '#6B7280', delay: 700 },
-    { text: '  → salary range: $145k – $195k', color: '#00F5FF', delay: 1400 },
-    { text: '  → demand trend: ↑ 23% YoY', color: '#22C55E', delay: 2100 },
-    { text: '  → top missing skill: Rust', color: '#F59E0B', delay: 2800 },
-    { text: '  ✓ career trajectory: optimistic', color: '#22C55E', delay: 3400 },
-  ],
-  [
-    { text: '$ scanning document for AI patterns', color: '#F43F5E', delay: 0 },
-    { text: '  → analyzing 847 words, 42 sentences', color: '#6B7280', delay: 600 },
-    { text: '  → perplexity: LOW ⚠ (too predictable)', color: '#F59E0B', delay: 1200 },
-    { text: '  → 5 patterns flagged across 3 sections', color: '#EF4444', delay: 1800 },
-    { text: '$ humanizing flagged sections...', color: '#10B981', delay: 2600 },
-    { text: '  → rewriting with voice preservation', color: '#6B7280', delay: 3200 },
-    { text: '  ✓ AI score: 78% → 12% — safe to submit', color: '#22C55E', delay: 3800 },
-  ],
-];
 
-function LiveTerminal() {
-  const [cycle, setCycle] = useState(0);
-  const [visibleLines, setVisibleLines] = useState<number>(0);
-
-  useEffect(() => {
-    const t = setInterval(() => {
-      setCycle(p => (p + 1) % terminalCycles.length);
-      setVisibleLines(0);
-    }, 6000);
-    return () => clearInterval(t);
-  }, []);
-
-  const lines = terminalCycles[cycle];
-
-  useEffect(() => {
-    setVisibleLines(0);
-    const timers = lines.map((line, i) =>
-      setTimeout(() => setVisibleLines(v => Math.max(v, i + 1)), line.delay)
-    );
-    return () => timers.forEach(clearTimeout);
-  }, [cycle, lines]);
-
-  return (
-    <div className="elevation-1 overflow-hidden">
-      {/* Title bar */}
-      <div className="px-3 py-2 border-b border-white/[0.04] flex items-center gap-2">
-        <div className="flex gap-1">
-          <div className="w-2 h-2 rounded-full bg-red-500/40" />
-          <div className="w-2 h-2 rounded-full bg-yellow-500/30" />
-          <div className="w-2 h-2 rounded-full bg-green-500/30" />
-        </div>
-        <span className="text-[9px] text-white/20 font-mono ml-1">talent-ai — processing</span>
-        <motion.div
-          className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-500"
-          animate={{ opacity: [1, 0.3, 1] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-        />
-      </div>
-      {/* Terminal body */}
-      <div className="px-3 py-2.5 font-mono min-h-[120px]">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={cycle}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            {lines.slice(0, visibleLines).map((line, i) => (
-              <motion.div
-                key={`${cycle}-${i}`}
-                initial={{ opacity: 0, x: -4 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.15 }}
-                className="text-[10px] leading-[1.7] whitespace-nowrap"
-                style={{ color: line.color }}
-              >
-                {line.text}
-              </motion.div>
-            ))}
-            {/* Blinking cursor */}
-            {visibleLines < lines.length && (
-              <motion.span
-                className="inline-block w-1.5 h-3 bg-emerald-400/60 rounded-sm ml-0.5"
-                animate={{ opacity: [1, 0, 1] }}
-                transition={{ duration: 0.8, repeat: Infinity }}
-              />
-            )}
-          </motion.div>
-        </AnimatePresence>
-      </div>
-    </div>
-  );
-}
 
 // ═══════════════════════════════════════
 // THE GAUNTLET — Interview Simulation
@@ -1303,7 +1259,7 @@ function AIDetectorAnimation() {
         <div className="flex items-center gap-2">
           <span className="material-symbols-rounded text-sm" style={{ color: '#f43f5e' }}>ink_pen</span>
           <span className={`text-[11px] font-semibold ${isLight ? 'text-gray-900' : 'text-white/50'}`}>AI Detector</span>
-          <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium border ${isLight ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-rose-500/10 border-rose-500/20 text-rose-400'}`}>PRO</span>
+          <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium border ${isLight ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'}`}>PRO</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className={`text-[9px] font-mono ${isLight ? 'text-gray-400' : 'text-white/20'}`}>847 words</span>
@@ -1380,7 +1336,7 @@ function AIDetectorAnimation() {
               <div className="flex items-center gap-2 mb-3">
                 <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
                   className="w-3.5 h-3.5 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full" />
-                <span className={`text-[10px] font-medium ${isLight ? 'text-emerald-700' : 'text-emerald-400'}`}>Gemini humanizing flagged sections...</span>
+                <span className={`text-[10px] font-medium ${isLight ? 'text-emerald-700' : 'text-emerald-400'}`}>AI humanizing flagged sections...</span>
               </div>
               <div className="space-y-2">
                 <div className={`p-2 rounded border ${isLight ? 'bg-red-50/50 border-red-100' : 'bg-red-500/[0.03] border-red-500/10'}`}>
@@ -1452,9 +1408,9 @@ function AIDetectorAnimation() {
 const FREE_TOOLS = [
   { id: 'detect', label: 'AI Detector', icon: 'search', color: '#f43f5e', limit: '5/hr', wordCap: '1,500 words', desc: 'Scan text for AI patterns' },
   { id: 'word-counter', label: 'Word Counter', icon: 'tag', color: '#06b6d4', limit: '∞', wordCap: 'Unlimited', desc: 'Full text statistics' },
-  { id: 'grammar', label: 'Grammar Check', icon: 'spellcheck', color: '#f59e0b', limit: '2/day', wordCap: '300 words', desc: 'Fix grammar & style' },
-  { id: 'paraphrase', label: 'Paraphraser', icon: 'autorenew', color: '#8b5cf6', limit: '2/day', wordCap: '200 words', desc: 'Rewrite in 3 styles' },
-  { id: 'ats-score', label: 'ATS Score', icon: 'assignment_turned_in', color: '#22c55e', limit: '2/day', wordCap: '500 words', desc: 'Resume ATS check' },
+  { id: 'grammar', label: 'Grammar Check', icon: 'spellcheck', color: '#f59e0b', limit: '3/day', wordCap: '300 words', desc: 'Fix grammar & style' },
+  { id: 'paraphrase', label: 'Paraphraser', icon: 'autorenew', color: '#10b981', limit: '3/day', wordCap: '200 words', desc: 'Rewrite in 3 styles' },
+  { id: 'ats-score', label: 'ATS Score', icon: 'assignment_turned_in', color: '#22c55e', limit: '3/day', wordCap: '500 words', desc: 'Resume ATS check' },
 ] as const;
 
 function FreeToolsHub({ onShowSignup }: { onShowSignup: () => void }) {
@@ -1589,11 +1545,7 @@ function FreeToolsHub({ onShowSignup }: { onShowSignup: () => void }) {
             </span>
             <button
               onClick={handleSubmit}
-              disabled={loading || !inputText.trim()}
-              className={`text-[12px] font-semibold px-5 py-2 rounded-lg transition-all flex items-center gap-2 disabled:opacity-40 ${isLight
-                ? 'border border-black/[0.12] bg-black/[0.04] text-gray-900 hover:bg-black/[0.08]'
-                : 'border border-white/[0.12] bg-white/[0.06] text-white/80 hover:bg-white/[0.10]'
-              }`}
+              className={`text-[12px] font-semibold px-5 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 disabled:opacity-40 border ${isLight ? 'bg-emerald-50 text-emerald-700 border-2 border-emerald-500 hover:bg-emerald-100 hover:shadow-[0_0_16px_rgba(16,185,129,0.2)]' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/60 hover:bg-emerald-500/20 hover:border-emerald-400 hover:shadow-[0_0_16px_rgba(16,185,129,0.25)]'}`}
             >
               {loading ? (
                 <>
@@ -1706,7 +1658,7 @@ function FreeToolsHub({ onShowSignup }: { onShowSignup: () => void }) {
                     {result.variations.map((v: any, i: number) => (
                       <div key={i} className={`p-3 rounded-lg border ${isLight ? 'bg-gray-50 border-gray-100' : 'bg-white/[0.02] border-white/[0.04]'}`}>
                         <div className="flex items-center gap-2 mb-1">
-                          <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${isLight ? 'bg-violet-100 text-violet-700' : 'bg-violet-500/10 text-violet-400'}`}>{v.style}</span>
+                          <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${isLight ? 'bg-emerald-100 text-emerald-700' : 'bg-emerald-500/10 text-emerald-400'}`}>{v.style}</span>
                         </div>
                         <p className={`text-[12px] leading-relaxed ${isLight ? 'text-gray-700' : 'text-white/50'}`}>{v.text}</p>
                       </div>
@@ -1757,7 +1709,7 @@ function FreeToolsHub({ onShowSignup }: { onShowSignup: () => void }) {
                     Want unlimited access to all tools?
                   </span>
                   <button onClick={onShowSignup}
-                    className="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-shadow">
+                    className={`text-[11px] font-bold px-3 py-1.5 rounded-lg transition-all duration-300 border ${isLight ? 'bg-emerald-50 text-emerald-700 border-2 border-emerald-500 hover:bg-emerald-100 hover:shadow-[0_0_16px_rgba(16,185,129,0.2)]' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/60 hover:bg-emerald-500/20 hover:border-emerald-400 hover:shadow-[0_0_16px_rgba(16,185,129,0.25)]'}`}>
                     Sign Up Free →
                   </button>
                 </div>
@@ -2029,7 +1981,7 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
               <>
                 <button onClick={onShowLogin} className={`text-[12px] font-medium px-3 py-1.5 rounded-full transition-all ${isLight ? 'text-gray-500 hover:text-gray-900' : 'text-white/35 hover:text-white/60'}`}>Sign in</button>
                 <button onClick={onShowSignup}
-                  className="text-[12px] font-semibold px-4 py-1.5 rounded-full transition-all bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30">
+                  className={`text-[12px] font-semibold px-4 py-1.5 rounded-full transition-all duration-300 border ${isLight ? 'bg-emerald-50 text-emerald-700 border-2 border-emerald-500 hover:bg-emerald-100 hover:shadow-[0_0_16px_rgba(16,185,129,0.2)]' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/60 hover:bg-emerald-500/20 hover:border-emerald-400 hover:shadow-[0_0_16px_rgba(16,185,129,0.25)]'}`}>
                   Get Started
                 </button>
               </>
@@ -2054,20 +2006,20 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
               </motion.div>
 
               <motion.h1 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                className="text-2xl sm:text-3xl md:text-4xl font-bold text-[var(--theme-text)] tracking-tight leading-[1.15] mb-3 relative inline-block group"
+                className="text-2xl sm:text-3xl md:text-4xl font-bold text-[var(--theme-text)] tracking-tight leading-[1.15] mb-3 relative group"
               >
-                <div className="relative inline-block">
+                <span className="relative inline">
                   <span className="relative z-10">Talent Density,</span>
-                  <motion.div
+                  <motion.span
                     animate={{ opacity: [0.4, 0.8, 0.4], scale: [1, 1.05, 1] }}
                     transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
                     className="absolute -inset-4 bg-emerald-500/10 blur-xl z-0 rounded-full"
                   />
-                </div>
+                </span>
                 {' '}
                 <span
-                  className="relative inline-block overflow-hidden"
-                  style={{ color: isLight ? '#059669' : '#34d399' }}
+                  className="relative"
+                  style={{ color: isLight ? '#059669' : '#34d399', overflow: 'clip' }}
                 >
                   Decoded
                   <motion.span
@@ -2087,7 +2039,7 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
                 className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-5">
                 <button onClick={onGetStarted}
-                  className={`group text-[13px] font-medium px-5 py-2 rounded-lg transition-all flex items-center gap-2 border ${isLight ? 'text-gray-900 bg-black/[0.04] border-black/[0.12] hover:bg-black/[0.08]' : 'text-white/80 bg-white/[0.06] border-white/[0.10] hover:bg-white/[0.10]'}`}>
+                  className={`group text-[13px] font-semibold px-5 py-2.5 rounded-lg transition-all duration-300 flex items-center gap-2 border ${isLight ? 'bg-emerald-50 text-emerald-700 border-2 border-emerald-500 hover:bg-emerald-100 hover:shadow-[0_0_20px_rgba(16,185,129,0.2)]' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/60 hover:bg-emerald-500/20 hover:border-emerald-400 hover:shadow-[0_0_20px_rgba(16,185,129,0.25)]'}`}>
                   Get Started Free
                   <svg className="w-3 h-3 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -2146,12 +2098,12 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
               {/* Left — Copy */}
               <div>
                 <div className="flex items-center gap-2 mb-4">
-                  <div className="w-0.5 h-4 rounded-full bg-indigo-500" />
-                  <span className="text-[10px] font-medium text-indigo-400/80 uppercase tracking-[0.2em]">AI Career Agent</span>
+                  <div className="w-0.5 h-4 rounded-full bg-emerald-500" />
+                  <span className="text-[10px] font-medium text-emerald-400/80 uppercase tracking-[0.2em]">AI Career Agent</span>
                 </div>
                 <h2 className={`text-2xl md:text-3xl font-bold tracking-tight leading-tight mb-3 ${isLight ? 'text-gray-900' : 'text-white/90'}`}>
                   Meet{' '}
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-indigo-400 to-blue-400">Sona</span>
+                  <span style={{ color: isLight ? '#059669' : '#34d399' }}>Sona</span>
                 </h2>
                 <p className={`text-[14px] leading-relaxed mb-5 max-w-md ${isLight ? 'text-gray-600' : 'text-white/30'}`}>
                   Your AI career co-pilot that knows your resume, your goals, and your pipeline. Ask anything — from "should I apply?" to "draft a counter-offer" — and get actionable advice in seconds.
@@ -2162,8 +2114,8 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
                     { icon: 'auto_stories', label: 'STAR Stories' },
                     { icon: 'hub', label: 'Cross-Tool Actions' },
                   ].map((f) => (
-                    <span key={f.label} className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-lg border ${isLight ? 'text-gray-700 bg-indigo-50/50 border-indigo-100' : 'text-white/30 bg-white/[0.03] border-white/[0.05]'}`}>
-                      <span className="material-symbols-rounded text-[14px]" style={{ color: '#8b5cf6' }}>{f.icon}</span> {f.label}
+                    <span key={f.label} className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-lg border ${isLight ? 'text-gray-700 bg-emerald-50/50 border-emerald-100' : 'text-white/30 bg-white/[0.03] border-white/[0.05]'}`}>
+                      <span className="material-symbols-rounded text-[14px]" style={{ color: '#10b981' }}>{f.icon}</span> {f.label}
                     </span>
                   ))}
                 </div>
@@ -2214,12 +2166,12 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
               {/* Left — Copy */}
               <div>
                 <div className="flex items-center gap-2 mb-4">
-                  <div className="w-0.5 h-4 rounded-full bg-amber-500" />
-                  <span className="text-[10px] font-medium text-amber-400/80 uppercase tracking-[0.2em]">Interview Simulator</span>
+                  <div className="w-0.5 h-4 rounded-full bg-emerald-500" />
+                  <span className="text-[10px] font-medium text-emerald-400/80 uppercase tracking-[0.2em]">Interview Simulator</span>
                 </div>
                 <h2 className={`text-2xl md:text-3xl font-bold tracking-tight leading-tight mb-3 ${isLight ? 'text-gray-900' : 'text-white/90'}`}>
                   Train like you{' '}
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-red-400">fight</span>
+                  <span style={{ color: isLight ? '#059669' : '#34d399' }}>fight</span>
                 </h2>
                 <p className={`text-[13px] sm:text-[14px] leading-relaxed mb-5 max-w-md ${isLight ? 'font-bold text-gray-900' : 'text-white/30'}`}>
                   The Interview Simulator throws AI-generated behavioral questions tailored to your target JD, then grades your answers
@@ -2232,7 +2184,7 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
                     { icon: '🎙️', label: 'Voice Mode' },
                   ].map((f) => (
                     <span key={f.label} className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-lg border ${isLight ? 'font-bold text-gray-900 bg-black/5 border-black/10' : 'text-white/30 bg-white/[0.03] border-white/[0.05]'}`}>
-                      <span>{f.icon}</span> {f.label}
+                      <span className="material-symbols-rounded">{f.icon}</span> {f.label}
                     </span>
                   ))}
                 </div>
@@ -2262,16 +2214,16 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
               {/* Right — Copy */}
               <div className="order-1 lg:order-2">
                 <div className="flex items-center gap-2 mb-4">
-                  <div className="w-0.5 h-4 rounded-full bg-rose-500" />
-                  <span className="text-[10px] font-medium text-rose-400/80 uppercase tracking-[0.2em]">AI Detector & Humanizer</span>
+                  <div className="w-0.5 h-4 rounded-full bg-emerald-500" />
+                  <span className="text-[10px] font-medium text-emerald-400/80 uppercase tracking-[0.2em]">AI Detector & Humanizer</span>
                 </div>
                 <h2 className={`text-2xl md:text-3xl font-bold tracking-tight leading-tight mb-3 ${isLight ? 'text-gray-900' : 'text-white/90'}`}>
                   Write like a{' '}
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-pink-400 to-fuchsia-400">human</span>
+                  <span style={{ color: isLight ? '#059669' : '#34d399' }}>human</span>
                 </h2>
                 <p className={`text-[14px] leading-relaxed mb-5 max-w-md ${isLight ? 'font-bold text-gray-900' : 'text-white/30'}`}>
                   Our 100+ pattern heuristic engine scans your text for AI fingerprints — repetitive structures,
-                  predictable transitions, and statistical anomalies. Then our Gemini-powered humanizer rewrites
+                  predictable transitions, and statistical anomalies. Then our AI-powered humanizer rewrites
                   flagged sections while preserving your original voice and meaning.
                 </p>
                 <div className="flex flex-wrap gap-3 mb-5">
@@ -2285,7 +2237,7 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
                     </span>
                   ))}
                 </div>
-                <div className={`text-[12px] p-3 rounded-lg border ${isLight ? 'bg-rose-50 border-rose-100 text-rose-800' : 'bg-rose-500/[0.04] border-rose-500/10 text-rose-400/70'}`}>
+                <div className={`text-[12px] p-3 rounded-lg border ${isLight ? 'bg-emerald-50 border-emerald-100 text-emerald-800' : 'bg-emerald-500/[0.04] border-emerald-500/10 text-emerald-400/70'}`}>
                   <span className="font-semibold">Why it matters:</span> 67% of recruiters now use AI detection tools.
                   Resumes and cover letters flagged as AI-generated are rejected before a human ever reads them.
                 </div>
@@ -2375,7 +2327,7 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
                 </div>
 
                 <button onClick={onGetStarted}
-                  className={`w-full text-[13px] font-medium py-2.5 rounded-xl transition-all ${isLight ? 'font-bold text-gray-900 bg-black/5 hover:bg-black/10 border border-black/10' : 'text-white/60 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08]'}`}>
+                  className={`w-full text-[13px] font-semibold py-2.5 rounded-xl transition-all duration-300 border ${isLight ? 'bg-emerald-50 text-emerald-700 border-2 border-emerald-500 hover:bg-emerald-100 hover:shadow-[0_0_20px_rgba(16,185,129,0.2)]' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/60 hover:bg-emerald-500/20 hover:border-emerald-400 hover:shadow-[0_0_20px_rgba(16,185,129,0.25)]'}`}>
                   Get Started Free
                 </button>
               </div>
@@ -2408,20 +2360,20 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
                 <ProFeatureList />
 
                 <button onClick={onGetStarted}
-                  className="relative w-full text-[13px] font-semibold text-black bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-300 hover:to-teal-300 py-2.5 rounded-xl transition-all shadow-lg shadow-emerald-500/10">
+                  className={`relative w-full text-[13px] font-semibold py-2.5 rounded-xl transition-all duration-300 border ${isLight ? 'bg-emerald-50 text-emerald-700 border-2 border-emerald-500 hover:bg-emerald-100 hover:shadow-[0_0_20px_rgba(16,185,129,0.2)]' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/60 hover:bg-emerald-500/20 hover:border-emerald-400 hover:shadow-[0_0_20px_rgba(16,185,129,0.25)]'}`}>
                   Upgrade to Pro
                 </button>
               </div>
 
               {/* ── STUDIO TIER ── */}
-              <div className="elevation-1 relative !border-blue-500/20 p-6 flex flex-col overflow-hidden">
-                <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: 'inset 0 1px 0 rgba(59,130,246,0.1), 0 0 40px rgba(59,130,246,0.04)' }} />
+              <div className="elevation-1 relative !border-emerald-500/20 p-6 flex flex-col overflow-hidden">
+                <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: 'inset 0 1px 0 rgba(16,185,129,0.1), 0 0 40px rgba(16,185,129,0.04)' }} />
 
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 }}
-                  className={`absolute top-4 right-4 px-2 py-0.5 rounded-full bg-blue-500/15 border border-blue-500/25 text-[9px] font-semibold uppercase tracking-wider ${isLight ? 'text-blue-700' : 'text-blue-400'}`}
+                  className={`absolute top-4 right-4 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/25 text-[9px] font-semibold uppercase tracking-wider ${isLight ? 'text-emerald-700' : 'text-emerald-400'}`}
                 >
                   Max
                 </motion.div>
@@ -2432,9 +2384,9 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
                     <span className={`text-3xl font-bold ${isLight ? 'text-gray-900' : 'text-white'}`}>$19.99</span>
                     <span className={`text-[12px] ${isLight ? 'font-bold text-gray-900' : 'text-white/30'}`}>/ month</span>
                   </div>
-                  <p className="text-[12px] text-blue-400/60 mt-2 flex items-center gap-1.5">
+                  <p className="text-[12px] text-emerald-400/60 mt-2 flex items-center gap-1.5">
                     <span className={`line-through ${isLight ? 'text-gray-900' : 'text-white/15'}`}>$239.88/yr</span>
-                    <span className="px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-[9px] font-bold text-blue-400">$179.99/yr — SAVE 25%</span>
+                    <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-bold text-emerald-400">$179.99/yr — SAVE 25%</span>
                   </p>
                 </div>
 
@@ -2450,8 +2402,8 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
                     { text: 'Priority+ Support' },
                   ].map((item) => (
                     <div key={item.text} className="flex items-center gap-2.5">
-                      <div className="w-4 h-4 rounded-full bg-blue-500/[0.08] flex items-center justify-center shrink-0">
-                        <svg className={`w-2.5 h-2.5 ${isLight ? 'text-blue-600' : 'text-blue-400/60'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                      <div className="w-4 h-4 rounded-full bg-emerald-500/[0.08] flex items-center justify-center shrink-0">
+                        <svg className={`w-2.5 h-2.5 ${isLight ? 'text-emerald-600' : 'text-emerald-400/60'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                       </div>
                       <span className={`text-[12px] ${isLight ? 'font-bold text-gray-900' : 'text-white/50'}`}>{item.text}</span>
                     </div>
@@ -2459,7 +2411,7 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
                 </div>
 
                 <button onClick={onGetStarted}
-                  className="relative w-full text-[13px] font-semibold text-white bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 py-2.5 rounded-xl transition-all shadow-lg shadow-blue-500/10">
+                  className={`relative w-full text-[13px] font-semibold py-2.5 rounded-xl transition-all duration-300 border ${isLight ? 'bg-emerald-50 text-emerald-700 border-2 border-emerald-500 hover:bg-emerald-100 hover:shadow-[0_0_20px_rgba(16,185,129,0.2)]' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/60 hover:bg-emerald-500/20 hover:border-emerald-400 hover:shadow-[0_0_20px_rgba(16,185,129,0.25)]'}`}>
                   Upgrade to Max
                 </button>
               </div>
@@ -2477,16 +2429,14 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
             <h2 className={`text-xl font-bold tracking-tight mb-2 ${isLight ? 'text-gray-900' : 'text-white/80'}`}>Ready to start?</h2>
             <p className={`text-[13px] mb-5 ${isLight ? 'text-gray-500' : 'text-white/20'}`}>Free forever. No credit card needed.</p>
             <button onClick={onGetStarted}
-              className={`group text-[13px] font-medium px-6 py-2 rounded-lg transition-all inline-flex items-center gap-2 border ${isLight ? 'text-gray-900 bg-black/[0.04] border-black/[0.12] hover:bg-black/[0.08]' : 'text-white/80 bg-white/[0.06] border-white/[0.10] hover:bg-white/[0.10]'}`}>
+              className={`group text-[13px] font-semibold px-6 py-2.5 rounded-lg transition-all duration-300 inline-flex items-center gap-2 border ${isLight ? 'bg-emerald-50 text-emerald-700 border-2 border-emerald-500 hover:bg-emerald-100 hover:shadow-[0_0_24px_rgba(16,185,129,0.2)]' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/60 hover:bg-emerald-500/20 hover:border-emerald-400 hover:shadow-[0_0_24px_rgba(16,185,129,0.25)]'}`}>
               Launch Dashboard
               <svg className="w-3 h-3 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </button>
           </Reveal>
-          <div className="mt-8 max-w-lg mx-auto">
-            <LiveTerminal />
-          </div>
+
         </div>
       </section>
 

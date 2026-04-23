@@ -18,9 +18,9 @@ import { callGeminiAPIForJSON } from '@/lib/gemini';
 
 const TOOL_CONFIG: Record<string, { wordLimit: number; rateLimit: number; windowMs: number }> = {
   detect:     { wordLimit: 1500, rateLimit: 5,  windowMs: 60 * 60 * 1000 },       // 5/hour
-  grammar:    { wordLimit: 300,  rateLimit: 2,  windowMs: 24 * 60 * 60 * 1000 },   // 2/day
-  paraphrase: { wordLimit: 200,  rateLimit: 2,  windowMs: 24 * 60 * 60 * 1000 },   // 2/day
-  'ats-score': { wordLimit: 500, rateLimit: 2,  windowMs: 24 * 60 * 60 * 1000 },   // 2/day
+  grammar:    { wordLimit: 300,  rateLimit: 3,  windowMs: 24 * 60 * 60 * 1000 },   // 3/day
+  paraphrase: { wordLimit: 200,  rateLimit: 3,  windowMs: 24 * 60 * 60 * 1000 },   // 3/day
+  'ats-score': { wordLimit: 500, rateLimit: 3,  windowMs: 24 * 60 * 60 * 1000 },   // 3/day
 };
 
 function getIP(req: NextRequest): string {

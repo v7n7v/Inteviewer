@@ -183,7 +183,7 @@ function SubscriptionTab() {
                             { icon: 'mic', label: 'Voice Interview Mode', desc: 'Speak naturally with AI interviewer' },
                             { icon: 'route', label: 'Skill Bridge', desc: 'Curated learning to close skill gaps' },
                             { icon: 'magic_button', label: 'Market Oracle', desc: 'Real-time career intelligence' },
-                            { icon: 'smart_toy', label: 'Dual-AI Enhance', desc: 'GPT + Gemini working together' },
+                            { icon: 'smart_toy', label: 'Dual-AI Enhance', desc: 'Advanced AI working together' },
                         ].map((feature, i) => (
                             <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.03] border border-[var(--theme-border)]">
                                 <span className="text-lg mt-0.5 material-symbols-rounded text-emerald-400">{feature.icon}</span>

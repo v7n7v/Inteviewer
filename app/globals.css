@@ -929,17 +929,7 @@ canvas {
   transform: none !important;
 }
 
-/* Kill all gradient backgrounds on interactive elements */
-[class*="bg-gradient-to-"] {
-  background: var(--accent-dim) !important;
-}
-
-/* Buttons with gradients → flat accent */
-button[class*="bg-gradient-to-br"],
-button[class*="bg-gradient-to-r"] {
-  background: var(--accent) !important;
-  color: var(--accent-on) !important;
-}
+/* Gradient backgrounds are now intentionally used — no blanket override */
 
 /* ---- Remove ambient/decorative elements ---- */
 .ambient-orb,
@@ -1179,13 +1169,7 @@ p:not([class]) {
   border-color: var(--border-subtle) !important;
 }
 
-/* ---- Gradient progress bars → flat accent ---- */
-[class*="bg-gradient-to-r"][class*="from-cyan"],
-[class*="bg-gradient-to-r"][class*="from-green"],
-[class*="bg-gradient-to-r"][class*="from-blue"],
-[class*="bg-gradient-to-r"][class*="from-emerald"] {
-  background: var(--accent) !important;
-}
+/* Gradient progress bars now use emerald brand color — no flat override */
 
 /* ---- Score-colored dynamic classes ---- */
 [class*="text-green-400"],
