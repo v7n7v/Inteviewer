@@ -9,6 +9,7 @@ import { verifyIdToken } from './firebase-admin';
 import { checkRateLimit } from './rate-limit';
 import { getUserTier, getRateLimit as getTierRateLimit, isMasterAccount, type PlanTier } from './pricing-tiers';
 import { checkUsageAllowed, incrementUsage, FREE_CAPS, ANON_CAPS, type UsageFeature } from './usage-tracker';
+import { monitor } from './monitor';
 
 interface AuthResult {
   uid: string;
@@ -85,6 +86,10 @@ export async function guardApiRoute(
     const anonLimit = options?.allowAnonymous ? (options.rateLimit ?? 5) : 20;
     const { allowed: speedOk } = checkRateLimit(`unauth:${ip}`, anonLimit, options?.rateLimitWindow ?? 60_000);
     if (!speedOk) {
+      monitor.warn('Unauth Rate Limit Hit', `IP: ${ip}`, [
+        { name: 'Path', value: pathname },
+        { name: 'Limit', value: String(anonLimit) + '/min' },
+      ]);
       return {
         error: NextResponse.json(
           { error: 'Too many requests. Create a free account to continue.', requiresAuth: true },
@@ -104,6 +109,11 @@ export async function guardApiRoute(
         const capKey = `anon-cap:${ip}:${feature}`;
         const { allowed: capOk } = checkRateLimit(capKey, cap, 30 * 24 * 60 * 60 * 1000); // 30-day window
         if (!capOk) {
+          monitor.warn('Anon Cap Exhausted', `IP: ${ip}`, [
+            { name: 'Feature', value: feature },
+            { name: 'Cap', value: String(cap) },
+            { name: 'Path', value: pathname },
+          ]);
           return {
             error: NextResponse.json(
               {
@@ -146,6 +156,11 @@ export async function guardApiRoute(
     if (feature) {
       const usage = await checkUsageAllowed(authUser.uid, feature, tier);
       if (!usage.allowed) {
+        monitor.metric('Free Cap Hit', `User exhausted ${feature}`, [
+          { name: 'UID', value: authUser.uid.slice(0, 8) + '…' },
+          { name: 'Feature', value: feature },
+          { name: 'Used', value: `${usage.used}/${usage.cap}` },
+        ]);
         return {
           error: NextResponse.json(
             {
@@ -182,6 +197,11 @@ export async function guardApiRoute(
     const { allowed, remaining, resetIn } = checkRateLimit(rateLimitKey, limit, options?.rateLimitWindow ?? 60_000);
 
     if (!allowed) {
+      monitor.warn('Pro Rate Limit Hit', `Tier: ${tier}`, [
+        { name: 'UID', value: authUser.uid.slice(0, 8) + '…' },
+        { name: 'Path', value: pathname },
+        { name: 'Tier', value: tier },
+      ]);
       return {
         error: NextResponse.json(
           {

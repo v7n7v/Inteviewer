@@ -3,6 +3,7 @@ import { groqJSONCompletion } from '@/lib/ai/groq-client';
 import { guardApiRoute } from '@/lib/api-auth';
 import { validateBody } from '@/lib/validate';
 import { DashboardInsightsSchema } from '@/lib/schemas';
+import { monitor } from '@/lib/monitor';
 
 export async function POST(req: NextRequest) {
   try {
@@ -36,6 +37,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error in insights API:', error);
+    monitor.critical('Tool: dashboard/insights', String(error));
     return NextResponse.json(
       { error: 'Failed to fetch insights' },
       { status: 500 }

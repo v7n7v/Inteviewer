@@ -5,6 +5,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import { monitor } from '@/lib/monitor';
 
 const CONTACT_EMAIL = 'alula.gebre@gmail.com';
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -98,6 +99,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, message: 'Feedback sent. We\'ll get back to you soon.' });
   } catch (error) {
     console.error('[api/contact] Error:', error);
+    monitor.critical('Tool: contact', String(error));
     return NextResponse.json({ error: 'Failed to send feedback.' }, { status: 500 });
   }
 }

@@ -10,6 +10,7 @@ import { isMasterAccount } from '@/lib/pricing-tiers';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase-admin';
 import { validateBody } from '@/lib/validate';
 import { AdminActionSchema } from '@/lib/schemas';
+import { monitor } from '@/lib/monitor';
 
 export async function GET(req: NextRequest) {
   try {
@@ -73,6 +74,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: unknown) {
     console.error('[api/admin/users] GET error:', error);
+    monitor.critical('Tool: admin/users', String(error));
     return NextResponse.json({ error: 'Failed to list users' }, { status: 500 });
   }
 }
@@ -141,6 +143,7 @@ export async function POST(req: NextRequest) {
     }
   } catch (error: unknown) {
     console.error('[api/admin/users] POST error:', error);
+    monitor.critical('Tool: admin/users', String(error));
     return NextResponse.json({ error: 'Admin action failed' }, { status: 500 });
   }
 }

@@ -11,6 +11,7 @@ import { UniquenessSchema } from '@/lib/schemas';
 import { geminiJSONCompletion } from '@/lib/ai/gemini-client';
 import { buildUniquenessPrompt } from '@/lib/writing-prompts';
 import { incrementUsage } from '@/lib/usage-tracker';
+import { monitor } from '@/lib/monitor';
 
 export async function POST(req: NextRequest) {
   try {
@@ -59,6 +60,7 @@ export async function POST(req: NextRequest) {
 
   } catch (error: unknown) {
     console.error('[api/writing/uniqueness] Error:', error);
+    monitor.critical('Tool: writing/uniqueness', String(error));
     return NextResponse.json(
       { error: 'Failed to check uniqueness' },
       { status: 500 }

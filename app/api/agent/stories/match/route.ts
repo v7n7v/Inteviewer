@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { guardApiRoute } from '@/lib/api-auth';
 import { answerBehavioralQuestion } from '@/lib/story-search';
+import { monitor } from '@/lib/monitor';
 
 /**
  * POST /api/agent/stories/match
@@ -28,6 +29,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (e: any) {
     console.error('[Stories/Match] Error:', e);
+    monitor.critical('Tool: agent/stories/match', String(e));
     return new Response(JSON.stringify({ error: e.message }), {
       status: 500, headers: { 'Content-Type': 'application/json' },
     });

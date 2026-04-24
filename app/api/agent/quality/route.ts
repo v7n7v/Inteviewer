@@ -12,6 +12,7 @@
 import { NextRequest } from 'next/server';
 import { guardApiRoute } from '@/lib/api-auth';
 import { getAdminDb } from '@/lib/firebase-admin';
+import { monitor } from '@/lib/monitor';
 
 interface QualityMetrics {
   avgFitScore: number;
@@ -127,6 +128,7 @@ export async function GET(req: NextRequest) {
 
   } catch (err: any) {
     console.error('[quality] Error:', err);
+    monitor.critical('Tool: agent/quality', String(err));
     return new Response(JSON.stringify({
       avgFitScore: 0, totalApplications: 0, tailoredCount: 0, genericCount: 0,
       tailoredRatio: 0, pipeline: { applied: 0, interviewing: 0, offer: 0, rejected: 0 },

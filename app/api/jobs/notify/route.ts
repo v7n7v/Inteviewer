@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { guardApiRoute } from '@/lib/api-auth';
 import { getAdminDb } from '@/lib/firebase-admin';
 import { Resend } from 'resend';
+import { monitor } from '@/lib/monitor';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -131,6 +132,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, sent: true, to: email, jobCount: jobs.length });
   } catch (error) {
     console.error('[jobs/notify] Error:', error);
+    monitor.critical('Tool: jobs/notify', String(error));
     return NextResponse.json({ error: 'Failed to send notification' }, { status: 500 });
   }
 }

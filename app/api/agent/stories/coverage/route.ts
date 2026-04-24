@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { guardApiRoute } from '@/lib/api-auth';
 import { getCoverageMap } from '@/lib/story-search';
+import { monitor } from '@/lib/monitor';
 
 /**
  * GET /api/agent/stories/coverage
@@ -20,6 +21,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (e: any) {
     console.error('[Stories/Coverage] Error:', e);
+    monitor.critical('Tool: agent/stories/coverage', String(e));
     return new Response(JSON.stringify({ error: e.message }), {
       status: 500, headers: { 'Content-Type': 'application/json' },
     });

@@ -5,6 +5,7 @@ import { checkUsageAllowed, incrementUsage, type UsageFeature } from '@/lib/usag
 import { validateBody } from '@/lib/validate';
 import { GauntletGenerateSchema } from '@/lib/schemas';
 import { sanitizeForAI } from '@/lib/sanitize';
+import { monitor } from '@/lib/monitor';
 
 function getGroqClient() {
   const apiKey = process.env.GROQ_API_KEY;
@@ -194,6 +195,7 @@ Return: { "questions": [...] }`;
 
     } catch (error: unknown) {
         console.error('[api/gauntlet/generate] Error:', error);
+        monitor.critical('Tool: gauntlet/generate', String(error));
         return NextResponse.json(
             { error: 'Failed to generate questions' },
             { status: 500 }

@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { guardApiRoute } from '@/lib/api-auth';
 import { getUsage, FREE_CAPS } from '@/lib/usage-tracker';
+import { monitor } from '@/lib/monitor';
 
 export async function GET(req: NextRequest) {
   try {
@@ -20,6 +21,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('Usage API error:', error);
+    monitor.critical('Tool: usage', String(error));
     return NextResponse.json({ error: 'Failed to get usage' }, { status: 500 });
   }
 }

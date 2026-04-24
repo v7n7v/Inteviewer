@@ -3,6 +3,7 @@ import { detectAI } from '@/lib/ai-detection';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { buildGalleryPrompt } from '@/lib/writing-prompts';
 import { callGeminiAPIForJSON } from '@/lib/gemini';
+import { monitor } from '@/lib/monitor';
 
 /**
  * Unified Free Tools API
@@ -96,6 +97,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     console.error('[free-tools]', err);
+    monitor.critical('Tool: tools/free', String(err));
     return NextResponse.json({ error: 'Internal error.' }, { status: 500 });
   }
 }

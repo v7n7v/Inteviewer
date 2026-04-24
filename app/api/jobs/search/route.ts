@@ -4,6 +4,7 @@ import { semanticMatchJobs, hybridScore } from '@/lib/semantic-match';
 import { searchCompanyJobs, KNOWN_BOARDS, type PortalJob } from '@/lib/portal-scanner';
 import { guardApiRoute } from '@/lib/api-auth';
 import { scoreAllGhostRisks } from '@/lib/ghost-filter';
+import { monitor } from '@/lib/monitor';
 
 export async function GET(request: NextRequest) {
     try {
@@ -167,6 +168,7 @@ export async function GET(request: NextRequest) {
         });
     } catch (error) {
         console.error('Job search error:', error);
+        monitor.critical('Tool: jobs/search', String(error));
         return NextResponse.json(
             { success: false, error: 'Failed to search jobs', jobs: [] },
             { status: 500 }

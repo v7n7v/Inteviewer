@@ -10,6 +10,7 @@ import { dualAIGenerate } from '@/lib/ai/dual-ai';
 import { validateBody } from '@/lib/validate';
 import { AutoFixSchema } from '@/lib/schemas';
 import { sanitizeForAI } from '@/lib/sanitize';
+import { monitor } from '@/lib/monitor';
 
 export async function POST(req: NextRequest) {
   try {
@@ -108,6 +109,7 @@ Apply all suggestions and return the improved resume as a JSON object.`;
     });
   } catch (error: unknown) {
     console.error('[api/resume/auto-fix] Error:', error);
+    monitor.critical('Tool: resume/auto-fix', String(error));
     return NextResponse.json(
       { error: 'Failed to auto-fix resume' },
       { status: 500 }

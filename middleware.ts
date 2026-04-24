@@ -13,6 +13,22 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+// Track repeated 401s per IP for abuse detection
+const authFailures = new Map<string, { count: number; resetAt: number }>();
+
+/** Fire-and-forget alert to internal monitor endpoint (Edge-safe) */
+function edgeAlert(req: NextRequest, severity: string, title: string, details: string) {
+  const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+  if (!webhookUrl) return;
+  const origin = req.nextUrl.origin;
+  const secret = webhookUrl.slice(-16);
+  fetch(`${origin}/api/monitor/alert`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-monitor-secret': secret },
+    body: JSON.stringify({ severity, title, details }),
+  }).catch(() => {});
+}
+
 // API routes that explicitly allow unauthenticated access
 const PUBLIC_API_PATHS = [
   '/api/auth',
@@ -20,6 +36,7 @@ const PUBLIC_API_PATHS = [
   '/api/contact',
   '/api/stripe/webhook',
   '/api/teams/interest',
+  '/api/monitor/alert',
 ];
 
 // Routes that allow optionally-authenticated access (freemium anonymous)
@@ -45,6 +62,8 @@ export function middleware(request: NextRequest) {
 
   // ── 1. Block known scanner paths instantly ──
   if (BLOCKED_PATHS.some(p => pathname.toLowerCase().startsWith(p))) {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    edgeAlert(request, 'critical', 'Scanner Path Detected', `IP: ${ip}\nPath: ${pathname}`);
     return new NextResponse(null, { status: 404 });
   }
 
@@ -80,6 +99,18 @@ export function middleware(request: NextRequest) {
   if (pathname.startsWith('/api/')) {
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
+      // Track repeated auth failures per IP
+      const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+      const now = Date.now();
+      const entry = authFailures.get(ip);
+      if (!entry || now > entry.resetAt) {
+        authFailures.set(ip, { count: 1, resetAt: now + 60_000 });
+      } else {
+        entry.count++;
+        if (entry.count === 5) {
+          edgeAlert(request, 'warning', 'Repeated Auth Failures', `IP: ${ip}\n5 unauthenticated API requests in 1 minute\nLatest: ${pathname}`);
+        }
+      }
       return addSecurityHeaders(
         NextResponse.json(
           { error: 'Authentication required. Please sign in.' },

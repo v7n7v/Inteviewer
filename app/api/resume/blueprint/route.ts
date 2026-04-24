@@ -4,6 +4,7 @@ import { guardApiRoute } from '@/lib/api-auth';
 import { validateBody } from '@/lib/validate';
 import { BlueprintSchema } from '@/lib/schemas';
 import { sanitizeForAI } from '@/lib/sanitize';
+import { monitor } from '@/lib/monitor';
 
 export async function POST(req: NextRequest) {
   try {
@@ -72,6 +73,7 @@ FORMAT (return as plain text with markdown formatting):
     return NextResponse.json({ blueprint });
   } catch (error: unknown) {
     console.error('[api/resume/blueprint] Error:', error);
+    monitor.critical('Tool: resume/blueprint', String(error));
     return NextResponse.json(
       { error: 'Failed to generate blueprint' },
       { status: 500 }

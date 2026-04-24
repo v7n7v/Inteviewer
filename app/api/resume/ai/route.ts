@@ -4,6 +4,7 @@ import { guardApiRoute } from '@/lib/api-auth';
 import { validateBody } from '@/lib/validate';
 import { ResumeAISchema } from '@/lib/schemas';
 import { sanitizeForAI } from '@/lib/sanitize';
+import { monitor } from '@/lib/monitor';
 
 export async function POST(req: NextRequest) {
   try {
@@ -53,6 +54,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
   } catch (error: unknown) {
     console.error('[api/resume/ai] Error:', error);
+    monitor.critical('Tool: resume/ai', String(error));
     return NextResponse.json(
       { error: 'AI request failed' },
       { status: 500 }

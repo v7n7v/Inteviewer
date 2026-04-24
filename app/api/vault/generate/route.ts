@@ -4,6 +4,7 @@ import { guardApiRoute } from '@/lib/api-auth';
 import { groqCompletion } from '@/lib/ai/groq-client';
 import { validateBody } from '@/lib/validate';
 import { VaultGenerateSchema } from '@/lib/schemas';
+import { monitor } from '@/lib/monitor';
 
 export async function POST(req: NextRequest) {
   try {
@@ -51,6 +52,7 @@ export async function POST(req: NextRequest) {
 
   } catch (error: unknown) {
     console.error('[api/vault/generate] Error:', error);
+    monitor.critical('Tool: vault/generate', String(error));
     return NextResponse.json({ error: 'Failed to generate study notes' }, { status: 500 });
   }
 }

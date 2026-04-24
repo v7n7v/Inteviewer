@@ -14,6 +14,7 @@ import { detectAI } from '@/lib/ai-detection';
 import { authenticateRequest } from '@/lib/api-auth';
 import { checkUsageAllowed, incrementUsage, countWords } from '@/lib/usage-tracker';
 import { getUserTier } from '@/lib/pricing-tiers';
+import { monitor } from '@/lib/monitor';
 
 const FREE_WORD_CAP = 300;
 const ANON_DAILY_LIMIT = 1;
@@ -164,6 +165,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: unknown) {
     console.error('[api/writing/humanize-free] Error:', error);
+    monitor.critical('Tool: writing/humanize-free', String(error));
     return NextResponse.json(
       { error: 'Humanization failed. Please try again.' },
       { status: 500 }

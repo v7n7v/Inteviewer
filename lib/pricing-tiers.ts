@@ -101,7 +101,8 @@ export async function getUserTier(uid: string, email?: string): Promise<PlanTier
   try {
     const db = getDb();
     const subDoc = await getDoc(doc(db, 'users', uid, 'subscription', 'current'));
-    if (subDoc.exists() && subDoc.data()?.status === 'active') {
+    const subStatus = subDoc.exists() ? subDoc.data()?.status : null;
+    if (subStatus === 'active' || subStatus === 'trialing') {
       const plan = subDoc.data()?.plan;
       if (plan === 'studio') return 'studio';
       if (plan === 'pro') return 'pro';

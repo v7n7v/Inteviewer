@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { getAdminDb } from '@/lib/firebase-admin';
 import { guardApiRoute } from '@/lib/api-auth';
+import { monitor } from '@/lib/monitor';
 
 export async function DELETE(req: NextRequest) {
   try {
@@ -26,6 +27,7 @@ export async function DELETE(req: NextRequest) {
 
   } catch (error: unknown) {
     console.error('[api/vault/delete] Error:', error);
+    monitor.critical('Tool: vault/delete', String(error));
     return NextResponse.json({ error: 'Failed to delete note' }, { status: 500 });
   }
 }

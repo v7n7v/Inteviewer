@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { guardApiRoute } from '@/lib/api-auth';
 import { groqJSONCompletion } from '@/lib/ai/groq-client';
 import { getAdminDb } from '@/lib/firebase-admin';
+import { monitor } from '@/lib/monitor';
 
 export async function POST(req: NextRequest) {
   try {
@@ -110,6 +111,7 @@ Return JSON:
     return NextResponse.json({ success: true, ...result });
   } catch (error: any) {
     console.error('[LinkedIn] Error:', error);
+    monitor.critical('Tool: agent/linkedin-optimize', String(error));
     return NextResponse.json(
       { error: 'Failed to optimize profile.' },
       { status: 500 }

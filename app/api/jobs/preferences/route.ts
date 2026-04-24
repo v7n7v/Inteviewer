@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { guardApiRoute } from '@/lib/api-auth';
 import { getAdminDb } from '@/lib/firebase-admin';
+import { monitor } from '@/lib/monitor';
 
 export interface JobPreferences {
   targetRoles: string[];
@@ -43,6 +44,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: true, preferences: snap.data() as JobPreferences, isNew: false });
   } catch (error) {
     console.error('[jobs/preferences] GET error:', error);
+    monitor.critical('Tool: jobs/preferences', String(error));
     return NextResponse.json({ error: 'Failed to load preferences' }, { status: 500 });
   }
 }
@@ -79,6 +81,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, preferences: prefs });
   } catch (error) {
     console.error('[jobs/preferences] POST error:', error);
+    monitor.critical('Tool: jobs/preferences', String(error));
     return NextResponse.json({ error: 'Failed to save preferences' }, { status: 500 });
   }
 }

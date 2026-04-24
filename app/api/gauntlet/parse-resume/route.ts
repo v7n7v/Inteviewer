@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { guardApiRoute } from '@/lib/api-auth';
+import { monitor } from '@/lib/monitor';
 
 export async function POST(req: NextRequest) {
     try {
@@ -63,6 +64,7 @@ export async function POST(req: NextRequest) {
 
     } catch (error: unknown) {
         console.error('[api/gauntlet/parse-resume] Error:', error);
+        monitor.critical('Tool: gauntlet/parse-resume', String(error));
         return NextResponse.json(
             { error: 'Failed to parse resume' },
             { status: 500 }

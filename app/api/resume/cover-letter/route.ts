@@ -11,6 +11,7 @@ import { validateBody } from '@/lib/validate';
 import { CoverLetterSchema } from '@/lib/schemas';
 import { sanitizeForAI } from '@/lib/sanitize';
 import { guardOutput } from '@/lib/humanize-guard';
+import { monitor } from '@/lib/monitor';
 
 export async function POST(req: NextRequest) {
   try {
@@ -104,6 +105,7 @@ Write a ${tone || 'professional'} cover letter that connects the candidate's exp
     });
   } catch (error: unknown) {
     console.error('[api/resume/cover-letter] Error:', error);
+    monitor.critical('Tool: resume/cover-letter', String(error));
     return NextResponse.json(
       { error: 'Failed to generate cover letter' },
       { status: 500 }

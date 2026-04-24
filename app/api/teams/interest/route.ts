@@ -3,6 +3,7 @@ import { getAdminDb } from '@/lib/firebase-admin';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { validateBody } from '@/lib/validate';
 import { TeamInterestSchema } from '@/lib/schemas';
+import { monitor } from '@/lib/monitor';
 
 export async function POST(req: NextRequest) {
     try {
@@ -41,6 +42,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: true });
     } catch (error: unknown) {
         console.error('[api/teams/interest] Error:', error);
+        monitor.critical('Tool: teams/interest', String(error));
         return NextResponse.json(
             { error: 'Failed to submit. Please try again.' },
             { status: 500 }

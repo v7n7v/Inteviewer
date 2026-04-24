@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { guardApiRoute } from '@/lib/api-auth';
 import { checkVoiceAllowed, recordVoiceUsage, estimateSTTSeconds } from '@/lib/usage-tracker';
+import { monitor } from '@/lib/monitor';
 
 export async function POST(req: NextRequest) {
     try {
@@ -80,6 +81,7 @@ export async function POST(req: NextRequest) {
         });
     } catch (error: unknown) {
         console.error('[api/voice/transcribe] Error:', error);
+        monitor.critical('Tool: voice/transcribe', String(error));
         return NextResponse.json({ error: 'Transcription failed' }, { status: 500 });
     }
 }

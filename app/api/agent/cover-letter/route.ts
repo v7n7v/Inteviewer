@@ -8,6 +8,7 @@ import { guardApiRoute } from '@/lib/api-auth';
 import { groqJSONCompletion } from '@/lib/ai/groq-client';
 import { getAdminDb } from '@/lib/firebase-admin';
 import { guardOutput } from '@/lib/humanize-guard';
+import { monitor } from '@/lib/monitor';
 
 export async function POST(req: NextRequest) {
   try {
@@ -138,6 +139,7 @@ Return JSON:
     });
   } catch (error: any) {
     console.error('[CoverLetter] Error:', error);
+    monitor.critical('Tool: agent/cover-letter', String(error));
     return NextResponse.json({ error: 'Failed to generate cover letter.' }, { status: 500 });
   }
 }

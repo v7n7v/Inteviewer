@@ -4,6 +4,7 @@ import { guardApiRoute } from '@/lib/api-auth';
 import { validateBody } from '@/lib/validate';
 import { ResumeParseSchema } from '@/lib/schemas';
 import { sanitizeForAI } from '@/lib/sanitize';
+import { monitor } from '@/lib/monitor';
 
 export async function POST(req: NextRequest) {
   try {
@@ -48,6 +49,7 @@ If isResume is true, extract as much detail as possible. For achievements, focus
     return NextResponse.json({ resume: parsed });
   } catch (error: unknown) {
     console.error('[api/resume/parse] Error:', error);
+    monitor.critical('Tool: resume/parse', String(error));
     return NextResponse.json(
       { error: 'Failed to parse resume' },
       { status: 500 }

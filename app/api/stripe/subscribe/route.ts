@@ -9,6 +9,7 @@ import Stripe from 'stripe';
 import { guardApiRoute } from '@/lib/api-auth';
 import { validateBody } from '@/lib/validate';
 import { StripeSubscribeSchema } from '@/lib/schemas';
+import { monitor } from '@/lib/monitor';
 
 // Lazy-init Stripe to avoid crash if env var missing at module load
 function getStripe() {
@@ -83,14 +84,25 @@ export async function POST(req: NextRequest) {
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
       return_url: `${origin}/suite?upgrade=success&session_id={CHECKOUT_SESSION_ID}`,
+      allow_promotion_codes: true,
+      subscription_data: {
+        trial_period_days: 7,
+        metadata: { firebaseUid: uid, interval, plan },
+      },
       metadata: { firebaseUid: uid, interval, plan },
     });
+
+    monitor.info('Trial Started', `${plan} plan — 7-day free trial`, [
+      { name: 'Email', value: email || 'unknown' },
+      { name: 'Plan', value: `${plan} (${interval}ly)` },
+    ]);
 
     return NextResponse.json({
       clientSecret: session.client_secret,
     });
   } catch (error: unknown) {
     console.error('[api/stripe/subscribe] Error:', error);
+    monitor.critical('Tool: stripe/subscribe', String(error));
     return NextResponse.json(
       { error: 'Failed to create subscription' },
       { status: 500 }

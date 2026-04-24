@@ -10,6 +10,7 @@ import { geminiJSONCompletion } from '@/lib/ai/gemini-client';
 import { validateBody } from '@/lib/validate';
 import { OracleAnalyzeSchema } from '@/lib/schemas';
 import { sanitizeForAI } from '@/lib/sanitize';
+import { monitor } from '@/lib/monitor';
 
 interface GPTAnalysis {
   resumeSkills: string[];
@@ -182,6 +183,7 @@ Cross-validate GPT's analysis. Refine the salary estimates for ${location || 'US
     });
   } catch (error: unknown) {
     console.error('[api/oracle/analyze] Error:', error);
+    monitor.critical('Tool: oracle/analyze', String(error));
     return NextResponse.json(
       { error: 'Failed to analyze. Please try again.' },
       { status: 500 }

@@ -6,6 +6,7 @@ import { validateBody } from '@/lib/validate';
 import { ResumeMorphSchema } from '@/lib/schemas';
 import { sanitizeForAI } from '@/lib/sanitize';
 import { quickClean } from '@/lib/humanize-guard';
+import { monitor } from '@/lib/monitor';
 
 export async function POST(req: NextRequest) {
   try {
@@ -104,6 +105,7 @@ Return JSON:
     });
   } catch (error: unknown) {
     console.error('[api/resume/morph] Error:', error);
+    monitor.critical('Tool: resume/morph', String(error));
     return NextResponse.json(
       { error: 'Failed to morph resume' },
       { status: 500 }

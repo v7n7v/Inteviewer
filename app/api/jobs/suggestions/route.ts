@@ -11,6 +11,7 @@ import { guardApiRoute } from '@/lib/api-auth';
 import { getAdminDb } from '@/lib/firebase-admin';
 import { searchJobsAdzuna, calculateFitScore, type RealJob } from '@/lib/job-search-api';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { monitor } from '@/lib/monitor';
 
 interface ScoredJob extends RealJob {
   acceptanceChance: number;
@@ -236,6 +237,7 @@ Be realistic — most scores should be 40-85. Only give 90+ for near-perfect mat
     });
   } catch (error) {
     console.error('[jobs/suggestions] Error:', error);
+    monitor.critical('Tool: jobs/suggestions', String(error));
     return NextResponse.json({ error: 'Failed to generate suggestions' }, { status: 500 });
   }
 }

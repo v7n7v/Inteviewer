@@ -15,6 +15,7 @@
 import { NextRequest } from 'next/server';
 import { guardApiRoute } from '@/lib/api-auth';
 import { getAdminDb } from '@/lib/firebase-admin';
+import { monitor } from '@/lib/monitor';
 
 type InsightType = 'stale_application' | 'skill_gap' | 'queue_reminder' | 'market_alert';
 
@@ -71,6 +72,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (err: any) {
     console.error('[insights] GET error:', err);
+    monitor.critical('Tool: agent/insights', String(err));
     return new Response(JSON.stringify({ insights: [], unreadCount: 0 }), {
       headers: { 'Content-Type': 'application/json' },
     });
@@ -259,6 +261,7 @@ export async function POST(req: NextRequest) {
 
   } catch (err: any) {
     console.error('[insights] POST error:', err);
+    monitor.critical('Tool: agent/insights', String(err));
     return new Response(JSON.stringify({ error: 'Failed to generate insights' }), {
       status: 500, headers: { 'Content-Type': 'application/json' },
     });

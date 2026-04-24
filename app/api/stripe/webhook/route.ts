@@ -12,6 +12,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getFirestore, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { initializeApp, getApps, getApp } from 'firebase/app';
+import { monitor } from '@/lib/monitor';
+import { triggerReferralReward } from '@/lib/referral';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2026-02-25.clover',
@@ -67,18 +69,44 @@ export async function POST(req: NextRequest) {
 
         const amount = plan === 'studio' ? 999 : 499; // cents
 
+        const subId = session.subscription as string;
+        let status: string = 'active';
+        let trialEnd: string | null = null;
+        if (subId) {
+          try {
+            const stripe2 = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-02-25.clover' });
+            const sub = await stripe2.subscriptions.retrieve(subId);
+            if (sub.status === 'trialing') {
+              status = 'trialing';
+              trialEnd = sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : null;
+            }
+          } catch { /* fall through */ }
+        }
+
         await setDoc(doc(db, 'users', uid, 'subscription', 'current'), {
           plan,
-          status: 'active',
+          status,
           stripeCustomerId: session.customer as string,
-          stripeSubscriptionId: session.subscription as string,
+          stripeSubscriptionId: subId || (session.subscription as string),
           amount,
           currency: 'usd',
+          ...(trialEnd ? { trialEnd } : {}),
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
 
         console.log(`[stripe] checkout.completed uid=${uid.slice(0, 8)}… plan=${plan}`);
+        monitor.info('New Subscription', `Plan: ${plan}${status === 'trialing' ? ' (7-day trial)' : ''}`, [
+          { name: 'UID', value: uid.slice(0, 8) + '…' },
+          { name: 'Plan', value: plan },
+          { name: 'Status', value: status },
+          { name: 'Amount', value: `$${(amount / 100).toFixed(2)}` },
+        ]);
+
+        const customerEmail = (session as any).customer_details?.email;
+        if (customerEmail) {
+          triggerReferralReward(uid, customerEmail).catch(() => {});
+        }
         break;
       }
 
@@ -114,6 +142,11 @@ export async function POST(req: NextRequest) {
         }, { merge: true });
 
         console.log(`[stripe] invoice.paid uid=${uid.slice(0, 8)}… plan=${subPlan} interval=${interval}`);
+        monitor.info('Invoice Paid', `Renewal for ${subPlan}`, [
+          { name: 'UID', value: uid.slice(0, 8) + '…' },
+          { name: 'Plan', value: subPlan as string },
+          { name: 'Amount', value: `$${((invoice.amount_paid ?? 0) / 100).toFixed(2)}` },
+        ]);
         break;
       }
 
@@ -160,15 +193,30 @@ export async function POST(req: NextRequest) {
         }, { merge: true });
 
         console.log(`[stripe] subscription.deleted uid=${uid.slice(0, 8)}…`);
+        monitor.warn('Subscription Canceled', 'User downgraded to free', [
+          { name: 'UID', value: uid.slice(0, 8) + '…' },
+        ]);
+        break;
+      }
+
+      case 'customer.subscription.trial_will_end': {
+        const sub = event.data.object as Stripe.Subscription;
+        const custId = sub.customer as string;
+        const cust = await stripe.customers.retrieve(custId) as Stripe.Customer;
+        monitor.info('Trial Ending Soon', '3 days left', [
+          { name: 'UID', value: cust.metadata?.firebaseUid?.slice(0, 8) + '…' || 'unknown' },
+          { name: 'Email', value: cust.email || 'unknown' },
+          { name: 'Auto-Renew', value: sub.cancel_at_period_end ? 'No' : 'Yes' },
+        ]);
         break;
       }
 
       default:
-        // Unhandled event type
         break;
     }
   } catch (error) {
     console.error('Webhook processing error:', error);
+    monitor.critical('Stripe Webhook Error', String(error));
     return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
   }
 

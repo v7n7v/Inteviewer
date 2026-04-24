@@ -10,6 +10,7 @@ import { checkUsageAllowed, incrementUsage } from '@/lib/usage-tracker';
 import { groqJSONCompletion } from '@/lib/ai/groq-client';
 import { sanitizeForAI } from '@/lib/sanitize';
 import { getAdminDb } from '@/lib/firebase-admin';
+import { monitor } from '@/lib/monitor';
 
 export async function POST(req: NextRequest) {
   try {
@@ -173,6 +174,7 @@ Return JSON: { "coverLetter": "..." }`,
     });
   } catch (error: any) {
     console.error('[ApplyPipeline] Error:', error);
+    monitor.critical('Tool: agent/apply-pipeline', String(error));
     return NextResponse.json(
       { error: 'Apply pipeline failed. Please try again.' },
       { status: 500 }

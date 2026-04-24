@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { getAdminDb } from '@/lib/firebase-admin';
 import { guardApiRoute } from '@/lib/api-auth';
+import { monitor } from '@/lib/monitor';
 
 export async function GET(req: NextRequest) {
   try {
@@ -26,6 +27,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ notes });
   } catch (error: unknown) {
     console.error('[api/vault/list] Error:', error);
+    monitor.critical('Tool: vault/list', String(error));
     return NextResponse.json({ error: 'Failed to fetch vault items' }, { status: 500 });
   }
 }

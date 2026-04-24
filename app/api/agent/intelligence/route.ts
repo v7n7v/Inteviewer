@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { guardApiRoute } from '@/lib/api-auth';
 import { generateRecommendations, generateProfileSummary } from '@/lib/career-recommendations';
 import { getOrComputeTwin, invalidateTwin, exportTwinJSON } from '@/lib/career-twin';
+import { monitor } from '@/lib/monitor';
 
 // In-memory cache for recommendations (twin handles profile caching in Firestore)
 const recsCache = new Map<string, { recommendations: any; summary: string; cachedAt: number }>();
@@ -62,6 +63,7 @@ export async function GET(req: NextRequest) {
     }), { headers: { 'Content-Type': 'application/json' } });
   } catch (e: any) {
     console.error('Intelligence API error:', e);
+    monitor.critical('Tool: agent/intelligence', String(e));
     return new Response(JSON.stringify({ error: e.message }), {
       status: 500, headers: { 'Content-Type': 'application/json' },
     });

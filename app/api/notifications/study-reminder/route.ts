@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { guardApiRoute } from '@/lib/api-auth';
 import { validateBody } from '@/lib/validate';
 import { StudyReminderSchema } from '@/lib/schemas';
+import { monitor } from '@/lib/monitor';
 
 // Inline email builder — no Resend SDK needed for MVP, use raw fetch
 async function sendEmail(to: string, subject: string, html: string) {
@@ -181,6 +182,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: unknown) {
     console.error('[api/notifications/study-reminder] Error:', error);
+    monitor.critical('Tool: notifications/study-reminder', String(error));
     return NextResponse.json(
       { error: 'Failed to send email' },
       { status: 500 }

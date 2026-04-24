@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
 import ClientProviders from '@/components/ClientProviders';
+import PromoBanner from '@/components/PromoBanner';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -231,6 +232,7 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
+        <PromoBanner />
         <div className="relative z-10">
           <ClientProviders>{children}</ClientProviders>
         </div>

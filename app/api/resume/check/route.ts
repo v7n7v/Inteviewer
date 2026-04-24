@@ -11,6 +11,7 @@ import { geminiQuickCheck } from '@/lib/ai/dual-ai';
 import { validateBody } from '@/lib/validate';
 import { ResumeCheckSchema } from '@/lib/schemas';
 import { sanitizeForAI } from '@/lib/sanitize';
+import { monitor } from '@/lib/monitor';
 
 interface ResumeCheckResult {
   atsScore: number;
@@ -82,6 +83,7 @@ Provide your complete analysis as a JSON object.`;
     });
   } catch (error: unknown) {
     console.error('[api/resume/check] Error:', error);
+    monitor.critical('Tool: resume/check', String(error));
     return NextResponse.json(
       { error: 'Failed to check resume' },
       { status: 500 }

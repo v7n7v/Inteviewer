@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { guardApiRoute } from '@/lib/api-auth';
 import { getAdminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
+import { monitor } from '@/lib/monitor';
 
 export async function GET(req: NextRequest) {
   try {
@@ -27,6 +28,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: true, contacts });
   } catch (error: any) {
     console.error('[Network] GET Error:', error);
+    monitor.critical('Tool: agent/network', String(error));
     return NextResponse.json({ error: 'Failed to fetch contacts.' }, { status: 500 });
   }
 }
@@ -103,6 +105,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   } catch (error: any) {
     console.error('[Network] POST Error:', error);
+    monitor.critical('Tool: agent/network', String(error));
     return NextResponse.json({ error: 'Failed to process request.' }, { status: 500 });
   }
 }

@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { guardApiRoute } from '@/lib/api-auth';
+import { monitor } from '@/lib/monitor';
 
 export async function POST(req: NextRequest) {
   try {
@@ -39,6 +40,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ url: session.url });
   } catch (error: any) {
     console.error('Portal session error:', error);
+    monitor.critical('Tool: stripe/portal', String(error));
     return NextResponse.json(
       { error: 'Failed to create portal session' },
       { status: 500 }

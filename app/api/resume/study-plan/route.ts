@@ -4,6 +4,7 @@ import { guardApiRoute } from '@/lib/api-auth';
 import { getAdminDb } from '@/lib/firebase-admin';
 import { validateBody } from '@/lib/validate';
 import { StudyPlanSchema } from '@/lib/schemas';
+import { monitor } from '@/lib/monitor';
 
 interface StudyDay {
   day: number;
@@ -59,6 +60,7 @@ export async function POST(req: NextRequest) {
         }
       } catch (e) {
         console.error('Failed to fetch vault context for skill bridge:', e);
+        monitor.critical('Tool: resume/study-plan', String(e));
       }
     }
 
@@ -125,6 +127,7 @@ Keep it short, practical, interview-focused.`;
     return NextResponse.json(result);
   } catch (error: unknown) {
     console.error('[api/resume/study-plan] Error:', error);
+    monitor.critical('Tool: resume/study-plan', String(error));
     return NextResponse.json(
       { error: 'Failed to generate study plan' },
       { status: 500 }

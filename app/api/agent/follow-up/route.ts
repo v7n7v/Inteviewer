@@ -9,6 +9,7 @@ import { guardApiRoute } from '@/lib/api-auth';
 import { groqJSONCompletion } from '@/lib/ai/groq-client';
 import { getAdminDb } from '@/lib/firebase-admin';
 import { quickClean } from '@/lib/humanize-guard';
+import { monitor } from '@/lib/monitor';
 
 export async function POST(req: NextRequest) {
   try {
@@ -95,6 +96,7 @@ Return JSON: { "subject": "...", "body": "...", "timing": "good|early|late" }`,
     });
   } catch (error: any) {
     console.error('[FollowUp] Error:', error);
+    monitor.critical('Tool: agent/follow-up', String(error));
     return NextResponse.json(
       { error: 'Failed to draft follow-up email.' },
       { status: 500 }

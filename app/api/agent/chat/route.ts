@@ -15,6 +15,7 @@ import { guardApiRoute } from '@/lib/api-auth';
 import { getAdminDb } from '@/lib/firebase-admin';
 import { SONA_TOOLS, executeTool } from '@/lib/sona-tools';
 import { quickClean } from '@/lib/humanize-guard';
+import { monitor } from '@/lib/monitor';
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
@@ -362,6 +363,7 @@ export async function POST(req: NextRequest) {
 
   } catch (err: any) {
     console.error('[sona/chat] Error:', err);
+    monitor.critical('Tool: agent/chat', String(err));
     return new Response(JSON.stringify({ error: 'Sona encountered an error. Please try again.' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
 }
@@ -391,6 +393,7 @@ export async function GET(req: NextRequest) {
     return new Response(JSON.stringify({ conversations }), { headers: { 'Content-Type': 'application/json' } });
   } catch (err: any) {
     console.error('[sona/chat] GET Error:', err);
+    monitor.critical('Tool: agent/chat', String(err));
     return new Response(JSON.stringify({ conversations: [] }), { headers: { 'Content-Type': 'application/json' } });
   }
 }

@@ -11,6 +11,7 @@ import { dualAIGenerate } from '@/lib/ai/dual-ai';
 import { validateBody } from '@/lib/validate';
 import { LinkedInSchema } from '@/lib/schemas';
 import { sanitizeForAI } from '@/lib/sanitize';
+import { monitor } from '@/lib/monitor';
 
 export async function POST(req: NextRequest) {
   try {
@@ -99,6 +100,7 @@ Return as a JSON object.`;
     });
   } catch (error: unknown) {
     console.error('[api/resume/linkedin] Error:', error);
+    monitor.critical('Tool: resume/linkedin', String(error));
     return NextResponse.json(
       { error: 'Failed to generate LinkedIn profile' },
       { status: 500 }

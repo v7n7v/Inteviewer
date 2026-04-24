@@ -3,6 +3,7 @@ import { getAdminDb } from '@/lib/firebase-admin';
 import { guardApiRoute } from '@/lib/api-auth';
 import { validateBody } from '@/lib/validate';
 import { VaultExportPlanSchema } from '@/lib/schemas';
+import { monitor } from '@/lib/monitor';
 
 export async function POST(req: NextRequest) {
   try {
@@ -64,6 +65,7 @@ export async function POST(req: NextRequest) {
 
   } catch (error: unknown) {
     console.error('[api/vault/export-plan] Error:', error);
+    monitor.critical('Tool: vault/export-plan', String(error));
     return NextResponse.json({ error: 'Failed to export to Vault' }, { status: 500 });
   }
 }

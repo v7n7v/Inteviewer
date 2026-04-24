@@ -14,6 +14,7 @@ import { buildHumanizePrompt } from '@/lib/writing-prompts';
 import { countWords, checkWritingWordsAllowed, recordWritingWords, incrementUsage } from '@/lib/usage-tracker';
 import { detectAI } from '@/lib/ai-detection';
 import { normalizeText, sanitizeForAI } from '@/lib/sanitize';
+import { monitor } from '@/lib/monitor';
 
 /** Strip AI-telltale punctuation from humanized text */
 function cleanAIPunctuation(text: string): string {
@@ -204,6 +205,7 @@ ${cleanedText}`;
 
   } catch (error: unknown) {
     console.error('[api/writing/humanize] Error:', error);
+    monitor.critical('Tool: writing/humanize', String(error));
     return NextResponse.json(
       { error: 'Failed to humanize text' },
       { status: 500 }

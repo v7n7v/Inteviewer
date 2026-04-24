@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { searchCompanyJobs, scanCompanyPortals } from '@/lib/portal-scanner';
 import { guardApiRoute } from '@/lib/api-auth';
+import { monitor } from '@/lib/monitor';
 
 /**
  * GET /api/jobs/portal?company=stripe&query=engineer
@@ -45,6 +46,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (e: any) {
     console.error('Portal scan API error:', e);
+    monitor.critical('Tool: jobs/portal', String(e));
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
 }

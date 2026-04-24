@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { guardApiRoute } from '@/lib/api-auth';
 import { getAdminDb } from '@/lib/firebase-admin';
 import { invalidateTwin } from '@/lib/career-twin';
+import { monitor } from '@/lib/monitor';
 
 /**
  * GET /api/agent/stories
@@ -29,6 +30,7 @@ export async function GET(req: NextRequest) {
     }), { headers: { 'Content-Type': 'application/json' } });
   } catch (e: any) {
     console.error('Stories API error:', e);
+    monitor.critical('Tool: agent/stories', String(e));
     return new Response(JSON.stringify({ error: e.message, stories: [], count: 0 }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
@@ -76,6 +78,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (e: any) {
     console.error('Stories POST error:', e);
+    monitor.critical('Tool: agent/stories', String(e));
     return new Response(JSON.stringify({ error: e.message }), {
       status: 500, headers: { 'Content-Type': 'application/json' },
     });
@@ -109,6 +112,7 @@ export async function DELETE(req: NextRequest) {
     });
   } catch (e: any) {
     console.error('Stories delete error:', e);
+    monitor.critical('Tool: agent/stories', String(e));
     return new Response(JSON.stringify({ error: e.message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

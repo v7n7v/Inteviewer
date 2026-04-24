@@ -11,6 +11,7 @@ import { normalizeText, sanitizeForAI } from '@/lib/sanitize';
 import { incrementUsage } from '@/lib/usage-tracker';
 import { validateBody } from '@/lib/validate';
 import { z } from 'zod';
+import { monitor } from '@/lib/monitor';
 
 const DeepDetectSchema = z.object({
   text: z.string().trim().min(50, 'Text must be at least 50 characters').max(50_000),
@@ -41,6 +42,7 @@ export async function POST(req: NextRequest) {
 
   } catch (error: unknown) {
     console.error('[api/writing/deep-detect] Error:', error);
+    monitor.critical('Tool: writing/deep-detect', String(error));
     return NextResponse.json(
       { error: 'Deep detection failed' },
       { status: 500 }

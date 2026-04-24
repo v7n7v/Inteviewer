@@ -4,6 +4,7 @@ import { guardApiRoute } from '@/lib/api-auth';
 import { validateBody } from '@/lib/validate';
 import { GauntletGradeSchema } from '@/lib/schemas';
 import { sanitizeForAI } from '@/lib/sanitize';
+import { monitor } from '@/lib/monitor';
 
 function getGroqClient() {
   const apiKey = process.env.GROQ_API_KEY;
@@ -110,6 +111,7 @@ You MUST respond with valid JSON matching this exact schema:
 
     } catch (error: unknown) {
         console.error('[api/gauntlet/grade] Error:', error);
+        monitor.critical('Tool: gauntlet/grade', String(error));
         return NextResponse.json(
             { error: 'Failed to grade answer' },
             { status: 500 }

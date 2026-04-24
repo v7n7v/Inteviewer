@@ -11,6 +11,7 @@ import { checkUsageAllowed, incrementUsage, type UsageFeature } from '@/lib/usag
 import { validateBody } from '@/lib/validate';
 import { AICompletionSchema } from '@/lib/schemas';
 import { sanitizeForAI } from '@/lib/sanitize';
+import { monitor } from '@/lib/monitor';
 
 const MODEL = 'openai/gpt-oss-120b';
 
@@ -137,6 +138,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ result: content });
   } catch (error: unknown) {
     console.error('[api/ai] Error:', error);
+    monitor.critical('Tool: ai', String(error));
     return NextResponse.json(
       { error: 'AI request failed' },
       { status: 500 }

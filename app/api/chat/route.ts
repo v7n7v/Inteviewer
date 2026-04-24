@@ -4,6 +4,7 @@ import { guardApiRoute } from '@/lib/api-auth';
 import { validateBody } from '@/lib/validate';
 import { ChatSchema } from '@/lib/schemas';
 import { sanitizeForAI } from '@/lib/sanitize';
+import { monitor } from '@/lib/monitor';
 
 const MODEL = 'openai/gpt-oss-120b';
 
@@ -87,6 +88,7 @@ ${safeContext}
           controller.close();
         } catch (err) {
           console.error('[api/chat] Stream error:', err);
+          monitor.critical('Tool: chat', String(err));
           controller.close();
         }
       },
@@ -101,6 +103,7 @@ ${safeContext}
     });
   } catch (error: unknown) {
     console.error('[api/chat] Error:', error);
+    monitor.critical('Tool: chat', String(error));
     return NextResponse.json(
       { error: 'Failed to process chat request' },
       { status: 500 }

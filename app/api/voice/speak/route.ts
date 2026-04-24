@@ -5,6 +5,7 @@ import { validateBody } from '@/lib/validate';
 import { VoiceSpeakSchema } from '@/lib/schemas';
 import WebSocket from 'ws';
 import { randomUUID } from 'crypto';
+import { monitor } from '@/lib/monitor';
 
 // ── Voice resolution ──
 // On the international DashScope endpoint, only 'longanyang' is confirmed working.
@@ -187,6 +188,7 @@ export async function POST(req: NextRequest) {
 
     } catch (error: unknown) {
         console.error('[api/voice/speak] Error:', error);
+        monitor.critical('Tool: voice/speak', String(error));
         return NextResponse.json({ error: 'Voice synthesis failed' }, { status: 500 });
     }
 }

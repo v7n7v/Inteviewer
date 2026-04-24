@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { guardApiRoute } from '@/lib/api-auth';
 import { groqJSONCompletion } from '@/lib/ai/groq-client';
 import { getAdminDb } from '@/lib/firebase-admin';
+import { monitor } from '@/lib/monitor';
 
 export async function POST(req: NextRequest) {
   try {
@@ -97,6 +98,7 @@ Return JSON:
     });
   } catch (error: any) {
     console.error('[Negotiate] Error:', error);
+    monitor.critical('Tool: agent/negotiate', String(error));
     return NextResponse.json(
       { error: 'Failed to generate negotiation strategy.' },
       { status: 500 }

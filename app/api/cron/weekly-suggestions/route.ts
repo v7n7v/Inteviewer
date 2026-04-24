@@ -18,6 +18,7 @@ import { getAdminDb } from '@/lib/firebase-admin';
 import { searchJobsAdzuna, calculateFitScore, type RealJob } from '@/lib/job-search-api';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Resend } from 'resend';
+import { monitor } from '@/lib/monitor';
 
 export const maxDuration = 300;
 
@@ -204,6 +205,7 @@ Jobs:\n${summaries}`
     return NextResponse.json({ success: true, summary: { total: results.length, sent, skipped, errors }, results });
   } catch (err: any) {
     console.error('[cron] Fatal error:', err);
+    monitor.critical('Tool: cron/weekly-suggestions', String(err));
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }

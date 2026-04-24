@@ -3,6 +3,7 @@ import { guardApiRoute } from '@/lib/api-auth';
 import { validateBody } from '@/lib/validate';
 import { ATSScoreSchema } from '@/lib/schemas';
 import { calculateATSScore } from '@/lib/ats-score';
+import { monitor } from '@/lib/monitor';
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,6 +20,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(result);
   } catch (error: unknown) {
     console.error('[api/resume/ats-score] Error:', error);
+    monitor.critical('Tool: resume/ats-score', String(error));
     return NextResponse.json(
       { error: 'Failed to calculate ATS score' },
       { status: 500 }
