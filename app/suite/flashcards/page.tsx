@@ -607,6 +607,7 @@ export default function GauntletPage() {
                         </p>
                     </div>
 
+                    <div className="flex items-center gap-3">
                     {viewMode !== 'setup' && (
                         <motion.button
                             initial={{ opacity: 0, scale: 0.9 }}
@@ -646,6 +647,7 @@ export default function GauntletPage() {
                       </motion.button>
                     )}
                     <PageHelp toolId="flashcards" />
+                    </div>
                 </div>
             </motion.div>
 
