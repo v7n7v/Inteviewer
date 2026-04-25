@@ -19,7 +19,7 @@ export default function LogoutModal({ isOpen, onClose, onConfirm }: LogoutModalP
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100]"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
           />
 
           {/* Modal */}
@@ -31,7 +31,7 @@ export default function LogoutModal({ isOpen, onClose, onConfirm }: LogoutModalP
               transition={{ duration: 0.18, ease: 'easeOut' }}
               className="w-full max-w-xs rounded-2xl overflow-hidden shadow-xl"
               style={{
-                background: 'var(--bg-card)',
+                background: 'var(--bg-surface)',
                 border: '1px solid var(--border-subtle)',
               }}
             >

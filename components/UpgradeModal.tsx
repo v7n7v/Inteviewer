@@ -110,8 +110,8 @@ export default function UpgradeModal({ isOpen, onClose, onSuccess }: UpgradeModa
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl"
             style={{
-              background: isLight ? '#FFFFFF' : '#0F0F0F',
-              border: `1px solid ${isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)'}`,
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border-subtle)',
             }}
           >
             {/* Close button */}
@@ -140,7 +140,7 @@ export default function UpgradeModal({ isOpen, onClose, onSuccess }: UpgradeModa
               <div
                 className="flex p-1 rounded-xl"
                 style={{
-                  background: isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.05)',
+                  background: 'var(--bg-hover)',
                 }}
               >
                 {(['month', 'year'] as BillingInterval[]).map((int) => (
@@ -173,7 +173,7 @@ export default function UpgradeModal({ isOpen, onClose, onSuccess }: UpgradeModa
               <div
                 className="grid grid-cols-2 gap-2 p-3 rounded-xl"
                 style={{
-                  background: isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.03)',
+                  background: 'var(--bg-hover)',
                 }}
               >
                 {PRO_FEATURES.map((f) => (

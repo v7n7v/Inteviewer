@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { authHelpers } from '@/lib/firebase';
 import { useStore } from '@/lib/store';
 import { showToast } from '@/components/Toast';
@@ -191,139 +192,174 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
     }
   };
 
-  // ============================================
-  // TOTP MFA VERIFICATION SCREEN
-  // ============================================
+  /* ── Shared modal shell ── */
+  const ModalShell = ({ children }: { children: React.ReactNode }) => (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
+        onClick={onClose}
+      />
+      <div className="fixed inset-0 z-[101] flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96, y: 12 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.96, y: 12 }}
+          transition={{ duration: 0.18, ease: 'easeOut' }}
+          onClick={e => e.stopPropagation()}
+          className="w-full max-w-md rounded-2xl overflow-hidden shadow-xl"
+          style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-subtle)',
+          }}
+        >
+          {children}
+        </motion.div>
+      </div>
+    </AnimatePresence>
+  );
+
+  const inputClass = "w-full rounded-xl px-4 py-3 text-sm outline-none transition-all";
+  const inputStyle = {
+    background: 'var(--bg-input, var(--bg-hover))',
+    border: '1px solid var(--border-subtle)',
+    color: 'var(--text-primary)',
+  };
+
+  // ── MFA VERIFICATION ──
   if (showMFAChallenge) {
     return (
-      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="glass-card p-8 max-w-md w-full">
+      <ModalShell>
+        <div className="p-6">
           <div className="text-center mb-6">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center mx-auto mb-4 border border-amber-500/30">
-              <span className="text-4xl">🔐</span>
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4"
+              style={{ background: 'rgba(245,158,11,0.1)' }}
+            >
+              <span className="material-symbols-rounded text-2xl" style={{ color: 'var(--warning)' }}>lock</span>
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">
+            <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
               Two-Factor Verification
             </h2>
-            <p className="text-slate-400">
-              Enter the 6-digit code from your <strong className="text-cyan-400">authenticator app</strong>
+            <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+              Enter the 6-digit code from your <strong style={{ color: 'var(--accent)' }}>authenticator app</strong>
             </p>
           </div>
 
           <form onSubmit={handleMFAVerify} className="space-y-4">
-            <div>
-              <label className="block text-sm text-slate-400 mb-2">Verification Code</label>
-              <input
-                type="text"
-                value={totpCode}
-                onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                className="w-full rounded-xl px-4 py-4 bg-white/5 border border-white/10 text-white text-center text-2xl tracking-[0.3em] font-mono focus:outline-none focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition-all"
-                placeholder="000000"
-                maxLength={6}
-                disabled={loading}
-                autoFocus
-              />
-            </div>
+            <input
+              type="text"
+              value={totpCode}
+              onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              className={`${inputClass} text-center text-2xl tracking-[0.3em] font-mono`}
+              style={inputStyle}
+              placeholder="000000"
+              maxLength={6}
+              disabled={loading}
+              autoFocus
+            />
 
             {error && (
-              <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30">
-                <p className="text-sm text-red-300">{error}</p>
+              <div className="p-3 rounded-xl text-xs" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: 'var(--danger)' }}>
+                {error}
               </div>
             )}
 
             <button
               type="submit"
               disabled={loading || totpCode.length < 6}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium hover:shadow-lg hover:shadow-amber-500/25 transition-all disabled:opacity-50"
+              className="w-full py-3 rounded-xl text-sm font-medium transition-all disabled:opacity-50"
+              style={{ background: 'var(--accent)', color: 'var(--accent-on, #fff)' }}
             >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  Verifying...
-                </span>
-              ) : (
-                'Verify & Sign In'
-              )}
+              {loading ? 'Verifying...' : 'Verify & Sign In'}
             </button>
 
             <button
               type="button"
-              onClick={() => {
-                setShowMFAChallenge(false);
-                setTotpCode('');
-                setError('');
-                setMfaResolver(null);
-              }}
-              className="w-full text-sm text-slate-400 hover:text-white transition-colors"
+              onClick={() => { setShowMFAChallenge(false); setTotpCode(''); setError(''); setMfaResolver(null); }}
+              className="w-full text-sm font-medium transition-colors hover:underline"
+              style={{ color: 'var(--text-secondary)' }}
             >
               ← Back to Login
             </button>
           </form>
         </div>
-      </div>
+      </ModalShell>
     );
   }
 
-  // Password reset email sent screen
+  // ── PASSWORD RESET SENT ──
   if (resetEmailSent) {
     return (
-      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="glass-card p-8 max-w-md w-full">
-          <div className="text-center">
-            <div className="w-20 h-20 rounded-full bg-cyan-500/20 flex items-center justify-center mx-auto mb-6">
-              <span className="text-4xl"><span className="material-symbols-rounded">mail</span></span>
-            </div>
-            <h2 className="text-2xl font-bold text-white mb-3">Check Your Email!</h2>
-            <p className="text-slate-400 mb-6">
-              We've sent a password reset link to <strong className="text-cyan-400">{formData.email}</strong>
-            </p>
-            <button onClick={() => { setResetEmailSent(false); setShowForgotPassword(false); }} className="glass-button w-full">
-              Back to Login
-            </button>
+      <ModalShell>
+        <div className="p-6 text-center">
+          <div
+            className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4"
+            style={{ background: 'var(--accent-dim)' }}
+          >
+            <span className="material-symbols-rounded text-2xl" style={{ color: 'var(--accent)' }}>mail</span>
           </div>
+          <h2 className="text-lg font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Check Your Email!</h2>
+          <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
+            We've sent a password reset link to <strong style={{ color: 'var(--accent)' }}>{formData.email}</strong>
+          </p>
+          <button
+            onClick={() => { setResetEmailSent(false); setShowForgotPassword(false); }}
+            className="w-full py-2.5 rounded-xl text-sm font-medium"
+            style={{ border: '1px solid var(--border-subtle)', color: 'var(--text-primary)' }}
+          >
+            Back to Login
+          </button>
         </div>
-      </div>
+      </ModalShell>
     );
   }
 
-  // Forgot password form
+  // ── FORGOT PASSWORD ──
   if (showForgotPassword) {
     return (
-      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="glass-card p-8 max-w-md w-full">
-          <h2 className="text-xl font-semibold mb-2 flex items-center gap-2">
-            <span><span className="material-symbols-rounded">key</span></span> Reset Password
-          </h2>
-          <p className="text-slate-400 text-sm mb-6">
-            Enter your email and we'll send you a reset link.
-          </p>
+      <ModalShell>
+        <div className="p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: 'var(--accent-dim)' }}
+            >
+              <span className="material-symbols-rounded text-lg" style={{ color: 'var(--accent)' }}>key</span>
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Reset Password</h2>
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Enter your email and we'll send you a reset link.</p>
+            </div>
+          </div>
 
           <form onSubmit={handleForgotPassword} className="space-y-4">
             <div>
-              <label className="block text-sm text-slate-400 mb-2">Email</label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Email</label>
               <input
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full rounded-lg px-4 py-3 bg-white/5 border border-white/10 text-white"
+                className={inputClass}
+                style={inputStyle}
                 placeholder="your@email.com"
                 disabled={loading}
               />
             </div>
 
             {error && (
-              <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/30">
-                <p className="text-sm text-red-300">{error}</p>
+              <div className="p-3 rounded-xl text-xs" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: 'var(--danger)' }}>
+                {error}
               </div>
             )}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-medium disabled:opacity-50"
+              className="w-full py-2.5 rounded-xl text-sm font-medium disabled:opacity-50"
+              style={{ background: 'var(--accent)', color: 'var(--accent-on, #fff)' }}
             >
               {loading ? 'Sending...' : 'Send Reset Link'}
             </button>
@@ -331,65 +367,95 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
             <button
               type="button"
               onClick={() => setShowForgotPassword(false)}
-              className="w-full text-sm text-slate-400 hover:text-white"
+              className="w-full text-sm font-medium transition-colors hover:underline"
+              style={{ color: 'var(--text-secondary)' }}
             >
               ← Back to Login
             </button>
           </form>
         </div>
-      </div>
+      </ModalShell>
     );
   }
 
-  // Main login/signup form
+  // ── MAIN LOGIN/SIGNUP ──
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="glass-card p-8 max-w-md w-full">
-        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-          <span>{mode === 'login' ? '🔐' : <span className="material-symbols-rounded text-cyan-400">auto_awesome</span>}</span>
-          {mode === 'login' ? 'Login to TalentConsulting.io' : 'Create Account'}
-        </h2>
-
-        {/* OAuth Buttons */}
-        <div className="mb-6">
-          <button
-            onClick={handleGoogleAuth}
-            disabled={oauthLoading}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-white text-gray-900 font-medium hover:bg-gray-100 transition-colors disabled:opacity-50"
+    <ModalShell>
+      <div className="p-6">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-5">
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: 'var(--accent-dim)' }}
           >
-            {oauthLoading ? (
-              <div className="w-5 h-5 border-2 border-gray-400 border-t-gray-900 rounded-full animate-spin" />
-            ) : (
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-              </svg>
-            )}
-            Continue with Google
+            <span className="material-symbols-rounded text-lg" style={{ color: 'var(--accent)' }}>
+              {mode === 'login' ? 'lock_open' : 'auto_awesome'}
+            </span>
+          </div>
+          <div className="flex-1">
+            <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+              {mode === 'login' ? 'Welcome back' : 'Create Account'}
+            </h2>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              {mode === 'login' ? 'Sign in to your account' : 'Get started with TalentConsulting.io'}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors flex-shrink-0"
+            style={{ color: 'var(--text-muted)' }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+          >
+            <span className="material-symbols-rounded text-lg">close</span>
           </button>
         </div>
 
+        {/* OAuth */}
+        <button
+          onClick={handleGoogleAuth}
+          disabled={oauthLoading}
+          className="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors disabled:opacity-50 mb-4"
+          style={{
+            background: 'var(--bg-input, var(--bg-hover))',
+            border: '1px solid var(--border-subtle)',
+            color: 'var(--text-primary)',
+          }}
+        >
+          {oauthLoading ? (
+            <div className="w-5 h-5 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--border-subtle)', borderTopColor: 'var(--text-primary)' }} />
+          ) : (
+            <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+            </svg>
+          )}
+          Continue with Google
+        </button>
+
         {/* Divider */}
-        <div className="relative mb-6">
+        <div className="relative mb-4">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-white/10"></div>
+            <div className="w-full" style={{ borderTop: '1px solid var(--border-subtle)' }} />
           </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-4 bg-[var(--bg-surface)] text-slate-400">or continue with email</span>
+          <div className="relative flex justify-center text-xs">
+            <span className="px-3" style={{ background: 'var(--bg-surface)', color: 'var(--text-muted)' }}>or continue with email</span>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-3">
           {mode === 'signup' && (
             <div>
-              <label className="block text-sm text-slate-400 mb-2">Full Name</label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Full Name</label>
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full rounded-lg px-4 py-3 bg-white/5 border border-white/10 text-white"
+                className={inputClass}
+                style={inputStyle}
                 placeholder="John Doe"
                 disabled={loading}
               />
@@ -397,24 +463,26 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
           )}
 
           <div>
-            <label className="block text-sm text-slate-400 mb-2">Email</label>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Email</label>
             <input
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full rounded-lg px-4 py-3 bg-white/5 border border-white/10 text-white"
+              className={inputClass}
+              style={inputStyle}
               placeholder="your@email.com"
               disabled={loading}
             />
           </div>
 
           <div>
-            <label className="block text-sm text-slate-400 mb-2">Password</label>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Password</label>
             <input
               type="password"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className="w-full rounded-lg px-4 py-3 bg-white/5 border border-white/10 text-white"
+              className={inputClass}
+              style={inputStyle}
               placeholder={mode === 'signup' ? 'Min 10 characters' : 'Enter password'}
               disabled={loading}
             />
@@ -422,12 +490,13 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
 
           {mode === 'signup' && (
             <div>
-              <label className="block text-sm text-slate-400 mb-2">Confirm Password</label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Confirm Password</label>
               <input
                 type="password"
                 value={formData.confirmPassword}
                 onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                className="w-full rounded-lg px-4 py-3 bg-white/5 border border-white/10 text-white"
+                className={inputClass}
+                style={inputStyle}
                 placeholder="Re-enter your password"
                 disabled={loading}
               />
@@ -438,23 +507,25 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
             <button
               type="button"
               onClick={() => setShowForgotPassword(true)}
-              className="text-sm text-cyan-400 hover:underline"
+              className="text-xs font-medium hover:underline"
+              style={{ color: 'var(--accent)' }}
             >
               Forgot password?
             </button>
           )}
 
           {error && (
-            <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/30">
-              <p className="text-sm text-red-300">{error}</p>
+            <div className="p-3 rounded-xl text-xs" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: 'var(--danger)' }}>
+              {error}
             </div>
           )}
 
-          <div className="flex gap-3">
+          <div className="flex gap-2.5 pt-1">
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-medium disabled:opacity-50"
+              className="flex-1 py-2.5 rounded-xl text-sm font-medium disabled:opacity-50 transition-all"
+              style={{ background: 'var(--accent)', color: 'var(--accent-on, #fff)' }}
             >
               {loading ? 'Processing...' : mode === 'login' ? 'Login' : 'Create Account'}
             </button>
@@ -462,20 +533,21 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="px-6 py-3 rounded-lg border border-white/10 text-white/70 hover:text-white hover:border-white/30"
+              className="px-5 py-2.5 rounded-xl text-sm font-medium transition-colors"
+              style={{ border: '1px solid var(--border-subtle)', color: 'var(--text-primary)' }}
             >
               Cancel
             </button>
           </div>
         </form>
 
-        <p className="text-center text-sm text-slate-400 mt-6">
+        <p className="text-center text-xs mt-5" style={{ color: 'var(--text-muted)' }}>
           {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}{' '}
-          <button onClick={onSwitchMode} className="text-cyan-400 hover:underline font-medium">
+          <button onClick={onSwitchMode} className="font-medium hover:underline" style={{ color: 'var(--accent)' }}>
             {mode === 'login' ? 'Sign up' : 'Login'}
           </button>
         </p>
       </div>
-    </div>
+    </ModalShell>
   );
 }

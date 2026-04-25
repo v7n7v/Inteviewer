@@ -270,7 +270,7 @@ export default function OnboardingModal({ onComplete, onClose, userName }: Onboa
         </div>
 
         {/* Content */}
-        <div className="px-6 pb-6 min-h-[340px] relative overflow-hidden">
+        <div className="px-6 pb-6 max-h-[60vh] overflow-y-auto relative">
           <AnimatePresence mode="wait" custom={direction}>
             {/* ── STEP 1: Resume Upload ── */}
             {step === 1 && (
@@ -382,12 +382,7 @@ export default function OnboardingModal({ onComplete, onClose, userName }: Onboa
                   {resumeText && (
                     <button
                       onClick={goNext}
-                      className="px-5 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2"
-                      style={{
-                        background: 'var(--accent)',
-                        color: 'var(--accent-on, #fff)',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                      }}
+                      className="px-5 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 bg-blue-600 text-white shadow-md hover:bg-blue-700"
                     >
                       Continue
                       <span className="material-symbols-rounded text-sm">arrow_forward</span>
@@ -515,20 +510,19 @@ export default function OnboardingModal({ onComplete, onClose, userName }: Onboa
                   }}
                 />
 
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center mt-2">
                   <button onClick={goBack} className="text-sm font-medium transition-colors hover:underline" style={{ color: 'var(--text-secondary)' }}>
                     ← Back
                   </button>
                   <button
                     onClick={goNext}
                     disabled={careerFields.length === 0}
-                    className="px-5 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2"
-                    style={{
-                      background: careerFields.length > 0 ? 'var(--accent)' : 'var(--border-subtle)',
-                      color: careerFields.length > 0 ? 'var(--accent-on, #fff)' : 'var(--text-muted)',
-                      boxShadow: careerFields.length > 0 ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
-                      opacity: careerFields.length > 0 ? 1 : 0.4,
-                    }}
+                    className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
+                      careerFields.length > 0
+                        ? 'bg-blue-600 text-white shadow-md hover:bg-blue-700'
+                        : 'text-[var(--text-muted)] opacity-40'
+                    }`}
+                    style={careerFields.length === 0 ? { background: 'var(--border-subtle)' } : undefined}
                   >
                     Continue
                     <span className="material-symbols-rounded text-sm">arrow_forward</span>
@@ -633,12 +627,7 @@ export default function OnboardingModal({ onComplete, onClose, userName }: Onboa
                   <button
                     onClick={handleComplete}
                     disabled={loading}
-                    className="px-6 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 disabled:opacity-70"
-                    style={{
-                      background: 'var(--accent)',
-                      color: 'var(--accent-on, #fff)',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                    }}
+                    className="px-6 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 disabled:opacity-70 bg-blue-600 text-white shadow-md hover:bg-blue-700"
                   >
                     {loading ? (
                       <>
