@@ -188,12 +188,12 @@ export default function NetworkPage() {
       {/* Search + Filter */}
       <div className="flex gap-3 mb-4">
         <div className="flex-1 relative">
-          <span className="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] text-lg">search</span>
+          <span className="material-symbols-rounded absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] text-[18px] pointer-events-none">search</span>
           <input
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="Search by name or company..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:border-violet-500/50"
+            className="w-full pl-11 pr-4 py-2.5 rounded-xl text-sm bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:border-violet-500/50"
           />
         </div>
         <select

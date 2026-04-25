@@ -1146,7 +1146,7 @@ function ApplicationCard({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
-            className={`relative group rounded-2xl glass-card hover:border-cyan-500/30 transition-all ${showQuickStatus ? 'z-50' : 'z-0'}`}
+            className={`relative group rounded-2xl glass-card hover:border-cyan-500/30 transition-all outline-none focus:outline-none ${showQuickStatus ? 'z-50' : 'z-0'}`}
         >
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-cyan-500/5 to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
 
@@ -1158,8 +1158,8 @@ function ApplicationCard({
                             {app.company_name[0].toUpperCase()}
                         </div>
                         <div>
-                            <h3 className="font-bold text-white text-lg hover:text-cyan-400 transition-colors">{app.company_name}</h3>
-                            {app.job_title && <p className="text-sm text-silver">{app.job_title}</p>}
+                            <h3 className="font-bold text-[var(--text-primary)] text-lg hover:text-cyan-400 transition-colors">{app.company_name}</h3>
+                            {app.job_title && <p className="text-sm text-[var(--text-secondary)]">{app.job_title}</p>}
                         </div>
                     </div>
                     <button
@@ -1175,7 +1175,7 @@ function ApplicationCard({
                     {app.talent_density_score && (
                         <div>
                             <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs text-silver">Match Score</span>
+                                <span className="text-xs text-[var(--text-secondary)]">Match Score</span>
                                 <span className={`text-sm font-bold ${app.talent_density_score >= 80 ? 'text-green-400' : app.talent_density_score >= 60 ? 'text-cyan-400' : 'text-yellow-400'}`}>
                                     {app.talent_density_score}%
                                 </span>
@@ -1194,7 +1194,7 @@ function ApplicationCard({
                     {skillProgress !== null && typeof skillProgress === 'number' && (
                         <div>
                             <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs text-silver">Skill Bridge</span>
+                                <span className="text-xs text-[var(--text-secondary)]">Skill Bridge</span>
                                 <span className={`text-sm font-bold ${skillProgress >= 100 ? 'text-indigo-400' : 'text-cyan-400'}`}>
                                     {skillProgress}%
                                 </span>
@@ -1213,7 +1213,7 @@ function ApplicationCard({
 
                 {/* Quality Score */}
                 <div className="mb-4 flex items-center gap-2">
-                    <span className="text-xs text-silver">Quality</span>
+                    <span className="text-xs text-[var(--text-secondary)]">Quality</span>
                     {(() => {
                         let score = 0;
                         if (app.resume_version_id) score++;
@@ -1261,7 +1261,7 @@ function ApplicationCard({
                                             onStatusUpdate(app, key as JobApplication['status']);
                                             setShowQuickStatus(false);
                                         }}
-                                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition-colors ${app.status === key ? 'bg-white/10' : 'hover:bg-white/5'
+                                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition-colors ${app.status === key ? 'bg-[var(--bg-hover)]' : 'hover:bg-[var(--bg-hover)]'
                                             } ${config.text}`}
                                     >
                                         {config.icon} {config.label}
@@ -1275,12 +1275,12 @@ function ApplicationCard({
                 {/* Notes Preview */}
                 {app.notes && (
                     <div className="mb-4 p-3 rounded-lg glass-card">
-                        <p className="text-xs text-silver line-clamp-2">{app.notes}</p>
+                        <p className="text-xs text-[var(--text-secondary)] line-clamp-2">{app.notes}</p>
                     </div>
                 )}
 
                 {/* Dates */}
-                <div className="flex items-center gap-4 text-xs text-silver">
+                <div className="flex items-center gap-4 text-xs text-[var(--text-tertiary)]">
                     <span><span className="material-symbols-rounded text-[14px] mr-1 align-middle">calendar_month</span> {new Date(app.created_at).toLocaleDateString()}</span>
                     {app.applied_at && <span><span className="material-symbols-rounded text-[14px] mr-1 align-middle">rocket_launch</span> Applied {new Date(app.applied_at).toLocaleDateString()}</span>}
                 </div>
@@ -1288,7 +1288,7 @@ function ApplicationCard({
                 {/* View Details */}
                 <button
                     onClick={() => onOpenDetail(app)}
-                    className="w-full mt-4 px-4 py-2 rounded-xl bg-[var(--theme-bg-elevated)] text-silver text-sm font-medium hover:bg-white/10 transition-colors"
+                    className="w-full mt-4 px-4 py-2 rounded-xl bg-[var(--bg-elevated)] text-[var(--text-secondary)] text-sm font-medium hover:bg-[var(--bg-hover)] transition-colors"
                 >
                     View Details →
                 </button>

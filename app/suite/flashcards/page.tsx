@@ -625,7 +625,6 @@ export default function GauntletPage() {
                             ← New Session
                         </motion.button>
                     )}
-                    <PageHelp toolId="flashcards" />
 
                     {/* Debrief Journal Tab */}
                     {viewMode === 'setup' && (
@@ -646,6 +645,7 @@ export default function GauntletPage() {
                         Debrief Journal
                       </motion.button>
                     )}
+                    <PageHelp toolId="flashcards" />
                 </div>
             </motion.div>
 
