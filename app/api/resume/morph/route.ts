@@ -45,7 +45,7 @@ CORE RULES:
 1. SUMMARY: Weave in ${morphPercentage || 50}% of JD keywords naturally while keeping ${keepOriginal}% of the candidate's original voice and personality
 2. EXPERIENCE: Keep every original job. Enhance ${morphPercentage || 50}% of bullet points with JD-relevant terminology
 3. SKILLS: Add JD-required skills. Retain ${keepOriginal}% of original skills
-4. Never invent experience or degrees not implied by the original
+4. STRICT GUARDRAIL: NEVER invent certifications, licenses, degrees, or experience not in the original resume. Only reframe what already exists. If the JD asks for a cert the candidate doesn't have, DO NOT add it — leave it out entirely.
 
 ANTI-AI-DETECTION — WRITE LIKE A HUMAN:
 5. Vary sentence length dramatically. Mix short punchy fragments (3-5 words) with longer descriptive ones. Real humans don't write uniform sentences.

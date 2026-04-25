@@ -242,7 +242,7 @@ function ThemeMenu({ isCollapsed }: { isCollapsed: boolean }) {
     <div ref={ref} className="relative group/theme">
       <button
         onClick={() => setOpen(!open)}
-        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors duration-100 text-[var(--sidebar-text)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] ${isCollapsed ? 'justify-center' : ''}`}
+        className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-sm transition-colors duration-100 text-[var(--sidebar-text)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] ${isCollapsed ? 'justify-center' : ''}`}
         title={isCollapsed ? 'Theme' : ''}
       >
         <span
@@ -424,7 +424,7 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
         <div className="px-2 pt-2">
           <button
             onClick={() => handleNav('/suite')}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors duration-100 ${
+            className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-sm transition-colors duration-100 ${
               pathname === '/suite'
                 ? 'bg-[var(--bg-hover)] text-[var(--text-primary)]'
                 : 'text-[var(--sidebar-text)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'
@@ -457,7 +457,7 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
                 {group.label && !isCollapsed && (
                   <button
                     onClick={() => toggleGroup(group.label)}
-                    className="w-full flex items-center gap-2 px-2 pt-3 pb-1.5 group/header hover:opacity-100 transition-opacity"
+                    className="w-full flex items-center gap-2 px-2 pt-2.5 pb-1 group/header hover:opacity-100 transition-opacity"
                   >
                     <span
                       className="material-symbols-rounded text-[14px] text-[var(--text-muted)] transition-transform duration-200"
@@ -479,14 +479,14 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
 
                 {/* Items — collapsible */}
                 {(isExpanded || isCollapsed) && (
-                  <div className="space-y-0.5">
+                  <div>
                     {group.items.map((item) => {
                       const active = isActive(item.path);
                       return (
                         <button
                           key={item.id}
                           onClick={() => handleNav(item.path)}
-                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors duration-100 text-[var(--sidebar-text)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] ${
+                          className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-sm transition-colors duration-100 text-[var(--sidebar-text)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] ${
                             isCollapsed ? 'justify-center' : ''
                           } ${active ? 'bg-[var(--bg-hover)] text-[var(--text-primary)]' : ''}`}
                           title={isCollapsed ? item.label : item.description}
@@ -530,7 +530,7 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
         </nav>
 
         {/* Bottom section */}
-        <div className="border-t border-[var(--border-subtle)] px-2 py-2 space-y-0.5">
+        <div className="border-t border-[var(--border-subtle)] px-2 py-1.5">
           {/* Usage counter — free users only */}
           {!isPro && !isCollapsed && (
             <UsageCounter compact />
@@ -559,7 +559,7 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
           {user?.email && ['alula2006@gmail.com'].includes(user.email.toLowerCase()) && (
             <button
               onClick={() => handleNav('/suite/admin')}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors duration-100 ${
+              className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-sm transition-colors duration-100 ${
                 isActive('/suite/admin') ? 'bg-[var(--bg-hover)] text-[var(--text-primary)]' : 'text-[var(--sidebar-text)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'
               } ${isCollapsed ? 'justify-center' : ''}`}
             >
@@ -571,7 +571,7 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
           {/* Gallery */}
           <button
             onClick={() => handleNav('/suite/gallery')}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors duration-100 text-[var(--sidebar-text)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] ${isCollapsed ? 'justify-center' : ''} ${isActive('/suite/gallery') ? 'bg-[var(--bg-hover)] text-[var(--text-primary)]' : ''}`}
+            className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-sm transition-colors duration-100 text-[var(--sidebar-text)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] ${isCollapsed ? 'justify-center' : ''} ${isActive('/suite/gallery') ? 'bg-[var(--bg-hover)] text-[var(--text-primary)]' : ''}`}
             title={isCollapsed ? 'Gallery' : 'Tools Gallery'}
           >
             <span className="material-symbols-rounded flex-shrink-0 text-[20px]" style={{ color: '#8b5cf6' }}>widgets</span>
@@ -584,7 +584,7 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
           {/* Help */}
           <button
             onClick={() => handleNav('/suite/help')}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors duration-100 text-[var(--sidebar-text)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] ${isCollapsed ? 'justify-center' : ''}`}
+            className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-sm transition-colors duration-100 text-[var(--sidebar-text)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] ${isCollapsed ? 'justify-center' : ''}`}
           >
             <span className="material-symbols-rounded flex-shrink-0 text-[20px]" style={{ color: '#06b6d4' }}>help</span>
             {!isCollapsed && <span>Help</span>}
@@ -593,7 +593,7 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
           {/* Settings */}
           <button
             onClick={() => handleNav('/suite/settings')}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors duration-100 text-[var(--sidebar-text)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] ${isCollapsed ? 'justify-center' : ''}`}
+            className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-sm transition-colors duration-100 text-[var(--sidebar-text)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] ${isCollapsed ? 'justify-center' : ''}`}
           >
             <span className="material-symbols-rounded flex-shrink-0 text-[20px]" style={{ color: '#94a3b8' }}>settings</span>
             {!isCollapsed && <span>Settings</span>}

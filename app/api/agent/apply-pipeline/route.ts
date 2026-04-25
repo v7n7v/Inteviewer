@@ -73,7 +73,7 @@ RULES:
 1. Rewrite summary to align with the JD (50% JD keywords / 50% original voice)
 2. Reorder and enhance experience bullets for relevance
 3. Add missing JD-required skills
-4. Never invent fake experience
+4. STRICT GUARDRAIL: NEVER invent certifications, licenses, degrees, or experience. Only reframe what exists.
 5. Use natural verbs: "built", "led", "shipped", "grew", "cut"
 6. BANNED: "leveraged", "spearheaded", "synergized", "facilitated"
 7. Quantify with specific numbers
