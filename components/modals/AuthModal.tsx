@@ -270,8 +270,7 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
             <button
               type="submit"
               disabled={loading || totpCode.length < 6}
-              className="w-full py-3 rounded-xl text-sm font-medium transition-all disabled:opacity-50"
-              style={{ background: 'var(--accent)', color: 'var(--accent-on, #fff)' }}
+              className="w-full py-3 text-sm transition-all disabled:opacity-50 btn-primary"
             >
               {loading ? 'Verifying...' : 'Verify & Sign In'}
             </button>
@@ -358,8 +357,7 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 rounded-xl text-sm font-medium disabled:opacity-50"
-              style={{ background: 'var(--accent)', color: 'var(--accent-on, #fff)' }}
+              className="w-full py-2.5 text-sm disabled:opacity-50 btn-primary"
             >
               {loading ? 'Sending...' : 'Send Reset Link'}
             </button>
@@ -524,8 +522,7 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-2.5 rounded-xl text-sm font-medium disabled:opacity-50 transition-all"
-              style={{ background: 'var(--accent)', color: 'var(--accent-on, #fff)' }}
+              className="flex-1 py-2.5 text-sm disabled:opacity-50 transition-all btn-primary"
             >
               {loading ? 'Processing...' : mode === 'login' ? 'Login' : 'Create Account'}
             </button>

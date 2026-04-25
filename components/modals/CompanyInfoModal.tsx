@@ -195,8 +195,7 @@ export default function CompanyInfoModal({ isOpen, onSubmit, onCancel, jobDescri
                                     <button
                                         onClick={handleSubmit}
                                         disabled={!companyName.trim()}
-                                        className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all disabled:opacity-40"
-                                        style={{ background: 'var(--accent)', color: 'var(--accent-on, #fff)' }}
+                                        className="flex-1 px-4 py-2.5 text-sm transition-all disabled:opacity-40 btn-primary"
                                     >
                                         Continue
                                     </button>

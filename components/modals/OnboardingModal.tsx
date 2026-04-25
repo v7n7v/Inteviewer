@@ -382,7 +382,7 @@ export default function OnboardingModal({ onComplete, onClose, userName }: Onboa
                   {resumeText && (
                     <button
                       onClick={goNext}
-                      className="px-5 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 bg-blue-600 text-white shadow-md hover:bg-blue-700"
+                      className="px-5 py-2.5 text-sm transition-all flex items-center gap-2 btn-primary"
                     >
                       Continue
                       <span className="material-symbols-rounded text-sm">arrow_forward</span>
@@ -519,7 +519,7 @@ export default function OnboardingModal({ onComplete, onClose, userName }: Onboa
                     disabled={careerFields.length === 0}
                     className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
                       careerFields.length > 0
-                        ? 'bg-blue-600 text-white shadow-md hover:bg-blue-700'
+                        ? 'btn-primary shadow-md'
                         : 'text-[var(--text-muted)] opacity-40'
                     }`}
                     style={careerFields.length === 0 ? { background: 'var(--border-subtle)' } : undefined}
@@ -627,7 +627,7 @@ export default function OnboardingModal({ onComplete, onClose, userName }: Onboa
                   <button
                     onClick={handleComplete}
                     disabled={loading}
-                    className="px-6 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 disabled:opacity-70 bg-blue-600 text-white shadow-md hover:bg-blue-700"
+                    className="px-6 py-2.5 text-sm transition-all flex items-center gap-2 disabled:opacity-70 btn-primary"
                   >
                     {loading ? (
                       <>

@@ -114,6 +114,39 @@ body {
 }
 
 /* ============================================
+   PRIMARY ACTION BUTTONS
+   Uses !important to bypass global color-remap
+   rules (.text-white → var(--text-primary), etc.)
+   ============================================ */
+.btn-primary {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+  border-radius: 12px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+.btn-primary:hover {
+  background-color: #1d4ed8 !important;
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background-color: transparent !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+.btn-secondary:hover {
+  background-color: var(--bg-hover) !important;
+}
+
+/* ============================================
    FLAT CARD SYSTEM (1px border, no fill)
    ============================================ */
 .glass-card,
