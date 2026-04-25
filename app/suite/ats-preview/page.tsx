@@ -7,7 +7,8 @@ import { useStore } from '@/lib/store';
 import { authFetch } from '@/lib/auth-fetch';
 import { showToast } from '@/components/Toast';
 import PageHelp from '@/components/PageHelp';
-import { getResumeVersions, type ResumeVersion } from '@/lib/database-suite';
+import { type ResumeVersion } from '@/lib/database-suite';
+import ResumeLibraryPicker from '@/components/ResumeLibraryPicker';
 
 // ── Types ──
 interface ResumeData {
@@ -232,32 +233,22 @@ export function ATSPreviewContent() {
   const [showRawView, setShowRawView] = useState(false);
 
   // Saved Resumes integration
-  const [savedResumes, setSavedResumes] = useState<ResumeVersion[]>([]);
+  const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null);
+  const [selectedResumeName, setSelectedResumeName] = useState('');
 
-  useEffect(() => {
-    const loadSavedResumes = async () => {
-      const res = await getResumeVersions();
-      if (res.success && res.data) setSavedResumes(res.data);
-    };
-    loadSavedResumes();
-  }, []);
-
-  const handleSelectSavedResume = (resumeId: string) => {
-    if (!resumeId) return;
-    const rv = savedResumes.find(r => r.id === resumeId);
-    if (rv && rv.content) {
-      const c = rv.content as any;
-      setResume({
-        name: c.name || '', title: c.title || '', email: c.email || '', phone: c.phone || '', location: c.location || '',
-        linkedin: c.linkedin, website: c.website, summary: c.summary || '',
-        experience: (c.experience || []).map((e: any) => ({ company: e.company || '', role: e.role || e.title || '', duration: e.duration || e.date || '', achievements: e.achievements || (e.description ? [e.description] : []) })),
-        education: (c.education || []).map((e: any) => ({ degree: e.degree || '', institution: e.school || e.institution || '', year: e.date || e.year || '' })),
-        skills: Array.isArray(c.skills) ? (typeof c.skills[0] === 'string' ? [{ category: 'Skills', items: c.skills }] : c.skills) : [],
-        certifications: c.certifications || [],
-      });
-      setResult(null);
-      showToast(`Loaded: ${rv.version_name || c.name || 'Resume'}`, 'check_circle');
-    }
+  const handleSelectResume = (rv: ResumeVersion) => {
+    const c = rv.content as any;
+    setResume({
+      name: c.name || '', title: c.title || '', email: c.email || '', phone: c.phone || '', location: c.location || '',
+      linkedin: c.linkedin, website: c.website, summary: c.summary || '',
+      experience: (c.experience || []).map((e: any) => ({ company: e.company || '', role: e.role || e.title || '', duration: e.duration || e.date || '', achievements: e.achievements || (e.description ? [e.description] : []) })),
+      education: (c.education || []).map((e: any) => ({ degree: e.degree || '', institution: e.school || e.institution || '', year: e.date || e.year || '' })),
+      skills: Array.isArray(c.skills) ? (typeof c.skills[0] === 'string' ? [{ category: 'Skills', items: c.skills }] : c.skills) : [],
+      certifications: c.certifications || [],
+    });
+    setResult(null);
+    setSelectedResumeId(rv.id);
+    setSelectedResumeName(rv.version_name);
   };
 
   // Load latest resume from vault
@@ -362,17 +353,11 @@ export function ATSPreviewContent() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            {savedResumes.length > 0 && (
-              <select
-                onChange={(e) => handleSelectSavedResume(e.target.value)}
-                className={`px-3 py-1.5 rounded-lg text-xs outline-none max-w-[200px] ${isLight ? 'bg-white border border-slate-200 text-slate-700' : 'bg-[#111] border border-white/10 text-silver'}`}
-              >
-                <option value="">-- Load Saved Resume --</option>
-                {savedResumes.map(r => (
-                  <option key={r.id} value={r.id}>{r.version_name || (r.content as any)?.name}</option>
-                ))}
-              </select>
-            )}
+            <ResumeLibraryPicker
+              onSelect={handleSelectResume}
+              selectedId={selectedResumeId}
+              selectedName={selectedResumeName}
+            />
             <PageHelp toolId="ats-preview" />
           </div>
         </div>

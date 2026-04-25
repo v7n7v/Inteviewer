@@ -283,7 +283,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { messages, personality = 'coach', conversationId: incomingConvId } = body;
+  const { messages, personality = 'coach', conversationId: incomingConvId, resumeVersionId } = body;
 
   if (!messages || !Array.isArray(messages) || messages.length === 0) {
     return new Response(JSON.stringify({ error: 'Messages required' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
@@ -315,7 +315,22 @@ ${profile.salary_range ? `- Salary Range: $${profile.salary_range.min}k – $${p
 Address the user by their first name ("${(profile.full_name || '').split(' ')[0] || 'there'}"). Tailor all advice to their career field, seniority level, and goals. You already know their background — don't ask basic questions that are answered above.
 ` : '';
 
-  const systemPrompt = `${personalitySystem}\n${personalizationBlock}\n${BASE_SYSTEM}`;
+  // Pre-load selected resume if provided
+  let activeResumeBlock = '';
+  if (resumeVersionId) {
+    try {
+      const rvSnap = await adminDb.collection('users').doc(uid).collection('resume_versions').doc(resumeVersionId).get();
+      if (rvSnap.exists) {
+        const rvData = rvSnap.data()!;
+        const name = rvData.version_name || 'Selected Resume';
+        const content = rvData.content;
+        const summary = content ? `Name: ${content.name || ''}, Title: ${content.title || ''}, Skills: ${(content.skills || []).join(', ')}` : '';
+        activeResumeBlock = `\n## Active Working Resume\nThe user selected "${name}" as their active resume. Use this for all operations unless they specify otherwise.\nResume Summary: ${summary}\n`;
+      }
+    } catch { /* silent */ }
+  }
+
+  const systemPrompt = `${personalitySystem}\n${personalizationBlock}\n${activeResumeBlock}\n${BASE_SYSTEM}`;
 
   // Build context: load persisted history if resuming, otherwise use client messages
   let contextMessages: Array<{ role: string; content: string }>;

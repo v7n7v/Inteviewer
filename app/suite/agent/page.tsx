@@ -10,6 +10,8 @@ import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 import AuthModal from '@/components/modals/AuthModal';
 import PageHelp from '@/components/PageHelp';
+import ResumeLibraryPicker from '@/components/ResumeLibraryPicker';
+import { type ResumeVersion } from '@/lib/database-suite';
 
 type Personality = 'professional' | 'coach' | 'direct';
 type Message = { role: 'user' | 'assistant' | 'system'; content: string };
@@ -63,6 +65,10 @@ export default function SonaAgentPage() {
   const [showPersonalityPicker, setShowPersonalityPicker] = useState(false);
   const [gated, setGated] = useState<{ message: string; used: number; cap: number } | null>(null);
   const [showAuth, setShowAuth] = useState<'login' | 'signup' | null>(null);
+
+  // Active resume context for Sona
+  const [activeResumeId, setActiveResumeId] = useState<string | null>(null);
+  const [activeResumeName, setActiveResumeName] = useState('');
 
   // Conversation persistence
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -286,6 +292,7 @@ export default function SonaAgentPage() {
           messages: updated,
           personality,
           conversationId,
+          ...(activeResumeId ? { resumeVersionId: activeResumeId } : {}),
         }),
       });
 
@@ -487,6 +494,12 @@ export default function SonaAgentPage() {
               {pConfig.label}
               <span className="material-symbols-rounded text-[14px] opacity-50">expand_more</span>
             </button>
+            <ResumeLibraryPicker
+              onSelect={(rv: ResumeVersion) => { setActiveResumeId(rv.id); setActiveResumeName(rv.version_name); }}
+              selectedId={activeResumeId}
+              selectedName={activeResumeName}
+              compact
+            />
             <PageHelp toolId="agent" />
           </div>
         </div>

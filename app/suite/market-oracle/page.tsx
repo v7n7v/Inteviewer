@@ -10,7 +10,8 @@ import PageHelp from '@/components/PageHelp';
 import FileUploadDropzone from '@/components/FileUploadDropzone';
 import { calculateFitScore, type RealJob } from '@/lib/job-search-api';
 import { useRouter } from 'next/navigation';
-import { getResumeVersions, type ResumeVersion } from '@/lib/database-suite';
+import { type ResumeVersion } from '@/lib/database-suite';
+import ResumeLibraryPicker from '@/components/ResumeLibraryPicker';
 
 // Types
 interface JobStar {
@@ -132,18 +133,8 @@ export default function MarketOraclePage() {
   const [processingStage, setProcessingStage] = useState<'uploading' | 'extracting' | 'parsing' | null>(null);
 
   // Saved Resumes integration
-  const [savedResumes, setSavedResumes] = useState<ResumeVersion[]>([]);
-  const [isLoadingResumes, setIsLoadingResumes] = useState(true);
-
-  useEffect(() => {
-    const loadSavedResumes = async () => {
-      setIsLoadingResumes(true);
-      const res = await getResumeVersions();
-      if (res.success && res.data) setSavedResumes(res.data);
-      setIsLoadingResumes(false);
-    };
-    loadSavedResumes();
-  }, []);
+  const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null);
+  const [selectedResumeName, setSelectedResumeName] = useState('');
 
   const formatResumeToText = (content: any) => {
     if (!content) return '';
@@ -167,15 +158,13 @@ export default function MarketOraclePage() {
     return parts.join('\n\n');
   };
 
-  const handleSelectSavedResume = (resumeId: string) => {
-    if (!resumeId) return;
-    const resume = savedResumes.find(r => r.id === resumeId);
-    if (resume) {
-      const text = formatResumeToText(resume.content);
-      setResumeText(text);
-      showToast(`Loaded: ${resume.version_name || (resume.content as any)?.name || 'Resume'}`, 'check_circle');
-    }
+  const handleSelectResume = (rv: ResumeVersion) => {
+    const text = formatResumeToText(rv.content);
+    setResumeText(text);
+    setSelectedResumeId(rv.id);
+    setSelectedResumeName(rv.version_name);
   };
+
 
   // Handle resume upload via FileUploadDropzone
   const handleResumeUploaded = (text: string, _fileName: string) => {
@@ -400,17 +389,14 @@ export default function MarketOraclePage() {
               >
                 <h3 className="font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2">
                   <span className="text-xl"><span className="material-symbols-rounded align-middle">description</span></span> Your Resume
-                  {savedResumes.length > 0 && (
-                    <select
-                      onChange={(e) => handleSelectSavedResume(e.target.value)}
-                      className="ml-auto px-3 py-1.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg text-xs text-[var(--text-secondary)] outline-none focus:border-cyan-500/50 max-w-[200px]"
-                    >
-                      <option value="">-- Load Saved Resume --</option>
-                      {savedResumes.map(r => (
-                        <option key={r.id} value={r.id}>{r.version_name || (r.content as any)?.name}</option>
-                      ))}
-                    </select>
-                  )}
+                  <div className="ml-auto">
+                    <ResumeLibraryPicker
+                      onSelect={handleSelectResume}
+                      selectedId={selectedResumeId}
+                      selectedName={selectedResumeName}
+                      compact
+                    />
+                  </div>
                 </h3>
                 {!resumeText ? (
                   <FileUploadDropzone

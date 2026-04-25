@@ -5,8 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/lib/store';
 import { showToast } from '@/components/Toast';
 import PageHelp from '@/components/PageHelp';
-import { getResumeVersions, type ResumeVersion, saveCoverLetter, getCoverLetters, deleteCoverLetter, type CoverLetter } from '@/lib/database-suite';
+import { type ResumeVersion, saveCoverLetter, getCoverLetters, deleteCoverLetter, type CoverLetter } from '@/lib/database-suite';
 import { exportDocument, downloadBlob } from '@/lib/doc-export';
+import ResumeLibraryPicker from '@/components/ResumeLibraryPicker';
 
 function CopyButton({ text, label = 'Copy', className: cn }: { text: string; label?: string; className?: string }) {
   const [copied, setCopied] = useState(false);
@@ -64,10 +65,8 @@ export default function CoverLetterPage() {
   const [hasResumeContext, setHasResumeContext] = useState(false);
 
   // Resume library state
-  const [savedResumes, setSavedResumes] = useState<ResumeVersion[]>([]);
   const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null);
   const [selectedResumeName, setSelectedResumeName] = useState<string>('');
-  const [showResumeLibrary, setShowResumeLibrary] = useState(false);
 
   // Cover letter persistence
   const [savedLetters, setSavedLetters] = useState<CoverLetter[]>([]);
@@ -117,10 +116,9 @@ export default function CoverLetterPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Load saved resumes and cover letters
+  // Load saved cover letters
   useEffect(() => {
     if (!user) return;
-    getResumeVersions().then(r => { if (r.success && r.data) setSavedResumes(r.data); });
     getCoverLetters().then(r => { if (r.success && r.data) setSavedLetters(r.data); });
   }, [user]);
 
@@ -129,7 +127,6 @@ export default function CoverLetterPage() {
     setHasResumeContext(true);
     setSelectedResumeId(rv.id);
     setSelectedResumeName(rv.version_name);
-    showToast(`Loaded: ${rv.version_name}`, 'check_circle');
   };
 
   const handleSaveLetter = async () => {
@@ -245,69 +242,17 @@ export default function CoverLetterPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {hasResumeContext && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                <span className="material-symbols-rounded text-[14px] text-emerald-500">check_circle</span>
-                <span className="text-[11px] font-semibold text-emerald-500 max-w-[120px] truncate">
-                  {selectedResumeName || 'Resume loaded'}
-                </span>
-              </div>
-            )}
-            {savedLetters.length > 0 && (
-              <button onClick={() => setShowSavedLetters(!showSavedLetters)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 transition-colors">
-                <span className="material-symbols-rounded text-[14px] text-rose-500">folder</span>
-                <span className="text-[11px] font-semibold text-rose-500">{savedLetters.length} Saved</span>
-              </button>
-            )}
-            {user && savedResumes.length > 0 && (
-              <button onClick={() => setShowResumeLibrary(!showResumeLibrary)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 transition-colors">
-                <span className="material-symbols-rounded text-[14px] text-blue-500">description</span>
-                <span className="text-[11px] font-semibold text-blue-500">Resumes</span>
-              </button>
-            )}
+            <ResumeLibraryPicker
+              onSelect={selectResume}
+              selectedId={selectedResumeId}
+              selectedName={selectedResumeName}
+            />
             <PageHelp toolId="cover-letter" />
           </div>
         </div>
       </motion.div>
 
-      {/* Resume Library Panel */}
-      <AnimatePresence>
-        {showResumeLibrary && savedResumes.length > 0 && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mb-6 overflow-hidden">
-            <div className="rounded-2xl p-5" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
-                  <span className="material-symbols-rounded text-blue-500 text-lg">description</span>
-                  Your Resumes — Select one to generate a cover letter
-                </h3>
-                <button onClick={() => setShowResumeLibrary(false)} className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)]">
-                  <span className="material-symbols-rounded text-lg">close</span>
-                </button>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                {savedResumes.map(rv => (
-                  <button key={rv.id} onClick={() => selectResume(rv)}
-                    className={`p-3 rounded-xl text-left transition-all border ${
-                      selectedResumeId === rv.id
-                        ? 'border-blue-500/40 bg-blue-500/10'
-                        : 'border-[var(--border-subtle)] hover:border-[var(--text-tertiary)]'
-                    }`}
-                    style={{ background: selectedResumeId === rv.id ? undefined : 'var(--bg-elevated)' }}
-                  >
-                    <p className="text-[12px] font-bold text-[var(--text-primary)] truncate">{rv.version_name}</p>
-                    <p className="text-[10px] text-[var(--text-tertiary)] mt-0.5">
-                      {new Date(rv.created_at).toLocaleDateString()}
-                      {rv.matchScore ? ` • ${rv.matchScore}% match` : ''}
-                    </p>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
 
       {/* Saved Cover Letters Panel */}
       <AnimatePresence>

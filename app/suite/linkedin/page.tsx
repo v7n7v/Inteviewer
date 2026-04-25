@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/lib/store';
 import { showToast } from '@/components/Toast';
 import PageHelp from '@/components/PageHelp';
-import { getResumeVersions, type ResumeVersion } from '@/lib/database-suite';
+import { type ResumeVersion } from '@/lib/database-suite';
+import ResumeLibraryPicker from '@/components/ResumeLibraryPicker';
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -73,26 +74,16 @@ export default function LinkedInOptimizerPage() {
   const [hasResumeContext, setHasResumeContext] = useState(false);
 
   // Saved Resumes integration
-  const [savedResumes, setSavedResumes] = useState<ResumeVersion[]>([]);
+  const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null);
+  const [selectedResumeName, setSelectedResumeName] = useState('');
 
-  useEffect(() => {
-    const loadSavedResumes = async () => {
-      const res = await getResumeVersions();
-      if (res.success && res.data) setSavedResumes(res.data);
-    };
-    loadSavedResumes();
-  }, []);
-
-  const handleSelectSavedResume = (resumeId: string) => {
-    if (!resumeId) return;
-    const rv = savedResumes.find(r => r.id === resumeId);
-    if (rv && rv.content) {
-      setResumeContext(rv.content);
-      setHasResumeContext(true);
-      const c = rv.content as any;
-      if (c.title && !targetRole) setTargetRole(c.title);
-      showToast(`Loaded: ${rv.version_name || c.name || 'Resume'}`, 'check_circle');
-    }
+  const handleSelectResume = (rv: ResumeVersion) => {
+    setResumeContext(rv.content);
+    setHasResumeContext(true);
+    setSelectedResumeId(rv.id);
+    setSelectedResumeName(rv.version_name);
+    const c = rv.content as any;
+    if (c.title && !targetRole) setTargetRole(c.title);
   };
 
   // Auto-populate from Resume Studio draft (sessionStorage)
@@ -160,23 +151,11 @@ export default function LinkedInOptimizerPage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            {hasResumeContext && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                <span className="material-symbols-rounded text-[14px] text-emerald-500">check_circle</span>
-                <span className="text-[11px] font-semibold text-emerald-500">Resume loaded</span>
-              </div>
-            )}
-            {savedResumes.length > 0 && (
-              <select
-                onChange={(e) => handleSelectSavedResume(e.target.value)}
-                className="px-3 py-1.5 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--text-secondary)] outline-none focus:border-blue-500/50 max-w-[200px]"
-              >
-                <option value="">-- Load Saved Resume --</option>
-                {savedResumes.map(r => (
-                  <option key={r.id} value={r.id}>{r.version_name || (r.content as any)?.name}</option>
-                ))}
-              </select>
-            )}
+            <ResumeLibraryPicker
+              onSelect={handleSelectResume}
+              selectedId={selectedResumeId}
+              selectedName={selectedResumeName}
+            />
             <PageHelp toolId="linkedin" />
           </div>
         </div>

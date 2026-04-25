@@ -11,7 +11,8 @@ import { authFetch } from '@/lib/auth-fetch';
 import PageHelp from '@/components/PageHelp';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import FileUploadDropzone from '@/components/FileUploadDropzone';
-import { getResumeVersions, type ResumeVersion } from '@/lib/database-suite';
+import { type ResumeVersion } from '@/lib/database-suite';
+import ResumeLibraryPicker from '@/components/ResumeLibraryPicker';
 import dynamic from 'next/dynamic';
 
 const DebriefJournal = dynamic(() => import('@/app/suite/interview-debrief/page').then(m => ({ default: m.DebriefContent })), {
@@ -117,8 +118,8 @@ export default function GauntletPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Saved Resumes integration
-    const [savedResumes, setSavedResumes] = useState<ResumeVersion[]>([]);
-    const [isLoadingResumes, setIsLoadingResumes] = useState(true);
+    const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null);
+    const [selectedResumeName, setSelectedResumeName] = useState('');
 
     // ── Restore setup state from sessionStorage on mount ──
     useEffect(() => {
@@ -164,21 +165,9 @@ export default function GauntletPage() {
         } catch {}
     }, [jobDescription, resumeText, uploadedFileName, interviewType, drillCategory, drillRole, questionCount, interviewStyle, selectedPersona, viewMode]);
 
-    useEffect(() => {
-        const loadSavedResumes = async () => {
-            setIsLoadingResumes(true);
-            const res = await getResumeVersions();
-            if (res.success && res.data) {
-                setSavedResumes(res.data);
-            }
-            setIsLoadingResumes(false);
-        };
-        loadSavedResumes();
-    }, []);
-
     const formatResumeToText = (content: any) => {
         if (!content) return '';
-        const parts = [];
+        const parts: string[] = [];
         if (content.name) parts.push(content.name);
         if (content.title) parts.push(content.title);
         if (content.summary) parts.push(content.summary);
@@ -186,39 +175,28 @@ export default function GauntletPage() {
         if (content.experience?.length) {
             parts.push('Experience:');
             content.experience.forEach((e: any) => {
-                parts.push(`${e.title} at ${e.company} (${e.date || ''})`);
+                parts.push(`${e.role || e.title} at ${e.company} (${e.duration || e.date || ''})`);
+                if (e.achievements?.length) e.achievements.forEach((a: string) => parts.push(`• ${a}`));
                 if (e.description) parts.push(e.description);
             });
         }
         if (content.education?.length) {
             parts.push('Education:');
-            content.education.forEach((e: any) => {
-                parts.push(`${e.degree} from ${e.school} (${e.date || ''})`);
-            });
+            content.education.forEach((e: any) => parts.push(`${e.degree} from ${e.school} (${e.date || ''})`) );
         }
         if (content.projects?.length) {
             parts.push('Projects:');
-            content.projects.forEach((p: any) => {
-                parts.push(`${p.name}`);
-                if (p.description) parts.push(p.description);
-            });
+            content.projects.forEach((p: any) => { parts.push(p.name); if (p.description) parts.push(p.description); });
         }
         return parts.join('\n\n');
     };
 
-    const handleSelectSavedResume = (resumeId: string) => {
-        if (!resumeId) {
-            setResumeText('');
-            setUploadedFileName('');
-            return;
-        }
-        const resume = savedResumes.find(r => r.id === resumeId);
-        if (resume) {
-            const text = formatResumeToText(resume.content);
-            setResumeText(text);
-            setUploadedFileName(resume.version_name || (resume.content as any)?.name || 'Saved Resume');
-            showToast('Saved resume loaded!', 'description');
-        }
+    const handleSelectResume = (rv: ResumeVersion) => {
+        const text = formatResumeToText(rv.content);
+        setResumeText(text);
+        setUploadedFileName(rv.version_name || (rv.content as any)?.name || 'Saved Resume');
+        setSelectedResumeId(rv.id);
+        setSelectedResumeName(rv.version_name);
     };
 
     // Audio mode state
@@ -771,17 +749,12 @@ export default function GauntletPage() {
                                             <label className="flex items-center gap-2 text-white font-medium">
                                                 Your Resume <span className="text-silver text-xs font-normal">(optional — makes cards more targeted)</span>
                                             </label>
-                                            {savedResumes.length > 0 && (
-                                                <select
-                                                    onChange={(e) => handleSelectSavedResume(e.target.value)}
-                                                    className="px-3 py-1.5 bg-[#111] border border-white/10 rounded-lg text-xs text-silver outline-none focus:border-cyan-500/50 max-w-[200px]"
-                                                >
-                                                    <option value="">-- Load Saved Resume --</option>
-                                                    {savedResumes.map(r => (
-                                                        <option key={r.id} value={r.id}>{r.version_name || (r.content as any)?.name}</option>
-                                                    ))}
-                                                </select>
-                                            )}
+                                            <ResumeLibraryPicker
+                                                onSelect={handleSelectResume}
+                                                selectedId={selectedResumeId}
+                                                selectedName={selectedResumeName}
+                                                compact
+                                            />
                                         </div>
                                         <div className="relative">
                                             <FileUploadDropzone 
@@ -825,17 +798,12 @@ export default function GauntletPage() {
                                             <label className="flex items-center gap-2 text-white font-medium">
                                                 Your Resume <span className="text-silver text-xs font-normal">(optional — enables gap analysis)</span>
                                             </label>
-                                            {savedResumes.length > 0 && (
-                                                <select
-                                                    onChange={(e) => handleSelectSavedResume(e.target.value)}
-                                                    className="px-3 py-1.5 bg-[#111] border border-white/10 rounded-lg text-xs text-silver outline-none focus:border-red-500/50 max-w-[200px]"
-                                                >
-                                                    <option value="">-- Load Saved Resume --</option>
-                                                    {savedResumes.map(r => (
-                                                        <option key={r.id} value={r.id}>{r.version_name || (r.content as any)?.name}</option>
-                                                    ))}
-                                                </select>
-                                            )}
+                                            <ResumeLibraryPicker
+                                                onSelect={handleSelectResume}
+                                                selectedId={selectedResumeId}
+                                                selectedName={selectedResumeName}
+                                                compact
+                                            />
                                         </div>
                                         <div className="relative">
                                             <FileUploadDropzone 
@@ -947,17 +915,12 @@ export default function GauntletPage() {
                                             <label className="block text-white font-medium">
                                                 Your Resume <span className="text-silver text-xs font-normal">(optional — personalizes questions to your background)</span>
                                             </label>
-                                            {savedResumes.length > 0 && (
-                                                <select
-                                                    onChange={(e) => handleSelectSavedResume(e.target.value)}
-                                                    className="px-3 py-1.5 bg-[#111] border border-white/10 rounded-lg text-xs text-silver outline-none focus:border-amber-500/50 max-w-[200px]"
-                                                >
-                                                    <option value="">-- Load Saved Resume --</option>
-                                                    {savedResumes.map(r => (
-                                                        <option key={r.id} value={r.id}>{r.version_name || (r.content as any)?.name}</option>
-                                                    ))}
-                                                </select>
-                                            )}
+                                            <ResumeLibraryPicker
+                                                onSelect={handleSelectResume}
+                                                selectedId={selectedResumeId}
+                                                selectedName={selectedResumeName}
+                                                compact
+                                            />
                                         </div>
                                         <div className="relative">
                                             <FileUploadDropzone 
