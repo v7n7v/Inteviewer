@@ -16,7 +16,9 @@ import type { Resume } from './ai/resume-morpher';
 // ============================================
 
 function getUserId(): string {
-  return auth.currentUser?.uid || 'dev-user';
+  const uid = auth.currentUser?.uid;
+  if (!uid) throw new Error('Not authenticated');
+  return uid;
 }
 
 function genId(prefix: string): string {
