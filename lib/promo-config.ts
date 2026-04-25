@@ -28,7 +28,7 @@ export const promoConfig: PromoConfig = {
   // ═══════════════════════════════════════
   // ✏️  EDIT BELOW TO CHANGE PROMO
   // ═══════════════════════════════════════
-  active: false,
+  active: true,
   code: 'LAUNCH50',
   headline: '🚀 Launch Special — 50% off Pro for 3 months',
   ctaText: 'Claim Offer',
