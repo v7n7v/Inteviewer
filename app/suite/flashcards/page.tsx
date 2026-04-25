@@ -12,6 +12,11 @@ import PageHelp from '@/components/PageHelp';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import FileUploadDropzone from '@/components/FileUploadDropzone';
 import { getResumeVersions, type ResumeVersion } from '@/lib/database-suite';
+import dynamic from 'next/dynamic';
+
+const DebriefJournal = dynamic(() => import('@/app/suite/interview-debrief/page').then(m => ({ default: m.DebriefContent })), {
+  loading: () => <div className="h-64 rounded-xl animate-pulse" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }} />,
+});
 
 // ============================================
 // TYPES
@@ -62,7 +67,7 @@ interface Flashcard {
     difficulty: 'basic' | 'intermediate' | 'advanced';
 }
 
-type ViewMode = 'setup' | 'gauntlet' | 'scorecard' | 'debrief' | 'flashcards';
+type ViewMode = 'setup' | 'gauntlet' | 'scorecard' | 'debrief' | 'flashcards' | 'journal';
 type InterviewType = 'mock-interview' | 'quick-drill' | 'study-cards';
 type DrillCategory = 'behavioral' | 'technical' | 'system-design' | 'leadership';
 type InterviewStyle = 'friendly' | 'tough';
@@ -114,6 +119,50 @@ export default function GauntletPage() {
     // Saved Resumes integration
     const [savedResumes, setSavedResumes] = useState<ResumeVersion[]>([]);
     const [isLoadingResumes, setIsLoadingResumes] = useState(true);
+
+    // ── Restore setup state from sessionStorage on mount ──
+    useEffect(() => {
+        try {
+            const saved = sessionStorage.getItem('tc_interview_setup');
+            if (saved) {
+                const s = JSON.parse(saved);
+                if (s.jobDescription) setJobDescription(s.jobDescription);
+                if (s.resumeText) setResumeText(s.resumeText);
+                if (s.uploadedFileName) setUploadedFileName(s.uploadedFileName);
+                if (s.interviewType) setInterviewType(s.interviewType);
+                if (s.drillCategory) setDrillCategory(s.drillCategory);
+                if (s.drillRole) setDrillRole(s.drillRole);
+                if (s.questionCount) setQuestionCount(s.questionCount);
+                if (s.interviewStyle) setInterviewStyle(s.interviewStyle);
+                if (s.selectedPersona) setSelectedPersona(s.selectedPersona);
+            }
+
+            // Check if morphed resume context was passed from Resume Studio
+            const morphedJD = sessionStorage.getItem('tc_morphed_jd');
+            const morphedResume = sessionStorage.getItem('tc_morphed_resume');
+            if (morphedJD) {
+                setJobDescription(morphedJD);
+                sessionStorage.removeItem('tc_morphed_jd');
+            }
+            if (morphedResume) {
+                setResumeText(morphedResume);
+                setUploadedFileName('Morphed Resume');
+                sessionStorage.removeItem('tc_morphed_resume');
+            }
+        } catch {}
+    }, []);
+
+    // ── Persist setup state to sessionStorage on change ──
+    useEffect(() => {
+        if (viewMode !== 'setup') return; // Only persist while on setup screen
+        try {
+            sessionStorage.setItem('tc_interview_setup', JSON.stringify({
+                jobDescription, resumeText, uploadedFileName,
+                interviewType, drillCategory, drillRole,
+                questionCount, interviewStyle, selectedPersona,
+            }));
+        } catch {}
+    }, [jobDescription, resumeText, uploadedFileName, interviewType, drillCategory, drillRole, questionCount, interviewStyle, selectedPersona, viewMode]);
 
     useEffect(() => {
         const loadSavedResumes = async () => {
@@ -576,6 +625,7 @@ export default function GauntletPage() {
                             {viewMode === 'scorecard' && 'Answer graded. Review your performance.'}
                             {viewMode === 'debrief' && 'Session complete. Here\'s your performance breakdown.'}
                             {viewMode === 'flashcards' && `Study Card ${flashcardIndex + 1} of ${flashcards.length}`}
+                            {viewMode === 'journal' && 'Log and review your real interviews.'}
                         </p>
                     </div>
 
@@ -598,10 +648,39 @@ export default function GauntletPage() {
                         </motion.button>
                     )}
                     <PageHelp toolId="flashcards" />
+
+                    {/* Debrief Journal Tab */}
+                    {viewMode === 'setup' && (
+                      <motion.button
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => setViewMode('journal')}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
+                        style={{
+                          background: 'rgba(139,92,246,0.08)',
+                          border: '1px solid rgba(139,92,246,0.2)',
+                          color: '#8b5cf6',
+                        }}
+                      >
+                        <span className="material-symbols-rounded text-base">rate_review</span>
+                        Debrief Journal
+                      </motion.button>
+                    )}
                 </div>
             </motion.div>
 
             <AnimatePresence mode="wait">
+                {/* ============================================ */}
+                {/* JOURNAL VIEW — Real Interview Debrief Log */}
+                {/* ============================================ */}
+                {viewMode === 'journal' && (
+                    <motion.div key="journal" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+                        <DebriefJournal />
+                    </motion.div>
+                )}
+
                 {/* ============================================ */}
                 {/* SETUP VIEW */}
                 {/* ============================================ */}
@@ -954,16 +1033,13 @@ export default function GauntletPage() {
                                     <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">Voice Mode</label>
                                     <button
                                         onClick={() => setVoiceEnabled(!voiceEnabled)}
-                                        className={`w-full py-2.5 rounded-xl text-sm font-bold transition-all mb-2 flex items-center justify-center gap-2 ${voiceEnabled ? 'bg-cyan-500/10 border border-cyan-500/30 text-cyan-700 dark:text-cyan-400' : 'bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-muted)]'}`}
+                                        className={`w-full py-2.5 rounded-xl text-sm font-bold transition-all mb-1 flex items-center justify-center gap-2 ${voiceEnabled ? 'bg-cyan-500/10 border border-cyan-500/30 text-cyan-700 dark:text-cyan-400' : 'bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-muted)]'}`}
                                     >
                                         <span className="material-symbols-rounded">{voiceEnabled ? 'mic' : 'mic_off'}</span>
                                         {voiceEnabled ? 'Voice ON' : 'Voice OFF'}
                                     </button>
                                     {voiceEnabled && (
-                                        <div className="flex gap-2">
-                                            <button onClick={() => setVoiceGender('female')} className={`flex-1 py-2 rounded-xl text-xs font-medium transition-all flex items-center justify-center gap-1.5 ${voiceGender === 'female' ? 'bg-pink-500/10 border border-pink-500/30 text-pink-600 dark:text-pink-400' : 'bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[var(--text-muted)]'}`}><span className="material-symbols-rounded text-[16px]">woman</span> Female</button>
-                                            <button onClick={() => setVoiceGender('male')} className={`flex-1 py-2 rounded-xl text-xs font-medium transition-all flex items-center justify-center gap-1.5 ${voiceGender === 'male' ? 'bg-indigo-500/10 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400' : 'bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[var(--text-muted)]'}`}><span className="material-symbols-rounded text-[16px]">man</span> Male</button>
-                                        </div>
+                                        <p className="text-[10px] text-[var(--text-muted)] text-center">Voice matches your interviewer persona</p>
                                     )}
                                 </div>
                             </div>

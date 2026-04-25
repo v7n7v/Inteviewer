@@ -3,25 +3,49 @@
 import { useEffect, useState } from 'react';
 import { authHelpers } from '@/lib/firebase';
 import { useStore } from '@/lib/store';
+import { getUserProfile } from '@/lib/database-suite';
 import SuiteSidebar from '@/components/SuiteSidebar';
 import SonaFloatingOrb from '@/components/SonaFloatingOrb';
+import OnboardingModal from '@/components/modals/OnboardingModal';
 
 export default function SuiteLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { setUser } = useStore();
+  const { setUser, setUserProfile } = useStore();
   const [loading, setLoading] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     // Real Firebase auth listener — sets user or null
-    const unsub = authHelpers.onAuthStateChanged((firebaseUser) => {
+    const unsub = authHelpers.onAuthStateChanged(async (firebaseUser) => {
       setUser(firebaseUser);
+
+      if (firebaseUser) {
+        // Load profile + check onboarding status
+        try {
+          const { data } = await getUserProfile();
+          if (data) {
+            setUserProfile(data);
+            if (!data.onboarding_completed) {
+              setShowOnboarding(true);
+            }
+          } else {
+            // No profile doc yet → new user, show onboarding
+            setShowOnboarding(true);
+          }
+        } catch {
+          // Profile fetch failed — don't block the user
+        }
+      } else {
+        setUserProfile(null);
+      }
+
       setLoading(false);
     });
     return () => unsub();
-  }, [setUser]);
+  }, [setUser, setUserProfile]);
 
   if (loading) {
     return (
@@ -39,6 +63,14 @@ export default function SuiteLayout({
         {children}
       </main>
       <SonaFloatingOrb />
+
+      {showOnboarding && (
+        <OnboardingModal
+          userName={useStore.getState().user?.displayName || ''}
+          onComplete={() => setShowOnboarding(false)}
+          onClose={() => setShowOnboarding(false)}
+        />
+      )}
     </div>
   );
 }

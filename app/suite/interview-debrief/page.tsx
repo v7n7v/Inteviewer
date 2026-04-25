@@ -50,7 +50,7 @@ const OUTCOME_CONFIG = {
   ghosted: { label: 'Ghosted', color: '#6b7280', icon: 'visibility_off' },
 };
 
-export default function InterviewDebriefPage() {
+export function DebriefContent() {
   const { theme } = useTheme();
   const isLight = theme === 'light';
   const { user } = useStore();
@@ -702,4 +702,10 @@ export default function InterviewDebriefPage() {
       )}
     </div>
   );
+}
+
+// Redirect standalone route to Interview Sim
+import { redirect } from 'next/navigation';
+export default function InterviewDebriefPage() {
+  redirect('/suite/flashcards');
 }

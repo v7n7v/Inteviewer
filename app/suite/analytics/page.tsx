@@ -26,7 +26,7 @@ const STATUS_COLORS: Record<string, string> = {
   interviewing: '#f59e0b', offer: '#10b981', accepted: '#22c55e', rejected: '#ef4444',
 };
 
-export default function AnalyticsPage() {
+export function AnalyticsContent() {
   const { user } = useStore();
   const router = useRouter();
   const [apps, setApps] = useState<JobApplication[]>([]);
@@ -372,4 +372,10 @@ export default function AnalyticsPage() {
       )}
     </div>
   );
+}
+
+// Redirect standalone route to consolidated Intelligence page
+import { redirect } from 'next/navigation';
+export default function AnalyticsPage() {
+  redirect('/suite/intelligence');
 }

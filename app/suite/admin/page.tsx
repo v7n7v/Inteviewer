@@ -32,6 +32,13 @@ export default function AdminPage() {
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
   const [stats, setStats] = useState({ total: 0, max: 0, pro: 0, free: 0, disabled: 0 });
 
+  // Promo state
+  const [promoActive, setPromoActive] = useState(false);
+  const [promoHeadline, setPromoHeadline] = useState('🚀 Limited Time — 50% off Pro for 3 months!');
+  const [promoCode, setPromoCode] = useState('LAUNCH50');
+  const [promoCta, setPromoCta] = useState('Claim Offer');
+  const [promoLoading, setPromoLoading] = useState(false);
+
   const isAdmin = user?.email && MASTER_EMAILS.includes(user.email.toLowerCase());
 
   const authFetch = useCallback(async (url: string, options?: RequestInit) => {
@@ -75,6 +82,42 @@ export default function AdminPage() {
   useEffect(() => {
     if (isAdmin) loadUsers();
   }, [isAdmin, loadUsers]);
+
+  // Load promo state
+  useEffect(() => {
+    if (!isAdmin) return;
+    authFetch('/api/admin/promo')
+      .then(r => r.json())
+      .then(data => {
+        setPromoActive(data.active || false);
+        if (data.headline) setPromoHeadline(data.headline);
+        if (data.code) setPromoCode(data.code);
+        if (data.ctaText) setPromoCta(data.ctaText);
+      })
+      .catch(() => {});
+  }, [isAdmin, authFetch]);
+
+  const togglePromo = async (newActive: boolean) => {
+    setPromoLoading(true);
+    try {
+      const res = await authFetch('/api/admin/promo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          active: newActive,
+          headline: promoHeadline,
+          code: promoCode,
+          ctaText: promoCta,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      setPromoActive(newActive);
+      showToast(newActive ? 'Promo is LIVE!' : 'Promo disabled', newActive ? 'check_circle' : 'cancel');
+    } catch {
+      showToast('Failed to update promo', 'cancel');
+    }
+    setPromoLoading(false);
+  };
 
   const handleAction = async (uid: string, email: string, action: string) => {
     setActionLoading(`${uid}:${action}`);
@@ -173,6 +216,105 @@ export default function AdminPage() {
               <p className={`text-3xl font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>{stat.value}</p>
             </div>
           ))}
+        </motion.div>
+
+        {/* Promo Control */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.12 }}
+          className="glass-card rounded-2xl p-6 mb-8"
+        >
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                promoActive
+                  ? 'bg-emerald-500/15 border border-emerald-500/20 text-emerald-400'
+                  : isLight ? 'bg-slate-100 text-slate-400' : 'bg-white/5 border border-white/10 text-slate-500'
+              }`}>
+                <span className="material-symbols-rounded text-xl">campaign</span>
+              </div>
+              <div>
+                <h3 className={`text-sm font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                  Promo Popup
+                </h3>
+                <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                  {promoActive ? 'Live on landing page' : 'Currently disabled'}
+                </p>
+              </div>
+            </div>
+
+            {/* Toggle */}
+            <button
+              onClick={() => togglePromo(!promoActive)}
+              disabled={promoLoading}
+              className={`relative w-14 h-7 rounded-full transition-all duration-300 ${
+                promoActive ? 'bg-emerald-500' : isLight ? 'bg-slate-300' : 'bg-white/10'
+              } ${promoLoading ? 'opacity-50' : ''}`}
+            >
+              <div className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all duration-300 ${
+                promoActive ? 'left-[calc(100%-1.625rem)]' : 'left-0.5'
+              }`} />
+            </button>
+          </div>
+
+          {/* Editable fields */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <label className={`text-[10px] font-semibold uppercase tracking-wider mb-1 block ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                Headline
+              </label>
+              <input
+                type="text"
+                value={promoHeadline}
+                onChange={(e) => setPromoHeadline(e.target.value)}
+                className={`w-full px-3 py-2 rounded-lg text-sm border focus:outline-none focus:ring-1 transition-all ${
+                  isLight
+                    ? 'bg-white border-slate-200 text-slate-900 focus:ring-emerald-500/30'
+                    : 'bg-white/5 border-white/10 text-white focus:ring-emerald-500/30'
+                }`}
+              />
+            </div>
+            <div>
+              <label className={`text-[10px] font-semibold uppercase tracking-wider mb-1 block ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                Promo Code
+              </label>
+              <input
+                type="text"
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                className={`w-full px-3 py-2 rounded-lg text-sm font-mono border focus:outline-none focus:ring-1 transition-all ${
+                  isLight
+                    ? 'bg-white border-slate-200 text-slate-900 focus:ring-emerald-500/30'
+                    : 'bg-white/5 border-white/10 text-emerald-400 focus:ring-emerald-500/30'
+                }`}
+              />
+            </div>
+            <div>
+              <label className={`text-[10px] font-semibold uppercase tracking-wider mb-1 block ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                CTA Text
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={promoCta}
+                  onChange={(e) => setPromoCta(e.target.value)}
+                  className={`flex-1 px-3 py-2 rounded-lg text-sm border focus:outline-none focus:ring-1 transition-all ${
+                    isLight
+                      ? 'bg-white border-slate-200 text-slate-900 focus:ring-emerald-500/30'
+                      : 'bg-white/5 border-white/10 text-white focus:ring-emerald-500/30'
+                  }`}
+                />
+                <button
+                  onClick={() => togglePromo(promoActive)}
+                  disabled={promoLoading}
+                  className="px-4 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium hover:bg-emerald-500/20 transition-all disabled:opacity-50"
+                >
+                  {promoLoading ? '...' : 'Save'}
+                </button>
+              </div>
+            </div>
+          </div>
         </motion.div>
 
         {/* Search */}

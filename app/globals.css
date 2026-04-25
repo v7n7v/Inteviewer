@@ -20,8 +20,8 @@
   --border: #444746;
   --border-subtle: #2d2d2f;
   --border-hover: #5f6368;
-  --text-primary: #e3e3e3;
-  --text-secondary: #8e918f;
+  --text-primary: #f1f1f1;
+  --text-secondary: #9ca0a0;
   --text-muted: #5f6368;
   --accent: #a8c7fa;
   --accent-active: #c2e7ff;
@@ -63,8 +63,8 @@
   --border: #dadce0;
   --border-subtle: #e8eaed;
   --border-hover: #bdc1c6;
-  --text-primary: #1f1f1f;
-  --text-secondary: #5f6368;
+  --text-primary: #111111;
+  --text-secondary: #444746;
   --text-muted: #9aa0a6;
   --accent: #1a73e8;
   --accent-active: #1558bc;
@@ -607,8 +607,8 @@ canvas {
   --theme-bg-card: #131314;
   --theme-bg-input: #1e1e1f;
   --theme-bg-hover: #1f1f21;
-  --theme-text: #e3e3e3;
-  --theme-text-secondary: #8e918f;
+  --theme-text: #f1f1f1;
+  --theme-text-secondary: #9ca0a0;
   --theme-text-muted: #5f6368;
   --theme-border: #2d2d2f;
   --theme-border-hover: #444746;
@@ -633,8 +633,8 @@ canvas {
   --theme-bg-card: #ffffff;
   --theme-bg-input: #ffffff;
   --theme-bg-hover: #e8eaed;
-  --theme-text: #1f1f1f;
-  --theme-text-secondary: #5f6368;
+  --theme-text: #111111;
+  --theme-text-secondary: #444746;
   --theme-text-muted: #9aa0a6;
   --theme-border: #e8eaed;
   --theme-border-hover: #dadce0;
@@ -963,6 +963,41 @@ canvas {
   50% { opacity: 0; }
 }
 
+/* Sona thinking shimmer sweep */
+@keyframes sona-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+/* Sona thinking animation elements — override nuclear kills */
+.sona-shimmer-sweep {
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  animation: sona-shimmer 2s ease-in-out infinite !important;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.sona-thinking-container {
+  position: relative !important;
+  overflow: hidden !important;
+  display: flex !important;
+  background: var(--card-bg) !important;
+  border: 1px solid var(--border-subtle) !important;
+}
+
+.sona-accent-line {
+  display: block !important;
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 2px !important;
+  overflow: hidden !important;
+  z-index: 1;
+}
+
 /* ---- Compact padding for all tool containers ---- */
 .p-6 {
   padding: 16px !important;
@@ -1092,10 +1127,10 @@ input[type="range"].slider-enhanced::-webkit-slider-thumb:hover {
   box-shadow: none !important;
 }
 
-/* Kill shimmer/pulse animations */
+/* Kill shimmer/pulse animations (except Sona thinking) */
 [class*="animate-[shimmer"],
-[class*="shimmer"],
-[class*="animate-pulse"] {
+[class*="shimmer"]:not([style*="sona-shimmer"]),
+[class*="animate-pulse"]:not(.sona-thinking *) {
   animation: none !important;
 }
 

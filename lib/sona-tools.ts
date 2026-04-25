@@ -326,6 +326,28 @@ export const SONA_TOOLS = [
       },
     },
   },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'list_resume_versions',
+      description: 'List all of the user\'s saved resume versions, including morphed/tailored versions. Returns version names, target companies, and creation dates so the user can pick which one to use. Trigger phrases: "show my resumes", "which resumes do I have", "my morphed resumes", "resume versions", "list resumes".',
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'use_resume_version',
+      description: 'Load a specific saved resume version by ID to use for subsequent operations (fit analysis, cover letter, interview prep, etc.). Call list_resume_versions first to get available IDs. Use when the user says "use my Google resume", "switch to my Stripe version", or picks a specific resume from the list.',
+      parameters: {
+        type: 'object',
+        properties: {
+          versionId: { type: 'string', description: 'The resume version ID from list_resume_versions' },
+        },
+        required: ['versionId'],
+      },
+    },
+  },
 ];
 
 // ── Knockout Filters ──
@@ -542,12 +564,53 @@ export async function executeTool(
     case 'fetch_resume': {
       try {
         const vaultSnap = await db.collection('users').doc(uid).collection('vault').orderBy('createdAt', 'desc').limit(1).get();
-        if (vaultSnap.empty) return JSON.stringify({ found: false, message: 'No resume found in Vault. The user hasn\'t uploaded a resume yet.' });
+        
+        let resume: any = null;
+        let source = 'vault';
 
-        const data = vaultSnap.docs[0].data();
-        const resume = data.resume || data.parsed || {};
+        if (!vaultSnap.empty) {
+          const data = vaultSnap.docs[0].data();
+          resume = data.resume || data.parsed || {};
+        } else {
+          // Fallback 1: resume_versions collection (client-side saves here)
+          const versionsSnap = await db.collection('users').doc(uid).collection('resume_versions')
+            .orderBy('created_at', 'desc').limit(1).get();
+          if (!versionsSnap.empty) {
+            const data = versionsSnap.docs[0].data();
+            resume = data.content || data;
+            source = 'resume_versions';
+          } else {
+            // Fallback 2: onboarding profile — parsed or raw text
+            const profileSnap = await db.collection('users').doc(uid).collection('profile').doc('main').get();
+            if (profileSnap.exists) {
+              const profileData = profileSnap.data()!;
+              if (profileData.base_resume_parsed) {
+                resume = profileData.base_resume_parsed;
+                source = 'onboarding';
+              } else if (profileData.base_resume_text) {
+                // Raw text fallback — still useful for cover letters and basic context
+                resume = {
+                  name: profileData.full_name || '',
+                  summary: profileData.base_resume_text.substring(0, 500),
+                  rawText: profileData.base_resume_text,
+                  skills: [],
+                  experience: [],
+                  education: [],
+                  _source: 'onboarding_raw_text',
+                };
+                source = 'onboarding_raw';
+              }
+            }
+          }
+        }
+
+        if (!resume) {
+          return JSON.stringify({ found: false, message: 'No resume found in Vault. The user hasn\'t uploaded a resume yet.' });
+        }
+
         return JSON.stringify({
           found: true,
+          source,
           name: resume.name || '',
           title: resume.title || '',
           summary: resume.summary || '',
@@ -556,10 +619,10 @@ export async function executeTool(
             role: e.role || e.title || '',
             company: e.company || '',
             duration: e.duration || '',
-            bullets: (e.bullets || e.highlights || []).slice(0, 3),
+            bullets: (e.bullets || e.highlights || e.achievements || []).slice(0, 3),
           })),
           experienceCount: (resume.experience || []).length,
-          latestRole: resume.experience?.[0]?.role || '',
+          latestRole: resume.experience?.[0]?.role || resume.experience?.[0]?.title || '',
           latestCompany: resume.experience?.[0]?.company || '',
           educationCount: (resume.education || []).length,
         });
@@ -1358,6 +1421,78 @@ Present the tailored resume in a clear format the user can review and download a
         });
       } catch (e: any) {
         return JSON.stringify({ error: e.message });
+      }
+    }
+
+    case 'list_resume_versions': {
+      try {
+        const versionsSnap = await db.collection('users').doc(uid).collection('resume_versions')
+          .orderBy('created_at', 'desc').limit(20).get();
+
+        if (versionsSnap.empty) {
+          return JSON.stringify({ found: false, count: 0, message: 'No saved resume versions. The user can create morphed versions from Resume Studio or by asking Sona to morph their resume for a specific job.' });
+        }
+
+        const versions = versionsSnap.docs.map(d => {
+          const data = d.data();
+          const content = data.content || {};
+          return {
+            id: d.id,
+            name: data.version_name || content.name || 'Untitled',
+            targetCompany: data.target_company || null,
+            targetRole: data.target_role || null,
+            createdAt: data.created_at?.toDate?.()?.toISOString() || '',
+            skillCount: (content.skills || []).flatMap((s: any) => s.items || []).length,
+            experienceCount: (content.experience || []).length,
+          };
+        });
+
+        return JSON.stringify({
+          found: true,
+          count: versions.length,
+          versions,
+          instruction: 'Present these versions to the user in a clean list. If they want to use a specific one, call use_resume_version with the ID. Highlight which ones are tailored for specific companies.',
+        });
+      } catch (e: any) {
+        return JSON.stringify({ found: false, error: e.message });
+      }
+    }
+
+    case 'use_resume_version': {
+      try {
+        const versionId = args.versionId;
+        if (!versionId) return JSON.stringify({ error: 'versionId is required' });
+
+        const versionDoc = await db.collection('users').doc(uid).collection('resume_versions').doc(versionId).get();
+        if (!versionDoc.exists) {
+          return JSON.stringify({ found: false, error: `Resume version "${versionId}" not found. Call list_resume_versions to see available versions.` });
+        }
+
+        const data = versionDoc.data()!;
+        const content = data.content || {};
+
+        return JSON.stringify({
+          found: true,
+          versionId,
+          versionName: data.version_name || content.name || 'Untitled',
+          targetCompany: data.target_company || null,
+          targetRole: data.target_role || null,
+          name: content.name || '',
+          title: content.title || '',
+          summary: content.summary || '',
+          skills: (content.skills || []).flatMap((s: any) => s.items || []).slice(0, 30),
+          experience: (content.experience || []).slice(0, 5).map((e: any) => ({
+            role: e.role || e.title || '',
+            company: e.company || '',
+            duration: e.duration || '',
+            bullets: (e.bullets || e.highlights || e.achievements || []).slice(0, 3),
+          })),
+          experienceCount: (content.experience || []).length,
+          educationCount: (content.education || []).length,
+          instruction: 'This resume version is now loaded. Use it as the context for any subsequent operations the user requests (fit analysis, cover letter, interview prep, etc.). Tell the user which version you\'re now working with.',
+        });
+      } catch (e: any) {
+        return JSON.stringify({ found: false, error: e.message });
       }
     }
 

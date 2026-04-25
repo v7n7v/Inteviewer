@@ -3,125 +3,28 @@ import { guardApiRoute } from '@/lib/api-auth';
 import { checkVoiceAllowed, recordVoiceUsage, estimateTTSSeconds } from '@/lib/usage-tracker';
 import { validateBody } from '@/lib/validate';
 import { VoiceSpeakSchema } from '@/lib/schemas';
-import WebSocket from 'ws';
-import { randomUUID } from 'crypto';
 import { monitor } from '@/lib/monitor';
 
-// ── Voice resolution ──
-// On the international DashScope endpoint, only 'longanyang' is confirmed working.
-// TODO: Test more voices on intl endpoint and expand this mapping per persona.
-const CONFIRMED_VOICE = 'longanyang';
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const OPENROUTER_TTS_URL = 'https://openrouter.ai/api/v1/tts';
+const TTS_MODEL = 'openai/gpt-4o-mini-tts-2025-12-15';
 
-function resolveVoice(_voiceHint?: string): string {
-    return CONFIRMED_VOICE;
-}
+// Voice mapping per interviewer persona
+const PERSONA_VOICE_MAP: Record<string, string> = {
+    'faang-lead': 'onyx',
+    'friendly-hr': 'nova',
+    'startup-cto': 'echo',
+    'vp-engineering': 'fable',
+    'consulting-partner': 'onyx',
+    'behavioral-specialist': 'shimmer',
+    'male': 'onyx',
+    'female': 'nova',
+    'default': 'alloy',
+};
 
-/**
- * Synthesize speech via DashScope CosyVoice WebSocket API.
- * Returns raw MP3 audio bytes.
- */
-function synthesizeViaDashScope(text: string, voice: string): Promise<Buffer> {
-    return new Promise((resolve, reject) => {
-        const apiKey = process.env.DASHSCOPE_API_KEY;
-        if (!apiKey) return reject(new Error('DASHSCOPE_API_KEY not configured'));
-
-        const model = process.env.DASHSCOPE_TTS_MODEL || 'cosyvoice-v3-flash';
-        const wsUrl = process.env.DASHSCOPE_WS_URL || 'wss://dashscope-intl.aliyuncs.com/api-ws/v1/inference';
-
-        const taskId = randomUUID().replace(/-/g, '');
-        const audioChunks: Buffer[] = [];
-        let resolved = false;
-
-        const ws = new WebSocket(wsUrl, {
-            headers: { Authorization: `bearer ${apiKey}` },
-        });
-
-        const timeout = setTimeout(() => {
-            if (!resolved) {
-                resolved = true;
-                ws.close();
-                reject(new Error('DashScope TTS timeout (30s)'));
-            }
-        }, 30_000);
-
-        ws.on('open', () => {
-            // Send the run-task command
-            const startMessage = {
-                header: {
-                    action: 'run-task',
-                    task_id: taskId,
-                    streaming: 'out',
-                },
-                payload: {
-                    model,
-                    task_group: 'audio',
-                    task: 'tts',
-                    function: 'SpeechSynthesizer',
-                    input: { text },
-                    parameters: {
-                        voice,
-                        format: 'mp3',
-                        sample_rate: 22050,
-                        rate: 1.0,
-                        volume: 80,
-                    },
-                },
-            };
-            ws.send(JSON.stringify(startMessage));
-        });
-
-        ws.on('message', (data: WebSocket.Data, isBinary: boolean) => {
-            if (isBinary) {
-                // Binary frame = audio data
-                audioChunks.push(Buffer.from(data as ArrayBuffer));
-            } else {
-                // Text frame = JSON event
-                try {
-                    const msg = JSON.parse(data.toString());
-                    const event = msg?.header?.event;
-
-                    if (event === 'task-failed') {
-                        if (!resolved) {
-                            resolved = true;
-                            clearTimeout(timeout);
-                            ws.close();
-                            reject(new Error(`DashScope TTS failed: ${msg?.header?.error_message || 'unknown'}`));
-                        }
-                    } else if (event === 'task-finished') {
-                        if (!resolved) {
-                            resolved = true;
-                            clearTimeout(timeout);
-                            ws.close();
-                            resolve(Buffer.concat(audioChunks));
-                        }
-                    }
-                    // 'task-started' and 'result-generated' are intermediate — ignore
-                } catch {
-                    // non-JSON text, ignore
-                }
-            }
-        });
-
-        ws.on('error', (err) => {
-            if (!resolved) {
-                resolved = true;
-                clearTimeout(timeout);
-                reject(new Error(`DashScope WebSocket error: ${err.message}`));
-            }
-        });
-
-        ws.on('close', () => {
-            clearTimeout(timeout);
-            if (!resolved) {
-                resolved = true;
-                if (audioChunks.length > 0) {
-                    resolve(Buffer.concat(audioChunks));
-                } else {
-                    reject(new Error('DashScope WebSocket closed without audio'));
-                }
-            }
-        });
-    });
+function resolveVoice(voiceHint?: string): string {
+    if (!voiceHint) return PERSONA_VOICE_MAP['default'];
+    return PERSONA_VOICE_MAP[voiceHint] || PERSONA_VOICE_MAP['default'];
 }
 
 export async function POST(req: NextRequest) {
@@ -132,6 +35,10 @@ export async function POST(req: NextRequest) {
         const validated = await validateBody(req, VoiceSpeakSchema);
         if (!validated.success) return validated.error;
         const { text, voiceId } = validated.data;
+
+        if (!OPENROUTER_API_KEY) {
+            return NextResponse.json({ error: 'TTS not configured. Missing OPENROUTER_API_KEY.' }, { status: 500 });
+        }
 
         // ── Voice minute cap check ──
         const voiceCheck = await checkVoiceAllowed(guard.user.uid, guard.user.tier);
@@ -168,9 +75,33 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // ── Synthesize via DashScope CosyVoice ──
+        // ── Synthesize via OpenRouter TTS ──
         const voice = resolveVoice(voiceId);
-        const audioBuffer = await synthesizeViaDashScope(text, voice);
+
+        const ttsRes = await fetch(OPENROUTER_TTS_URL, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': 'https://talentconsulting.io',
+                'X-Title': 'TalentConsulting Interview Simulator',
+            },
+            body: JSON.stringify({
+                model: TTS_MODEL,
+                input: text,
+                voice,
+                response_format: 'mp3',
+                speed: 1.0,
+            }),
+        });
+
+        if (!ttsRes.ok) {
+            const errText = await ttsRes.text().catch(() => 'Unknown error');
+            console.error('[api/voice/speak] OpenRouter TTS error:', ttsRes.status, errText);
+            throw new Error(`OpenRouter TTS failed: ${ttsRes.status}`);
+        }
+
+        const audioBuffer = Buffer.from(await ttsRes.arrayBuffer());
 
         // ── Record usage AFTER successful synthesis ──
         await recordVoiceUsage(guard.user.uid, estimatedSeconds);

@@ -25,9 +25,9 @@ import { normalizeResume } from '@/lib/resume-normalizer';
 Font.register({
   family: 'Inter',
   fonts: [
-    { src: '/fonts/Inter-Regular.otf', fontWeight: 'normal' },
-    { src: '/fonts/Inter-Bold.otf', fontWeight: 'bold' },
-    { src: '/fonts/Inter-Italic.otf', fontStyle: 'italic' },
+    { src: '/fonts/Inter-Regular.ttf', fontWeight: 'normal' },
+    { src: '/fonts/Inter-Bold.ttf', fontWeight: 'bold' },
+    { src: '/fonts/Inter-Italic.ttf', fontStyle: 'italic' },
   ],
 });
 

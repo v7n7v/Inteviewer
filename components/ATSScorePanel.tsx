@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { authFetch } from '@/lib/auth-fetch';
 import { showToast } from '@/components/Toast';
 import { useAuthGate } from '@/hooks/useAuthGate';
+import { getResumeVersions, type ResumeVersion } from '@/lib/database-suite';
 
 // ── Types ──
 
@@ -189,6 +190,44 @@ export default function ATSScorePanel({ resumeText: initialResumeText, onClose }
   const [isLoading, setIsLoading] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'all' | 'matched' | 'partial' | 'missing'>('all');
 
+  // Saved Resumes integration
+  const [savedResumes, setSavedResumes] = useState<ResumeVersion[]>([]);
+
+  useEffect(() => {
+    const loadSavedResumes = async () => {
+      const res = await getResumeVersions();
+      if (res.success && res.data) setSavedResumes(res.data);
+    };
+    loadSavedResumes();
+  }, []);
+
+  const handleSelectSavedResume = (resumeId: string) => {
+    if (!resumeId) return;
+    const rv = savedResumes.find(r => r.id === resumeId);
+    if (rv && rv.content) {
+      const c = rv.content as any;
+      const parts: string[] = [];
+      if (c.name) parts.push(c.name);
+      if (c.title) parts.push(c.title);
+      if (c.summary) parts.push(c.summary);
+      if (c.skills?.length) parts.push(`Skills: ${(typeof c.skills[0] === 'string' ? c.skills : c.skills.flatMap((s: any) => s.items || [])).join(', ')}`);
+      if (c.experience?.length) {
+        parts.push('Experience:');
+        c.experience.forEach((e: any) => {
+          parts.push(`${e.role || e.title} at ${e.company} (${e.duration || e.date || ''})`);
+          if (e.achievements?.length) e.achievements.forEach((a: string) => parts.push(`• ${a}`));
+          if (e.description) parts.push(e.description);
+        });
+      }
+      if (c.education?.length) {
+        parts.push('Education:');
+        c.education.forEach((e: any) => parts.push(`${e.degree} from ${e.school || e.institution} (${e.date || e.year || ''})`));
+      }
+      setResumeText(parts.join('\n\n'));
+      showToast(`Loaded: ${rv.version_name || c.name || 'Resume'}`, 'check_circle');
+    }
+  };
+
   const filteredKeywords = useMemo(() => {
     if (!result) return [];
     if (activeFilter === 'all') return result.keywords;
@@ -239,10 +278,23 @@ export default function ATSScorePanel({ resumeText: initialResumeText, onClose }
         >
           {/* Resume Input */}
           <div>
-            <label className="flex items-center gap-2 text-xs font-medium text-[var(--text-secondary)] mb-2">
-              <span className="material-symbols-rounded text-sm">description</span>
-              Your Resume Text
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="flex items-center gap-2 text-xs font-medium text-[var(--text-secondary)]">
+                <span className="material-symbols-rounded text-sm">description</span>
+                Your Resume Text
+              </label>
+              {savedResumes.length > 0 && (
+                <select
+                  onChange={(e) => handleSelectSavedResume(e.target.value)}
+                  className="px-3 py-1.5 glass-card rounded-lg text-xs text-[var(--text-secondary)] outline-none focus:ring-1 focus:ring-cyan-500/30 max-w-[200px]"
+                >
+                  <option value="">-- Load Saved Resume --</option>
+                  {savedResumes.map(r => (
+                    <option key={r.id} value={r.id}>{r.version_name || (r.content as any)?.name}</option>
+                  ))}
+                </select>
+              )}
+            </div>
             <textarea
               value={resumeText}
               onChange={e => setResumeText(e.target.value)}

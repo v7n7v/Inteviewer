@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/lib/store';
 import { showToast } from '@/components/Toast';
 import PageHelp from '@/components/PageHelp';
+import { getResumeVersions, type ResumeVersion } from '@/lib/database-suite';
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -70,6 +71,29 @@ export default function LinkedInOptimizerPage() {
   const [activeSection, setActiveSection] = useState<'headline' | 'about'>('headline');
   const [resumeContext, setResumeContext] = useState<any>(null);
   const [hasResumeContext, setHasResumeContext] = useState(false);
+
+  // Saved Resumes integration
+  const [savedResumes, setSavedResumes] = useState<ResumeVersion[]>([]);
+
+  useEffect(() => {
+    const loadSavedResumes = async () => {
+      const res = await getResumeVersions();
+      if (res.success && res.data) setSavedResumes(res.data);
+    };
+    loadSavedResumes();
+  }, []);
+
+  const handleSelectSavedResume = (resumeId: string) => {
+    if (!resumeId) return;
+    const rv = savedResumes.find(r => r.id === resumeId);
+    if (rv && rv.content) {
+      setResumeContext(rv.content);
+      setHasResumeContext(true);
+      const c = rv.content as any;
+      if (c.title && !targetRole) setTargetRole(c.title);
+      showToast(`Loaded: ${rv.version_name || c.name || 'Resume'}`, 'check_circle');
+    }
+  };
 
   // Auto-populate from Resume Studio draft (sessionStorage)
   useEffect(() => {
@@ -141,6 +165,17 @@ export default function LinkedInOptimizerPage() {
                 <span className="material-symbols-rounded text-[14px] text-emerald-500">check_circle</span>
                 <span className="text-[11px] font-semibold text-emerald-500">Resume loaded</span>
               </div>
+            )}
+            {savedResumes.length > 0 && (
+              <select
+                onChange={(e) => handleSelectSavedResume(e.target.value)}
+                className="px-3 py-1.5 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--text-secondary)] outline-none focus:border-blue-500/50 max-w-[200px]"
+              >
+                <option value="">-- Load Saved Resume --</option>
+                {savedResumes.map(r => (
+                  <option key={r.id} value={r.id}>{r.version_name || (r.content as any)?.name}</option>
+                ))}
+              </select>
             )}
             <PageHelp toolId="linkedin" />
           </div>

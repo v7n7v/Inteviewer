@@ -133,6 +133,16 @@ export interface UserProfile {
   linkedin_url?: string;
   skills: string[];
   preferences?: any;
+  // Onboarding fields
+  onboarding_completed?: boolean;
+  career_fields?: string[];
+  seniority_level?: 'junior' | 'mid' | 'senior' | 'lead' | 'director';
+  job_search_status?: 'active' | 'passive' | 'employed_exploring' | 'student';
+  base_resume_text?: string;
+  base_resume_parsed?: any;
+  target_roles?: string[];
+  location_preference?: string;
+  salary_range?: { min: number; max: number };
   created_at: string;
   updated_at: string;
 }
@@ -148,6 +158,52 @@ export async function getUserProfile(): Promise<{
     const snap = await withTimeout(getDoc(docRef));
     if (!snap.exists()) return { success: true, data: undefined };
     return { success: true, data: { id: snap.id, ...snap.data() } as UserProfile };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getOnboardingStatus(): Promise<{
+  completed: boolean;
+  error?: string;
+}> {
+  try {
+    const userId = getUserId();
+    if (userId === 'dev-user') return { completed: false };
+    const docRef = doc(db, 'users', userId, 'profile', 'main');
+    const snap = await withTimeout(getDoc(docRef), 3000);
+    if (!snap.exists()) return { completed: false };
+    return { completed: !!snap.data()?.onboarding_completed };
+  } catch {
+    return { completed: false };
+  }
+}
+
+export async function completeOnboarding(data: {
+  career_fields: string[];
+  seniority_level?: UserProfile['seniority_level'];
+  job_search_status?: UserProfile['job_search_status'];
+  target_roles?: string[];
+  location_preference?: string;
+  salary_range?: { min: number; max: number };
+  base_resume_text?: string;
+  base_resume_parsed?: any;
+}): Promise<{ success: boolean; data?: UserProfile; error?: string }> {
+  try {
+    const userId = getUserId();
+    const docRef = doc(db, 'users', userId, 'profile', 'main');
+    const now = new Date().toISOString();
+    const snap = await withTimeout(getDoc(docRef));
+    const existing = snap.exists() ? snap.data() : {};
+    const profileData = {
+      ...existing,
+      ...data,
+      onboarding_completed: true,
+      updated_at: now,
+      created_at: existing?.created_at || now,
+    };
+    await withTimeout(setDoc(docRef, profileData, { merge: true }));
+    return { success: true, data: { id: userId, ...profileData } as UserProfile };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

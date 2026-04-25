@@ -32,7 +32,7 @@ interface PulseData {
   fitAnalyzedCount?: number;
 }
 
-export default function WeeklyPulsePage() {
+export function PulseContent() {
   const { theme } = useTheme();
   const isLight = theme === 'light';
   const { user } = useStore();
@@ -461,4 +461,8 @@ export default function WeeklyPulsePage() {
       )}
     </div>
   );
+}
+
+export default function WeeklyPulsePage() {
+  return <PulseContent />;
 }

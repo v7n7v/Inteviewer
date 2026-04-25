@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/components/ThemeProvider';
 import { useStore } from '@/lib/store';
@@ -21,12 +21,34 @@ const PERSONALITY_CONFIG: Record<Personality, { label: string; icon: string; des
   direct: { label: 'Direct', icon: 'bolt', desc: 'No-fluff, results only', color: '#f59e0b' },
 };
 
-const SUGGESTED_PROMPTS = [
-  { icon: 'radar', text: 'Find jobs that match my resume and score them', color: '#06b6d4' },
-  { icon: 'work', text: 'Review my application pipeline — any follow-ups needed?', color: '#22c55e' },
-  { icon: 'description', text: 'Prep a tailored resume and cover letter for a role', color: '#f59e0b' },
+const ALL_PROMPTS = [
+  // Resume & Build
+  { icon: 'description', text: 'Show me my saved resume versions', color: '#f59e0b' },
+  { icon: 'swap_horiz', text: 'Use my Google resume and analyze it against this JD', color: '#f59e0b' },
+  { icon: 'edit_note', text: 'Morph my resume for a Data Engineer role at Stripe', color: '#f59e0b' },
+  // Search & Apply
+  { icon: 'radar', text: 'Find remote React jobs and score them against my resume', color: '#06b6d4' },
+  { icon: 'domain', text: 'Scan Airbnb\'s career page for open engineering roles', color: '#06b6d4' },
+  { icon: 'work', text: 'Review my pipeline — any follow-ups needed?', color: '#22c55e' },
+  // Prepare
+  { icon: 'chat', text: 'Prep me for my Amazon interview next week', color: '#3b82f6' },
+  { icon: 'auto_stories', text: 'Save a STAR story about cutting deploy time 80%', color: '#10b981' },
+  { icon: 'quiz', text: 'Help me answer: "Tell me about a time you led a team"', color: '#3b82f6' },
+  // Grow
+  { icon: 'payments', text: 'I got a $130K offer from Meta — help me negotiate', color: '#10b981' },
+  { icon: 'neurology', text: 'How is my job search going? What should I focus on?', color: '#8b5cf6' },
+  // Cover Letter & LinkedIn
+  { icon: 'edit_document', text: 'Write a cover letter using my Stripe-tailored resume', color: '#f43f5e' },
+  { icon: 'badge', text: 'Optimize my LinkedIn headline for ML Engineer roles', color: '#3b82f6' },
   { icon: 'auto_awesome', text: 'Analyze my skill gaps and suggest what to learn', color: '#a855f7' },
 ];
+
+// Show 4 random prompts on each render
+function pickRandomPrompts(n: number) {
+  const shuffled = [...ALL_PROMPTS].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, n);
+}
+
 
 export default function SonaAgentPage() {
   const { theme } = useTheme();
@@ -48,6 +70,24 @@ export default function SonaAgentPage() {
   const [showSidebar, setShowSidebar] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
+  const suggestedPrompts = useMemo(() => pickRandomPrompts(4), []);
+
+  // Typewriter placeholder hints
+  const PLACEHOLDER_HINTS = useMemo(() => [
+    'Show me my saved resume versions...',
+    'Morph my resume for a role at Google...',
+    'Scan Airbnb\'s career page for jobs...',
+    'Prep me for my interview next week...',
+    'Write a cover letter using my Stripe resume...',
+    'How is my job search going?',
+    'I got an offer — help me negotiate...',
+    'Help me answer a behavioral question...',
+    'Find remote ML Engineer roles near me...',
+    'Review my pipeline — any follow-ups?',
+  ], []);
+  const [placeholderText, setPlaceholderText] = useState('');
+
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -58,6 +98,41 @@ export default function SonaAgentPage() {
   const { isPlaying, playAudio, stopAudio } = useAudioPlayer();
   const [visualizerData, setVisualizerData] = useState<number[]>([]);
   const animFrameRef = useRef<number | null>(null);
+
+  // Typewriter placeholder effect (must be after isRecording/isTranscribing declarations)
+  useEffect(() => {
+    if (input || loading || isRecording || isTranscribing || gated) return;
+    let hintIdx = 0;
+    let charIdx = 0;
+    let isDeleting = false;
+    let timeout: ReturnType<typeof setTimeout>;
+
+    const tick = () => {
+      const currentHint = PLACEHOLDER_HINTS[hintIdx];
+      if (!isDeleting) {
+        charIdx++;
+        setPlaceholderText(currentHint.slice(0, charIdx));
+        if (charIdx === currentHint.length) {
+          timeout = setTimeout(() => { isDeleting = true; tick(); }, 2200);
+          return;
+        }
+        timeout = setTimeout(tick, 45 + Math.random() * 30);
+      } else {
+        charIdx--;
+        setPlaceholderText(currentHint.slice(0, charIdx));
+        if (charIdx === 0) {
+          isDeleting = false;
+          hintIdx = (hintIdx + 1) % PLACEHOLDER_HINTS.length;
+          timeout = setTimeout(tick, 400);
+          return;
+        }
+        timeout = setTimeout(tick, 25);
+      }
+    };
+
+    timeout = setTimeout(tick, 800);
+    return () => clearTimeout(timeout);
+  }, [input, loading, isRecording, isTranscribing, gated, PLACEHOLDER_HINTS]);
 
   // STT: Record → Deepgram transcribe → populate input
   const handleVoiceInput = useCallback(async () => {
@@ -165,12 +240,16 @@ export default function SonaAgentPage() {
     setGated(null);
 
     try {
-      // We don't have a dedicated "load messages" endpoint — the history loads server-side
-      // Just set the conversation ID so the next message uses it
-      // Show a brief placeholder to indicate the conversation is active
       const conv = conversations.find(c => c.id === convId);
       if (conv) {
         setPersonality((conv.personality as Personality) || 'coach');
+      }
+
+      // Load actual messages from the API
+      const res = await authFetch(`/api/agent/chat/history?conversationId=${convId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setMessages(data.messages || []);
       }
     } finally {
       setLoadingHistory(false);
@@ -444,7 +523,7 @@ export default function SonaAgentPage() {
 
                 {!conversationId && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto">
-                    {SUGGESTED_PROMPTS.map((p) => (
+                    {suggestedPrompts.map((p) => (
                       <button
                         key={p.text}
                         onClick={() => sendMessage(p.text)}
@@ -510,19 +589,63 @@ export default function SonaAgentPage() {
               ))}
             </AnimatePresence>
 
-            {/* Loading indicator */}
+            {/* Loading indicator — Cinematic Thinking Animation */}
             {loading && (
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
                 className="flex justify-start"
               >
                 <div
-                  className="rounded-2xl px-4 py-3 flex items-center gap-2"
-                  style={{ background: isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.05)' }}
+                  className="rounded-2xl px-5 py-4 sona-thinking-container"
+                  style={{ minWidth: '200px' }}
                 >
-                  <span className="material-symbols-rounded text-[14px] animate-spin" style={{ color: pConfig.color }}>progress_activity</span>
-                  <span className="text-xs text-[var(--text-muted)]">Sona is thinking...</span>
+                  {/* Shimmer sweep */}
+                  <div
+                    className="sona-shimmer-sweep"
+                    style={{
+                      background: `linear-gradient(90deg, transparent, ${pConfig.color}08, ${pConfig.color}12, ${pConfig.color}08, transparent)`,
+                      animation: 'sona-shimmer 2s ease-in-out infinite',
+                    }}
+                  />
+                  {/* Orbiting dots */}
+                  <div className="flex items-center gap-3 relative z-10">
+                    <div className="flex items-center gap-1">
+                      {[0, 1, 2, 3].map(i => (
+                        <motion.div
+                          key={i}
+                          animate={{
+                            scale: [0.4, 1, 0.4],
+                            opacity: [0.3, 1, 0.3],
+                          }}
+                          transition={{
+                            duration: 1.4,
+                            repeat: Infinity,
+                            delay: i * 0.18,
+                            ease: 'easeInOut',
+                          }}
+                          className="w-[6px] h-[6px] rounded-full"
+                          style={{ background: pConfig.color }}
+                        />
+                      ))}
+                    </div>
+                    <motion.span
+                      animate={{ opacity: [0.4, 0.8, 0.4] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                      className="text-xs font-medium text-[var(--text-muted)]"
+                    >
+                      Sona is thinking
+                    </motion.span>
+                  </div>
+                  {/* Bottom accent line */}
+                  <div className="sona-accent-line">
+                    <motion.div
+                      animate={{ x: ['-100%', '100%'] }}
+                      transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+                      className="h-full w-1/2"
+                      style={{ background: `linear-gradient(90deg, transparent, ${pConfig.color}, transparent)` }}
+                    />
+                  </div>
                 </div>
               </motion.div>
             )}
@@ -572,7 +695,7 @@ export default function SonaAgentPage() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={isRecording ? 'Recording...' : isTranscribing ? 'Transcribing...' : gated ? 'Upgrade to continue...' : 'Ask Sona anything about your career...'}
+                placeholder={isRecording ? 'Recording...' : isTranscribing ? 'Transcribing...' : gated ? 'Upgrade to continue...' : placeholderText || 'Ask Sona anything...'}
                 disabled={loading || !!gated}
                 rows={1}
                 className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] py-2 px-2 max-h-32"

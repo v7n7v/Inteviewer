@@ -14,7 +14,7 @@ import { normalizeResume, serializeResumeToText } from '@/lib/resume-normalizer'
 import { ResumeTemplate as ResumeTemplateComponent } from '@/components/resume-templates';
 import { useUserTier } from '@/hooks/use-user-tier';
 import { useTheme } from '@/components/ThemeProvider';
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, Table, TableRow, TableCell, WidthType, ShadingType, TableBorders } from 'docx';
+// docx is imported dynamically in downloadWord() to avoid naming conflicts with @react-pdf/renderer
 import { saveAs } from 'file-saver';
 import { authFetch } from '@/lib/auth-fetch';
 import { analytics } from '@/lib/analytics';
@@ -997,6 +997,9 @@ export default function LiquidResumePage() {
     const resume = getDisplayResume();
     if (!resume) return;
     setIsLoading(true);
+    try {
+    // Dynamic import to avoid naming conflicts with @react-pdf/renderer
+    const { Document: DocxDocument, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, Table, TableRow, TableCell, WidthType, ShadingType, TableBorders } = await import('docx');
     const tc = selectedTemplate.colors;
     const p = tc.primary.replace('#', '');
     const a = tc.accent.replace('#', '');
@@ -1015,7 +1018,7 @@ export default function LiquidResumePage() {
     const expBlock = (exp: any, opts?: { font?: string; bullet?: string; companyFirst?: boolean }) => {
       const f = opts?.font || 'Calibri';
       const bul = opts?.bullet || '•';
-      const rows: Paragraph[] = [];
+      const rows: any[] = [];
       if (opts?.companyFirst) {
         rows.push(new Paragraph({
           spacing: { before: 100, after: 20 },
@@ -1074,7 +1077,6 @@ export default function LiquidResumePage() {
       ...resume.certifications.map(c => new Paragraph({ spacing: { after: 25 }, indent: { left: 360 }, children: [new TextRun({ text: `•  ${c}`, size: 19, color: '333333' })] })),
     ] : [];
 
-    try {
       let children: any[] = [];
       const tmpl = selectedTemplate.id;
 
@@ -1238,7 +1240,7 @@ export default function LiquidResumePage() {
         ];
       } else if (tmpl === 'modern' || tmpl === 'cascade' || tmpl === 'double-column') {
         // ── MODERN / CASCADE / DOUBLE-COLUMN: sidebar table layout ──
-        const sidebarContent: Paragraph[] = [
+        const sidebarContent: any[] = [
           new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: resume.name, bold: true, size: 36, color: 'FFFFFF' })] }),
           new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: resume.title, size: 20, color: 'DDDDDD' })] }),
           // Contact
@@ -1263,7 +1265,7 @@ export default function LiquidResumePage() {
           });
         }
 
-        const mainContent: Paragraph[] = [];
+        const mainContent: any[] = [];
         if (resume.summary) {
           mainContent.push(new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: tmpl === 'cascade' ? 'PROFILE' : 'ABOUT ME', bold: true, size: 22, color: p, allCaps: true })] }));
           mainContent.push(new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: resume.summary, size: 20, color: '555555' })] }));
@@ -1304,7 +1306,7 @@ export default function LiquidResumePage() {
         ];
       }
 
-      const doc = new Document({
+      const doc = new DocxDocument({
         styles: { default: { document: { run: { font: 'Calibri', size: 22, color: '333333' } } } },
         sections: [{ properties: { page: { margin: { top: 720, right: 900, bottom: 720, left: 900 } } }, children }],
       });
@@ -2267,6 +2269,42 @@ export default function LiquidResumePage() {
                             </div>
                             <span className="material-symbols-rounded text-[16px] text-[var(--text-muted)] group-hover:text-[var(--text-primary)] transition-colors">arrow_forward</span>
                           </button>
+                          <button
+                            onClick={() => {
+                              const displayResume = getDisplayResume();
+                              if (displayResume) {
+                                // Format resume to text for interview sim
+                                const parts: string[] = [];
+                                if (displayResume.name) parts.push(displayResume.name);
+                                if (displayResume.title) parts.push(displayResume.title);
+                                if (displayResume.summary) parts.push(displayResume.summary);
+                                if (displayResume.skills?.length) parts.push(`Skills: ${displayResume.skills.join(', ')}`);
+                                if (displayResume.experience?.length) {
+                                  parts.push('Experience:');
+                                  displayResume.experience.forEach((e: any) => {
+                                    parts.push(`${e.role || e.title} at ${e.company} (${e.duration || e.date || ''})`);
+                                    if (e.achievements?.length) e.achievements.forEach((a: string) => parts.push(`• ${a}`));
+                                    if (e.description) parts.push(e.description);
+                                  });
+                                }
+                                sessionStorage.setItem('tc_morphed_resume', parts.join('\n\n'));
+                              }
+                              if (jobDescription) {
+                                sessionStorage.setItem('tc_morphed_jd', jobDescription);
+                              }
+                              router.push('/suite/flashcards');
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] hover:border-[var(--border)] transition-all group text-left"
+                          >
+                            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                              <span className="material-symbols-rounded text-[18px]" style={{ color: '#ef4444' }}>swords</span>
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-[13px] font-semibold text-[var(--text-primary)]">Practice Interview</p>
+                              <p className="text-[11px] text-[var(--text-muted)]">Mock interview with this JD + resume — AI graded</p>
+                            </div>
+                            <span className="material-symbols-rounded text-[16px] text-[var(--text-muted)] group-hover:text-[var(--text-primary)] transition-colors">arrow_forward</span>
+                          </button>
                         </div>
                       </div>
 
@@ -2415,15 +2453,15 @@ export default function LiquidResumePage() {
 
                         {/* Free-tier usage counter */}
                         {!isPro && user && (
-                          <div className="mb-3 px-3 py-2 rounded-lg bg-amber-500/[0.08] border border-amber-500/[0.15] flex items-center gap-2">
-                            <span className="material-symbols-rounded text-[16px] text-amber-400">token</span>
-                            <span className="text-xs text-amber-300">{remaining('morphs')} of {caps?.morphs || 3} free uses left</span>
+                          <div className={`mb-3 px-3 py-2 rounded-lg flex items-center gap-2 ${isLight ? 'bg-amber-50 border border-amber-200' : 'bg-amber-500/[0.08] border border-amber-500/[0.15]'}`}>
+                            <span className={`material-symbols-rounded text-[16px] ${isLight ? 'text-amber-600' : 'text-amber-400'}`}>token</span>
+                            <span className={`text-xs ${isLight ? 'text-slate-700' : 'text-amber-300'}`}>{remaining('morphs')} of {caps?.morphs || 3} free uses left</span>
                           </div>
                         )}
                         {!user && (
-                          <div className="mb-3 px-3 py-2 rounded-lg bg-cyan-500/[0.06] border border-cyan-500/[0.12] flex items-center gap-2">
-                            <span className="material-symbols-rounded text-[16px] text-cyan-400">lock_open</span>
-                            <span className="text-xs text-cyan-300">Sign in to download your resume</span>
+                          <div className={`mb-3 px-3 py-2 rounded-lg flex items-center gap-2 ${isLight ? 'bg-cyan-50 border border-cyan-200' : 'bg-cyan-500/[0.06] border border-cyan-500/[0.12]'}`}>
+                            <span className={`material-symbols-rounded text-[16px] ${isLight ? 'text-cyan-600' : 'text-cyan-400'}`}>lock_open</span>
+                            <span className={`text-xs ${isLight ? 'text-slate-700' : 'text-cyan-300'}`}>Sign in to download your resume</span>
                           </div>
                         )}
 
@@ -2792,15 +2830,15 @@ export default function LiquidResumePage() {
 
                         {/* Free-tier usage counter */}
                         {!isPro && user && (
-                          <div className="mb-1 px-3 py-2 rounded-lg bg-amber-500/[0.08] border border-amber-500/[0.15] flex items-center gap-2">
-                            <span className="material-symbols-rounded text-[16px] text-amber-400">token</span>
-                            <span className="text-xs text-amber-300">{remaining('morphs')} of {caps?.morphs || 3} free uses left</span>
+                          <div className={`mb-1 px-3 py-2 rounded-lg flex items-center gap-2 ${isLight ? 'bg-amber-50 border border-amber-200' : 'bg-amber-500/[0.08] border border-amber-500/[0.15]'}`}>
+                            <span className={`material-symbols-rounded text-[16px] ${isLight ? 'text-amber-600' : 'text-amber-400'}`}>token</span>
+                            <span className={`text-xs ${isLight ? 'text-slate-700' : 'text-amber-300'}`}>{remaining('morphs')} of {caps?.morphs || 3} free uses left</span>
                           </div>
                         )}
                         {!user && (
-                          <div className="mb-1 px-3 py-2 rounded-lg bg-cyan-500/[0.06] border border-cyan-500/[0.12] flex items-center gap-2">
-                            <span className="material-symbols-rounded text-[16px] text-cyan-400">lock_open</span>
-                            <span className="text-xs text-cyan-300">Sign in to download your resume</span>
+                          <div className={`mb-1 px-3 py-2 rounded-lg flex items-center gap-2 ${isLight ? 'bg-cyan-50 border border-cyan-200' : 'bg-cyan-500/[0.06] border border-cyan-500/[0.12]'}`}>
+                            <span className={`material-symbols-rounded text-[16px] ${isLight ? 'text-cyan-600' : 'text-cyan-400'}`}>lock_open</span>
+                            <span className={`text-xs ${isLight ? 'text-slate-700' : 'text-cyan-300'}`}>Sign in to download your resume</span>
                           </div>
                         )}
 

@@ -14,7 +14,8 @@ type Insight = {
   icon: string; priority: 'high' | 'medium' | 'low';
   actionLabel?: string; actionUrl?: string; read: boolean; createdAt: string;
 };
-type PanelTab = 'chat' | 'insights';
+type ConversationMeta = { id: string; title: string; personality: string; lastMessageAt: string };
+type PanelTab = 'chat' | 'history' | 'insights';
 
 const PAGE_HINTS: Record<string, string> = {
   '/suite/job-search': 'I found a job I\'m interested in — can you score it?',
@@ -59,6 +60,11 @@ export default function SonaFloatingOrb() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+
+  // Conversation history
+  const [conversations, setConversations] = useState<ConversationMeta[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
 
   const isMaxTier = tier === 'studio' || tier === 'god';
   const isAgentPage = pathname === '/suite/agent';
@@ -118,6 +124,41 @@ export default function SonaFloatingOrb() {
       }
       setInsightsLoaded(true);
     } catch { /* silent */ }
+  };
+
+  // Fetch conversation history
+  const fetchConversations = async () => {
+    try {
+      const res = await authFetch('/api/agent/chat');
+      if (!res.ok) return;
+      const data = await res.json();
+      setConversations((data.conversations || []).slice(0, 10));
+      setHistoryLoaded(true);
+    } catch { /* silent */ }
+  };
+
+  // Load a specific conversation's messages
+  const loadConversation = async (convId: string) => {
+    setLoadingHistory(true);
+    setConversationId(convId);
+    setActiveTab('chat');
+    try {
+      const res = await authFetch(`/api/agent/chat/history?conversationId=${convId}`);
+      if (!res.ok) throw new Error('Failed to load');
+      const data = await res.json();
+      setMessages(data.messages || []);
+    } catch {
+      setMessages([{ role: 'assistant', content: 'Could not load this conversation. Try the full view.' }]);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const startNewConversation = () => {
+    setConversationId(null);
+    setMessages([]);
+    setActiveTab('chat');
+    setTimeout(() => inputRef.current?.focus(), 100);
   };
 
   const generateInsights = async () => {
@@ -246,20 +287,31 @@ export default function SonaFloatingOrb() {
                 </div>
               </div>
 
-              {/* Tab switcher (only show if Max with insights) */}
-              {isMaxTier && (
-                <div className="flex px-4 gap-1 pb-2">
-                  <button
-                    onClick={() => setActiveTab('chat')}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                    style={{
-                      background: activeTab === 'chat' ? `${accentColor}10` : 'transparent',
-                      color: activeTab === 'chat' ? accentColor : 'var(--text-muted)',
-                    }}
-                  >
-                    <span className="material-symbols-rounded text-[14px]">chat</span>
-                    Chat
-                  </button>
+              {/* Tab switcher */}
+              <div className="flex px-4 gap-1 pb-2">
+                <button
+                  onClick={() => setActiveTab('chat')}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                  style={{
+                    background: activeTab === 'chat' ? `${accentColor}10` : 'transparent',
+                    color: activeTab === 'chat' ? accentColor : 'var(--text-muted)',
+                  }}
+                >
+                  <span className="material-symbols-rounded text-[14px]">chat</span>
+                  Chat
+                </button>
+                <button
+                  onClick={() => { setActiveTab('history'); if (!historyLoaded) fetchConversations(); }}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                  style={{
+                    background: activeTab === 'history' ? `${accentColor}10` : 'transparent',
+                    color: activeTab === 'history' ? accentColor : 'var(--text-muted)',
+                  }}
+                >
+                  <span className="material-symbols-rounded text-[14px]">history</span>
+                  History
+                </button>
+                {isMaxTier && (
                   <button
                     onClick={() => { setActiveTab('insights'); if (!insightsLoaded) fetchInsights(); }}
                     className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium transition-colors relative"
@@ -276,8 +328,8 @@ export default function SonaFloatingOrb() {
                       </span>
                     )}
                   </button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             {/* ═══ CHAT TAB ═══ */}
@@ -322,9 +374,55 @@ export default function SonaFloatingOrb() {
 
                   {loading && (
                     <div className="flex justify-start">
-                      <div className="rounded-2xl px-3 py-2 flex items-center gap-1.5" style={{ background: isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.05)' }}>
-                        <span className="material-symbols-rounded text-[12px] animate-spin" style={{ color: accentColor }}>progress_activity</span>
-                        <span className="text-[10px] text-[var(--text-muted)]">Thinking...</span>
+                      <div
+                        className="rounded-2xl px-3 py-2.5 sona-thinking-container"
+                        style={{ minWidth: '140px' }}
+                      >
+                        {/* Shimmer sweep */}
+                        <div
+                          className="sona-shimmer-sweep"
+                          style={{
+                            background: `linear-gradient(90deg, transparent, ${accentColor}08, ${accentColor}15, ${accentColor}08, transparent)`,
+                            animation: 'sona-shimmer 2s ease-in-out infinite',
+                          }}
+                        />
+                        <div className="flex items-center gap-2 relative z-10">
+                          <div className="flex items-center gap-[3px]">
+                            {[0, 1, 2, 3].map(i => (
+                              <motion.div
+                                key={i}
+                                animate={{
+                                  scale: [0.4, 1, 0.4],
+                                  opacity: [0.25, 1, 0.25],
+                                }}
+                                transition={{
+                                  duration: 1.4,
+                                  repeat: Infinity,
+                                  delay: i * 0.18,
+                                  ease: 'easeInOut',
+                                }}
+                                className="w-[5px] h-[5px] rounded-full"
+                                style={{ background: accentColor }}
+                              />
+                            ))}
+                          </div>
+                          <motion.span
+                            animate={{ opacity: [0.3, 0.7, 0.3] }}
+                            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                            className="text-[10px] text-[var(--text-muted)]"
+                          >
+                            Thinking
+                          </motion.span>
+                        </div>
+                        {/* Bottom accent line */}
+                        <div className="sona-accent-line" style={{ height: '1.5px' }}>
+                          <motion.div
+                            animate={{ x: ['-100%', '100%'] }}
+                            transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+                            className="h-full w-1/2"
+                            style={{ background: `linear-gradient(90deg, transparent, ${accentColor}, transparent)` }}
+                          />
+                        </div>
                       </div>
                     </div>
                   )}
@@ -356,6 +454,63 @@ export default function SonaFloatingOrb() {
                   </div>
                 </div>
               </>
+            )}
+
+            {/* ═══ HISTORY TAB ═══ */}
+            {activeTab === 'history' && (
+              <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
+                <button
+                  onClick={startNewConversation}
+                  className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium transition-colors mb-2"
+                  style={{ background: `${accentColor}08`, border: `1px solid ${accentColor}15`, color: accentColor }}
+                >
+                  <span className="material-symbols-rounded text-[14px]">add</span>
+                  New conversation
+                </button>
+
+                {conversations.length === 0 && historyLoaded && (
+                  <div className="text-center py-6">
+                    <span className="material-symbols-rounded text-[28px] mb-2 block" style={{ color: 'var(--text-muted)' }}>forum</span>
+                    <p className="text-xs text-[var(--text-muted)]">No past conversations yet</p>
+                  </div>
+                )}
+
+                {!historyLoaded && (
+                  <div className="text-center py-6">
+                    <span className="material-symbols-rounded text-[20px] animate-spin block mb-2" style={{ color: 'var(--text-muted)' }}>progress_activity</span>
+                    <p className="text-[10px] text-[var(--text-muted)]">Loading history...</p>
+                  </div>
+                )}
+
+                {conversations.map(conv => (
+                  <button
+                    key={conv.id}
+                    onClick={() => loadConversation(conv.id)}
+                    className={`w-full text-left px-3 py-2.5 rounded-xl transition-colors ${
+                      conv.id === conversationId
+                        ? ''
+                        : 'hover:bg-[var(--bg-hover)]'
+                    }`}
+                    style={conv.id === conversationId ? {
+                      background: `${accentColor}10`,
+                      border: `1px solid ${accentColor}20`,
+                    } : {}}
+                  >
+                    <p className="text-xs text-[var(--text-primary)] truncate font-medium">{conv.title}</p>
+                    <p className="text-[10px] text-[var(--text-muted)] mt-0.5">{formatTimeAgo(conv.lastMessageAt)}</p>
+                  </button>
+                ))}
+
+                {historyLoaded && conversations.length > 0 && (
+                  <button
+                    onClick={fetchConversations}
+                    className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] text-[var(--text-muted)] hover:bg-[var(--bg-hover)] transition-colors mt-2"
+                  >
+                    <span className="material-symbols-rounded text-[14px]">refresh</span>
+                    Refresh
+                  </button>
+                )}
+              </div>
             )}
 
             {/* ═══ INSIGHTS TAB ═══ */}

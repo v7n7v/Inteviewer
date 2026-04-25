@@ -23,9 +23,9 @@ const MODEL = 'qwen/qwen3.6-plus'; // Qwen 3.6 Plus — 1M ctx, $0.325/$1.95 per
 
 // ── Personality Prompts ──
 const PERSONALITIES: Record<string, string> = {
-  professional: `You are Sona, a career intelligence agent at TalentConsulting.io. You are precise, data-driven, and formal. You analyze data before making recommendations. Use concise, professional language. Address the user respectfully.`,
-  coach: `You are Sona, a career coach and AI agent at TalentConsulting.io. You're warm, encouraging, and action-oriented. You motivate while being honest. Use a friendly, conversational tone. Say things like "Let's do this!" and "Great question!"`,
-  direct: `You are Sona, a career agent at TalentConsulting.io. You are blunt, no-fluff, results-only. Give the shortest possible answers with maximum actionable content. Skip pleasantries. Use bullet points.`,
+  professional: `You are Sona, a career intelligence agent at TalentConsulting.io. You are precise, data-driven, and formal. You analyze data before making recommendations. Use concise, professional language. Address the user respectfully. If asked what "Sona" means: it means "gold/golden" in Sanskrit/Hindi, "happy/fortunate" in Irish — and it's also the name of the most important person in the life of the creator of this tool, making it a deeply personal choice.`,
+  coach: `You are Sona, a career coach and AI agent at TalentConsulting.io. You're warm, encouraging, and action-oriented. You motivate while being honest. Use a friendly, conversational tone. Say things like "Let's do this!" and "Great question!" If asked what "Sona" means: it means "gold/golden" in Sanskrit/Hindi, "happy/fortunate" in Irish — and it's also the name of the most important person in the life of the creator of this tool, making it a deeply personal choice.`,
+  direct: `You are Sona, a career agent at TalentConsulting.io. You are blunt, no-fluff, results-only. Give the shortest possible answers with maximum actionable content. Skip pleasantries. Use bullet points. If asked what "Sona" means: "gold" in Sanskrit, "happy" in Irish — and the name of the most important person to the creator of this tool.`,
 };
 
 const BASE_SYSTEM = `
@@ -295,7 +295,27 @@ export async function POST(req: NextRequest) {
 
   // Load personality
   const personalitySystem = PERSONALITIES[personality] || PERSONALITIES.coach;
-  const systemPrompt = `${personalitySystem}\n${BASE_SYSTEM}`;
+
+  // Load user profile for personalization
+  const adminDb = getAdminDb();
+  const profileSnap = await adminDb.collection('users').doc(uid)
+    .collection('profile').doc('main').get();
+  const profile = profileSnap.exists ? profileSnap.data() : null;
+
+  const personalizationBlock = profile?.onboarding_completed ? `
+## User Context (from onboarding profile)
+- Name: ${profile.full_name || 'Unknown'}
+- Career Fields: ${(profile.career_fields || []).join(', ') || 'not set'}
+- Target Roles: ${(profile.target_roles || []).join(', ') || 'not specified'}
+- Seniority: ${profile.seniority_level || 'not specified'}
+- Job Search Status: ${profile.job_search_status || 'unknown'}
+- Location Preference: ${profile.location_preference || 'not set'}
+${profile.salary_range ? `- Salary Range: $${profile.salary_range.min}k – $${profile.salary_range.max}k` : ''}
+
+Address the user by their first name ("${(profile.full_name || '').split(' ')[0] || 'there'}"). Tailor all advice to their career field, seniority level, and goals. You already know their background — don't ask basic questions that are answered above.
+` : '';
+
+  const systemPrompt = `${personalitySystem}\n${personalizationBlock}\n${BASE_SYSTEM}`;
 
   // Build context: load persisted history if resuming, otherwise use client messages
   let contextMessages: Array<{ role: string; content: string }>;

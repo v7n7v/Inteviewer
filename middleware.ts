@@ -43,9 +43,12 @@ const PUBLIC_API_PATHS = [
 const FREEMIUM_API_PATHS = [
   '/api/gauntlet/generate',
   '/api/gauntlet/grade',
+  '/api/gauntlet/parse-resume',
   '/api/chat',
   '/api/ai',
   '/api/jobs/search',
+  '/api/resume/morph',
+  '/api/resume/parse',
   '/api/writing/humanize-free',
   '/api/tools/free',
 ];

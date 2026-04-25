@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Candidate, TabType, AudioSnippet } from '@/types';
 import type { User } from 'firebase/auth';
+import type { UserProfile } from '@/lib/database-suite';
 
 // Per-question evaluation data
 export interface QuestionData {
@@ -18,6 +19,10 @@ interface AppState {
   // User
   user: User | null;
   setUser: (user: User | null) => void;
+
+  // User profile (loaded from Firestore after auth)
+  userProfile: UserProfile | null;
+  setUserProfile: (profile: UserProfile | null) => void;
 
   // 2FA pending state - prevents auto-redirect during OTP verification
   pending2FA: boolean;
@@ -80,6 +85,10 @@ export const useStore = create<AppState>((set, get) => ({
   // User
   user: null,
   setUser: (user) => set({ user }),
+
+  // User profile
+  userProfile: null,
+  setUserProfile: (profile) => set({ userProfile: profile }),
 
   // 2FA pending state
   pending2FA: false,

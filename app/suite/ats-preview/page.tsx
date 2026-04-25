@@ -7,6 +7,7 @@ import { useStore } from '@/lib/store';
 import { authFetch } from '@/lib/auth-fetch';
 import { showToast } from '@/components/Toast';
 import PageHelp from '@/components/PageHelp';
+import { getResumeVersions, type ResumeVersion } from '@/lib/database-suite';
 
 // ── Types ──
 interface ResumeData {
@@ -36,6 +37,7 @@ interface ATSIssue {
   field: string;
   message: string;
   fix: string;
+  autoFixId?: string;
 }
 
 const ATS_SYSTEMS = [
@@ -115,7 +117,7 @@ function simulateATSParse(resume: ResumeData, atsId: string): { fields: ATSField
     const wordCount = resume.summary.split(/\s+/).length;
     if (wordCount > 150) {
       fields.push({ label: 'Summary', value: `${resume.summary.slice(0, 120)}...`, confidence: 'medium', warning: `${wordCount} words — may be truncated by ATS` });
-      issues.push({ severity: 'warning', field: 'Summary', message: `Summary is ${wordCount} words — some ATS truncate at 100`, fix: 'Keep summary under 100 words for safety' });
+      issues.push({ severity: 'warning', field: 'Summary', message: `Summary is ${wordCount} words — some ATS truncate at 100`, fix: 'Keep summary under 100 words for safety', autoFixId: 'trim_summary' });
       score -= 3;
     } else {
       fields.push({ label: 'Summary', value: `${resume.summary.slice(0, 120)}...`, confidence: 'high' });
@@ -135,7 +137,7 @@ function simulateATSParse(resume: ResumeData, atsId: string): { fields: ATSField
 
       // ATS-specific parsing quirks
       if (atsId === 'workday' && exp.achievements?.length > 6) {
-        issues.push({ severity: 'info', field: `Experience ${i + 1}`, message: `${exp.achievements.length} bullets — Workday may truncate after 6`, fix: 'Limit to 4-6 bullets per role for Workday' });
+        issues.push({ severity: 'info', field: `Experience ${i + 1}`, message: `${exp.achievements.length} bullets — Workday may truncate after 6`, fix: 'Limit to 4-6 bullets per role for Workday', autoFixId: `cap_bullets_${i}` });
       }
     });
   } else {
@@ -166,7 +168,7 @@ function simulateATSParse(resume: ResumeData, atsId: string): { fields: ATSField
     // Check for Unicode issues
     const unicodeSkills = allSkills.filter(s => /[^\x00-\x7F]/.test(s));
     if (unicodeSkills.length > 0) {
-      issues.push({ severity: 'warning', field: 'Skills', message: `${unicodeSkills.length} skills contain special characters that ATS may misread`, fix: 'Use ASCII-only characters in skill names' });
+      issues.push({ severity: 'warning', field: 'Skills', message: `${unicodeSkills.length} skills contain special characters that ATS may misread`, fix: 'Use ASCII-only characters in skill names', autoFixId: 'fix_unicode_skills' });
       score -= 5;
     }
   } else {
@@ -188,7 +190,7 @@ function simulateATSParse(resume: ResumeData, atsId: string): { fields: ATSField
   }
   if (atsId === 'lever') {
     if (resume.experience?.some(e => !e.duration || !/\d{4}/.test(e.duration))) {
-      issues.push({ severity: 'warning', field: 'Dates', message: 'Lever expects explicit year ranges (e.g., "2021 - 2024")', fix: 'Use "Month Year - Month Year" format for all roles' });
+      issues.push({ severity: 'warning', field: 'Dates', message: 'Lever expects explicit year ranges (e.g., "2021 - 2024")', fix: 'Use "Month Year - Month Year" format for all roles', autoFixId: 'fix_lever_dates' });
       score -= 5;
     }
   }
@@ -217,7 +219,7 @@ function ConfidenceBadge({ level }: { level: ATSField['confidence'] }) {
 }
 
 // ── Main Page ──
-export default function ATSPreviewPage() {
+export function ATSPreviewContent() {
   const { theme } = useTheme();
   const isLight = theme === 'light';
   const { user } = useStore();
@@ -228,6 +230,35 @@ export default function ATSPreviewPage() {
   const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState<{ fields: ATSField[]; issues: ATSIssue[]; score: number } | null>(null);
   const [showRawView, setShowRawView] = useState(false);
+
+  // Saved Resumes integration
+  const [savedResumes, setSavedResumes] = useState<ResumeVersion[]>([]);
+
+  useEffect(() => {
+    const loadSavedResumes = async () => {
+      const res = await getResumeVersions();
+      if (res.success && res.data) setSavedResumes(res.data);
+    };
+    loadSavedResumes();
+  }, []);
+
+  const handleSelectSavedResume = (resumeId: string) => {
+    if (!resumeId) return;
+    const rv = savedResumes.find(r => r.id === resumeId);
+    if (rv && rv.content) {
+      const c = rv.content as any;
+      setResume({
+        name: c.name || '', title: c.title || '', email: c.email || '', phone: c.phone || '', location: c.location || '',
+        linkedin: c.linkedin, website: c.website, summary: c.summary || '',
+        experience: (c.experience || []).map((e: any) => ({ company: e.company || '', role: e.role || e.title || '', duration: e.duration || e.date || '', achievements: e.achievements || (e.description ? [e.description] : []) })),
+        education: (c.education || []).map((e: any) => ({ degree: e.degree || '', institution: e.school || e.institution || '', year: e.date || e.year || '' })),
+        skills: Array.isArray(c.skills) ? (typeof c.skills[0] === 'string' ? [{ category: 'Skills', items: c.skills }] : c.skills) : [],
+        certifications: c.certifications || [],
+      });
+      setResult(null);
+      showToast(`Loaded: ${rv.version_name || c.name || 'Resume'}`, 'check_circle');
+    }
+  };
 
   // Load latest resume from vault
   useEffect(() => {
@@ -257,6 +288,55 @@ export default function ATSPreviewPage() {
     showToast(`${selectedATS.name} simulation complete — ${simResult.score}% compatibility`, 'smart_toy');
   };
 
+  // ── Auto-Fix Handler ──
+  const handleAutoFix = (fixId: string) => {
+    if (!resume) return;
+    const updated = { ...resume };
+    let fixApplied = '';
+
+    if (fixId === 'fix_unicode_skills') {
+      const UNICODE_MAP: Record<string, string> = {
+        '\u2014': '-', '\u2013': '-', '\u2018': "'", '\u2019': "'",
+        '\u201C': '"', '\u201D': '"', '\u2026': '...', '\u2022': '',
+        '\u00AE': '', '\u2122': '', '\u00A9': '',
+      };
+      updated.skills = updated.skills.map(group => ({
+        ...group,
+        items: group.items.map(skill =>
+          skill.replace(/[^\x00-\x7F]/g, c => UNICODE_MAP[c] || '').trim()
+        ).filter(s => s.length > 0),
+      }));
+      fixApplied = 'Replaced special characters in skills with ASCII equivalents';
+    }
+
+    if (fixId === 'trim_summary') {
+      const words = updated.summary.split(/\s+/);
+      if (words.length > 100) {
+        updated.summary = words.slice(0, 95).join(' ') + '...';
+        fixApplied = 'Trimmed summary to ~95 words';
+      }
+    }
+
+    if (fixId.startsWith('cap_bullets_')) {
+      const idx = parseInt(fixId.split('_')[2]);
+      if (updated.experience[idx] && updated.experience[idx].achievements.length > 6) {
+        updated.experience = [...updated.experience];
+        updated.experience[idx] = {
+          ...updated.experience[idx],
+          achievements: updated.experience[idx].achievements.slice(0, 6),
+        };
+        fixApplied = `Capped Experience ${idx + 1} to 6 bullets`;
+      }
+    }
+
+    if (fixApplied) {
+      setResume(updated);
+      const simResult = simulateATSParse(updated, selectedATS.id);
+      setResult(simResult);
+      showToast(`Fixed: ${fixApplied}`, 'auto_fix_high');
+    }
+  };
+
   const cardBg = isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.03)';
   const cardBorder = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)';
 
@@ -281,7 +361,20 @@ export default function ATSPreviewPage() {
               <p className="text-sm text-[var(--text-tertiary)]">See exactly what recruiters see after ATS parsing</p>
             </div>
           </div>
-          <PageHelp toolId="ats-preview" />
+          <div className="flex items-center gap-3">
+            {savedResumes.length > 0 && (
+              <select
+                onChange={(e) => handleSelectSavedResume(e.target.value)}
+                className={`px-3 py-1.5 rounded-lg text-xs outline-none max-w-[200px] ${isLight ? 'bg-white border border-slate-200 text-slate-700' : 'bg-[#111] border border-white/10 text-silver'}`}
+              >
+                <option value="">-- Load Saved Resume --</option>
+                {savedResumes.map(r => (
+                  <option key={r.id} value={r.id}>{r.version_name || (r.content as any)?.name}</option>
+                ))}
+              </select>
+            )}
+            <PageHelp toolId="ats-preview" />
+          </div>
         </div>
       </motion.div>
 
@@ -591,11 +684,30 @@ ${(resume.certifications || []).join('\n') || '[NONE]'}`}
                               }}>{issue.severity}</span>
                             </div>
                             <p className="text-[11px] text-[var(--text-secondary)]">{issue.message}</p>
-                            <p className="text-[11px] text-cyan-500 mt-1 flex items-center gap-1">
-                              <span className="material-symbols-rounded text-[11px]">lightbulb</span>
-                              {issue.fix}
-                            </p>
+                            {!issue.autoFixId && (
+                              <p className="text-[11px] text-cyan-500 mt-1 flex items-center gap-1">
+                                <span className="material-symbols-rounded text-[11px]">lightbulb</span>
+                                {issue.fix}
+                              </p>
+                            )}
+                            {issue.autoFixId && (
+                              <p className="text-[11px] text-[var(--text-muted)] mt-1">{issue.fix}</p>
+                            )}
                           </div>
+                          {issue.autoFixId && (
+                            <button
+                              onClick={() => handleAutoFix(issue.autoFixId!)}
+                              className="ml-auto flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all hover:scale-[1.03] active:scale-[0.97]"
+                              style={{
+                                color: '#10b981',
+                                background: '#10b98112',
+                                border: '1px solid #10b98125',
+                              }}
+                            >
+                              <span className="material-symbols-rounded text-[13px]">auto_fix_high</span>
+                              Fix Now
+                            </button>
+                          )}
                         </div>
                       </motion.div>
                     );
@@ -617,4 +729,11 @@ ${(resume.certifications || []).join('\n') || '[NONE]'}`}
       </AnimatePresence>
     </div>
   );
+}
+
+// Redirect standalone route to consolidated ATS Analyzer
+import { redirect } from 'next/navigation';
+
+export default function ATSPreviewPage() {
+  redirect('/suite/ats-analyzer');
 }

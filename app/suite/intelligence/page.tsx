@@ -7,6 +7,17 @@ import { useTheme } from '@/components/ThemeProvider';
 import { useStore } from '@/lib/store';
 import { authFetch } from '@/lib/auth-fetch';
 import PageHelp from '@/components/PageHelp';
+import dynamic from 'next/dynamic';
+
+const PulseTab = dynamic(() => import('@/app/suite/pulse/page').then(m => ({ default: m.PulseContent })), {
+  loading: () => <div className="h-64 rounded-xl animate-pulse" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }} />,
+});
+
+const AnalyticsTab = dynamic(() => import('@/app/suite/analytics/page').then(m => ({ default: m.AnalyticsContent })), {
+  loading: () => <div className="h-64 rounded-xl animate-pulse" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }} />,
+});
+
+type IntelTab = 'overview' | 'pulse' | 'analytics';
 
 interface CareerProfile {
   healthScore: number;
@@ -57,6 +68,7 @@ export default function IntelligencePage() {
   const [profile, setProfile] = useState<CareerProfile | null>(null);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<IntelTab>('overview');
 
   useEffect(() => {
     if (!user) return;
@@ -115,7 +127,41 @@ export default function IntelligencePage() {
           </div>
           <PageHelp toolId="intelligence" />
         </div>
+
+        {/* Tab switcher */}
+        <div className="flex gap-1 p-1 rounded-xl w-fit mt-3" style={{
+          background: isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)',
+          border: `1px solid ${isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'}`,
+        }}>
+          {([
+            { key: 'overview' as IntelTab, label: 'Overview', icon: 'neurology' },
+            { key: 'pulse' as IntelTab, label: 'Weekly Pulse', icon: 'monitor_heart' },
+            { key: 'analytics' as IntelTab, label: 'Analytics', icon: 'bar_chart' },
+          ]).map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                activeTab === tab.key
+                  ? 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 shadow-sm'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
+              }`}
+            >
+              <span className="material-symbols-rounded text-[18px]">{tab.icon}</span>
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </div>
       </motion.div>
+
+      {/* Pulse Tab */}
+      {activeTab === 'pulse' && <PulseTab />}
+
+      {/* Analytics Tab */}
+      {activeTab === 'analytics' && <AnalyticsTab />}
+
+      {/* Overview Tab */}
+      {activeTab === 'overview' && (<>
 
       {loading && (
         <div className="space-y-4">
@@ -590,6 +636,7 @@ export default function IntelligencePage() {
           </p>
         </div>
       </motion.div>
+      </>)}
       </>)}
     </div>
   );

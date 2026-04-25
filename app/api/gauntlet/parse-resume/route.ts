@@ -57,8 +57,24 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ text: cleanText.substring(0, 10000), fileName });
         }
 
+        // Handle PDF files using pdf-parse
+        if (fileName.endsWith('.pdf')) {
+            if (!fileBuffer) return NextResponse.json({ error: 'Invalid file buffer' }, { status: 400 });
+            const pdfModule = await import('pdf-parse');
+            const pdfParse: any = typeof pdfModule.default === 'function' ? pdfModule.default : pdfModule;
+            const pdfData = await pdfParse(fileBuffer);
+            const cleanText = pdfData.text.trim();
+            if (!cleanText) {
+                return NextResponse.json(
+                    { error: 'Could not extract text from PDF. It may be image-based — please try a Word (.docx) version.' },
+                    { status: 400 }
+                );
+            }
+            return NextResponse.json({ text: cleanText.substring(0, 10000), fileName });
+        }
+
         return NextResponse.json(
-            { error: 'Unsupported file type. Please upload a Word (.docx) or TXT file.' },
+            { error: 'Unsupported file type. Please upload a PDF, Word (.docx), or TXT file.' },
             { status: 400 }
         );
 

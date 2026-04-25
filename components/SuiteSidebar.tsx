@@ -85,20 +85,12 @@ const navGroups: NavigationGroup[] = [
         color: { iconColor: '#f43f5e' },
       },
       {
-        id: 'ats-preview',
-        label: 'ATS Preview',
-        description: 'See What Recruiters See',
-        path: '/suite/ats-preview',
+        id: 'ats-analyzer',
+        label: 'ATS Analyzer',
+        description: 'Preview + Match Score',
+        path: '/suite/ats-analyzer',
         iconName: 'scanner',
         color: { iconColor: '#06b6d4' },
-      },
-      {
-        id: 'ats-score',
-        label: 'ATS Match Score',
-        description: 'Keyword Gap Analysis',
-        path: '/suite/ats-score',
-        iconName: 'analytics',
-        color: { iconColor: '#0ea5e9' },
       },
       {
         id: 'linkedin',
@@ -108,6 +100,15 @@ const navGroups: NavigationGroup[] = [
         badge: 'PRO',
         iconName: 'badge',
         color: { iconColor: '#3b82f6' },
+      },
+      {
+        id: 'writing-tools',
+        label: 'AI Humanizer',
+        description: 'Detect & Humanize AI Text',
+        path: '/suite/writing-tools',
+        badge: 'PRO',
+        iconName: 'ink_pen',
+        color: { iconColor: '#f43f5e' },
       },
     ],
   },
@@ -160,7 +161,7 @@ const navGroups: NavigationGroup[] = [
       {
         id: 'flashcards',
         label: 'Interview Sim',
-        description: 'AI Mock Interviews',
+        description: 'AI Mock Interviews + Debrief',
         path: '/suite/flashcards',
         iconName: 'chat',
         color: { iconColor: '#3b82f6' },
@@ -172,14 +173,6 @@ const navGroups: NavigationGroup[] = [
         path: '/suite/agent/stories',
         iconName: 'auto_stories',
         color: { iconColor: '#10b981' },
-      },
-      {
-        id: 'interview-debrief',
-        label: 'Debrief',
-        description: 'Post-Interview Logger',
-        path: '/suite/interview-debrief',
-        iconName: 'rate_review',
-        color: { iconColor: '#8b5cf6' },
       },
       {
         id: 'skill-bridge',
@@ -216,43 +209,11 @@ const navGroups: NavigationGroup[] = [
       },
       {
         id: 'intelligence',
-        label: 'Career Health',
-        description: 'Health Score + Insights',
+        label: 'Career Intelligence',
+        description: 'Health Score + Pulse + Insights',
         path: '/suite/intelligence',
         iconName: 'neurology',
         color: { iconColor: '#8b5cf6' },
-      },
-      {
-        id: 'pulse',
-        label: 'Career Pulse',
-        description: 'Weekly Health Check',
-        path: '/suite/pulse',
-        iconName: 'monitor_heart',
-        color: { iconColor: '#ec4899' },
-      },
-      {
-        id: 'analytics',
-        label: 'Analytics',
-        description: 'Pipeline Insights',
-        path: '/suite/analytics',
-        iconName: 'analytics',
-        color: { iconColor: '#0ea5e9' },
-      },
-    ],
-  },
-  // ─── Utilities ───
-  {
-    label: 'Tools',
-    icon: 'build',
-    items: [
-      {
-        id: 'writing-tools',
-        label: 'AI Detector',
-        description: 'Detect & Humanize',
-        path: '/suite/writing-tools',
-        badge: 'PRO',
-        iconName: 'ink_pen',
-        color: { iconColor: '#f43f5e' },
       },
     ],
   },
@@ -307,11 +268,11 @@ function ThemeMenu({ isCollapsed }: { isCollapsed: boolean }) {
 
       {open && (
         <div
-          className="absolute left-[calc(100%+8px)] bottom-0 w-44 rounded-[8px] border shadow-lg z-[100] py-1"
+          className="absolute left-[calc(100%+8px)] bottom-0 w-44 rounded-[10px] border shadow-xl z-[100] py-1"
           style={{
-            background: 'var(--bg-surface)',
-            borderColor: 'var(--border-subtle)',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+            background: 'var(--bg-primary)',
+            borderColor: 'var(--border)',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08)',
           }}
         >
           {options.map((opt) => {
@@ -465,7 +426,7 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
             onClick={() => handleNav('/suite')}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors duration-100 ${
               pathname === '/suite'
-                ? 'bg-[rgba(168,199,250,0.08)] text-[#a8c7fa]'
+                ? 'bg-[var(--bg-hover)] text-[var(--text-primary)]'
                 : 'text-[var(--sidebar-text)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'
             } ${isCollapsed ? 'justify-center' : ''}`}
             title="Dashboard"
@@ -473,8 +434,8 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
             <span
               className="material-symbols-rounded flex-shrink-0 text-[18px] w-6 h-6 flex items-center justify-center rounded-md transition-colors"
               style={pathname === '/suite' ? {
-                backgroundColor: 'rgba(168, 199, 250, 0.15)',
-                color: '#a8c7fa'
+                backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                color: '#10b981'
               } : {}}
             >home</span>
             {!isCollapsed && <span>Dashboard</span>}
@@ -566,35 +527,6 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
             );
           })}
 
-          {/* Gallery — standalone at bottom */}
-          {!isCollapsed && (
-            <button
-              onClick={() => toggleGroup('More')}
-              className="w-full flex items-center gap-2 px-2 pt-3 pb-1.5"
-            >
-              <span
-                className="material-symbols-rounded text-[14px] text-[var(--text-muted)] transition-transform duration-200"
-                style={{ transform: expandedGroups['More'] !== false ? 'rotate(90deg)' : 'rotate(0deg)' }}
-              >
-                chevron_right
-              </span>
-              <span className="text-[12px] font-semibold text-[var(--text-secondary)] uppercase tracking-wider flex-1 text-left">More</span>
-            </button>
-          )}
-          {(expandedGroups['More'] !== false || isCollapsed) && (
-            <button
-              onClick={() => handleNav('/suite/gallery')}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors duration-100 text-[var(--sidebar-text)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] ${
-                isCollapsed ? 'justify-center' : ''
-              } ${isActive('/suite/gallery') ? 'bg-[var(--bg-hover)] text-[var(--text-primary)]' : ''}`}
-              title={isCollapsed ? 'Tools Gallery' : 'One-Click Utilities'}
-            >
-              <span className="material-symbols-rounded flex-shrink-0 text-[18px] w-6 h-6 flex items-center justify-center rounded-md flex-none" style={{ color: '#8b5cf6' }}>
-                widgets
-              </span>
-              {!isCollapsed && <span className="flex-1 text-left truncate font-[450]">Tools Gallery</span>}
-            </button>
-          )}
         </nav>
 
         {/* Bottom section */}
@@ -635,6 +567,16 @@ export default function SuiteSidebar({ onNavigate }: SuiteSidebarProps) {
               {!isCollapsed && <span>Admin</span>}
             </button>
           )}
+
+          {/* Gallery */}
+          <button
+            onClick={() => handleNav('/suite/gallery')}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors duration-100 text-[var(--sidebar-text)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] ${isCollapsed ? 'justify-center' : ''} ${isActive('/suite/gallery') ? 'bg-[var(--bg-hover)] text-[var(--text-primary)]' : ''}`}
+            title={isCollapsed ? 'Gallery' : 'Tools Gallery'}
+          >
+            <span className="material-symbols-rounded flex-shrink-0 text-[20px]" style={{ color: '#8b5cf6' }}>widgets</span>
+            {!isCollapsed && <span>Gallery</span>}
+          </button>
 
           {/* Theme — AI Studio flyout */}
           <ThemeMenu isCollapsed={isCollapsed} />
