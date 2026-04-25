@@ -540,6 +540,22 @@ export default function LiquidResumePage() {
   const [detectedNewSkills, setDetectedNewSkills] = useState<{ skill: string; category: 'technical' | 'soft' | 'domain' }[]>([]);
   const [lastMatchScore, setLastMatchScore] = useState<number | undefined>(undefined);
 
+  // No-navigate sent state for Cover Letter / LinkedIn
+  const [coverLetterSent, setCoverLetterSent] = useState(false);
+  const [linkedInSent, setLinkedInSent] = useState(false);
+
+  // Saved blueprints from localStorage
+  const [savedBlueprints, setSavedBlueprints] = useState<{ id: string; content: string; targetRole: string; createdAt: string }[]>([]);
+  const [showSavedBlueprints, setShowSavedBlueprints] = useState(false);
+
+  // Load saved blueprints on mount
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('tc_blueprints') || '[]');
+      setSavedBlueprints(stored);
+    } catch {}
+  }, []);
+
   // ===== DERIVED STATE =====
   // This is the KEY fix - always compute which resume to display
   const getDisplayResume = (): ResumeData | null => {
@@ -743,15 +759,16 @@ export default function LiquidResumePage() {
       // Persist blueprint so it can be re-opened from Applications tracker
       try {
         const companyName = originalResume.experience?.[0]?.company || 'Unknown';
-        const savedBlueprints = JSON.parse(localStorage.getItem('tc_blueprints') || '[]');
-        savedBlueprints.unshift({
+        const stored = JSON.parse(localStorage.getItem('tc_blueprints') || '[]');
+        stored.unshift({
           id: `bp_${Date.now()}`,
           content: data.blueprint,
           targetRole: originalResume.title || '',
           createdAt: new Date().toISOString(),
         });
-        // Keep only the last 10 blueprints
-        localStorage.setItem('tc_blueprints', JSON.stringify(savedBlueprints.slice(0, 10)));
+        const trimmed = stored.slice(0, 10);
+        localStorage.setItem('tc_blueprints', JSON.stringify(trimmed));
+        setSavedBlueprints(trimmed);
       } catch {}
       showToast('Day-Zero Blueprint ready!', 'check_circle');
     } catch (error) {
@@ -2218,9 +2235,9 @@ export default function LiquidResumePage() {
                       <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5">
                         <div className="text-xs font-semibold text-[var(--text-muted)] mb-3 uppercase tracking-wider">Continue With Your Resume</div>
                         <div className="space-y-2.5">
+                          {/* Cover Letter — No-Navigate */}
                           <button
                             onClick={() => {
-                              // Save context for Cover Letter page to pick up
                               const displayResume = getDisplayResume();
                               if (displayResume) {
                                 sessionStorage.setItem('talent-resume-draft', JSON.stringify({
@@ -2231,19 +2248,33 @@ export default function LiquidResumePage() {
                                   jobTitle: displayResume.title || applicationData.jobTitle || '',
                                 }));
                               }
-                              router.push('/suite/cover-letter');
+                              setCoverLetterSent(true);
+                              showToast('Resume & JD sent to Cover Letter tool. Open it anytime from the sidebar.', 'check_circle');
                             }}
-                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] hover:border-[var(--border)] transition-all group text-left"
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all group text-left ${
+                              coverLetterSent
+                                ? 'border-emerald-500/30 bg-emerald-500/[0.04]'
+                                : 'border-[var(--border-subtle)] bg-[var(--bg-card)] hover:border-[var(--border)]'
+                            }`}
                           >
-                            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
-                              <span className="material-symbols-rounded text-[18px]" style={{ color: '#10b981' }}>mail</span>
+                            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: coverLetterSent ? 'rgba(16,185,129,0.15)' : 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                              <span className="material-symbols-rounded text-[18px]" style={{ color: '#10b981' }}>{coverLetterSent ? 'check_circle' : 'mail'}</span>
                             </div>
                             <div className="flex-1">
-                              <p className="text-[13px] font-semibold text-[var(--text-primary)]">Generate Cover Letter</p>
-                              <p className="text-[11px] text-[var(--text-muted)]">Dual-AI powered, auto-filled with your resume + JD</p>
+                              <p className="text-[13px] font-semibold text-[var(--text-primary)]">{coverLetterSent ? '✓ Sent to Cover Letter' : 'Generate Cover Letter'}</p>
+                              <p className="text-[11px] text-[var(--text-muted)]">{coverLetterSent ? 'Resume & JD ready — open from sidebar when you\'re done here' : 'Dual-AI powered, auto-filled with your resume + JD'}</p>
                             </div>
-                            <span className="material-symbols-rounded text-[16px] text-[var(--text-muted)] group-hover:text-[var(--text-primary)] transition-colors">arrow_forward</span>
+                            {coverLetterSent ? (
+                              <span
+                                onClick={(e) => { e.stopPropagation(); router.push('/suite/cover-letter'); }}
+                                className="text-[11px] font-medium text-emerald-500 hover:text-emerald-400 transition-colors cursor-pointer whitespace-nowrap"
+                              >Open →</span>
+                            ) : (
+                              <span className="material-symbols-rounded text-[16px] text-[var(--text-muted)] group-hover:text-[var(--text-primary)] transition-colors">send</span>
+                            )}
                           </button>
+
+                          {/* LinkedIn — No-Navigate */}
                           <button
                             onClick={() => {
                               const displayResume = getDisplayResume();
@@ -2256,18 +2287,30 @@ export default function LiquidResumePage() {
                                   jobTitle: displayResume.title || applicationData.jobTitle || '',
                                 }));
                               }
-                              router.push('/suite/linkedin');
+                              setLinkedInSent(true);
+                              showToast('Resume & JD sent to LinkedIn Optimizer. Open it anytime from the sidebar.', 'check_circle');
                             }}
-                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] hover:border-[var(--border)] transition-all group text-left"
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all group text-left ${
+                              linkedInSent
+                                ? 'border-blue-500/30 bg-blue-500/[0.04]'
+                                : 'border-[var(--border-subtle)] bg-[var(--bg-card)] hover:border-[var(--border)]'
+                            }`}
                           >
-                            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)' }}>
-                              <span className="material-symbols-rounded text-[18px]" style={{ color: '#3b82f6' }}>work</span>
+                            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: linkedInSent ? 'rgba(59,130,246,0.15)' : 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)' }}>
+                              <span className="material-symbols-rounded text-[18px]" style={{ color: '#3b82f6' }}>{linkedInSent ? 'check_circle' : 'work'}</span>
                             </div>
                             <div className="flex-1">
-                              <p className="text-[13px] font-semibold text-[var(--text-primary)]">Optimize LinkedIn Profile</p>
-                              <p className="text-[11px] text-[var(--text-muted)]">Headline, about, skills — optimized for recruiter search</p>
+                              <p className="text-[13px] font-semibold text-[var(--text-primary)]">{linkedInSent ? '✓ Sent to LinkedIn Optimizer' : 'Optimize LinkedIn Profile'}</p>
+                              <p className="text-[11px] text-[var(--text-muted)]">{linkedInSent ? 'Resume & JD ready — open from sidebar when you\'re done here' : 'Headline, about, skills — optimized for recruiter search'}</p>
                             </div>
-                            <span className="material-symbols-rounded text-[16px] text-[var(--text-muted)] group-hover:text-[var(--text-primary)] transition-colors">arrow_forward</span>
+                            {linkedInSent ? (
+                              <span
+                                onClick={(e) => { e.stopPropagation(); router.push('/suite/linkedin'); }}
+                                className="text-[11px] font-medium text-blue-500 hover:text-blue-400 transition-colors cursor-pointer whitespace-nowrap"
+                              >Open →</span>
+                            ) : (
+                              <span className="material-symbols-rounded text-[16px] text-[var(--text-muted)] group-hover:text-[var(--text-primary)] transition-colors">send</span>
+                            )}
                           </button>
                           <button
                             onClick={() => {
@@ -2306,6 +2349,77 @@ export default function LiquidResumePage() {
                             <span className="material-symbols-rounded text-[16px] text-[var(--text-muted)] group-hover:text-[var(--text-primary)] transition-colors">arrow_forward</span>
                           </button>
                         </div>
+                      </div>
+
+                      {/* ── Saved Blueprints ── */}
+                      <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5">
+                        <button
+                          onClick={() => {
+                            setShowSavedBlueprints(!showSavedBlueprints);
+                            // Refresh from localStorage
+                            try { setSavedBlueprints(JSON.parse(localStorage.getItem('tc_blueprints') || '[]')); } catch {}
+                          }}
+                          className="w-full flex items-center justify-between text-left"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="material-symbols-rounded text-[16px]" style={{ color: '#f59e0b' }}>content_paste</span>
+                            <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Saved Blueprints</span>
+                            {savedBlueprints.length > 0 && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 font-bold">{savedBlueprints.length}</span>
+                            )}
+                          </div>
+                          <span className={`material-symbols-rounded text-[16px] text-[var(--text-muted)] transition-transform duration-200 ${showSavedBlueprints ? 'rotate-180' : ''}`}>expand_more</span>
+                        </button>
+
+                        <AnimatePresence>
+                          {showSavedBlueprints && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="overflow-hidden"
+                            >
+                              <div className="mt-3 space-y-2">
+                                {savedBlueprints.length === 0 ? (
+                                  <p className="text-[11px] text-[var(--text-muted)] text-center py-3">No blueprints yet. Generate one from the JD step.</p>
+                                ) : (
+                                  savedBlueprints.map((bp) => (
+                                    <div
+                                      key={bp.id}
+                                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] hover:border-[var(--border)] transition-all group cursor-pointer"
+                                      onClick={() => {
+                                        setBlueprintContent(bp.content);
+                                        setShowBlueprintModal(true);
+                                      }}
+                                    >
+                                      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)' }}>
+                                        <span className="material-symbols-rounded text-[16px]" style={{ color: '#f59e0b' }}>description</span>
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-[12px] font-medium text-[var(--text-primary)] truncate">{bp.targetRole || 'Day-Zero Blueprint'}</p>
+                                        <p className="text-[10px] text-[var(--text-muted)]">{new Date(bp.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                                      </div>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const updated = savedBlueprints.filter(b => b.id !== bp.id);
+                                          setSavedBlueprints(updated);
+                                          localStorage.setItem('tc_blueprints', JSON.stringify(updated));
+                                          showToast('Blueprint deleted', 'delete');
+                                        }}
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-red-500/10"
+                                        title="Delete blueprint"
+                                      >
+                                        <span className="material-symbols-rounded text-[14px] text-red-400">close</span>
+                                      </button>
+                                    </div>
+                                  ))
+                                )}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
 
                       {/* Quick Stats */}
