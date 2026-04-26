@@ -15,18 +15,26 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { monitor } from '@/lib/monitor';
 import { triggerReferralReward } from '@/lib/referral';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2026-02-25.clover',
-});
+let _stripe: Stripe | null = null;
+function getStripe() {
+  if (!_stripe) _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-02-25.clover' });
+  return _stripe;
+}
 
-// Firebase client for Firestore writes
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-};
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig, 'webhook');
-const db = getFirestore(app);
+// Firebase client for Firestore writes (lazy)
+let _db: ReturnType<typeof getFirestore> | null = null;
+function getDb() {
+  if (!_db) {
+    const firebaseConfig = {
+      apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+      authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    };
+    const app = getApps().length ? getApp() : initializeApp(firebaseConfig, 'webhook');
+    _db = getFirestore(app);
+  }
+  return _db;
+}
 
 export async function POST(req: NextRequest) {
   if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) {
@@ -43,7 +51,7 @@ export async function POST(req: NextRequest) {
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(
+    event = getStripe().webhooks.constructEvent(
       body,
       sig,
       process.env.STRIPE_WEBHOOK_SECRET!
@@ -83,7 +91,7 @@ export async function POST(req: NextRequest) {
           } catch { /* fall through */ }
         }
 
-        await setDoc(doc(db, 'users', uid, 'subscription', 'current'), {
+        await setDoc(doc(getDb(), 'users', uid, 'subscription', 'current'), {
           plan,
           status,
           stripeCustomerId: session.customer as string,
@@ -116,12 +124,12 @@ export async function POST(req: NextRequest) {
         const subscriptionId = (invoice as any).subscription as string;
         if (!subscriptionId || !invoice.customer) break;
 
-        const customer = await stripe.customers.retrieve(invoice.customer as string) as Stripe.Customer;
+        const customer = await getStripe().customers.retrieve(invoice.customer as string) as Stripe.Customer;
         const uid = customer.metadata?.firebaseUid;
         if (!uid) break;
 
         // Get subscription to read interval and plan from metadata
-        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        const subscription = await getStripe().subscriptions.retrieve(subscriptionId);
         const interval = subscription.metadata?.interval || 'month';
 
         // Detect plan from subscription metadata or price ID
@@ -129,7 +137,7 @@ export async function POST(req: NextRequest) {
         const invoicePriceId = (invoice as any).lines?.data?.[0]?.price?.id;
         const subPlan = subscription.metadata?.plan || (studioPrices.includes(invoicePriceId) ? 'studio' : 'pro');
 
-        await setDoc(doc(db, 'users', uid, 'subscription', 'current'), {
+        await setDoc(doc(getDb(), 'users', uid, 'subscription', 'current'), {
           plan: subPlan,
           status: 'active',
           stripeCustomerId: invoice.customer as string,
@@ -155,7 +163,7 @@ export async function POST(req: NextRequest) {
         const customerId = subscription.customer as string;
 
         // Find user by Stripe customer ID
-        const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
+        const customer = await getStripe().customers.retrieve(customerId) as Stripe.Customer;
         const uid = customer.metadata?.firebaseUid;
         if (!uid) break;
 
@@ -166,7 +174,7 @@ export async function POST(req: NextRequest) {
         const subPriceId = subscription.items?.data?.[0]?.price?.id;
         const updPlan = subscription.metadata?.plan || (studioPrices2.includes(subPriceId) ? 'studio' : 'pro');
 
-        await setDoc(doc(db, 'users', uid, 'subscription', 'current'), {
+        await setDoc(doc(getDb(), 'users', uid, 'subscription', 'current'), {
           plan: status === 'active' ? updPlan : 'free',
           status,
           stripeSubscriptionId: subscription.id,
@@ -181,11 +189,11 @@ export async function POST(req: NextRequest) {
         const subscription = event.data.object as Stripe.Subscription;
         const customerId = subscription.customer as string;
 
-        const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
+        const customer = await getStripe().customers.retrieve(customerId) as Stripe.Customer;
         const uid = customer.metadata?.firebaseUid;
         if (!uid) break;
 
-        await setDoc(doc(db, 'users', uid, 'subscription', 'current'), {
+        await setDoc(doc(getDb(), 'users', uid, 'subscription', 'current'), {
           plan: 'free',
           status: 'canceled',
           canceledAt: serverTimestamp(),
@@ -202,7 +210,7 @@ export async function POST(req: NextRequest) {
       case 'customer.subscription.trial_will_end': {
         const sub = event.data.object as Stripe.Subscription;
         const custId = sub.customer as string;
-        const cust = await stripe.customers.retrieve(custId) as Stripe.Customer;
+        const cust = await getStripe().customers.retrieve(custId) as Stripe.Customer;
         monitor.info('Trial Ending Soon', '3 days left', [
           { name: 'UID', value: cust.metadata?.firebaseUid?.slice(0, 8) + '…' || 'unknown' },
           { name: 'Email', value: cust.email || 'unknown' },
