@@ -84,10 +84,22 @@ export function useGeminiLive() {
         ws.send(JSON.stringify({ setup: {} }));
       };
 
-      ws.onmessage = (event) => {
+      ws.binaryType = 'arraybuffer'; // Prefer ArrayBuffer over Blob for speed
+
+      ws.onmessage = async (event) => {
         try {
-          const data = typeof event.data === 'string' ? event.data : '';
-          const msg = JSON.parse(data);
+          let text: string;
+          if (typeof event.data === 'string') {
+            text = event.data;
+          } else if (event.data instanceof Blob) {
+            text = await event.data.text();
+          } else if (event.data instanceof ArrayBuffer) {
+            text = new TextDecoder().decode(event.data);
+          } else {
+            return;
+          }
+          if (!text || text.length === 0) return;
+          const msg = JSON.parse(text);
           handleServerMessage(msg);
         } catch (e) {
           console.warn('[GeminiLive] Failed to parse message:', e);
