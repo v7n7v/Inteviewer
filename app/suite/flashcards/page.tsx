@@ -209,6 +209,13 @@ export default function GauntletPage() {
     const { isRecording, startRecording, stopRecording, getVisualizerData } = useAudioRecorder();
     const { isPlaying, playAudio, stopAudio } = useAudioPlayer();
     const geminiLive = useGeminiLive();
+
+    // Sync live voice transcript → answer textarea in real-time
+    useEffect(() => {
+        if (liveMode && geminiLive.userTranscript) {
+            setUserAnswer(geminiLive.userTranscript);
+        }
+    }, [liveMode, geminiLive.userTranscript]);
     const [visualizerData, setVisualizerData] = useState<number[]>([]);
     const animFrameRef = useRef<number | null>(null);
 

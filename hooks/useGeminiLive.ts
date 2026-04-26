@@ -47,6 +47,7 @@ export function useGeminiLive() {
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const playbackQueueRef = useRef<Float32Array[]>([]);
   const isPlayingRef = useRef(false);
+  const nextPlayTimeRef = useRef(0);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -253,43 +254,40 @@ export function useGeminiLive() {
       float32[i] = int16[i] / 32768.0;
     }
 
-    playbackQueueRef.current.push(float32);
-    if (!isPlayingRef.current) {
-      processPlaybackQueue();
-    }
-  }, []);
-
-  const processPlaybackQueue = useCallback(() => {
-    if (playbackQueueRef.current.length === 0) {
-      isPlayingRef.current = false;
-      return;
-    }
-
-    isPlayingRef.current = true;
-    const samples = playbackQueueRef.current.shift()!;
-
     // Reuse or create playback context at 24kHz
     if (!playbackCtxRef.current || playbackCtxRef.current.state === 'closed') {
       playbackCtxRef.current = new AudioContext({ sampleRate: 24000 });
+      nextPlayTimeRef.current = 0;
     }
 
     const playCtx = playbackCtxRef.current;
-    const buffer = playCtx.createBuffer(1, samples.length, 24000);
-    buffer.getChannelData(0).set(samples);
+    if (playCtx.state === 'suspended') {
+      playCtx.resume();
+    }
+
+    const buffer = playCtx.createBuffer(1, float32.length, 24000);
+    buffer.getChannelData(0).set(float32);
 
     const source = playCtx.createBufferSource();
     source.buffer = buffer;
     source.connect(playCtx.destination);
-    source.start();
 
-    source.onended = () => {
-      processPlaybackQueue();
-    };
+    // Schedule seamlessly — no gaps between chunks
+    const now = playCtx.currentTime;
+    const startAt = Math.max(now, nextPlayTimeRef.current);
+    source.start(startAt);
+    nextPlayTimeRef.current = startAt + buffer.duration;
   }, []);
 
   const stopPlayback = useCallback(() => {
     playbackQueueRef.current = [];
     isPlayingRef.current = false;
+    nextPlayTimeRef.current = 0;
+    // Stop any scheduled audio
+    if (playbackCtxRef.current && playbackCtxRef.current.state !== 'closed') {
+      playbackCtxRef.current.close();
+      playbackCtxRef.current = null;
+    }
   }, []);
 
   const disconnect = useCallback(() => {
