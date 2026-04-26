@@ -56,3 +56,6 @@ next-env.d.ts
 index.html
 neuralhire.html
 YOUR_CREDENTIALS.txt
+
+# Cloud Run
+.env.cloudrun.yaml

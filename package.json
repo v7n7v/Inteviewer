@@ -10,7 +10,8 @@
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "deploy": "node deploy-fix.js",
-    "deploy:preview": "firebase hosting:channel:deploy preview"
+    "deploy:preview": "firebase hosting:channel:deploy preview",
+    "deploy:cloudrun": "bash deploy-cloudrun.sh"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
