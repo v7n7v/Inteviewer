@@ -11,6 +11,7 @@ import { getAdminAuth, getAdminDb } from '@/lib/firebase-admin';
 import { validateBody } from '@/lib/validate';
 import { AdminActionSchema } from '@/lib/schemas';
 import { monitor } from '@/lib/monitor';
+import { sendUpgradeEmail } from '@/lib/email';
 
 export async function GET(req: NextRequest) {
   try {
@@ -136,6 +137,44 @@ export async function POST(req: NextRequest) {
       case 'enable': {
         await auth.updateUser(uid, { disabled: false });
         return NextResponse.json({ success: true, message: `User ${email || uid} enabled` });
+      }
+
+      case 'update_subscription': {
+        const { plan, months } = validated.data;
+        if (!plan) return NextResponse.json({ error: 'Plan required' }, { status: 400 });
+        
+        if (plan === 'free') {
+          await db.collection('users').doc(uid).collection('subscription').doc('current').set({
+            plan: 'free',
+            status: 'inactive',
+            revokedBy: guard.user.email,
+            revokedAt: new Date().toISOString(),
+            source: 'admin',
+          }, { merge: true });
+          return NextResponse.json({ success: true, message: `User ${email || uid} set to Free tier` });
+        } else {
+          let expiresAt = null;
+          if (months) {
+            const d = new Date();
+            d.setMonth(d.getMonth() + months);
+            expiresAt = d.toISOString();
+          }
+          await db.collection('users').doc(uid).collection('subscription').doc('current').set({
+            plan: plan,
+            status: 'active',
+            grantedBy: guard.user.email,
+            grantedAt: new Date().toISOString(),
+            source: 'admin',
+            expiresAt: expiresAt,
+          }, { merge: true });
+
+          // Send email notification asynchronously
+          if (email) {
+            sendUpgradeEmail(email, plan, months).catch(console.error);
+          }
+
+          return NextResponse.json({ success: true, message: `User ${email || uid} upgraded to ${plan} ${months ? `for ${months} months` : 'permanently'}` });
+        }
       }
 
       default:

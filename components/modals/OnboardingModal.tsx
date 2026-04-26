@@ -214,9 +214,9 @@ export default function OnboardingModal({ onComplete, onClose, userName }: Onboa
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="w-full max-w-lg rounded-2xl overflow-hidden"
+        className="w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl"
         style={{
-          background: 'var(--bg-surface)',
+          background: 'var(--card-bg)',
           border: '1px solid var(--border-subtle)',
         }}
       >

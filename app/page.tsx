@@ -6,7 +6,7 @@ import { authHelpers } from '@/lib/firebase';
 import { useStore } from '@/lib/store';
 import HeroSection from '@/components/HeroSection';
 import AuthModal from '@/components/modals/AuthModal';
-import PromoPopup from '@/components/PromoPopup';
+
 import Toast from '@/components/Toast';
 
 export default function Home() {
@@ -118,7 +118,6 @@ export default function Home() {
         />
       )}
 
-      <PromoPopup />
       <Toast />
     </main>
   );

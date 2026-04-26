@@ -16,6 +16,7 @@ type Insight = {
 };
 type ConversationMeta = { id: string; title: string; personality: string; lastMessageAt: string };
 type PanelTab = 'chat' | 'history' | 'insights';
+type PromoData = { active: boolean; headline: string; code: string; ctaText: string };
 
 const PAGE_HINTS: Record<string, string> = {
   '/suite/job-search': 'I found a job I\'m interested in — can you score it?',
@@ -69,6 +70,11 @@ export default function SonaFloatingOrb() {
   const isMaxTier = tier === 'studio' || tier === 'god';
   const isAgentPage = pathname === '/suite/agent';
 
+  // Promo bubble state
+  const [promo, setPromo] = useState<PromoData | null>(null);
+  const [promoVisible, setPromoVisible] = useState(false);
+  const [promoDismissed, setPromoDismissed] = useState(false);
+
   // Shimmers
   useEffect(() => {
     const t1 = setTimeout(() => setShimmerCount(1), 1500);
@@ -112,6 +118,35 @@ export default function SonaFloatingOrb() {
     if (!user || !isMaxTier || insightsLoaded) return;
     fetchInsights();
   }, [user, isMaxTier, insightsLoaded]);
+
+  // Fetch promo on mount
+  useEffect(() => {
+    if (sessionStorage.getItem('tc_promo_sona_dismissed')) {
+      setPromoDismissed(true);
+      return;
+    }
+    fetch('/api/admin/promo')
+      .then(r => r.json())
+      .then(data => {
+        if (data.active) {
+          setPromo(data);
+          setTimeout(() => setPromoVisible(true), 5000);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Re-show promo every 30s after close (unless permanently dismissed)
+  useEffect(() => {
+    if (!promo?.active || promoDismissed || promoVisible || chatOpen) return;
+    const timer = setTimeout(() => setPromoVisible(true), 30000);
+    return () => clearTimeout(timer);
+  }, [promo, promoDismissed, promoVisible, chatOpen]);
+
+  // Hide promo when chat opens
+  useEffect(() => {
+    if (chatOpen) setPromoVisible(false);
+  }, [chatOpen]);
 
   const fetchInsights = async () => {
     try {
@@ -578,6 +613,84 @@ export default function SonaFloatingOrb() {
                 )}
               </div>
             )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ═══ PROMO BUBBLE ═══ */}
+      <AnimatePresence>
+        {promoVisible && !chatOpen && promo?.active && (
+          <motion.div
+            initial={{ opacity: 0, y: 12, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 12, scale: 0.9 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+            className="absolute bottom-16 right-0 w-[280px] rounded-2xl overflow-hidden"
+            style={{
+              background: isLight ? '#fff' : '#111114',
+              border: `1px solid ${isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'}`,
+              boxShadow: isLight
+                ? '0 12px 40px rgba(0,0,0,0.12)'
+                : '0 12px 40px rgba(0,0,0,0.5)',
+            }}
+          >
+            {/* Header */}
+            <div className="px-4 pt-3 pb-2 flex items-start justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: `${accentColor}15` }}>
+                  <span className="material-symbols-rounded text-[14px]" style={{ color: accentColor }}>local_offer</span>
+                </div>
+                <span className="text-[11px] font-semibold" style={{ color: accentColor }}>Sona · Special Offer</span>
+              </div>
+              <button
+                onClick={() => setPromoVisible(false)}
+                className="w-5 h-5 rounded-md flex items-center justify-center hover:bg-[var(--bg-hover)] transition-colors"
+              >
+                <span className="material-symbols-rounded text-[14px] text-[var(--text-muted)]">close</span>
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="px-4 pb-3">
+              <p className="text-xs font-semibold text-[var(--text-primary)] mb-2 leading-snug">{promo.headline}</p>
+
+              {/* Code pill */}
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(promo.code);
+                  const el = document.getElementById('sona-promo-copied');
+                  if (el) { el.textContent = 'Copied!'; setTimeout(() => { el.textContent = 'Click to copy'; }, 1500); }
+                }}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-xl mb-2.5 transition-colors group"
+                style={{
+                  background: isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.04)',
+                  border: `1px dashed ${isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'}`,
+                }}
+              >
+                <span className="text-sm font-bold tracking-widest" style={{ color: 'var(--success)' }}>{promo.code}</span>
+                <span id="sona-promo-copied" className="text-[9px] text-[var(--text-muted)] group-hover:text-[var(--text-secondary)] transition-colors">Click to copy</span>
+              </button>
+
+              {/* CTA + Dismiss */}
+              <a
+                href="/suite/upgrade"
+                onClick={() => setPromoVisible(false)}
+                className="block w-full text-center py-2 rounded-xl text-xs font-semibold text-white transition-all hover:opacity-90"
+                style={{ background: `linear-gradient(135deg, ${accentColor}, #e11d48)` }}
+              >
+                {promo.ctaText} →
+              </a>
+              <button
+                onClick={() => {
+                  setPromoVisible(false);
+                  setPromoDismissed(true);
+                  sessionStorage.setItem('tc_promo_sona_dismissed', 'true');
+                }}
+                className="w-full text-center text-[10px] text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors mt-2 py-1"
+              >
+                Don't show again
+              </button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

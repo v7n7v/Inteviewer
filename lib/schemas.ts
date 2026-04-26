@@ -155,9 +155,11 @@ export const TeamInterestSchema = z.object({
 // ──────────────────────────────────────────────
 
 export const AdminActionSchema = z.object({
-  action: z.enum(['set_max', 'set_pro', 'set_free', 'disable', 'enable']),
+  action: z.enum(['set_max', 'set_pro', 'set_free', 'disable', 'enable', 'update_subscription']),
   uid: z.string().min(1).max(128),
   email: z.string().max(320).optional(),
+  plan: z.enum(['free', 'pro', 'studio']).optional(),
+  months: z.number().int().min(1).max(120).optional(),
 });
 
 // ──────────────────────────────────────────────

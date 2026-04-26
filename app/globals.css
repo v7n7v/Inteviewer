@@ -35,7 +35,7 @@
   --sidebar-active: rgba(168, 199, 250, 0.08);
   --sidebar-text: #8e918f;
   --sidebar-text-active: #a8c7fa;
-  --card-bg: transparent;
+  --card-bg: #1a1a1b;
   --modal-backdrop: rgba(0, 0, 0, 0.7);
 
   /* Distinct Brand Icons for Dark Mode (google-like palette) */
@@ -151,7 +151,7 @@ body {
    ============================================ */
 .glass-card,
 .elevation-1 {
-  background: transparent;
+  background: var(--card-bg);
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
   transition: border-color 0.1s ease;
@@ -160,7 +160,7 @@ body {
 .glass-card:hover,
 .elevation-1:hover {
   border-color: var(--border);
-  background: transparent;
+  background: var(--card-bg);
   box-shadow: none;
 }
 

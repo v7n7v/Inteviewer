@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform, useInView, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/components/ThemeProvider';
 import { AnimatedShimmerBackground } from './AnimatedShimmerBackground';
-import ThemeToggle from '@/components/ThemeToggle';
 
 interface HeroSectionProps {
   onGetStarted: () => void;
@@ -2014,7 +2013,6 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
 
           {/* Right — Auth */}
           <div className="flex items-center gap-2">
-            <ThemeToggle size="sm" />
 
             {isAuthenticated ? (
               <button onClick={onGetStarted} className={`text-[12px] font-semibold px-4 py-1.5 rounded-full transition-all ${isLight ? 'text-gray-900 hover:bg-black/[0.04] border border-black/[0.08]' : 'text-white/80 hover:text-white hover:bg-white/[0.06] border border-white/[0.06]'}`}>Dashboard →</button>

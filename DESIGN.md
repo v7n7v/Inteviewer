@@ -37,7 +37,7 @@ icon:
 | `--text-secondary` | `#9ca0a0`                     | Labels, descriptions               |
 | `--text-muted`     | `#5f6368`                     | Tertiary/disabled text             |
 | `--accent`         | `#a8c7fa`                     | Links, active elements             |
-| `--card-bg`        | `transparent`                 | Card background                    |
+| `--card-bg`        | `#1a1a1b`                     | Card background (opaque)           |
 
 ### Light Mode
 
@@ -107,9 +107,10 @@ border-radius: 12px
 hover: border-color → var(--border)
 ```
 
+- **Cards are OPAQUE.** Dark = `#1a1a1b`, Light = `#ffffff`.
 - No backdrop-filter, no box-shadow, no gradient fills.
-- Cards are transparent in dark mode, white in light mode.
-- Never apply `bg-white`, `bg-black`, or colored fills directly.
+- **Never use `background: transparent` on cards** — it causes content bleed-through.
+- Never apply `bg-white`, `bg-black`, or colored fills directly — use `var(--card-bg)`.
 
 ### Button (Primary)
 
