@@ -12,13 +12,16 @@ import { guardApiRoute } from '@/lib/api-auth';
 
 // Gemini Live voice options mapped to interview personas
 const PERSONA_VOICE_MAP: Record<string, string> = {
-  'The Coach':       'Kore',    // warm, supportive
-  'The Interrogator':'Fenrir',  // intense, deep
-  'The Conversationalist': 'Aoede', // friendly, natural
-  'The Panel Lead':  'Puck',    // neutral, professional
-  'The Technical':   'Charon',  // precise, analytical
-  'default':         'Kore',
+  'FAANG Tech Lead': 'Charon',  // precise, analytical
+  'Friendly HR':     'Kore',    // warm, supportive
+  'Startup CTO':     'Fenrir',  // intense, deep
+  'VP of Engineering':'Puck',   // neutral, professional
+  'Consulting Partner':'Aoede', // friendly, natural
+  'STAR Specialist':  'Kore',   // warm, supportive
+  'default':          'Kore',
 };
+
+const LIVE_MODEL = 'gemini-2.5-flash-native-audio-preview-12-2025';
 
 export async function POST(req: NextRequest) {
   // Auth gate — requires account, counts toward gauntlet usage
@@ -43,16 +46,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Gemini API key not configured' }, { status: 500 });
     }
 
-    const client = new GoogleGenAI({ apiKey });
+    // v1alpha is REQUIRED for Live API and ephemeral tokens
+    const client = new GoogleGenAI({
+      apiKey,
+      httpOptions: { apiVersion: 'v1alpha' },
+    });
 
     const expireTime = new Date(Date.now() + 30 * 60 * 1000).toISOString();
     const token = await client.authTokens.create({
       config: {
         uses: 1,
         expireTime,
-        newSessionExpireTime: new Date(Date.now() + 2 * 60 * 1000).toISOString(),
         liveConnectConstraints: {
-          model: 'gemini-2.0-flash-live-001',
+          model: LIVE_MODEL,
           config: {
             responseModalities: [Modality.AUDIO],
             speechConfig: {
@@ -65,7 +71,6 @@ export async function POST(req: NextRequest) {
             },
           },
         },
-        httpOptions: { apiVersion: 'v1alpha' },
       },
     });
 
@@ -73,12 +78,12 @@ export async function POST(req: NextRequest) {
       token: token.name,
       voiceName,
       expiresAt: expireTime,
-      model: 'gemini-2.0-flash-live-001',
+      model: LIVE_MODEL,
     });
-  } catch (error) {
-    console.error('[api/voice/live-token] Error:', error);
+  } catch (error: any) {
+    console.error('[api/voice/live-token] Error:', error?.message || error);
     return NextResponse.json(
-      { error: 'Failed to create live session token' },
+      { error: error?.message || 'Failed to create live session token' },
       { status: 500 }
     );
   }
@@ -90,14 +95,15 @@ function buildInterviewPrompt(
   interviewStyle: string
 ): string {
   const personaTraits: Record<string, string> = {
-    'The Coach': 'You are a warm, encouraging interviewer who helps candidates shine. Give positive reinforcement while probing deeper. Use a supportive tone.',
-    'The Interrogator': 'You are a challenging, rapid-fire interviewer. Push candidates to think on their feet. Ask follow-up questions that test depth of knowledge. Be direct and intense but professional.',
-    'The Conversationalist': 'You are a friendly, natural interviewer who makes the conversation flow. Build rapport first, then ask substantive questions. Use a casual-professional tone.',
-    'The Panel Lead': 'You are a structured, methodical interviewer following a clear format. Ask one question at a time, take brief notes, and move systematically through topics.',
-    'The Technical': 'You are a precise, analytical interviewer focused on technical depth. Ask about system design, trade-offs, and implementation details.',
+    'FAANG Tech Lead': 'You are a precise, analytical FAANG-style interviewer. Ask surgical, probing system design and behavioral questions. Be direct.',
+    'Friendly HR': 'You are a warm, encouraging HR interviewer who helps candidates shine. Give positive reinforcement while probing deeper.',
+    'Startup CTO': 'You are a fast-paced startup CTO. Ship-it mentality. Ask scrappy, practical questions about building and scaling.',
+    'VP of Engineering': 'You are a strategic VP of Engineering. Focus on leadership, big-picture thinking, and organizational impact.',
+    'Consulting Partner': 'You are a structured consulting partner. Use MECE frameworks. Ask case-style and structured behavioral questions.',
+    'STAR Specialist': 'You are a behavioral interview specialist. Deep-dive into STAR responses. Probe for specifics in every answer.',
   };
 
-  const traits = personaTraits[persona] || personaTraits['The Coach'];
+  const traits = personaTraits[persona] || personaTraits['Friendly HR'];
 
   return `You are an AI mock interviewer conducting a ${interviewStyle} interview.
 

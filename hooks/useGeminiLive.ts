@@ -23,7 +23,6 @@ interface GeminiLiveState {
   isConnecting: boolean;
   userTranscript: string;
   aiTranscript: string;
-  fullConversation: Array<{ role: 'user' | 'ai'; text: string }>;
   error: string | null;
 }
 
@@ -37,23 +36,22 @@ export function useGeminiLive() {
     isConnecting: false,
     userTranscript: '',
     aiTranscript: '',
-    fullConversation: [],
     error: null,
   });
 
   const wsRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const playbackCtxRef = useRef<AudioContext | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
-  const workletNodeRef = useRef<AudioWorkletNode | null>(null);
+  const scriptNodeRef = useRef<ScriptProcessorNode | null>(null);
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const playbackQueueRef = useRef<Float32Array[]>([]);
   const isPlayingRef = useRef(false);
-  const nextPlayTimeRef = useRef(0);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      disconnect();
+      cleanup();
     };
   }, []);
 
@@ -70,31 +68,35 @@ export function useGeminiLive() {
 
       if (!tokenRes.ok) {
         const err = await tokenRes.json();
-        throw new Error(err.error || 'Failed to get live session token');
+        throw new Error(err.error || `Token request failed (${tokenRes.status})`);
       }
 
       const { token } = await tokenRes.json();
+      console.log('[GeminiLive] Token acquired, opening WebSocket...');
 
       // 2. Open WebSocket to Gemini
       const ws = new WebSocket(`${GEMINI_WS_URL}?access_token=${token}`);
       wsRef.current = ws;
 
       ws.onopen = () => {
-        console.log('[GeminiLive] WebSocket connected');
-        setState(s => ({ ...s, isConnected: true, isConnecting: false }));
-        // Setup message is already locked into the ephemeral token constraints
-        // Just send an empty setup to start the session
+        console.log('[GeminiLive] WebSocket connected, sending setup...');
+        // Config is locked into the ephemeral token — send empty setup
         ws.send(JSON.stringify({ setup: {} }));
       };
 
       ws.onmessage = (event) => {
-        const msg = JSON.parse(event.data);
-        handleServerMessage(msg);
+        try {
+          const data = typeof event.data === 'string' ? event.data : '';
+          const msg = JSON.parse(data);
+          handleServerMessage(msg);
+        } catch (e) {
+          console.warn('[GeminiLive] Failed to parse message:', e);
+        }
       };
 
-      ws.onerror = (error) => {
-        console.error('[GeminiLive] WebSocket error:', error);
-        setState(s => ({ ...s, error: 'Connection error', isConnecting: false }));
+      ws.onerror = (event) => {
+        console.error('[GeminiLive] WebSocket error:', event);
+        setState(s => ({ ...s, error: 'WebSocket connection error', isConnecting: false }));
       };
 
       ws.onclose = (event) => {
@@ -109,9 +111,6 @@ export function useGeminiLive() {
         }));
       };
 
-      // 3. Start mic capture
-      await startMicCapture();
-
     } catch (error: any) {
       console.error('[GeminiLive] Connect error:', error);
       setState(s => ({
@@ -123,9 +122,11 @@ export function useGeminiLive() {
   }, []);
 
   const handleServerMessage = useCallback((msg: any) => {
-    // Setup complete
+    // Setup complete — now start mic
     if (msg.setupComplete) {
-      console.log('[GeminiLive] Setup complete');
+      console.log('[GeminiLive] Setup complete, starting mic...');
+      setState(s => ({ ...s, isConnected: true, isConnecting: false }));
+      startMicCapture();
       return;
     }
 
@@ -150,19 +151,17 @@ export function useGeminiLive() {
 
       // Input transcription (what the user said)
       if (sc.inputTranscription?.text) {
-        const text = sc.inputTranscription.text;
         setState(s => ({
           ...s,
-          userTranscript: s.userTranscript + text,
+          userTranscript: s.userTranscript + sc.inputTranscription.text,
         }));
       }
 
       // Output transcription (what the AI said)
       if (sc.outputTranscription?.text) {
-        const text = sc.outputTranscription.text;
         setState(s => ({
           ...s,
-          aiTranscript: s.aiTranscript + text,
+          aiTranscript: s.aiTranscript + sc.outputTranscription.text,
         }));
       }
 
@@ -187,40 +186,40 @@ export function useGeminiLive() {
       });
       mediaStreamRef.current = stream;
 
-      // Create AudioContext at 16kHz for mic capture
+      // Create AudioContext — browser may not support 16kHz natively
       const ctx = new AudioContext({ sampleRate: 16000 });
       audioContextRef.current = ctx;
-
-      // Load the PCM capture worklet
-      await ctx.audioWorklet.addModule(createPCMWorkletURL());
 
       const source = ctx.createMediaStreamSource(stream);
       sourceNodeRef.current = source;
 
-      const worklet = new AudioWorkletNode(ctx, 'pcm-capture-processor');
-      workletNodeRef.current = worklet;
+      // Use ScriptProcessorNode (works everywhere, no blob URL issues)
+      const bufferSize = 4096;
+      const scriptNode = ctx.createScriptProcessor(bufferSize, 1, 1);
+      scriptNodeRef.current = scriptNode;
 
-      worklet.port.onmessage = (e) => {
-        if (e.data.type === 'audio' && wsRef.current?.readyState === WebSocket.OPEN) {
-          // Convert Float32 to Int16 PCM, then base64
-          const pcm16 = float32ToInt16(e.data.buffer);
-          const base64 = arrayBufferToBase64(pcm16.buffer as ArrayBuffer);
+      scriptNode.onaudioprocess = (e) => {
+        if (wsRef.current?.readyState !== WebSocket.OPEN) return;
 
-          wsRef.current.send(JSON.stringify({
-            realtimeInput: {
-              audio: {
-                data: base64,
-                mimeType: 'audio/pcm;rate=16000',
-              },
+        const input = e.inputBuffer.getChannelData(0);
+        const pcm16 = float32ToInt16(input);
+        const base64 = arrayBufferToBase64(pcm16.buffer as ArrayBuffer);
+
+        wsRef.current.send(JSON.stringify({
+          realtimeInput: {
+            audio: {
+              data: base64,
+              mimeType: 'audio/pcm;rate=16000',
             },
-          }));
-        }
+          },
+        }));
       };
 
-      source.connect(worklet);
-      worklet.connect(ctx.destination); // Required for worklet to process
+      source.connect(scriptNode);
+      scriptNode.connect(ctx.destination);
 
       setState(s => ({ ...s, isListening: true }));
+      console.log('[GeminiLive] Mic capture started');
     } catch (error) {
       console.error('[GeminiLive] Mic capture error:', error);
       setState(s => ({ ...s, error: 'Microphone access denied' }));
@@ -242,7 +241,6 @@ export function useGeminiLive() {
       float32[i] = int16[i] / 32768.0;
     }
 
-    // Queue for playback
     playbackQueueRef.current.push(float32);
     if (!isPlayingRef.current) {
       processPlaybackQueue();
@@ -258,22 +256,21 @@ export function useGeminiLive() {
     isPlayingRef.current = true;
     const samples = playbackQueueRef.current.shift()!;
 
-    // Use a separate AudioContext at 24kHz for playback
-    const playCtx = new AudioContext({ sampleRate: 24000 });
+    // Reuse or create playback context at 24kHz
+    if (!playbackCtxRef.current || playbackCtxRef.current.state === 'closed') {
+      playbackCtxRef.current = new AudioContext({ sampleRate: 24000 });
+    }
+
+    const playCtx = playbackCtxRef.current;
     const buffer = playCtx.createBuffer(1, samples.length, 24000);
     buffer.getChannelData(0).set(samples);
 
     const source = playCtx.createBufferSource();
     source.buffer = buffer;
     source.connect(playCtx.destination);
-
-    const now = playCtx.currentTime;
-    const startTime = Math.max(now, nextPlayTimeRef.current);
-    source.start(startTime);
-    nextPlayTimeRef.current = startTime + buffer.duration;
+    source.start();
 
     source.onended = () => {
-      playCtx.close();
       processPlaybackQueue();
     };
   }, []);
@@ -281,7 +278,6 @@ export function useGeminiLive() {
   const stopPlayback = useCallback(() => {
     playbackQueueRef.current = [];
     isPlayingRef.current = false;
-    nextPlayTimeRef.current = 0;
   }, []);
 
   const disconnect = useCallback(() => {
@@ -293,38 +289,38 @@ export function useGeminiLive() {
       isConnecting: false,
       userTranscript: '',
       aiTranscript: '',
-      fullConversation: [],
       error: null,
     });
   }, []);
 
   const cleanup = useCallback(() => {
-    // Close WebSocket
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
     }
 
-    // Stop mic
     if (mediaStreamRef.current) {
       mediaStreamRef.current.getTracks().forEach(t => t.stop());
       mediaStreamRef.current = null;
     }
 
-    // Disconnect worklet
-    if (workletNodeRef.current) {
-      workletNodeRef.current.disconnect();
-      workletNodeRef.current = null;
+    if (scriptNodeRef.current) {
+      scriptNodeRef.current.disconnect();
+      scriptNodeRef.current = null;
     }
     if (sourceNodeRef.current) {
       sourceNodeRef.current.disconnect();
       sourceNodeRef.current = null;
     }
 
-    // Close audio context
-    if (audioContextRef.current) {
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
       audioContextRef.current.close();
       audioContextRef.current = null;
+    }
+
+    if (playbackCtxRef.current && playbackCtxRef.current.state !== 'closed') {
+      playbackCtxRef.current.close();
+      playbackCtxRef.current = null;
     }
 
     stopPlayback();
@@ -367,30 +363,4 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
     binary += String.fromCharCode(bytes[i]);
   }
   return btoa(binary);
-}
-
-function createPCMWorkletURL(): string {
-  const code = `
-    class PCMCaptureProcessor extends AudioWorkletProcessor {
-      constructor() {
-        super();
-        this._buffer = [];
-        this._bufferSize = 4096; // ~256ms at 16kHz
-      }
-      process(inputs) {
-        const input = inputs[0];
-        if (input && input[0]) {
-          this._buffer.push(...input[0]);
-          if (this._buffer.length >= this._bufferSize) {
-            const chunk = new Float32Array(this._buffer.splice(0, this._bufferSize));
-            this.port.postMessage({ type: 'audio', buffer: chunk });
-          }
-        }
-        return true;
-      }
-    }
-    registerProcessor('pcm-capture-processor', PCMCaptureProcessor);
-  `;
-  const blob = new Blob([code], { type: 'application/javascript' });
-  return URL.createObjectURL(blob);
 }
