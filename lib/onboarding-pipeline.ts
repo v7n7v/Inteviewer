@@ -69,8 +69,17 @@ export async function runPostOnboardingPipeline(profile: UserProfile) {
  */
 async function seedVault(parsed: any | null, rawText?: string): Promise<void> {
   try {
-    const token = await auth.currentUser?.getIdToken?.();
-    if (!token) return;
+    // Retry token acquisition — auth.currentUser may not be ready right after signup
+    let token: string | undefined;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      token = await auth.currentUser?.getIdToken?.() || undefined;
+      if (token) break;
+      await new Promise(r => setTimeout(r, 500)); // Wait 500ms for auth state to propagate
+    }
+    if (!token) {
+      console.warn('[onboarding-pipeline] Could not get auth token after 3 attempts');
+      return;
+    }
 
     // Build a resume object from parsed data or construct a minimal one from raw text
     const resume = parsed || buildMinimalResume(rawText || '');

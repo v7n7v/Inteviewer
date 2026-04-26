@@ -1111,7 +1111,40 @@ export default function GauntletPage() {
                                     {geminiLive.isSpeaking && <span className="text-[10px] text-cyan-400">Speaking...</span>}
                                     {geminiLive.isListening && !geminiLive.isSpeaking && <span className="text-[10px] text-amber-400">Listening...</span>}
                                 </div>
-                                <button onClick={() => geminiLive.disconnect()} className="text-xs font-bold text-red-400 hover:text-red-300 transition-colors">End Voice</button>
+                                <button onClick={() => {
+                                    // Save transcript to debrief before disconnecting
+                                    if (geminiLive.aiTranscript || geminiLive.userTranscript) {
+                                        authFetch('/api/agent/debriefs', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                                company: 'AI Mock Interview',
+                                                role: jobDescription ? jobDescription.substring(0, 80) : 'Practice Session',
+                                                roundType: interviewStyle || 'behavioral',
+                                                date: new Date().toISOString().split('T')[0],
+                                                questions: questions.slice(0, currentIndex + 1).map((q, i) => ({
+                                                    text: q.text,
+                                                    confidence: results[i]?.grading?.overall_score || 50,
+                                                    category: q.type || 'Behavioral',
+                                                })),
+                                                overallFeeling: 3,
+                                                strengths: `Live voice session with ${selectedPersona || 'AI'} interviewer`,
+                                                weaknesses: '',
+                                                surprises: '',
+                                                wouldChange: '',
+                                                interviewerVibe: 'neutral',
+                                                followUpSent: false,
+                                                outcome: 'pending',
+                                                liveTranscript: {
+                                                    ai: geminiLive.aiTranscript,
+                                                    user: geminiLive.userTranscript,
+                                                },
+                                            }),
+                                        }).catch(console.error);
+                                        showToast('Live session saved to Debrief Journal', 'rate_review');
+                                    }
+                                    geminiLive.disconnect();
+                                }} className="text-xs font-bold text-red-400 hover:text-red-300 transition-colors">End Voice</button>
                             </div>
                         )}
                     </motion.div>

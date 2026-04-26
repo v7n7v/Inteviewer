@@ -51,6 +51,7 @@ const FREEMIUM_API_PATHS = [
   '/api/resume/parse',
   '/api/writing/humanize-free',
   '/api/tools/free',
+  '/api/onboarding',
 ];
 
 // Known scanner/exploit paths to reject instantly
