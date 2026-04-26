@@ -21,7 +21,7 @@ const PERSONA_VOICE_MAP: Record<string, string> = {
   'default':          'Kore',
 };
 
-const LIVE_MODEL = 'gemini-2.5-flash-native-audio-preview-12-2025';
+const LIVE_MODEL = 'gemini-2.5-flash-native-audio-latest';
 
 export async function POST(req: NextRequest) {
   // Auth gate — requires account, counts toward gauntlet usage
