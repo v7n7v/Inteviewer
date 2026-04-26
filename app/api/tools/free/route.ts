@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     // Rate limit check (per tool per IP)
     const ip = getIP(req);
     const rateLimitKey = `free-${tool}:${ip}`;
-    const { allowed, remaining } = checkRateLimit(rateLimitKey, config.rateLimit, config.windowMs);
+    const { allowed, remaining } = await checkRateLimit(rateLimitKey, config.rateLimit, config.windowMs);
 
     if (!allowed) {
       return NextResponse.json({

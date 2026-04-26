@@ -108,9 +108,9 @@ export async function POST(req: NextRequest) {
         );
       }
     } else {
-      // Anonymous user: IP-based daily limit
+      // Anonymous user: IP-based daily limit (Upstash Redis — persistent across cold starts)
       const rateLimitKey = `humanize-free:${ip}`;
-      const { allowed } = checkRateLimit(rateLimitKey, ANON_DAILY_LIMIT, ANON_WINDOW_MS);
+      const { allowed } = await checkRateLimit(rateLimitKey, ANON_DAILY_LIMIT, ANON_WINDOW_MS);
       if (!allowed) {
         return NextResponse.json(
           {

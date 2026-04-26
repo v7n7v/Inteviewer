@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
             || req.headers.get('x-real-ip')
             || 'unknown';
 
-        const { allowed, resetIn } = checkRateLimit(`teams-interest:${ip}`, 3, 60_000);
+        const { allowed, resetIn } = await checkRateLimit(`teams-interest:${ip}`, 3, 60_000);
         if (!allowed) {
             return NextResponse.json(
                 { error: 'Too many submissions. Please try again later.' },

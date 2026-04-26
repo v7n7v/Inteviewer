@@ -84,7 +84,7 @@ export async function guardApiRoute(
   if (!authUser) {
     // Per-minute speed throttle for all unauthenticated requests
     const anonLimit = options?.allowAnonymous ? (options.rateLimit ?? 5) : 20;
-    const { allowed: speedOk } = checkRateLimit(`unauth:${ip}`, anonLimit, options?.rateLimitWindow ?? 60_000);
+    const { allowed: speedOk } = await checkRateLimit(`unauth:${ip}`, anonLimit, options?.rateLimitWindow ?? 60_000);
     if (!speedOk) {
       monitor.warn('Unauth Rate Limit Hit', `IP: ${ip}`, [
         { name: 'Path', value: pathname },
@@ -107,7 +107,7 @@ export async function guardApiRoute(
       if (feature) {
         const cap = ANON_CAPS[feature] ?? 1;
         const capKey = `anon-cap:${ip}:${feature}`;
-        const { allowed: capOk } = checkRateLimit(capKey, cap, 30 * 24 * 60 * 60 * 1000); // 30-day window
+        const { allowed: capOk } = await checkRateLimit(capKey, cap, 30 * 24 * 60 * 60 * 1000); // 30-day window
         if (!capOk) {
           monitor.warn('Anon Cap Exhausted', `IP: ${ip}`, [
             { name: 'Feature', value: feature },
@@ -194,7 +194,7 @@ export async function guardApiRoute(
   if (tier === 'pro' || tier === 'studio') {
     const limit = options?.rateLimit ?? getTierRateLimit(pathname, tier);
     const rateLimitKey = `${ip}:${authUser.uid}`;
-    const { allowed, remaining, resetIn } = checkRateLimit(rateLimitKey, limit, options?.rateLimitWindow ?? 60_000);
+    const { allowed, remaining, resetIn } = await checkRateLimit(rateLimitKey, limit, options?.rateLimitWindow ?? 60_000);
 
     if (!allowed) {
       monitor.warn('Pro Rate Limit Hit', `Tier: ${tier}`, [
