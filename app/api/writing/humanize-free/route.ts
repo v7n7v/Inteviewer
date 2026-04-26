@@ -14,6 +14,7 @@ import { detectAI } from '@/lib/ai-detection';
 import { authenticateRequest } from '@/lib/api-auth';
 import { checkUsageAllowed, incrementUsage, countWords } from '@/lib/usage-tracker';
 import { getUserTier } from '@/lib/pricing-tiers';
+import { verifyTurnstile } from '@/lib/turnstile';
 import { monitor } from '@/lib/monitor';
 
 const FREE_WORD_CAP = 300;
@@ -65,7 +66,7 @@ export async function POST(req: NextRequest) {
     const ip = getClientIp(req);
 
     // Parse body
-    let body: { text?: string; domain?: string; tone?: string };
+    let body: { text?: string; domain?: string; tone?: string; turnstileToken?: string };
     try {
       body = await req.json();
     } catch {
@@ -90,8 +91,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if user is authenticated
+    // Bot protection: verify Turnstile token for anonymous users
     const authUser = await authenticateRequest(req);
+    if (!authUser && body.turnstileToken) {
+      const isHuman = await verifyTurnstile(body.turnstileToken, ip);
+      if (!isHuman) {
+        monitor.warn('Turnstile Rejected', `IP: ${ip}`);
+        return NextResponse.json(
+          { error: 'Bot verification failed. Please try again.' },
+          { status: 403 }
+        );
+      }
+    }
 
     if (authUser) {
       // Authenticated user: use existing writingTools quota

@@ -557,6 +557,45 @@ function HeroHumanizer({ onShowSignup }: { onShowSignup: () => void }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [limitReached, setLimitReached] = useState(false);
+  const turnstileRef = useRef<HTMLDivElement>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+
+  // Load Turnstile script and render invisible widget
+  useEffect(() => {
+    const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+    if (!siteKey || typeof window === 'undefined') return;
+
+    // Load the script if not already loaded
+    if (!document.getElementById('cf-turnstile-script')) {
+      const script = document.createElement('script');
+      script.id = 'cf-turnstile-script';
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad';
+      script.async = true;
+      document.head.appendChild(script);
+    }
+
+    // Render callback
+    (window as any).onTurnstileLoad = () => {
+      if (turnstileRef.current && (window as any).turnstile) {
+        (window as any).turnstile.render(turnstileRef.current, {
+          sitekey: siteKey,
+          callback: (token: string) => setTurnstileToken(token),
+          'expired-callback': () => setTurnstileToken(null),
+          size: 'invisible',
+        });
+      }
+    };
+
+    // If script already loaded
+    if ((window as any).turnstile && turnstileRef.current) {
+      (window as any).turnstile.render(turnstileRef.current, {
+        sitekey: siteKey,
+        callback: (token: string) => setTurnstileToken(token),
+        'expired-callback': () => setTurnstileToken(null),
+        size: 'invisible',
+      });
+    }
+  }, []);
 
   const wordCount = inputText.trim().split(/\s+/).filter(Boolean).length;
   const overLimit = wordCount > 300;
@@ -584,7 +623,7 @@ function HeroHumanizer({ onShowSignup }: { onShowSignup: () => void }) {
       const res = await fetch('/api/writing/humanize-free', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: inputText, domain: 'general', tone: 'professional' }),
+        body: JSON.stringify({ text: inputText, domain: 'general', tone: 'professional', turnstileToken: turnstileToken || undefined }),
       });
 
       const data = await res.json();
@@ -734,6 +773,8 @@ function HeroHumanizer({ onShowSignup }: { onShowSignup: () => void }) {
         </AnimatePresence>
       </div>
       </div>
+      {/* Invisible Turnstile widget — no visual output */}
+      <div ref={turnstileRef} className="hidden" />
     </div>
   );
 }
