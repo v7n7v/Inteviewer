@@ -8,7 +8,12 @@ import { Resend } from 'resend';
 import { monitor } from '@/lib/monitor';
 
 const CONTACT_EMAIL = 'alula.gebre@gmail.com';
-const resend = new Resend(process.env.RESEND_API_KEY);
+
+let _resend: Resend | null = null;
+function getResend() {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY!);
+  return _resend;
+}
 
 /** Escape HTML entities to prevent injection in email templates */
 function escapeHtml(str: string): string {
@@ -62,7 +67,7 @@ export async function POST(req: NextRequest) {
     const safeEmail = escapeHtml(email.slice(0, 320));
     const safeMessage = escapeHtml(message);
 
-    await resend.emails.send({
+    await getResend().emails.send({
       from: 'TalentConsulting <hello@talentconsulting.io>',
       to: [CONTACT_EMAIL],
       replyTo: email.slice(0, 320),

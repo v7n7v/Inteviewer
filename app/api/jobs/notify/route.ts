@@ -9,7 +9,11 @@ import { getAdminDb } from '@/lib/firebase-admin';
 import { Resend } from 'resend';
 import { monitor } from '@/lib/monitor';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let _resend: Resend | null = null;
+function getResend() {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY!);
+  return _resend;
+}
 
 interface JobForEmail {
   title: string;
@@ -117,7 +121,7 @@ export async function POST(req: NextRequest) {
       </div>
     `;
 
-    await resend.emails.send({
+    await getResend().emails.send({
       from: 'Talent Studio <hello@talentconsulting.io>',
       to: [email],
       subject: `${jobs.length} new job matches — up to ${topScore}% acceptance chance`,
