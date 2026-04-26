@@ -3,10 +3,12 @@
  * Server-side enforcement of free tier caps via Firestore.
  * Path: users/{uid}/usage/lifetime
  * Voice: users/{uid}/usage/voice_monthly
+ * 
+ * Uses Firebase Admin SDK for guaranteed write permissions.
  */
 
-import { getFirestore, doc, getDoc, setDoc, increment } from 'firebase/firestore';
-import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getAdminDb } from '@/lib/firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import type { PlanTier } from './pricing-tiers';
 
 // ── Feature Keys ──
@@ -89,28 +91,18 @@ const DEFAULT_USAGE: UsageData = {
   galleryTools: 0,
 };
 
-// ── Firebase Client (server-side) ──
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-};
-
-function getDb() {
-  const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-  return getFirestore(app);
-}
+// ── Doc References (Admin SDK) ──
 
 function usageDocRef(uid: string) {
-  return doc(getDb(), 'users', uid, 'usage', 'lifetime');
+  return getAdminDb().collection('users').doc(uid).collection('usage').doc('lifetime');
 }
 
 function voiceDocRef(uid: string) {
-  return doc(getDb(), 'users', uid, 'usage', 'voice_monthly');
+  return getAdminDb().collection('users').doc(uid).collection('usage').doc('voice_monthly');
 }
 
 function writingDocRef(uid: string) {
-  return doc(getDb(), 'users', uid, 'usage', 'writing_monthly');
+  return getAdminDb().collection('users').doc(uid).collection('usage').doc('writing_monthly');
 }
 
 /** Current month key for reset detection */
@@ -122,9 +114,9 @@ function currentMonthKey(): string {
 /** Get current usage counts */
 export async function getUsage(uid: string): Promise<UsageData> {
   try {
-    const snap = await getDoc(usageDocRef(uid));
-    if (snap.exists()) {
-      const data = snap.data();
+    const snap = await usageDocRef(uid).get();
+    if (snap.exists) {
+      const data = snap.data()!;
       return {
         morphs: data.morphs ?? 0,
         gauntlets: data.gauntlets ?? 0,
@@ -146,9 +138,8 @@ export async function getUsage(uid: string): Promise<UsageData> {
 /** Increment usage for a feature. Call AFTER a successful action. */
 export async function incrementUsage(uid: string, feature: UsageFeature): Promise<void> {
   try {
-    await setDoc(
-      usageDocRef(uid),
-      { [feature]: increment(1) },
+    await usageDocRef(uid).set(
+      { [feature]: FieldValue.increment(1) },
       { merge: true }
     );
   } catch (err) {
@@ -191,9 +182,9 @@ export async function checkUsageAllowed(
 /** Get current month's voice usage in seconds */
 export async function getVoiceUsage(uid: string): Promise<VoiceUsageData> {
   try {
-    const snap = await getDoc(voiceDocRef(uid));
-    if (snap.exists()) {
-      const data = snap.data();
+    const snap = await voiceDocRef(uid).get();
+    if (snap.exists) {
+      const data = snap.data()!;
       const storedMonth = data.month || '';
       const thisMonth = currentMonthKey();
 
@@ -247,17 +238,16 @@ export async function recordVoiceUsage(uid: string, seconds: number): Promise<vo
 
     if (current.month !== thisMonth) {
       // New month — reset counter
-      await setDoc(voiceDocRef(uid), {
+      await voiceDocRef(uid).set({
         usedSeconds: seconds,
         month: thisMonth,
         lastUsed: new Date().toISOString(),
       });
     } else {
       // Same month — increment
-      await setDoc(
-        voiceDocRef(uid),
+      await voiceDocRef(uid).set(
         {
-          usedSeconds: increment(seconds),
+          usedSeconds: FieldValue.increment(seconds),
           month: thisMonth,
           lastUsed: new Date().toISOString(),
         },
@@ -298,9 +288,9 @@ export function countWords(text: string): number {
 /** Get current month's writing word usage */
 export async function getWritingWordUsage(uid: string): Promise<WritingWordUsage> {
   try {
-    const snap = await getDoc(writingDocRef(uid));
-    if (snap.exists()) {
-      const data = snap.data();
+    const snap = await writingDocRef(uid).get();
+    if (snap.exists) {
+      const data = snap.data()!;
       const storedMonth = data.month || '';
       const thisMonth = currentMonthKey();
       if (storedMonth !== thisMonth) {
@@ -347,16 +337,15 @@ export async function recordWritingWords(uid: string, words: number): Promise<vo
     const current = await getWritingWordUsage(uid);
 
     if (current.month !== thisMonth) {
-      await setDoc(writingDocRef(uid), {
+      await writingDocRef(uid).set({
         usedWords: words,
         month: thisMonth,
         lastUsed: new Date().toISOString(),
       });
     } else {
-      await setDoc(
-        writingDocRef(uid),
+      await writingDocRef(uid).set(
         {
-          usedWords: increment(words),
+          usedWords: FieldValue.increment(words),
           month: thisMonth,
           lastUsed: new Date().toISOString(),
         },
@@ -367,4 +356,3 @@ export async function recordWritingWords(uid: string, words: number): Promise<vo
     console.error(`Failed to record writing word usage for ${uid}`, err);
   }
 }
-
