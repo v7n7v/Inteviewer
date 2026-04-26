@@ -1,6 +1,14 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let _resend: Resend | null = null;
+function getResend() {
+  if (!_resend) {
+    const key = process.env.RESEND_API_KEY;
+    if (!key) throw new Error('RESEND_API_KEY not set');
+    _resend = new Resend(key);
+  }
+  return _resend;
+}
 const FROM_EMAIL = 'TalentConsulting <hello@talentconsulting.io>';
 
 export async function sendUpgradeEmail(toEmail: string, plan: string, months?: number) {
@@ -41,7 +49,7 @@ export async function sendUpgradeEmail(toEmail: string, plan: string, months?: n
       </div>
     `;
 
-    await resend.emails.send({
+    await getResend().emails.send({
       from: FROM_EMAIL,
       to: [toEmail],
       subject: `Account Upgrade: ${planName} unlocked!`,
