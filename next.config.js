@@ -57,7 +57,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com data:",
               "img-src 'self' data: blob: https:",
-              "connect-src 'self' data: blob: https://*.firebaseio.com https://*.googleapis.com https://api.groq.com https://api.deepgram.com https://api.elevenlabs.io https://generativelanguage.googleapis.com wss://*.firebaseio.com https://api.stripe.com https://cdnjs.cloudflare.com https://challenges.cloudflare.com",
+              "connect-src 'self' data: blob: https://*.firebaseio.com https://*.googleapis.com https://api.groq.com https://api.deepgram.com https://api.elevenlabs.io https://generativelanguage.googleapis.com wss://generativelanguage.googleapis.com wss://*.firebaseio.com https://api.stripe.com https://cdnjs.cloudflare.com https://challenges.cloudflare.com",
               "media-src 'self' blob:",
               "frame-src 'self' https://*.firebaseapp.com https://accounts.google.com https://apis.google.com https://js.stripe.com https://challenges.cloudflare.com",
               "base-uri 'self'",

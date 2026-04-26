@@ -7,6 +7,7 @@ import { useStore } from '@/lib/store';
 import { showToast } from '@/components/Toast';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { useAudioPlayer } from '@/hooks/useAudioPlayer';
+import { useGeminiLive } from '@/hooks/useGeminiLive';
 import { authFetch } from '@/lib/auth-fetch';
 import PageHelp from '@/components/PageHelp';
 import { useAuthGate } from '@/hooks/useAuthGate';
@@ -201,11 +202,13 @@ export default function GauntletPage() {
 
     // Audio mode state
     const [voiceEnabled, setVoiceEnabled] = useState(false);
+    const [liveMode, setLiveMode] = useState(false);
     const [voiceGender, setVoiceGender] = useState<'male' | 'female'>('female');
     const [isSpeakingQuestion, setIsSpeakingQuestion] = useState(false);
     const [isTranscribing, setIsTranscribing] = useState(false);
     const { isRecording, startRecording, stopRecording, getVisualizerData } = useAudioRecorder();
     const { isPlaying, playAudio, stopAudio } = useAudioPlayer();
+    const geminiLive = useGeminiLive();
     const [visualizerData, setVisualizerData] = useState<number[]>([]);
     const animFrameRef = useRef<number | null>(null);
 
@@ -996,15 +999,27 @@ export default function GauntletPage() {
                                 {/* Voice Mode Toggle */}
                                 <div>
                                     <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">Voice Mode</label>
-                                    <button
-                                        onClick={() => setVoiceEnabled(!voiceEnabled)}
-                                        className={`w-full py-2.5 rounded-xl text-sm font-bold transition-all mb-1 flex items-center justify-center gap-2 ${voiceEnabled ? 'bg-cyan-500/10 border border-cyan-500/30 text-cyan-700 dark:text-cyan-400' : 'bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-muted)]'}`}
-                                    >
-                                        <span className="material-symbols-rounded">{voiceEnabled ? 'mic' : 'mic_off'}</span>
-                                        {voiceEnabled ? 'Voice ON' : 'Voice OFF'}
-                                    </button>
-                                    {voiceEnabled && (
-                                        <p className="text-[10px] text-[var(--text-muted)] text-center">Voice matches your interviewer persona</p>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => { setVoiceEnabled(!voiceEnabled); if (liveMode) setLiveMode(false); }}
+                                            className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${voiceEnabled && !liveMode ? 'bg-cyan-500/10 border border-cyan-500/30 text-cyan-700 dark:text-cyan-400' : 'bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-muted)]'}`}
+                                        >
+                                            <span className="material-symbols-rounded">{voiceEnabled && !liveMode ? 'mic' : 'mic_off'}</span>
+                                            Voice
+                                        </button>
+                                        <button
+                                            onClick={() => { setLiveMode(!liveMode); if (!liveMode) setVoiceEnabled(true); }}
+                                            className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${liveMode ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400' : 'bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-muted)]'}`}
+                                        >
+                                            <span className="material-symbols-rounded">stream</span>
+                                            Live ✨
+                                        </button>
+                                    </div>
+                                    {liveMode && (
+                                        <p className="text-[10px] text-emerald-500 text-center mt-1">Real-time conversation with Gemini — no delay</p>
+                                    )}
+                                    {voiceEnabled && !liveMode && (
+                                        <p className="text-[10px] text-[var(--text-muted)] text-center mt-1">Voice matches your interviewer persona</p>
                                     )}
                                 </div>
                             </div>
@@ -1013,8 +1028,21 @@ export default function GauntletPage() {
                             <motion.button
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
-                                onClick={interviewType === 'study-cards' ? generateFlashcards : startGauntlet}
-                                disabled={isGenerating}
+                                onClick={() => {
+                                    if (interviewType === 'study-cards') {
+                                        generateFlashcards();
+                                    } else if (liveMode) {
+                                        geminiLive.connect({
+                                            persona: selectedPersona,
+                                            jobDescription,
+                                            interviewStyle,
+                                        });
+                                        setViewMode('gauntlet');
+                                    } else {
+                                        startGauntlet();
+                                    }
+                                }}
+                                disabled={isGenerating || geminiLive.isConnecting}
                                 className={`w-full mt-6 py-3.5 rounded-xl font-black text-sm hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${interviewType === 'study-cards' ? 'bg-indigo-500/10 border border-indigo-500/30 text-[var(--text-primary)] hover:border-indigo-500/50 shadow-indigo-500/10' : 'bg-cyan-500/10 border border-cyan-500/30 text-[var(--text-primary)] hover:border-cyan-500/50 shadow-cyan-500/10'}`}
                             >
                                 {isGenerating ? (
@@ -1022,11 +1050,103 @@ export default function GauntletPage() {
                                         <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="w-5 h-5 border-2 border-cyan-500/50 border-t-cyan-500 rounded-full" />
                                         {interviewType === 'study-cards' ? 'Generating Cards...' : 'Spinning Up Simulator...'}
                                     </>
+                                ) : liveMode ? (
+                                    <><span className="material-symbols-rounded text-[20px] text-emerald-500">stream</span> Start Live Interview ✨</>
                                 ) : (
                                     <>{interviewType === 'study-cards' ? <><span className="material-symbols-rounded text-[20px] text-indigo-500">style</span> Generate Study Cards</> : <><span className="material-symbols-rounded text-[20px] text-cyan-500">play_arrow</span> Start Simulator</>}</>
                                 )}
                             </motion.button>
                         </div>
+                    </motion.div>
+                )}
+
+                {/* ============================================ */}
+                {/* LIVE INTERVIEW — Gemini Live WebSocket */}
+                {/* ============================================ */}
+                {viewMode === 'gauntlet' && liveMode && geminiLive.isConnected && (
+                    <motion.div key="live-interview" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-4xl mx-auto">
+                        {/* Live Status Bar */}
+                        <div className="mb-6 rounded-2xl glass-card overflow-hidden">
+                            <div className="px-6 py-4 bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 border-b border-emerald-500/20 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse shadow-lg shadow-emerald-500/50" />
+                                    <span className="text-sm font-bold text-emerald-400">Live Interview Active</span>
+                                    {geminiLive.isSpeaking && (
+                                        <span className="text-xs text-cyan-400 flex items-center gap-1">
+                                            <span className="material-symbols-rounded text-[14px]">volume_up</span>
+                                            Interviewer speaking...
+                                        </span>
+                                    )}
+                                    {geminiLive.isListening && !geminiLive.isSpeaking && (
+                                        <span className="text-xs text-amber-400 flex items-center gap-1">
+                                            <span className="material-symbols-rounded text-[14px]">mic</span>
+                                            Listening...
+                                        </span>
+                                    )}
+                                </div>
+                                <button
+                                    onClick={() => { geminiLive.disconnect(); setViewMode('setup'); }}
+                                    className="px-4 py-1.5 rounded-lg text-xs font-bold bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30 transition-all"
+                                >
+                                    End Interview
+                                </button>
+                            </div>
+
+                            {/* Audio Visualizer */}
+                            <div className="px-6 py-8 flex items-center justify-center">
+                                <div className="flex items-center gap-1 h-16">
+                                    {Array.from({ length: 24 }).map((_, i) => (
+                                        <motion.div
+                                            key={i}
+                                            animate={{
+                                                height: geminiLive.isSpeaking
+                                                    ? [8, Math.random() * 60 + 8, 8]
+                                                    : geminiLive.isListening
+                                                    ? [4, Math.random() * 20 + 4, 4]
+                                                    : 4,
+                                            }}
+                                            transition={{
+                                                duration: geminiLive.isSpeaking ? 0.3 : 0.6,
+                                                repeat: Infinity,
+                                                delay: i * 0.05,
+                                            }}
+                                            className={`w-1.5 rounded-full ${
+                                                geminiLive.isSpeaking
+                                                    ? 'bg-gradient-to-t from-emerald-500 to-cyan-400'
+                                                    : geminiLive.isListening
+                                                    ? 'bg-gradient-to-t from-amber-500 to-yellow-400'
+                                                    : 'bg-white/20'
+                                            }`}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Live Transcript */}
+                            <div className="px-6 pb-6 space-y-3 max-h-64 overflow-y-auto">
+                                {geminiLive.aiTranscript && (
+                                    <div className="flex gap-3">
+                                        <span className="material-symbols-rounded text-emerald-500 text-[18px] mt-0.5">smart_toy</span>
+                                        <p className="text-sm text-white/80 leading-relaxed">{geminiLive.aiTranscript}</p>
+                                    </div>
+                                )}
+                                {geminiLive.userTranscript && (
+                                    <div className="flex gap-3">
+                                        <span className="material-symbols-rounded text-cyan-500 text-[18px] mt-0.5">person</span>
+                                        <p className="text-sm text-white/60 leading-relaxed">{geminiLive.userTranscript}</p>
+                                    </div>
+                                )}
+                                {!geminiLive.aiTranscript && !geminiLive.userTranscript && (
+                                    <p className="text-center text-sm text-white/30 py-4">Waiting for interviewer to start...</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Tip */}
+                        <p className="text-center text-xs text-white/30 mt-4">
+                            <span className="material-symbols-rounded align-middle mr-1 text-[14px]">lightbulb</span>
+                            Speak naturally — the interviewer can hear you in real-time. You can interrupt at any time.
+                        </p>
                     </motion.div>
                 )}
 
