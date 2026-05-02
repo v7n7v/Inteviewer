@@ -20,7 +20,7 @@
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.1",
     "@stripe/react-stripe-js": "^5.6.1",
-    "@stripe/stripe-js": "^8.10.0",
+    "@stripe/stripe-js": "^9.4.0",
     "@types/qrcode": "^1.5.6",
     "@types/ws": "^8.18.1",
     "@upstash/ratelimit": "^2.0.8",
