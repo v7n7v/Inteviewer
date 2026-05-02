@@ -8,6 +8,8 @@ import { useUserTier } from '@/hooks/use-user-tier';
 import { useGeminiLiveAvatar } from '@/hooks/useGeminiLiveAvatar';
 import { authFetch } from '@/lib/auth-fetch';
 import AuthModal from '@/components/modals/AuthModal';
+import TelemetryCard from '@/components/TelemetryCard';
+import { analyzeInterview, type InterviewTelemetry } from '@/lib/interview-telemetry';
 import dynamic from 'next/dynamic';
 
 // Lazy-load the 3D avatar component (keeps main bundle clean)
@@ -63,6 +65,7 @@ export default function InterviewSimPage() {
   const [debriefLoading, setDebriefLoading] = useState(false);
   const [avatarLoaded, setAvatarLoaded] = useState(false);
   const [showTranscript, setShowTranscript] = useState(true);
+  const [telemetry, setTelemetry] = useState<InterviewTelemetry | null>(null);
 
   const gemini = useGeminiLiveAvatar();
   const transcriptRef = useRef<HTMLDivElement>(null);
@@ -88,6 +91,9 @@ export default function InterviewSimPage() {
 
   const endInterview = useCallback(async () => {
     const transcript = gemini.getTranscript();
+    // Deterministic telemetry — instant, no API call
+    const tel = analyzeInterview(transcript, gemini.elapsedSeconds, jobDesc || undefined);
+    setTelemetry(tel);
     gemini.disconnect();
     setPhase('debrief');
     setDebriefLoading(true);
@@ -405,6 +411,15 @@ export default function InterviewSimPage() {
         ) : debrief ? (
           <>
             {/* Score */}
+
+            {/* Deterministic Telemetry — appears instantly */}
+            {telemetry && (
+              <div className="mb-6">
+                <TelemetryCard telemetry={telemetry} isLight={isLight} accentColor={pColor} />
+              </div>
+            )}
+
+            {/* AI Score */}
             <div className="text-center mb-8">
               <div
                 className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4"
@@ -451,7 +466,7 @@ export default function InterviewSimPage() {
             </div>
 
             <button
-              onClick={() => { setPhase('setup'); setDebrief(null); }}
+              onClick={() => { setPhase('setup'); setDebrief(null); setTelemetry(null); }}
               className="w-full py-3 rounded-xl font-medium text-sm transition-all hover:opacity-90"
               style={{ background: `${pColor}10`, color: pColor, border: `1px solid ${pColor}30` }}
             >

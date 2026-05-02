@@ -22,6 +22,8 @@ import FileUploadDropzone from '@/components/FileUploadDropzone';
 import SkillGapWarningModal from '@/components/modals/SkillGapWarningModal';
 import UpgradeModal from '@/components/UpgradeModal';
 import AuthModal from '@/components/modals/AuthModal';
+import ProofCard from '@/components/ProofCard';
+import type { ProofResult } from '@/lib/tfidf-proof';
 
 // Set up PDF.js worker
 if (typeof window !== 'undefined') {
@@ -499,6 +501,7 @@ export default function LiquidResumePage() {
   const [morphPercentage, setMorphPercentage] = useState(75);
   const [targetPageCount, setTargetPageCount] = useState<number | 'auto'>('auto');
   const [matchScore, setMatchScore] = useState<number | null>(null);
+  const [proofData, setProofData] = useState<ProofResult | null>(null);
   const [acceptedRisk, setAcceptedRisk] = useState(false);
   const [flashWarning, setFlashWarning] = useState(false);
 
@@ -678,7 +681,7 @@ export default function LiquidResumePage() {
     return data.resume;
   };
 
-  const morphResumeToJD = async (resume: ResumeData, jd: string, percentage: number, pageCount: number | 'auto'): Promise<{ morphed: ResumeData; score: number }> => {
+  const morphResumeToJD = async (resume: ResumeData, jd: string, percentage: number, pageCount: number | 'auto'): Promise<{ morphed: ResumeData; score: number; proof?: ProofResult }> => {
     const res = await authFetch('/api/resume/morph', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -691,7 +694,7 @@ export default function LiquidResumePage() {
       throw new Error(err.error || 'Failed to morph resume');
     }
     const data = await res.json();
-    return { morphed: data.morphedResume, score: data.matchScore };
+    return { morphed: data.morphedResume, score: data.matchScore, proof: data.proof };
   };
 
   const extractCompanyFromJD = async (jd: string): Promise<string> => {
@@ -784,13 +787,14 @@ export default function LiquidResumePage() {
     setIsLoading(true);
     try {
       showToast(`AI is morphing your resume at ${morphPercentage}% intensity...`, 'psychology');
-      const { morphed, score } = await morphResumeToJD(originalResume, jobDescription, morphPercentage, targetPageCount);
+      const { morphed, score, proof } = await morphResumeToJD(originalResume, jobDescription, morphPercentage, targetPageCount);
 
       // CRITICAL: Always ensure we have valid data before proceeding
       const validResume = hasResumeData(morphed) ? morphed : originalResume;
 
       setMorphedResume(normalizeResume(validResume, originalResume) as any);
       setMatchScore(score);
+      setProofData(proof || null);
       // Clear stale enhance results from previous resume version
       setResumeCheckResult(null);
       setPreFixScore(null);
@@ -2469,6 +2473,13 @@ export default function LiquidResumePage() {
                             Preview & Download →
                           </button>
                         </div>
+                      </div>
+                    )}
+
+                    {/* ATS Proof Engine — Deterministic Before/After */}
+                    {proofData && (
+                      <div className="mb-6">
+                        <ProofCard proof={proofData} isLight={isLight} />
                       </div>
                     )}
 

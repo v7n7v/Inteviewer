@@ -7,6 +7,7 @@ import { ResumeMorphSchema } from '@/lib/schemas';
 import { sanitizeForAI } from '@/lib/sanitize';
 import { quickClean } from '@/lib/humanize-guard';
 import { monitor } from '@/lib/monitor';
+import { proveResumeDelta, flattenResume } from '@/lib/tfidf-proof';
 
 export async function POST(req: NextRequest) {
   try {
@@ -99,9 +100,22 @@ Return JSON:
       await incrementUsage(guard.user.uid, 'morphs');
     }
 
+    // ── Deterministic TF-IDF Proof ──
+    let proof = null;
+    try {
+      const originalText = flattenResume(resume);
+      const morphedText = flattenResume(morphedData);
+      if (originalText.length > 20 && morphedText.length > 20 && safeJD.length > 20) {
+        proof = proveResumeDelta(originalText, morphedText, safeJD);
+      }
+    } catch (e) {
+      console.warn('[api/resume/morph] Proof engine error (non-fatal):', e);
+    }
+
     return NextResponse.json({
       morphedResume: morphedData,
-      matchScore: result.matchScore || 75,
+      matchScore: proof?.optimizedScore ?? result.matchScore ?? 75,
+      proof,
     });
   } catch (error: unknown) {
     console.error('[api/resume/morph] Error:', error);
