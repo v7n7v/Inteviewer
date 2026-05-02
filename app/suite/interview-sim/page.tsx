@@ -233,7 +233,7 @@ export default function InterviewSimPage() {
   // ─── ROOM PHASE ───
   if (phase === 'room') {
     return (
-      <div className="h-screen flex flex-col" style={{ background: isLight ? '#F8FAFC' : '#060608' }}>
+      <div className="h-[100dvh] lg:h-screen flex flex-col" style={{ background: isLight ? '#F8FAFC' : '#060608' }}>
         {/* Top bar */}
         <div
           className="flex items-center justify-between px-4 sm:px-6 py-3 border-b shrink-0"
@@ -293,7 +293,7 @@ export default function InterviewSimPage() {
         </div>
 
         {/* Main content: Avatar + Transcript */}
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex flex-col sm:flex-row overflow-hidden relative">
           {/* Avatar panel */}
           <div className="flex-1 relative flex items-center justify-center" style={{ background: isLight ? '#f0f4f8' : '#0a0a0e' }}>
             {/* 3D Avatar */}
@@ -347,7 +347,7 @@ export default function InterviewSimPage() {
                 initial={{ width: 0, opacity: 0 }}
                 animate={{ width: 340, opacity: 1 }}
                 exit={{ width: 0, opacity: 0 }}
-                className="shrink-0 border-l flex flex-col overflow-hidden"
+                className="hidden sm:flex shrink-0 border-l flex-col overflow-hidden"
                 style={{
                   background: isLight ? '#fff' : '#0c0c10',
                   borderColor: isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.07)',

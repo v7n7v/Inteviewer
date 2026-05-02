@@ -633,6 +633,67 @@ canvas {
   }
 }
 
+/* ── Mobile Foundation ── */
+@media (max-width: 1023px) {
+  /* Prevent horizontal overflow on all suite pages */
+  main { overflow-x: hidden; }
+
+  /* iOS: prevent auto-zoom on input focus (requires 16px+) */
+  input, textarea, select { font-size: 16px !important; }
+
+  /* Smooth scrolling for all mobile */
+  html { scroll-behavior: smooth; }
+
+  /* Remove 300ms tap delay */
+  * { touch-action: manipulation; }
+}
+
+/* ── Mobile Bottom Sheet ── */
+.mobile-bottom-sheet {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 55;
+  border-radius: 20px 20px 0 0;
+  max-height: 85vh;
+  overflow-y: auto;
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+.mobile-bottom-sheet.open {
+  transform: translateY(0);
+}
+.mobile-bottom-sheet-handle {
+  width: 36px; height: 4px;
+  border-radius: 2px;
+  background: rgba(128,128,128,0.3);
+  margin: 8px auto 12px;
+}
+
+/* ── Mobile Utility Classes ── */
+@media (max-width: 639px) {
+  .mobile-stack { flex-direction: column !important; }
+  .mobile-full { width: 100% !important; max-width: 100% !important; }
+  .mobile-hide { display: none !important; }
+  .mobile-p4 { padding: 1rem !important; }
+  .mobile-text-sm { font-size: 0.875rem !important; }
+  .mobile-gap-2 { gap: 0.5rem !important; }
+  .mobile-grid-1 { grid-template-columns: 1fr !important; }
+}
+
+@media (min-width: 640px) {
+  .desktop-hide { display: none !important; }
+}
+
+/* ── Scrollbar Hide ── */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* ============================================
    ACCESSIBILITY
    ============================================ */

@@ -61,7 +61,7 @@ export default function SuiteLayout({
   return (
     <div className="min-h-screen bg-[var(--bg-primary)]">
       <SuiteSidebar />
-      <main className="lg:ml-[250px] min-h-screen transition-[margin] duration-200">
+      <main className="lg:ml-[250px] min-h-screen transition-[margin] duration-200 pt-14 lg:pt-0 overflow-x-hidden">
         {children}
       </main>
       <SonaFloatingOrb />

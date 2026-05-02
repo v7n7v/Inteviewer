@@ -299,7 +299,7 @@ export default function CoverLetterPage() {
               Target Position
             </h3>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="text-[11px] font-semibold text-[var(--text-tertiary)] block mb-1">Company *</label>
                 <input value={company} onChange={e => setCompany(e.target.value)} placeholder="e.g. Stripe"
@@ -326,7 +326,7 @@ export default function CoverLetterPage() {
             <h4 className="text-xs font-bold text-[var(--text-primary)] mb-2.5 flex items-center gap-1.5">
               <span className="material-symbols-rounded text-[14px] text-rose-500">tune</span> Tone
             </h4>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {TONES.map(t => (
                 <button key={t.id} onClick={() => setTone(t.id)}
                   className={`flex items-center gap-2 p-2.5 rounded-xl text-left transition-all ${
@@ -349,7 +349,7 @@ export default function CoverLetterPage() {
             <h4 className="text-xs font-bold text-[var(--text-primary)] mb-2.5 flex items-center gap-1.5">
               <span className="material-symbols-rounded text-[14px] text-rose-500">dashboard</span> Template
             </h4>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {TEMPLATES.map(t => (
                 <button key={t.id} onClick={() => setTemplate(t.id)}
                   className={`flex items-center gap-2 p-2.5 rounded-xl text-left transition-all ${

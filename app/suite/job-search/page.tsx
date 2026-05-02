@@ -949,7 +949,7 @@ export default function JobSearchPage() {
                                 })()}
 
                                 {/* Key Details */}
-                                <div className="grid grid-cols-3 gap-3 mb-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
                                     <div className="p-3 rounded-xl" style={{
                                         background: isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.03)',
                                         border: `1px solid ${isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'}`,

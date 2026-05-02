@@ -594,21 +594,21 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="relative h-screen flex flex-col overflow-hidden"
+            className="relative h-[100dvh] lg:h-screen flex flex-col overflow-hidden"
           >
             {/* HUD Top Bar */}
-            <div className="absolute top-0 left-0 right-0 z-50 p-4 pointer-events-none">
-              <div className="flex items-start justify-between gap-4 pointer-events-auto">
+            <div className="absolute top-0 left-0 right-0 z-50 p-2 sm:p-4 pointer-events-none">
+              <div className="flex items-start justify-between gap-2 sm:gap-4 pointer-events-auto">
                 {/* Left HUD - Talent Density */}
                 <motion.div
                   initial={{ x: -50, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
-                  className="oracle-panel oracle-panel--emerald p-4 max-w-xs"
+                  className="oracle-panel oracle-panel--emerald p-2 sm:p-4 max-w-[140px] sm:max-w-xs"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="relative w-20 h-20">
-                      <svg className="w-20 h-20 -rotate-90">
-                        <circle cx="40" cy="40" r="35" stroke="rgba(255,255,255,0.1)" strokeWidth="6" fill="none" />
+                  <div className="flex items-center gap-2 sm:gap-4">
+                    <div className="relative w-12 h-12 sm:w-20 sm:h-20">
+                      <svg className="w-12 h-12 sm:w-20 sm:h-20 -rotate-90">
+                        <circle cx="50%" cy="50%" r="40%" stroke="rgba(255,255,255,0.1)" strokeWidth="6" fill="none" />
                         <circle
                           cx="40" cy="40" r="35"
                           stroke="url(#densityGradient)"
@@ -625,10 +625,10 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                         </defs>
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-xl font-bold text-emerald-400">{analysis.talentDensityPercentile}%</span>
+                        <span className="text-sm sm:text-xl font-bold text-emerald-400">{analysis.talentDensityPercentile}%</span>
                       </div>
                     </div>
-                    <div>
+                    <div className="hidden sm:block">
                       <p className="text-xs text-silver uppercase tracking-wider">Talent Density</p>
                       <p className="text-lg font-bold text-white">Top {100 - analysis.talentDensityPercentile}%</p>
                       <p className="text-xs text-emerald-400">
@@ -645,13 +645,13 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                   initial={{ y: -50, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.1 }}
-                  className="oracle-panel oracle-panel--emerald p-4"
+                  className="oracle-panel oracle-panel--emerald p-2 sm:p-4 hidden sm:block"
                 >
                   <p className="text-[10px] text-emerald-400 uppercase tracking-widest mb-2.5 text-center flex justify-center items-center gap-1.5 font-semibold">
                     <span className="material-symbols-rounded text-[14px]">route</span> Bridge Skills
                     <span className="text-[9px] text-slate-500 normal-case tracking-normal font-normal ml-1">— learn to unlock new jobs</span>
                   </p>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 overflow-x-auto scrollbar-hide">
                     {analysis.bridgeSkills.map((skill, i) => (
                       <button
                         key={skill.skill}
@@ -673,10 +673,10 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                   initial={{ x: 50, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ delay: 0.2 }}
-                  className="flex flex-col gap-2 items-end"
+                  className="flex flex-col gap-2 items-end shrink-0"
                 >
                   {/* Data Source Badge */}
-                  <div className={`px-3 py-1.5 rounded-lg text-xs font-medium backdrop-blur-xl ${analysis.jobDataSource.includes('real') || analysis.jobDataSource.includes('API')
+                  <div className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-medium backdrop-blur-xl ${analysis.jobDataSource.includes('real') || analysis.jobDataSource.includes('API')
                       ? 'bg-green-900/50 text-green-400 border border-green-500/30'
                       : 'bg-orange-900/50 text-orange-400 border border-orange-500/30'
                     }`}>
@@ -709,21 +709,21 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
             </div>
 
             {/* Bottom HUD — Visual Legend + Context */}
-            <div className="absolute bottom-0 left-0 right-0 z-50 p-4 pointer-events-none">
-              <div className="flex items-end justify-between gap-3 pointer-events-auto">
+            <div className="absolute bottom-0 left-0 right-0 z-50 p-2 sm:p-4 pointer-events-none">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-2 sm:gap-3 pointer-events-auto">
 
                 {/* Galaxy Legend */}
                 <motion.div
                   initial={{ y: 50, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.3 }}
-                  className="oracle-panel p-4 max-w-[360px]"
+                  className="oracle-panel p-2 sm:p-4 w-full sm:max-w-[360px]"
                 >
                   <p className="text-[10px] text-emerald-400 uppercase tracking-widest mb-3 flex items-center gap-1.5 font-semibold">
                     <span className="material-symbols-rounded text-[14px]">map</span> Galaxy Legend
                   </p>
                   {/* Axes */}
-                  <div className="grid grid-cols-3 gap-2 mb-3">
+                  <div className="grid grid-cols-3 gap-1 sm:gap-2 mb-2 sm:mb-3">
                     <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-white/5">
                       <span className="text-emerald-400 text-[10px] font-bold">X →</span>
                       <span className="text-[10px] text-slate-400">Fit Score</span>
@@ -738,7 +738,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                     </div>
                   </div>
                   {/* Star Tiers — Clickable Filters */}
-                  <div className="flex items-center gap-2 text-[10px]">
+                  <div className="flex items-center gap-1 sm:gap-2 text-[10px] overflow-x-auto scrollbar-hide">
                     {[
                       { tier: 'elite', label: '80%+', color: 'bg-emerald-400', shadow: 'shadow-[0_0_6px_rgba(6,214,160,0.6)]', size: 'w-2.5 h-2.5' },
                       { tier: 'strong', label: '60%+', color: 'bg-cyan-400', shadow: 'shadow-[0_0_4px_rgba(14,165,233,0.5)]', size: 'w-2 h-2' },
@@ -789,7 +789,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                   initial={{ y: 50, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.4 }}
-                  className="oracle-panel p-4 max-w-sm"
+                  className="oracle-panel p-2 sm:p-4 w-full sm:max-w-sm"
                 >
                   <p className="text-[10px] text-emerald-400 uppercase tracking-widest mb-2 flex items-center gap-1.5 font-semibold">
                     <span className="material-symbols-rounded text-[14px]">psychology</span> Your Skills
@@ -820,7 +820,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                   initial={{ y: 50, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.5 }}
-                  className="oracle-panel p-4"
+                  className="oracle-panel p-3 sm:p-4 hidden sm:block"
                 >
                   <p className="text-[10px] text-emerald-400 uppercase tracking-widest mb-2.5 flex items-center gap-1.5 font-semibold">
                     <span className="material-symbols-rounded text-[14px]">gamepad</span> Controls
@@ -859,9 +859,11 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                   initial={{ opacity: 0, x: 80 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 80 }}
-                  className="absolute right-4 top-20 z-20 w-[340px] max-h-[calc(100vh-160px)]"
+                  className="fixed sm:absolute inset-x-0 bottom-0 sm:inset-x-auto sm:bottom-auto sm:right-4 sm:top-20 z-[60] sm:z-20 w-full sm:w-[340px] max-h-[75vh] sm:max-h-[calc(100vh-160px)] rounded-t-2xl sm:rounded-t-none"
                 >
-                  <div className="oracle-panel oracle-panel--emerald p-5 overflow-y-auto max-h-[calc(100vh-160px)]" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.2) transparent' }}>
+                  <div className="oracle-panel oracle-panel--emerald p-4 sm:p-5 overflow-y-auto max-h-[75vh] sm:max-h-[calc(100vh-160px)]" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.2) transparent' }}>
+                    {/* Mobile handle */}
+                    <div className="sm:hidden w-10 h-1 rounded-full bg-white/20 mx-auto mb-3" />
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">

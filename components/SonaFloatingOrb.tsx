@@ -270,7 +270,7 @@ export default function SonaFloatingOrb() {
   if (isAgentPage) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-40" ref={panelRef}>
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40" ref={panelRef}>
 
       {/* ═══ PANEL ═══ */}
       <AnimatePresence>
@@ -280,9 +280,9 @@ export default function SonaFloatingOrb() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.92 }}
             transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-            className="absolute bottom-16 right-0 w-[340px] sm:w-[380px] rounded-2xl overflow-hidden flex flex-col"
+            className="fixed inset-x-2 bottom-16 sm:absolute sm:inset-x-auto sm:bottom-16 sm:right-0 w-auto sm:w-[340px] md:w-[380px] rounded-2xl overflow-hidden flex flex-col"
             style={{
-              height: '480px',
+              height: 'min(480px, 70vh)',
               background: isLight ? '#fff' : '#111114',
               border: `1px solid ${isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'}`,
               boxShadow: isLight

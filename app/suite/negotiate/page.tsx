@@ -151,7 +151,7 @@ export default function NegotiationPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-[11px] font-semibold text-[var(--text-tertiary)] block mb-1">Base Offer ($k) *</label>
                   <input

@@ -164,7 +164,7 @@ export default function NetworkPage() {
       </motion.div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {[
           { label: 'Total', value: stats.total, icon: 'group', color: '#6366f1' },
           { label: 'Recruiters', value: stats.recruiters, icon: 'support_agent', color: '#3b82f6' },
@@ -374,7 +374,7 @@ export default function NetworkPage() {
 
               <input value={formName} onChange={e => setFormName(e.target.value)} placeholder="Full Name *"
                 className="w-full px-3 py-2.5 rounded-xl text-sm bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:border-violet-500/50" />
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <input value={formCompany} onChange={e => setFormCompany(e.target.value)} placeholder="Company"
                   className="w-full px-3 py-2.5 rounded-xl text-sm bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none" />
                 <input value={formRole} onChange={e => setFormRole(e.target.value)} placeholder="Title / Role"
@@ -382,7 +382,7 @@ export default function NetworkPage() {
               </div>
               <input value={formEmail} onChange={e => setFormEmail(e.target.value)} placeholder="Email"
                 className="w-full px-3 py-2.5 rounded-xl text-sm bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none" />
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <input value={formPhone} onChange={e => setFormPhone(e.target.value)} placeholder="Phone"
                   className="w-full px-3 py-2.5 rounded-xl text-sm bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none" />
                 <input value={formLinkedin} onChange={e => setFormLinkedin(e.target.value)} placeholder="LinkedIn URL"

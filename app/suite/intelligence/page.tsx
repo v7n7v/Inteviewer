@@ -112,7 +112,7 @@ export default function IntelligencePage() {
   const scoreOffset = scoreCircumference - ((profile?.healthScore ?? 0) / 100) * scoreCircumference;
 
   return (
-    <div className="min-h-screen p-4 md:p-6 max-w-5xl mx-auto space-y-6">
+    <div className="min-h-screen p-4 sm:p-6 max-w-5xl mx-auto space-y-4 sm:space-y-6">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <div className="flex items-center justify-between">
@@ -129,7 +129,7 @@ export default function IntelligencePage() {
         </div>
 
         {/* Tab switcher */}
-        <div className="flex gap-1 p-1 rounded-xl w-fit mt-3" style={{
+        <div className="flex gap-1 p-1 rounded-xl w-full sm:w-fit mt-3 overflow-x-auto scrollbar-hide" style={{
           background: isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)',
           border: `1px solid ${isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'}`,
         }}>
@@ -141,7 +141,7 @@ export default function IntelligencePage() {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                 activeTab === tab.key
                   ? 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 shadow-sm'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
@@ -166,7 +166,7 @@ export default function IntelligencePage() {
       {loading && (
         <div className="space-y-4">
           <div className="h-36 rounded-2xl animate-pulse" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }} />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[...Array(2)].map((_, i) => (
               <div key={i} className="h-48 rounded-xl animate-pulse" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }} />
             ))}
@@ -201,15 +201,15 @@ export default function IntelligencePage() {
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="rounded-2xl p-6 flex items-center gap-8 flex-wrap"
+        className="rounded-2xl p-4 sm:p-6 flex flex-col sm:flex-row items-center gap-4 sm:gap-8"
         style={{
           background: `linear-gradient(135deg, ${scoreColor}06, ${cardBg})`,
           border: `1px solid ${scoreColor}20`,
         }}
       >
         {/* Animated Ring */}
-        <div className="relative w-32 h-32 flex-shrink-0">
-          <svg viewBox="0 0 120 120" className="w-32 h-32 -rotate-90">
+        <div className="relative w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0">
+          <svg viewBox="0 0 120 120" className="w-24 h-24 sm:w-32 sm:h-32 -rotate-90">
             <circle cx="60" cy="60" r="54" fill="none" strokeWidth="6"
               stroke={isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)'} />
             <motion.circle
@@ -249,7 +249,7 @@ export default function IntelligencePage() {
                 ? 'Solid foundation. Focus on the recommendations below to level up.'
                 : 'You\'re just getting started. Each action you take builds your intelligence.'}
           </p>
-          <div className="flex gap-4 text-[10px]">
+          <div className="flex flex-wrap gap-3 sm:gap-4 text-[10px]">
             {[
               { label: 'Activity', score: Math.min(30, Math.round(profile.healthScore * 0.3)), max: 30, color: '#3b82f6' },
               { label: 'Performance', score: Math.min(35, Math.round(profile.healthScore * 0.35)), max: 35, color: '#22c55e' },
@@ -271,7 +271,7 @@ export default function IntelligencePage() {
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-2 gap-3 text-center">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 text-center">
           {[
             { label: 'Apps', value: profile.pipeline.totalApps, icon: 'send' },
             { label: 'Interviews', value: profile.interviews.totalDebriefs, icon: 'groups' },
@@ -333,7 +333,7 @@ export default function IntelligencePage() {
       )}
 
       {/* ── Pipeline Funnel ── */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <motion.div
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
           className="rounded-xl p-5"
@@ -442,7 +442,7 @@ export default function IntelligencePage() {
           <span className="material-symbols-rounded text-base text-cyan-500">hub</span>
           Skill Landscape
         </h3>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* Confirmed */}
           <div>
             <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2 flex items-center gap-1">
@@ -491,7 +491,7 @@ export default function IntelligencePage() {
       </motion.div>
 
       {/* ── Morale + Time to Offer ── */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Morale */}
         <motion.div
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}
@@ -575,7 +575,7 @@ export default function IntelligencePage() {
           <span className="text-sm font-bold text-[var(--text-primary)]">Your Edge vs. Mass Apply</span>
         </div>
 
-        <div className="grid grid-cols-2 divide-x" style={{ borderColor: cardBorder }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 sm:divide-x" style={{ borderColor: cardBorder }}>
           {/* Your approach */}
           <div className="p-5 space-y-3">
             <div className="flex items-center gap-2 mb-2">

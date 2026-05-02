@@ -247,7 +247,7 @@ function SkillBridgePageInner() {
 
   return (
     <div className={`min-h-screen ${isLight ? 'bg-white' : 'bg-[var(--theme-bg)]'}`}>
-      <div className="max-w-2xl mx-auto px-6 py-8">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Hero — always visible */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
