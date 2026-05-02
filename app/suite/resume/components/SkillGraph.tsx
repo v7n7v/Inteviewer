@@ -99,12 +99,15 @@ export default function SkillGraph({ skills, highlightedSkills = [] }: SkillGrap
         <h3 className="text-lg font-semibold text-white">Skill Graph</h3>
         <button
           onClick={() => {
-            // Export as SVG functionality could be added here
-            alert('Export feature coming soon!');
+            if (!canvasRef.current) return;
+            const link = document.createElement('a');
+            link.download = 'skill-graph.png';
+            link.href = canvasRef.current.toDataURL('image/png');
+            link.click();
           }}
           className="btn-secondary text-sm"
         >
-          Export SVG
+          Export PNG
         </button>
       </div>
 
