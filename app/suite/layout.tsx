@@ -28,12 +28,14 @@ export default function SuiteLayout({
           const { data } = await getUserProfile();
           if (data) {
             setUserProfile(data);
-            if (!data.onboarding_completed) {
+            if (!data.onboarding_completed && localStorage.getItem('tc_hide_onboarding') !== 'true') {
               setShowOnboarding(true);
             }
           } else {
             // No profile doc yet → new user, show onboarding
-            setShowOnboarding(true);
+            if (localStorage.getItem('tc_hide_onboarding') !== 'true') {
+              setShowOnboarding(true);
+            }
           }
         } catch {
           // Profile fetch failed — don't block the user
@@ -69,6 +71,10 @@ export default function SuiteLayout({
           userName={useStore.getState().user?.displayName || ''}
           onComplete={() => setShowOnboarding(false)}
           onClose={() => setShowOnboarding(false)}
+          onDismissPermanently={() => {
+            localStorage.setItem('tc_hide_onboarding', 'true');
+            setShowOnboarding(false);
+          }}
         />
       )}
     </div>

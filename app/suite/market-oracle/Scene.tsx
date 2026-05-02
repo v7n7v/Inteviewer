@@ -1,231 +1,436 @@
 'use client';
 
 import { useState, useRef, useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
-import { OrbitControls, Text, Html, Stars } from '@react-three/drei';
+import { useFrame, useThree } from '@react-three/fiber';
+import { OrbitControls, Html } from '@react-three/drei';
 import * as THREE from 'three';
+import { DeepSpaceEnvironment, WarpLane } from './environment';
 
-// Types (duplicated to avoid circular deps for now, or could share in a types file)
+// ═══════════════════════════════════════════════════════
+// TYPES
+// ═══════════════════════════════════════════════════════
 export interface JobStar {
-    id: string;
-    title: string;
-    company: string;
-    salary: number;
-    skills: string[];
-    fitScore: number;
-    position: [number, number, number];
-    color: string;
-    isConstellation: boolean;
+  id: string;
+  title: string;
+  company: string;
+  salary: number;
+  skills: string[];
+  fitScore: number;
+  position: [number, number, number];
+  color: string;
+  isConstellation: boolean;
+  url?: string;
+  location?: string;
+  description?: string;
+  isReal?: boolean;
+  source?: string;
 }
 
 export interface BridgeSkill {
-    skill: string;
-    impact: number;
-    newPosition: [number, number, number];
-    salaryIncrease: number;
-    newFitScore: number;
+  skill: string;
+  impact: number;
+  newPosition: [number, number, number];
+  salaryIncrease: number;
+  newFitScore: number;
 }
 
 export interface MarketAnalysis {
-    currentPosition: [number, number, number];
-    talentDensityPercentile: number;
-    topSkills: string[];
-    missingSkills: string[];
-    bridgeSkills: BridgeSkill[];
-    jobs: JobStar[];
-    marketTrends: { skill: string; growth: number }[];
-    industryInsights: string[];
+  currentPosition: [number, number, number];
+  talentDensityPercentile: number;
+  topSkills: string[];
+  missingSkills: string[];
+  bridgeSkills: BridgeSkill[];
+  jobs: JobStar[];
+  marketTrends: { skill: string; growth: number }[];
+  industryInsights: string[];
 }
 
-// 3D Star Component
+// ═══════════════════════════════════════════════════════
+// JOB STAR — Tiered visual based on fit score
+// ═══════════════════════════════════════════════════════
 function JobStarMesh({
-    job,
-    onClick,
-    isSelected,
-    showBridge
+  job, onClick, isSelected, showBridge
 }: {
-    job: JobStar;
-    onClick: () => void;
-    isSelected: boolean;
-    showBridge: boolean;
+  job: JobStar;
+  onClick: () => void;
+  isSelected: boolean;
+  showBridge: boolean;
 }) {
-    const meshRef = useRef<THREE.Mesh>(null);
-    const [hovered, setHovered] = useState(false);
+  const meshRef = useRef<THREE.Mesh>(null);
+  const glowRef = useRef<THREE.Mesh>(null);
+  const [hovered, setHovered] = useState(false);
 
-    useFrame((state) => {
-        if (meshRef.current) {
-            // Pulse effect for high-fit jobs
-            if (job.isConstellation) {
-                meshRef.current.scale.setScalar(1 + Math.sin(state.clock.elapsedTime * 2) * 0.1);
-            }
-            // Glow effect on hover/select
-            if (hovered || isSelected) {
-                meshRef.current.scale.setScalar(1.5);
-            }
-        }
-    });
+  // Tiered visuals
+  const tier = job.fitScore > 0.8 ? 'elite'
+    : job.fitScore > 0.6 ? 'strong'
+    : job.fitScore > 0.4 ? 'decent' : 'low';
 
-    const size = 0.15 + job.fitScore * 0.2;
+  const config = {
+    elite:  { size: 0.3, emissive: 2.5, glowScale: 1.8, color: '#06d6a0' },
+    strong: { size: 0.22, emissive: 1.5, glowScale: 1.4, color: '#0ea5e9' },
+    decent: { size: 0.16, emissive: 0.8, glowScale: 0,   color: '#f59e0b' },
+    low:    { size: 0.1,  emissive: 0.3, glowScale: 0,   color: '#6b7280' },
+  }[tier];
 
-    return (
-        <mesh
-            ref={meshRef}
-            position={job.position}
-            onClick={(e) => { e.stopPropagation(); onClick(); }}
-            onPointerOver={() => setHovered(true)}
-            onPointerOut={() => setHovered(false)}
-        >
-            <sphereGeometry args={[size, 16, 16]} />
-            <meshStandardMaterial
-                color={job.color}
-                emissive={job.color}
-                emissiveIntensity={hovered || isSelected ? 2 : job.isConstellation ? 1 : 0.5}
-                transparent
-                opacity={showBridge && !job.isConstellation ? 0.3 : 1}
-            />
-            {(hovered || isSelected) && (
-                <Html distanceFactor={10}>
-                    <div className="px-3 py-2 rounded-lg bg-slate-900/90 border border-white/20 backdrop-blur-xl whitespace-nowrap">
-                        <p className="text-sm font-bold text-white">{job.title}</p>
-                        <p className="text-xs text-cyan-400">{job.company}</p>
-                        <p className="text-xs text-green-400">${job.salary.toLocaleString()}</p>
-                    </div>
-                </Html>
-            )}
+  useFrame((state) => {
+    if (!meshRef.current) return;
+    const t = state.clock.elapsedTime;
+
+    // Pulse for elite/strong
+    if (tier === 'elite') {
+      meshRef.current.scale.setScalar(1 + Math.sin(t * 2) * 0.12);
+    } else if (tier === 'strong') {
+      meshRef.current.scale.setScalar(1 + Math.sin(t * 1.5) * 0.06);
+    }
+
+    // Hover/select expand
+    if (hovered || isSelected) {
+      meshRef.current.scale.setScalar(1.6);
+    }
+
+    // Glow ring rotation
+    if (glowRef.current) {
+      glowRef.current.rotation.z += 0.005;
+      glowRef.current.scale.setScalar(config.glowScale + Math.sin(t * 1.5) * 0.2);
+    }
+  });
+
+  // Company initials for tooltip
+  const initials = job.company.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+
+  return (
+    <group position={job.position}>
+      {/* Core star */}
+      <mesh
+        ref={meshRef}
+        onClick={(e) => { e.stopPropagation(); onClick(); }}
+        onPointerOver={() => setHovered(true)}
+        onPointerOut={() => setHovered(false)}
+      >
+        <sphereGeometry args={[config.size, 16, 16]} />
+        <meshStandardMaterial
+          color={config.color}
+          emissive={config.color}
+          emissiveIntensity={hovered || isSelected ? config.emissive * 1.5 : config.emissive}
+          transparent
+          opacity={showBridge && !job.isConstellation ? 0.25 : 1}
+        />
+      </mesh>
+
+      {/* Outer glow ring (elite + strong only) */}
+      {config.glowScale > 0 && (
+        <mesh ref={glowRef}>
+          <ringGeometry args={[config.size * 1.8, config.size * 2.2, 32]} />
+          <meshBasicMaterial
+            color={config.color}
+            transparent
+            opacity={0.15}
+            side={THREE.DoubleSide}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+          />
         </mesh>
-    );
-}
+      )}
 
-// Constellation Lines Component
-function ConstellationLines({ jobs, userPosition }: { jobs: JobStar[]; userPosition: [number, number, number] }) {
-    const lineRef = useRef<THREE.LineSegments>(null);
-
-    const geometry = useMemo(() => {
-        const points: THREE.Vector3[] = [];
-        const constellationJobs = jobs.filter(j => j.isConstellation);
-
-        constellationJobs.forEach(job => {
-            points.push(new THREE.Vector3(...userPosition));
-            points.push(new THREE.Vector3(...job.position));
-        });
-
-        const geo = new THREE.BufferGeometry().setFromPoints(points);
-        return geo;
-    }, [jobs, userPosition]);
-
-    return (
-        <lineSegments ref={lineRef} geometry={geometry}>
-            <lineBasicMaterial color="#a855f7" transparent opacity={0.4} linewidth={2} />
-        </lineSegments>
-    );
-}
-
-// User Position Marker
-function UserMarker({ position, showBridge, bridgePosition }: {
-    position: [number, number, number];
-    showBridge: boolean;
-    bridgePosition?: [number, number, number];
-}) {
-    const meshRef = useRef<THREE.Mesh>(null);
-    const bridgeRef = useRef<THREE.Mesh>(null);
-
-    useFrame((state) => {
-        if (meshRef.current) {
-            meshRef.current.rotation.y += 0.01;
-            meshRef.current.scale.setScalar(1 + Math.sin(state.clock.elapsedTime * 3) * 0.1);
-        }
-        if (bridgeRef.current && showBridge) {
-            bridgeRef.current.rotation.y -= 0.01;
-        }
-    });
-
-    return (
-        <>
-            <mesh ref={meshRef} position={position}>
-                <octahedronGeometry args={[0.4, 0]} />
-                <meshStandardMaterial color="#00f2ff" emissive="#00f2ff" emissiveIntensity={2} />
-            </mesh>
-            {showBridge && bridgePosition && (
-                <>
-                    <mesh ref={bridgeRef} position={bridgePosition}>
-                        <octahedronGeometry args={[0.4, 0]} />
-                        <meshStandardMaterial color="#a855f7" emissive="#a855f7" emissiveIntensity={2} transparent opacity={0.8} />
-                    </mesh>
-                    {/* Bridge path line */}
-                    <line>
-                        <bufferGeometry>
-                            <bufferAttribute
-                                attach="attributes-position"
-                                count={2}
-                                array={new Float32Array([...position, ...bridgePosition])}
-                                itemSize={3}
-                            />
-                        </bufferGeometry>
-                        <lineDashedMaterial color="#a855f7" dashSize={0.3} gapSize={0.1} />
-                    </line>
-                </>
+      {/* Hover tooltip */}
+      {(hovered || isSelected) && (
+        <Html distanceFactor={12} center style={{ pointerEvents: 'none' }}>
+          <div style={{
+            background: 'rgba(10, 10, 26, 0.92)',
+            backdropFilter: 'blur(16px)',
+            border: `1px solid ${config.color}40`,
+            borderRadius: 12,
+            padding: '10px 14px',
+            whiteSpace: 'nowrap',
+            minWidth: 180,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: 6,
+                background: `${config.color}25`, border: `1px solid ${config.color}40`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: config.color, fontSize: 11, fontWeight: 700,
+              }}>
+                {initials}
+              </div>
+              <div>
+                <p style={{ color: '#fff', fontSize: 13, fontWeight: 700, margin: 0 }}>{job.title}</p>
+                <p style={{ color: config.color, fontSize: 11, margin: 0 }}>{job.company}</p>
+              </div>
+            </div>
+            {job.location && (
+              <p style={{ color: '#94a3b8', fontSize: 10, margin: '0 0 4px 0' }}>📍 {job.location}</p>
             )}
-        </>
-    );
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ color: '#4ade80', fontSize: 14, fontWeight: 700 }}>
+                ${job.salary.toLocaleString()}
+              </span>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                padding: '2px 8px', borderRadius: 20,
+                background: `${config.color}20`, border: `1px solid ${config.color}30`,
+              }}>
+                <span style={{ color: config.color, fontSize: 11, fontWeight: 600 }}>
+                  {Math.round(job.fitScore * 100)}% fit
+                </span>
+              </div>
+            </div>
+            {job.isReal && (
+              <div style={{
+                marginTop: 6, padding: '2px 6px', borderRadius: 4,
+                background: '#22c55e15', border: '1px solid #22c55e30',
+                color: '#4ade80', fontSize: 9, fontWeight: 600, textAlign: 'center',
+              }}>
+                ● LIVE JOB
+              </div>
+            )}
+            <p style={{ color: '#64748b', fontSize: 9, margin: '5px 0 0 0', textAlign: 'center' }}>
+              Click to explore →
+            </p>
+          </div>
+        </Html>
+      )}
+    </group>
+  );
 }
 
-// Main 3D Scene
+// ═══════════════════════════════════════════════════════
+// CONSTELLATION LINES — Connect high-fit jobs to user
+// ═══════════════════════════════════════════════════════
+function ConstellationLines({ jobs, userPosition }: { jobs: JobStar[]; userPosition: [number, number, number] }) {
+  const geometry = useMemo(() => {
+    const points: THREE.Vector3[] = [];
+    jobs.filter(j => j.isConstellation).forEach(job => {
+      points.push(new THREE.Vector3(...userPosition));
+      points.push(new THREE.Vector3(...job.position));
+    });
+    return new THREE.BufferGeometry().setFromPoints(points);
+  }, [jobs, userPosition]);
+
+  return (
+    <lineSegments geometry={geometry}>
+      <lineBasicMaterial
+        color="#06d6a0"
+        transparent
+        opacity={0.2}
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+      />
+    </lineSegments>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+// USER AVATAR — "The Navigator" with crystal + ring + field
+// ═══════════════════════════════════════════════════════
+function UserAvatar({ position }: { position: [number, number, number] }) {
+  const crystalRef = useRef<THREE.Mesh>(null);
+  const ringRef = useRef<THREE.Mesh>(null);
+  const fieldRef = useRef<THREE.Mesh>(null);
+
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+    if (crystalRef.current) {
+      crystalRef.current.rotation.y += 0.015;
+      crystalRef.current.rotation.x = Math.sin(t * 0.5) * 0.1;
+    }
+    if (ringRef.current) {
+      ringRef.current.rotation.z -= 0.008;
+      ringRef.current.rotation.x = Math.PI / 4;
+      ringRef.current.scale.setScalar(1 + Math.sin(t * 1.5) * 0.1);
+    }
+    if (fieldRef.current) {
+      fieldRef.current.scale.setScalar(1 + Math.sin(t * 0.8) * 0.05);
+      (fieldRef.current.material as THREE.MeshBasicMaterial).opacity = 0.04 + Math.sin(t) * 0.02;
+    }
+  });
+
+  return (
+    <group position={position}>
+      {/* Gravitational field (outer) */}
+      <mesh ref={fieldRef}>
+        <sphereGeometry args={[2.5, 32, 32]} />
+        <meshBasicMaterial
+          color="#06d6a0"
+          transparent
+          opacity={0.04}
+          side={THREE.BackSide}
+          depthWrite={false}
+        />
+      </mesh>
+
+      {/* Energy ring */}
+      <mesh ref={ringRef}>
+        <torusGeometry args={[0.8, 0.04, 16, 64]} />
+        <meshStandardMaterial
+          color="#0ea5e9"
+          emissive="#0ea5e9"
+          emissiveIntensity={2}
+          transparent
+          opacity={0.8}
+        />
+      </mesh>
+
+      {/* Core crystal */}
+      <mesh ref={crystalRef}>
+        <icosahedronGeometry args={[0.35, 1]} />
+        <meshStandardMaterial
+          color="#06d6a0"
+          emissive="#06d6a0"
+          emissiveIntensity={2.5}
+          metalness={0.3}
+          roughness={0.2}
+        />
+      </mesh>
+
+      {/* Point light from user */}
+      <pointLight color="#06d6a0" intensity={1} distance={8} decay={2} />
+
+      {/* YOU label with stats */}
+      <Html position={[0, 1.5, 0]} center style={{ pointerEvents: 'none' }}>
+        <div style={{
+          background: 'rgba(6, 6, 18, 0.85)',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(6, 214, 160, 0.25)',
+          borderRadius: 12,
+          padding: '6px 14px',
+          whiteSpace: 'nowrap',
+          textAlign: 'center',
+        }}>
+          <span style={{ color: '#06d6a0', fontSize: 10, fontWeight: 700, letterSpacing: 1.5, display: 'block' }}>
+            ◆ YOU ARE HERE
+          </span>
+          <span style={{ color: '#94a3b8', fontSize: 9, display: 'block', marginTop: 2 }}>
+            The galaxy orbits around your skills
+          </span>
+        </div>
+      </Html>
+    </group>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+// CINEMATIC INTRO — Camera fly-in on mount
+// ═══════════════════════════════════════════════════════
+function CinematicIntro({ userPosition }: { userPosition: [number, number, number] }) {
+  const { camera } = useThree();
+  const phaseRef = useRef(0);
+  const doneRef = useRef(false);
+
+  useFrame((_, delta) => {
+    if (doneRef.current) return;
+
+    phaseRef.current += delta;
+    const t = phaseRef.current;
+
+    if (t < 2.5) {
+      // Fly from far position to orbit distance
+      const progress = Math.min(1, t / 2.0);
+      const ease = 1 - Math.pow(1 - progress, 3); // easeOutCubic
+
+      const startZ = 60;
+      const endZ = 18;
+      const startY = 15;
+      const endY = userPosition[1] + 5;
+
+      camera.position.set(
+        userPosition[0] + Math.sin(progress * 0.5) * 3,
+        THREE.MathUtils.lerp(startY, endY, ease),
+        THREE.MathUtils.lerp(startZ, endZ, ease)
+      );
+      camera.lookAt(new THREE.Vector3(...userPosition));
+    } else {
+      doneRef.current = true;
+    }
+  });
+
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════
+// MAIN SCENE
+// ═══════════════════════════════════════════════════════
 export default function OracleScene({
-    analysis,
-    selectedJob,
-    setSelectedJob,
-    showBridge,
-    activeBridgeSkill
+  analysis, selectedJob, setSelectedJob, showBridge, activeBridgeSkill, visibleTiers
 }: {
-    analysis: MarketAnalysis;
-    selectedJob: JobStar | null;
-    setSelectedJob: (job: JobStar | null) => void;
-    showBridge: boolean;
-    activeBridgeSkill: BridgeSkill | null;
+  analysis: MarketAnalysis;
+  selectedJob: JobStar | null;
+  setSelectedJob: (job: JobStar | null) => void;
+  showBridge: boolean;
+  activeBridgeSkill: BridgeSkill | null;
+  visibleTiers: Set<string>;
 }) {
-    return (
-        <>
-            <ambientLight intensity={0.3} />
-            <pointLight position={[10, 10, 10]} intensity={1} />
-            <pointLight position={[-10, -10, -10]} intensity={0.5} color="#a855f7" />
+  const filteredJobs = useMemo(() => {
+    return analysis.jobs.filter(job => {
+      const tier = job.fitScore >= 0.8 ? 'elite'
+        : job.fitScore >= 0.6 ? 'strong'
+        : job.fitScore >= 0.4 ? 'decent'
+        : 'low';
+      return visibleTiers.has(tier);
+    });
+  }, [analysis.jobs, visibleTiers]);
+  return (
+    <>
+      {/* Lighting */}
+      <ambientLight intensity={0.15} />
+      <pointLight position={[15, 15, 15]} intensity={0.8} color="#ffffff" />
+      <pointLight position={[-15, -10, -15]} intensity={0.4} color="#8b5cf6" />
+      <pointLight position={[0, 20, 0]} intensity={0.3} color="#0ea5e9" />
 
-            <Stars radius={100} depth={50} count={2000} factor={4} saturation={0} fade speed={1} />
+      {/* Deep Space Environment */}
+      <DeepSpaceEnvironment />
 
-            {/* Job Stars */}
-            {analysis.jobs.map((job) => (
-                <JobStarMesh
-                    key={job.id}
-                    job={job}
-                    onClick={() => setSelectedJob(selectedJob?.id === job.id ? null : job)}
-                    isSelected={selectedJob?.id === job.id}
-                    showBridge={showBridge}
-                />
-            ))}
+      {/* Cinematic Camera Intro */}
+      <CinematicIntro userPosition={analysis.currentPosition} />
 
-            {/* Constellation Lines */}
-            <ConstellationLines jobs={analysis.jobs} userPosition={analysis.currentPosition} />
+      {/* Job Stars */}
+      {filteredJobs.map((job) => (
+        <JobStarMesh
+          key={job.id}
+          job={job}
+          onClick={() => setSelectedJob(selectedJob?.id === job.id ? null : job)}
+          isSelected={selectedJob?.id === job.id}
+          showBridge={showBridge}
+        />
+      ))}
 
-            {/* User Position */}
-            <UserMarker
-                position={analysis.currentPosition}
-                showBridge={showBridge}
-                bridgePosition={activeBridgeSkill?.newPosition}
-            />
+      {/* Constellation Lines */}
+      <ConstellationLines jobs={filteredJobs} userPosition={analysis.currentPosition} />
 
-            {/* Axis Labels */}
-            <Text position={[12, 0, 0]} fontSize={0.5} color="#6b7280">Skill X →</Text>
-            <Text position={[0, 12, 0]} fontSize={0.5} color="#6b7280">Skill Y →</Text>
-            <Text position={[0, 0, 7]} fontSize={0.5} color="#22c55e">$$$</Text>
+      {/* User Avatar */}
+      <UserAvatar position={analysis.currentPosition} />
 
-            <OrbitControls
-                enablePan={true}
-                enableZoom={true}
-                enableRotate={true}
-                minDistance={5}
-                maxDistance={50}
-                autoRotate
-                autoRotateSpeed={0.5}
-            />
-        </>
-    );
+      {/* Warp Lanes for Bridge Skills */}
+      {analysis.bridgeSkills.map((bs) => (
+        <WarpLane
+          key={bs.skill}
+          startPosition={analysis.currentPosition}
+          endPosition={bs.newPosition}
+          skillName={bs.skill}
+          salaryIncrease={bs.salaryIncrease}
+          active={activeBridgeSkill?.skill === bs.skill}
+        />
+      ))}
+
+      {/* Axis Labels */}
+      <Html position={[10, -9, 0]} center style={{ pointerEvents: 'none' }}>
+        <span style={{ color: '#06d6a0', fontSize: 11, fontWeight: 600, opacity: 0.5 }}>FIT SCORE →</span>
+      </Html>
+      <Html position={[0, 8, 0]} center style={{ pointerEvents: 'none' }}>
+        <span style={{ color: '#4ade80', fontSize: 11, fontWeight: 600, opacity: 0.5 }}>SALARY ↑</span>
+      </Html>
+
+      <OrbitControls
+        enablePan
+        enableZoom
+        enableRotate
+        minDistance={6}
+        maxDistance={45}
+        autoRotate
+        autoRotateSpeed={0.3}
+        dampingFactor={0.08}
+        enableDamping
+      />
+    </>
+  );
 }

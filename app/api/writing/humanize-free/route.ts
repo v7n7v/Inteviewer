@@ -1,7 +1,7 @@
 /**
  * Free AI Humanizer API — Landing Page Widget
  * Anonymous access with IP-based rate limiting:
- *   - 1 request per 24 hours per IP
+ *   - 3 requests per 24 hours per IP
  *   - 300-word hard cap
  * Authenticated free users: same 300-word cap, uses existing writingTools quota.
  */
@@ -18,7 +18,7 @@ import { verifyTurnstile } from '@/lib/turnstile';
 import { monitor } from '@/lib/monitor';
 
 const FREE_WORD_CAP = 300;
-const ANON_DAILY_LIMIT = 1;
+const ANON_DAILY_LIMIT = 3;
 const ANON_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 /** Strip AI-telltale punctuation from humanized text */
@@ -141,14 +141,74 @@ export async function POST(req: NextRequest) {
     const systemPrompt = buildHumanizePrompt(domain, tone);
     const userPrompt = `Humanize this entire text with a ${tone} tone:\n\n${text}`;
 
-    const result = await geminiJSONCompletion<{
+    type HumanizeResult = {
       rewritten: string;
       changes: Array<{ original: string; rewritten: string; reason: string }>;
       stats: { sentenceLengthStdDev: number; bannedWordsRemoved: number; burstinessRange: number };
-    }>(systemPrompt, userPrompt, {
+    };
+
+    const aiOptions = {
       temperature: tone === 'creative' ? 0.85 : tone === 'casual' ? 0.8 : 0.7,
       maxTokens: Math.min(4096, Math.max(2048, wordCount * 8)),
-    });
+    };
+
+    let result: HumanizeResult;
+    let engine: 'gemini' | 'openrouter' = 'gemini';
+
+    // Primary: Gemini
+    try {
+      result = await geminiJSONCompletion<HumanizeResult>(systemPrompt, userPrompt, aiOptions);
+    } catch (geminiErr) {
+      console.warn('[humanize-free] Gemini failed, falling back to OpenRouter:', geminiErr instanceof Error ? geminiErr.message : geminiErr);
+      monitor.warn('Humanizer Gemini fallback triggered', String(geminiErr));
+
+      // Fallback: OpenRouter (Qwen 3.6 Plus)
+      const orKey = process.env.OPENROUTER_API_KEY;
+      if (!orKey) throw new Error('No fallback AI configured');
+
+      const orRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${orKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://talentconsulting.io',
+          'X-Title': 'TalentConsulting AI Humanizer',
+        },
+        body: JSON.stringify({
+          model: 'qwen/qwen3.6-plus',
+          messages: [
+            { role: 'system', content: systemPrompt + '\n\nIMPORTANT: Respond with ONLY a valid JSON object. No markdown, no explanations, no code fences.' },
+            { role: 'user', content: userPrompt },
+          ],
+          temperature: aiOptions.temperature,
+          max_tokens: aiOptions.maxTokens,
+          response_format: { type: 'json_object' },
+        }),
+      });
+
+      if (!orRes.ok) {
+        const errText = await orRes.text();
+        console.error('[humanize-free] OpenRouter also failed:', orRes.status, errText.slice(0, 200));
+        throw new Error('Both AI engines unavailable');
+      }
+
+      const orData = await orRes.json();
+      const rawContent = orData.choices?.[0]?.message?.content || '';
+
+      // Parse JSON from the response
+      let parsed: HumanizeResult;
+      try {
+        parsed = JSON.parse(rawContent);
+      } catch {
+        const start = rawContent.indexOf('{');
+        const end = rawContent.lastIndexOf('}');
+        if (start === -1 || end <= start) throw new Error('Could not parse fallback response');
+        parsed = JSON.parse(rawContent.slice(start, end + 1));
+      }
+
+      result = parsed;
+      engine = 'openrouter';
+    }
 
     const cleanedText = cleanAIPunctuation(result.rewritten || '');
 
@@ -159,6 +219,8 @@ export async function POST(req: NextRequest) {
     if (authUser) {
       await incrementUsage(authUser.uid, 'writingTools');
     }
+
+    console.log(`[humanize-free] Success via ${engine} (${wordCount} words)`);
 
     return NextResponse.json({
       rewritten: cleanedText,
@@ -175,10 +237,11 @@ export async function POST(req: NextRequest) {
       isAuthenticated: !!authUser,
     });
   } catch (error: unknown) {
-    console.error('[api/writing/humanize-free] Error:', error);
-    monitor.critical('Tool: writing/humanize-free', String(error));
+    const errMsg = error instanceof Error ? error.message : String(error);
+    console.error('[api/writing/humanize-free] Error:', errMsg);
+    monitor.critical('Tool: writing/humanize-free', errMsg);
     return NextResponse.json(
-      { error: 'Humanization failed. Please try again.' },
+      { error: 'Our servers are busy right now. Please try again in a moment.' },
       { status: 500 }
     );
   }

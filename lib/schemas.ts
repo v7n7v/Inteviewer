@@ -243,6 +243,7 @@ export const HumanizeSchema = z.object({
   text: SafeText(50_000),
   domain: z.enum(['general', 'academic', 'resume', 'marketing', 'creative']).optional().default('general'),
   tone: z.enum(['professional', 'creative', 'casual', 'academic', 'confident']).optional().default('professional'),
+  lengthMode: z.enum(['exact', 'condense', 'expand']).optional().default('exact'),
   paragraphIndices: z.array(z.number().int().min(0).max(200)).optional(),
 });
 

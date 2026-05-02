@@ -8,6 +8,8 @@ import WeeklyPicksSection from './WeeklyPicksSection';
 import { analytics } from '@/lib/analytics';
 import { showToast } from '@/components/Toast';
 import PageHelp from '@/components/PageHelp';
+import { useStore } from '@/lib/store';
+import { getUserProfile } from '@/lib/database-suite';
 
 interface JobResult {
     id: string;
@@ -110,6 +112,9 @@ export default function JobSearchPage() {
     const [applyingJobId, setApplyingJobId] = useState<string | null>(null);
     const [applyStep, setApplyStep] = useState('');
     const [hideGhosts, setHideGhosts] = useState(false);
+    const [autoLoaded, setAutoLoaded] = useState(false);
+    const autoFetchedRef = useRef(false);
+    const user = useStore((s) => s.user);
 
     // ── Load saved preferences + resume context ──
     useEffect(() => {
@@ -157,6 +162,54 @@ export default function JobSearchPage() {
             threshold: matchThreshold,
         }));
     }, [searchQuery, searchLocation, matchThreshold]);
+
+    // ── Auto-populate from user profile ──
+    useEffect(() => {
+        if (autoFetchedRef.current || !user) return;
+        // Skip if user already has a manual query typed
+        const savedPrefs = localStorage.getItem(SEARCH_PREFS_KEY);
+        if (savedPrefs) {
+            try {
+                const p = JSON.parse(savedPrefs);
+                if (p.query) return; // user has existing search, don't override
+            } catch {}
+        }
+
+        autoFetchedRef.current = true;
+
+        getUserProfile().then(({ data: profile }) => {
+            if (!profile) return;
+            let populated = false;
+
+            // Populate target role as search query
+            if (profile.target_roles?.length && !searchQuery) {
+                setSearchQuery(profile.target_roles[0]);
+                populated = true;
+            }
+
+            // Populate location
+            if (profile.location_preference && !searchLocation) {
+                setSearchLocation(profile.location_preference);
+                populated = true;
+            }
+
+            // Populate skills from profile
+            const savedSkills = localStorage.getItem(RESUME_STORAGE_KEY);
+            if (profile.skills?.length && !savedSkills) {
+                setUserSkills(profile.skills);
+                localStorage.setItem(RESUME_STORAGE_KEY, JSON.stringify(profile.skills));
+                populated = true;
+            }
+
+            if (populated) {
+                setAutoLoaded(true);
+                // Auto-trigger search after a brief delay to let state settle
+                setTimeout(() => {
+                    searchRef.current?.form?.requestSubmit();
+                }, 300);
+            }
+        }).catch(() => {});
+    }, [user, searchQuery, searchLocation]);
 
     // ── Search ──
     const fetchJobs = useCallback(async (p = 1) => {
@@ -479,6 +532,26 @@ export default function JobSearchPage() {
                         {loading ? 'Scanning...' : 'Search'}
                     </button>
                 </form>
+
+                {/* Auto-loaded badge */}
+                {autoLoaded && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex items-center gap-1.5 mt-2 px-1"
+                    >
+                        <span className="material-symbols-rounded text-[12px] text-emerald-500">auto_awesome</span>
+                        <span className="text-[11px] text-[var(--text-tertiary)]">
+                            Auto-loaded from your profile
+                        </span>
+                        <button
+                            onClick={() => { setAutoLoaded(false); setSearchQuery(''); setSearchLocation(''); }}
+                            className="text-[10px] text-[var(--text-muted)] hover:text-[var(--text-secondary)] ml-1 underline"
+                        >
+                            Clear
+                        </button>
+                    </motion.div>
+                )}
 
                 {/* Filters + Sort */}
                 <div className="flex items-center justify-between mt-3 gap-2">

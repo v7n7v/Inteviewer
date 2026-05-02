@@ -598,40 +598,61 @@ export default function JobPreferencesPanel({ onPrefsLoaded, onClose, visible }:
                   <span className="ml-1 text-[10px] text-[var(--text-tertiary)]">{industries.length} selected</span>
                 )}
               </div>
-              <div className="flex flex-wrap gap-1.5">
-                {INDUSTRIES.map(ind => {
-                  const isActive = industries.includes(ind.name);
-                  return (
-                    <motion.button
-                      key={ind.name}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => toggleIndustry(ind.name)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200"
-                      style={{
-                        background: isActive
-                          ? isLight ? 'rgba(6,182,212,0.1)' : 'rgba(6,182,212,0.15)'
-                          : sectionBg,
-                        border: `1px solid ${isActive ? 'rgba(6,182,212,0.3)' : sectionBorder}`,
-                        color: isActive ? '#06b6d4' : 'var(--text-secondary)',
-                      }}
-                    >
-                      <span className={`material-symbols-rounded text-[13px] ${isActive ? 'text-cyan-500' : 'text-[var(--text-tertiary)]'}`}>
-                        {ind.icon}
-                      </span>
-                      {ind.name}
-                      {isActive && (
+
+              {/* Dropdown */}
+              <select
+                value=""
+                onChange={(e) => {
+                  if (e.target.value) toggleIndustry(e.target.value);
+                }}
+                className="w-full h-9 px-3 rounded-lg text-[12px] text-[var(--text-primary)] cursor-pointer focus:outline-none focus:ring-2 focus:ring-cyan-500/30 transition-all"
+                style={{
+                  background: isLight ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.04)',
+                  border: `1px solid ${isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.06)'}`,
+                }}
+              >
+                <option value="" disabled>Select industries...</option>
+                {INDUSTRIES.filter(ind => !industries.includes(ind.name)).map(ind => (
+                  <option key={ind.name} value={ind.name}>{ind.name}</option>
+                ))}
+                {INDUSTRIES.filter(ind => !industries.includes(ind.name)).length === 0 && (
+                  <option value="" disabled>All industries selected</option>
+                )}
+              </select>
+
+              {/* Selected Tags */}
+              {industries.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  <AnimatePresence mode="popLayout">
+                    {industries.map(ind => {
+                      const icon = INDUSTRIES.find(i => i.name === ind)?.icon || 'category';
+                      return (
                         <motion.span
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="material-symbols-rounded text-[12px] text-cyan-500"
+                          key={ind}
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold border shrink-0"
+                          style={{
+                            background: isLight ? 'rgba(6,182,212,0.08)' : 'rgba(6,182,212,0.12)',
+                            borderColor: 'rgba(6,182,212,0.25)',
+                            color: '#06b6d4',
+                          }}
                         >
-                          check
+                          <span className="material-symbols-rounded text-[12px]">{icon}</span>
+                          {ind}
+                          <button
+                            onClick={() => toggleIndustry(ind)}
+                            className="hover:text-red-400 transition-colors ml-0.5"
+                          >
+                            <span className="material-symbols-rounded text-[12px]">close</span>
+                          </button>
                         </motion.span>
-                      )}
-                    </motion.button>
-                  );
-                })}
-              </div>
+                      );
+                    })}
+                  </AnimatePresence>
+                </div>
+              )}
             </div>
 
             {/* Row 5: Email notifications */}

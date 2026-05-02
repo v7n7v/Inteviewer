@@ -14,6 +14,37 @@ interface AuthModalProps {
   onSwitchMode: () => void;
 }
 
+/* ── Shared modal shell (defined outside component to preserve identity across renders) ── */
+function ModalShell({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
+        onClick={onClose}
+      />
+      <div className="fixed inset-0 z-[101] flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96, y: 12 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.96, y: 12 }}
+          transition={{ duration: 0.18, ease: 'easeOut' }}
+          onClick={e => e.stopPropagation()}
+          className="w-full max-w-md rounded-2xl overflow-hidden shadow-xl"
+          style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-subtle)',
+          }}
+        >
+          {children}
+        </motion.div>
+      </div>
+    </AnimatePresence>
+  );
+}
+
 export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProps) {
   const { setUser } = useStore();
   const [loading, setLoading] = useState(false);
@@ -192,35 +223,6 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
     }
   };
 
-  /* ── Shared modal shell ── */
-  const ModalShell = ({ children }: { children: React.ReactNode }) => (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
-        onClick={onClose}
-      />
-      <div className="fixed inset-0 z-[101] flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96, y: 12 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.96, y: 12 }}
-          transition={{ duration: 0.18, ease: 'easeOut' }}
-          onClick={e => e.stopPropagation()}
-          className="w-full max-w-md rounded-2xl overflow-hidden shadow-xl"
-          style={{
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--border-subtle)',
-          }}
-        >
-          {children}
-        </motion.div>
-      </div>
-    </AnimatePresence>
-  );
-
   const inputClass = "w-full rounded-xl px-4 py-3 text-sm outline-none transition-all";
   const inputStyle = {
     background: 'var(--bg-input, var(--bg-hover))',
@@ -231,7 +233,7 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
   // ── MFA VERIFICATION ──
   if (showMFAChallenge) {
     return (
-      <ModalShell>
+      <ModalShell onClose={onClose}>
         <div className="p-6">
           <div className="text-center mb-6">
             <div
@@ -292,7 +294,7 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
   // ── PASSWORD RESET SENT ──
   if (resetEmailSent) {
     return (
-      <ModalShell>
+      <ModalShell onClose={onClose}>
         <div className="p-6 text-center">
           <div
             className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4"
@@ -319,7 +321,7 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
   // ── FORGOT PASSWORD ──
   if (showForgotPassword) {
     return (
-      <ModalShell>
+      <ModalShell onClose={onClose}>
         <div className="p-6">
           <div className="flex items-center gap-3 mb-4">
             <div
@@ -378,7 +380,7 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
 
   // ── MAIN LOGIN/SIGNUP ──
   return (
-    <ModalShell>
+    <ModalShell onClose={onClose}>
       <div className="p-6">
         {/* Header */}
         <div className="flex items-center gap-3 mb-5">

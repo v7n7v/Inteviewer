@@ -10,10 +10,17 @@ import AuthModal from './modals/AuthModal';
 import { useUserTier } from '@/hooks/use-user-tier';
 import UsageCounter from '@/components/UsageCounter';
 
-// Dynamic job count hook for sidebar badge
+// Dynamic job count hook for sidebar badge — API-driven with localStorage fallback
+const JOB_COUNT_CACHE_KEY = 'talent-job-widget-cache';
+const JOB_COUNT_TTL = 60 * 60 * 1000; // 1 hour
+
 function useJobCount() {
   const [count, setCount] = useState<number>(0);
+  const user = useStore((s) => s.user);
+  const fetchedRef = useRef(false);
+
   useEffect(() => {
+    // Read localStorage first (fast, synchronous)
     const read = () => {
       const c = localStorage.getItem('talent-job-curated-count');
       if (c) setCount(parseInt(c) || 0);
@@ -21,11 +28,43 @@ function useJobCount() {
     read();
     window.addEventListener('job-count-updated', read);
     window.addEventListener('storage', read);
+
+    // If user is logged in, try API fetch (with TTL)
+    if (user && !fetchedRef.current) {
+      fetchedRef.current = true;
+      // Check if we have a recent widget cache (set by JobFeedWidget)
+      try {
+        const cached = localStorage.getItem(JOB_COUNT_CACHE_KEY);
+        if (cached) {
+          const { data, ts } = JSON.parse(cached);
+          if (Date.now() - ts < JOB_COUNT_TTL && data?.length > 0) {
+            setCount(data.length);
+            return;
+          }
+        }
+      } catch {}
+
+      // Fire a lightweight fetch to get count
+      const token = (user as any).accessToken || (user as any).stsTokenManager?.accessToken;
+      if (token) {
+        fetch('/api/jobs/suggestions', { headers: { Authorization: `Bearer ${token}` } })
+          .then(r => r.json())
+          .then(data => {
+            if (data.success && data.jobs?.length > 0) {
+              setCount(data.jobs.length);
+              localStorage.setItem('talent-job-curated-count', data.jobs.length.toString());
+              localStorage.setItem(JOB_COUNT_CACHE_KEY, JSON.stringify({ data: data.jobs, ts: Date.now() }));
+            }
+          })
+          .catch(() => {});
+      }
+    }
+
     return () => {
       window.removeEventListener('job-count-updated', read);
       window.removeEventListener('storage', read);
     };
-  }, []);
+  }, [user]);
   return count;
 }
 
@@ -165,6 +204,15 @@ const navGroups: NavigationGroup[] = [
         path: '/suite/flashcards',
         iconName: 'chat',
         color: { iconColor: '#3b82f6' },
+      },
+      {
+        id: 'interview-sim',
+        label: 'Avatar Interview',
+        description: '3D AI Face-to-Face Interview',
+        path: '/suite/interview-sim',
+        badge: 'Coming Soon',
+        iconName: 'videocam',
+        color: { iconColor: '#f43f5e' },
       },
       {
         id: 'stories',

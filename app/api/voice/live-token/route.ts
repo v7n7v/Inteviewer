@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
     const persona = body.persona || 'default';
     const jobDescription = body.jobDescription || '';
     const interviewStyle = body.interviewStyle || 'behavioral';
+    const avatarMode = body.avatarMode || false;
     const voiceName = PERSONA_VOICE_MAP[persona] || PERSONA_VOICE_MAP['default'];
 
     // Build the interview system instruction
@@ -79,6 +80,7 @@ export async function POST(req: NextRequest) {
       voiceName,
       expiresAt: expireTime,
       model: LIVE_MODEL,
+      avatarMode,
     });
   } catch (error: any) {
     console.error('[api/voice/live-token] Error:', error?.message || error);

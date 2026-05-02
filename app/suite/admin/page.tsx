@@ -413,7 +413,7 @@ export default function AdminDashboard() {
                               u.tier === 'pro' ? 'bg-[var(--tag-green-bg)] border-[var(--tag-green-text)]/30 text-[var(--tag-green-text)]' :
                               'bg-slate-500/10 border-slate-500/20 text-[var(--text-muted)]'
                             }`}>
-                              {u.tier.toUpperCase()}
+                              {(u.tier === 'studio' || u.tier === 'god') ? 'MAX' : u.tier.toUpperCase()}
                             </div>
                           </div>
                         ))}

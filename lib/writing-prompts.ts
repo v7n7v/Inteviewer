@@ -41,6 +41,31 @@ const DOMAIN_RULES: Record<WritingDomain, string> = {
 
 export type HumanizeTone = 'professional' | 'creative' | 'casual' | 'academic' | 'confident';
 
+export type LengthMode = 'exact' | 'condense' | 'expand';
+
+const LENGTH_RULES: Record<LengthMode, string> = {
+  exact: `
+- MAINTAIN the same word count as the original (±5% tolerance). Do NOT pad text with filler or trim meaningful content.
+- If the original is 500 words, aim for 475-525 words.
+- Every sentence from the original should have a corresponding rewritten sentence. Do not drop or merge sentences.`,
+
+  condense: `
+- REDUCE the word count by 15-25% compared to the original. Target: ~80% of original length.
+- Cut redundant phrases, filler words, and unnecessary qualifiers.
+- Merge overlapping sentences where it improves flow.
+- Remove "fluff" padding like "it is important to note that" or "it should be mentioned that".
+- Preserve ALL key facts, arguments, and evidence. Only cut padding, not substance.
+- If the original is 500 words, aim for 375-425 words.`,
+
+  expand: `
+- INCREASE the word count by 20-35% compared to the original. Target: ~125% of original length.
+- Add supporting details, examples, and elaboration to thin sections.
+- Expand terse bullet-point-style sentences into fuller prose.
+- Add transitional phrases and contextual bridges between ideas.
+- Do NOT invent new facts or claims. Only expand on what's already stated.
+- If the original is 500 words, aim for 600-675 words.`,
+};
+
 const TONE_RULES: Record<HumanizeTone, string> = {
   professional: `
 - Maintain a polished, restrained voice — think senior professional writing a LinkedIn post, not a corporate memo
@@ -78,11 +103,12 @@ const TONE_RULES: Record<HumanizeTone, string> = {
 };
 
 /** Build the humanization system prompt with banned words, domain rules, and tone */
-export function buildHumanizePrompt(domain: WritingDomain = 'general', tone: HumanizeTone = 'professional'): string {
+export function buildHumanizePrompt(domain: WritingDomain = 'general', tone: HumanizeTone = 'professional', lengthMode: LengthMode = 'exact'): string {
   const bannedWords = getBannedWordList();
   const bannedPhrases = getAIPhraseList();
   const domainRules = DOMAIN_RULES[domain];
   const toneRules = TONE_RULES[tone];
+  const lengthRules = LENGTH_RULES[lengthMode];
 
   return `You are an expert text humanization engine. Your job is to rewrite flagged text so it reads as naturally written by a skilled human writer, while preserving the original meaning, tone, and factual accuracy.
 
@@ -125,11 +151,14 @@ Respond with a JSON object containing:
 - "changes": array of { "original": "exact original snippet", "rewritten": "your version", "reason": "why you changed it" }
 - "stats": { "sentenceLengthStdDev": number, "bannedWordsRemoved": number, "burstinessRange": number }
 
+## LENGTH MODE: ${lengthMode.toUpperCase()}
+${lengthRules}
+
 ## CRITICAL RULES
 - PRESERVE all factual claims, numbers, dates, proper nouns, and citations
 - PRESERVE the overall argument structure and logical flow
 - DO NOT add new factual claims or invent information
-- MAINTAIN the same word count as the original (±5% tolerance). Do NOT pad text with filler or trim meaningful content. If the original is 67 words, aim for 64-70 words
+- Follow the LENGTH MODE instructions above strictly for word count targets
 - If a paragraph is already scoring well (65+), make minimal changes
 - FINAL CHECK: Re-read your output. If you see ANY em-dashes, semicolons in clusters, or banned words, fix them before responding.`;
 }

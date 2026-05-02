@@ -17,7 +17,7 @@ import {
 } from '@/lib/ai-detection';
 import { exportDocument, downloadBlob, type ExportFormat } from '@/lib/doc-export';
 import mammoth from 'mammoth';
-import type { WritingDomain, HumanizeTone } from '@/lib/writing-prompts';
+import type { WritingDomain, HumanizeTone, LengthMode } from '@/lib/writing-prompts';
 
 // ── Types ──
 type PipelineStep = 'detect' | 'humanize' | 'check' | 'export';
@@ -424,12 +424,20 @@ function SideBySideView({ originalText, humanizedText, changes, originalDetectio
         <div className="px-4 py-3 flex items-center gap-2 border-r border-white/5">
           <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
           <span className="text-xs font-medium text-amber-400">Original</span>
-          <span className="text-[10px] text-[var(--text-muted)] ml-auto">{originalSentences.length} sentences</span>
+          <div className="ml-auto flex items-center gap-2">
+            <span className="text-[10px] text-[var(--text-muted)]">{originalText.trim().split(/\s+/).filter(Boolean).length} words</span>
+            <span className="text-[10px] text-white/10">|</span>
+            <span className="text-[10px] text-[var(--text-muted)]">{originalSentences.length} sent</span>
+          </div>
         </div>
         <div className="px-4 py-3 flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
           <span className="text-xs font-medium text-emerald-400">Humanized</span>
-          <span className="text-[10px] text-[var(--text-muted)] ml-auto">{humanizedSentences.length} sentences</span>
+          <div className="ml-auto flex items-center gap-2">
+            <span className="text-[10px] text-[var(--text-muted)]">{humanizedText.trim().split(/\s+/).filter(Boolean).length} words</span>
+            <span className="text-[10px] text-white/10">|</span>
+            <span className="text-[10px] text-[var(--text-muted)]">{humanizedSentences.length} sent</span>
+          </div>
         </div>
       </div>
 
@@ -479,14 +487,29 @@ function SideBySideView({ originalText, humanizedText, changes, originalDetectio
       </div>
 
       {/* Legend */}
-      <div className="flex items-center justify-center gap-6 p-3 border-t border-white/5 bg-white/[0.02]">
-        <span className="flex items-center gap-1.5 text-[10px] text-[var(--text-secondary)]">
-          <span className="w-3 h-3 rounded-sm bg-amber-400/20 border border-amber-400/30" /> AI-Flagged
-        </span>
-        <span className="flex items-center gap-1.5 text-[10px] text-[var(--text-secondary)]">
-          <span className="w-3 h-3 rounded-sm bg-emerald-400/20 border border-emerald-400/30" /> Rewritten
-        </span>
-      </div>
+      {(() => {
+        const origWords = originalText.trim().split(/\s+/).filter(Boolean).length;
+        const humWords = humanizedText.trim().split(/\s+/).filter(Boolean).length;
+        const wordDiff = humWords - origWords;
+        const pct = origWords > 0 ? Math.round((wordDiff / origWords) * 100) : 0;
+        return (
+          <div className="flex items-center justify-center gap-6 p-3 border-t border-white/5 bg-white/[0.02]">
+            <span className="flex items-center gap-1.5 text-[10px] text-[var(--text-secondary)]">
+              <span className="w-3 h-3 rounded-sm bg-amber-400/20 border border-amber-400/30" /> AI-Flagged
+            </span>
+            <span className="flex items-center gap-1.5 text-[10px] text-[var(--text-secondary)]">
+              <span className="w-3 h-3 rounded-sm bg-emerald-400/20 border border-emerald-400/30" /> Rewritten
+            </span>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+              wordDiff > 0 ? 'bg-blue-500/10 text-blue-400' :
+              wordDiff < 0 ? 'bg-orange-500/10 text-orange-400' :
+              'bg-white/5 text-[var(--text-secondary)]'
+            }`}>
+              {wordDiff > 0 ? '+' : ''}{wordDiff} words ({wordDiff > 0 ? '+' : ''}{pct}%)
+            </span>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -543,6 +566,7 @@ export default function WritingToolsPage() {
   const [inputText, setInputText] = useState('');
   const [domain, setDomain] = useState<WritingDomain>('general');
   const [tone, setTone] = useState<HumanizeTone>('professional');
+  const [lengthMode, setLengthMode] = useState<LengthMode>('exact');
 
   // Results
   const [detection, setDetection] = useState<DetectionResult | null>(null);
@@ -667,6 +691,7 @@ export default function WritingToolsPage() {
           text: inputText,
           domain,
           tone,
+          lengthMode,
           paragraphIndices: lowParagraphs.length > 0 ? lowParagraphs : undefined,
         }),
       });
@@ -768,6 +793,7 @@ export default function WritingToolsPage() {
     setUploadedFileName(null);
     setSentenceAnalysis([]);
     setTone('professional');
+    setLengthMode('exact');
   };
 
   // ── Verdict info ──
@@ -1079,13 +1105,46 @@ export default function WritingToolsPage() {
                     </div>
                   </div>
 
+                  {/* Word Count Mode Picker */}
+                  <div className="mb-4">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">Word Count Control</p>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { value: 'exact' as LengthMode, label: 'Keep Exact', icon: 'balance', desc: '±5% words', detail: 'Same length as original' },
+                        { value: 'condense' as LengthMode, label: 'Condense', icon: 'compress', desc: '-15-25%', detail: 'Cut fluff, keep substance' },
+                        { value: 'expand' as LengthMode, label: 'Expand', icon: 'expand', desc: '+20-35%', detail: 'Add detail & depth' },
+                      ].map(m => (
+                        <button
+                          key={m.value}
+                          onClick={() => setLengthMode(m.value)}
+                          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-medium transition-all ${
+                            lengthMode === m.value
+                              ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30 shadow-sm shadow-amber-500/10'
+                              : 'bg-white/[0.03] text-[var(--text-secondary)] border border-white/5 hover:border-white/10'
+                          }`}
+                        >
+                          <span className="material-symbols-rounded text-sm">{m.icon}</span>
+                          <div className="text-left">
+                            <span className="block">{m.label}</span>
+                            <span className="text-[9px] opacity-60">{m.desc}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* Paraphrase estimate */}
                   <div className="mb-4 flex items-center gap-3 p-3 rounded-lg bg-white/[0.02] border border-white/5">
                     <span className="material-symbols-rounded text-sm text-amber-400">info</span>
                     <span className="text-xs text-[var(--text-secondary)]">
-                      Estimated output: ~{Math.round(wordCount * (tone === 'creative' ? 1.05 : tone === 'casual' ? 0.95 : tone === 'confident' ? 0.9 : 1.0))} words
+                      Estimated output: ~{Math.round(wordCount * (
+                        lengthMode === 'condense' ? 0.8 :
+                        lengthMode === 'expand' ? 1.25 :
+                        tone === 'creative' ? 1.05 : tone === 'casual' ? 0.95 : tone === 'confident' ? 0.9 : 1.0
+                      ))} words
                       {' '}• Domain: <span className="text-rose-400 capitalize">{domain}</span>
                       {' '}• Tone: <span className="text-rose-400 capitalize">{tone}</span>
+                      {' '}• Length: <span className="text-amber-400 capitalize">{lengthMode}</span>
                     </span>
                   </div>
 

@@ -117,6 +117,20 @@ export const authHelpers = {
       }
       return { data: { user }, error: null };
     } catch (error: any) {
+      // User closed the popup — not an error, just silently return
+      if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+        return { data: null, error: null };
+      }
+      // Popup blocked — fall back to redirect flow
+      if (error.code === 'auth/popup-blocked') {
+        try {
+          const { signInWithRedirect } = await import('firebase/auth');
+          await signInWithRedirect(auth, googleProvider);
+          return { data: null, error: null }; // Page will redirect
+        } catch (redirectErr: any) {
+          return { data: null, error: redirectErr };
+        }
+      }
       return { data: null, error };
     }
   },

@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
 
     const validated = await validateBody(req, HumanizeSchema);
     if (!validated.success) return validated.error;
-    const { text: rawText, domain, tone, paragraphIndices } = validated.data;
+    const { text: rawText, domain, tone, lengthMode, paragraphIndices } = validated.data;
 
     // Sanitize + normalize input — prompt injection defense + homoglyph stripping
     const text = normalizeText(sanitizeForAI(rawText));
@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Build targeted rewrite prompt with tone
-    const systemPrompt = buildHumanizePrompt(domain, tone);
+    const systemPrompt = buildHumanizePrompt(domain, tone, lengthMode);
 
     let userPrompt: string;
     if (paragraphIndices && paragraphIndices.length > 0) {
@@ -118,9 +118,9 @@ ${text}
 FLAGGED PARAGRAPHS (rewrite these specifically):
 ${flaggedParagraphs}
 
-Rewrite the full text with the flagged paragraphs humanized. Tone: ${tone}.`;
+Rewrite the full text with the flagged paragraphs humanized. Tone: ${tone}. Length mode: ${lengthMode} (original word count: ${wordCount}).`;
     } else {
-      userPrompt = `Humanize this entire text with a ${tone} tone:\n\n${text}`;
+      userPrompt = `Humanize this entire text with a ${tone} tone. Length mode: ${lengthMode} (original word count: ${wordCount}).\n\n${text}`;
     }
 
 

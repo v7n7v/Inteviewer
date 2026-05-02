@@ -70,19 +70,23 @@ interface JDIntelligence {
   industryInsights: string[];
 }
 
-// Generate mock job data with positions
+// Generate mock job data with data-driven spatial encoding
+// X = fit score (-6 to +6), Y = salary (normalized), Z = skill cluster distance
 const generateJobStars = (skills: string[], count: number = 50): JobStar[] => {
   const companies = ['Google', 'Meta', 'Apple', 'Microsoft', 'Amazon', 'Netflix', 'Stripe', 'OpenAI', 'Anthropic', 'Tesla', 'SpaceX', 'Nvidia', 'Salesforce', 'Adobe', 'Uber'];
   const titles = ['Senior Engineer', 'Staff Engineer', 'Tech Lead', 'Principal Engineer', 'Engineering Manager', 'ML Engineer', 'Data Scientist', 'DevOps Lead', 'Architect', 'VP Engineering'];
+  const minSalary = 90000;
+  const maxSalary = 400000;
 
   return Array.from({ length: count }, (_, i) => {
-    const salary = 120000 + Math.random() * 280000;
-    const fitScore = 0.3 + Math.random() * 0.7;
+    const salary = minSalary + Math.random() * (maxSalary - minSalary);
+    const fitScore = 0.2 + Math.random() * 0.8;
+    const skillOverlap = Math.random();
 
-    // Position: X/Y for skill clusters, Z for salary
-    const x = (Math.random() - 0.5) * 20;
-    const y = (Math.random() - 0.5) * 20;
-    const z = (salary - 120000) / 28000 - 5; // Normalize Z to -5 to 5 range
+    // Spatial encoding: meaningful axes
+    const x = fitScore * 12 - 6 + (Math.random() - 0.5) * 1.5;
+    const y = ((salary - minSalary) / (maxSalary - minSalary)) * 12 - 6 + (Math.random() - 0.5) * 1;
+    const z = -((1 - skillOverlap) * 6) + (Math.random() - 0.5) * 1;
 
     return {
       id: `job-${i}`,
@@ -92,23 +96,17 @@ const generateJobStars = (skills: string[], count: number = 50): JobStar[] => {
       skills: skills.slice(0, 3 + Math.floor(Math.random() * 5)),
       fitScore,
       position: [x, y, z] as [number, number, number],
-      color: fitScore > 0.8 ? '#00f2ff' : fitScore > 0.6 ? '#a855f7' : fitScore > 0.4 ? '#22c55e' : '#6b7280',
-      isConstellation: fitScore > 0.75,
+      color: fitScore > 0.8 ? '#06d6a0' : fitScore > 0.6 ? '#0ea5e9' : fitScore > 0.4 ? '#f59e0b' : '#6b7280',
+      isConstellation: fitScore > 0.7,
     };
   });
 };
 
 const OracleScene = dynamic(() => import('./Scene'), { ssr: false });
 
-// Dynamic Canvas wrapper to avoid SSR crash from react-reconciler
+// Dynamic Canvas wrapper — R3F v9 requires a proper component boundary
 const DynamicCanvas = dynamic(
-  () => import('@react-three/fiber').then((mod) => {
-    const { Canvas } = mod;
-    // Wrap Canvas in a forwardRef-compatible component
-    return function CanvasWrapper(props: any) {
-      return <Canvas {...props} />;
-    };
-  }),
+  () => import('./CanvasWrapper').then((mod) => mod.default),
   { ssr: false }
 );
 
@@ -130,6 +128,7 @@ export default function MarketOraclePage() {
   const [analyzeStage, setAnalyzeStage] = useState(0);
   const [showIntelPanel, setShowIntelPanel] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [visibleTiers, setVisibleTiers] = useState<Set<string>>(new Set(['elite', 'strong', 'decent', 'low']));
   const [processingStage, setProcessingStage] = useState<'uploading' | 'extracting' | 'parsing' | null>(null);
 
   // Saved Resumes integration
@@ -222,15 +221,21 @@ export default function MarketOraclePage() {
         if (jobData.success && jobData.jobs && jobData.jobs.length > 0) {
           jobDataSource = `${jobData.source} (${jobData.jobs.length} real jobs)`;
 
+          // Calculate salary bounds for normalization
+          const salaries = jobData.jobs.map((j: any) => j.salary?.max || j.salary?.min || 120000);
+          const minSal = Math.min(...salaries);
+          const maxSal = Math.max(...salaries);
+          const salRange = Math.max(maxSal - minSal, 1);
+
           jobs = jobData.jobs.map((job: any, index: number) => {
             const fitScore = calculateFitScore(jdIntel?.matchedSkills || extractedSkills, job.skills || []);
             const salary = job.salary?.max || job.salary?.min || (100000 + Math.random() * 150000);
+            const skillOverlap = fitScore; // use fit as proxy for skill distance
 
-            const angle = (index / jobData.jobs.length) * Math.PI * 2;
-            const radius = (1 - fitScore) * 10 + 2;
-            const x = Math.cos(angle) * radius + (Math.random() - 0.5) * 3;
-            const y = Math.sin(angle) * radius + (Math.random() - 0.5) * 3;
-            const z = (salary - 100000) / 50000 - 2;
+            // Data-driven spatial encoding
+            const x = fitScore * 12 - 6 + (Math.random() - 0.5) * 1.2;
+            const y = ((salary - minSal) / salRange) * 12 - 6 + (Math.random() - 0.5) * 0.8;
+            const z = -((1 - skillOverlap) * 5) + (Math.random() - 0.5) * 1;
 
             return {
               id: job.id || `job-${index}`,
@@ -240,7 +245,7 @@ export default function MarketOraclePage() {
               skills: job.skills || [],
               fitScore,
               position: [x, y, z] as [number, number, number],
-              color: fitScore > 0.7 ? '#00f2ff' : fitScore > 0.5 ? '#a855f7' : fitScore > 0.3 ? '#22c55e' : '#6b7280',
+              color: fitScore > 0.7 ? '#06d6a0' : fitScore > 0.5 ? '#0ea5e9' : fitScore > 0.3 ? '#f59e0b' : '#6b7280',
               isConstellation: fitScore > 0.6,
               url: job.url,
               location: job.location,
@@ -598,7 +603,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                 <motion.div
                   initial={{ x: -50, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
-                  className="glass-card p-4 !border-cyan-500/30 max-w-xs"
+                  className="oracle-panel oracle-panel--emerald p-4 max-w-xs"
                 >
                   <div className="flex items-center gap-4">
                     <div className="relative w-20 h-20">
@@ -614,19 +619,19 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                         />
                         <defs>
                           <linearGradient id="densityGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" stopColor="#00f2ff" />
-                            <stop offset="100%" stopColor="#a855f7" />
+                            <stop offset="0%" stopColor="#06d6a0" />
+                            <stop offset="100%" stopColor="#0ea5e9" />
                           </linearGradient>
                         </defs>
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-xl font-bold text-cyan-400">{analysis.talentDensityPercentile}%</span>
+                        <span className="text-xl font-bold text-emerald-400">{analysis.talentDensityPercentile}%</span>
                       </div>
                     </div>
                     <div>
                       <p className="text-xs text-silver uppercase tracking-wider">Talent Density</p>
                       <p className="text-lg font-bold text-white">Top {100 - analysis.talentDensityPercentile}%</p>
-                      <p className="text-xs text-cyan-400">
+                      <p className="text-xs text-emerald-400">
                         {analysis.talentDensityPercentile > 80 ? 'Unicorn Status' :
                           analysis.talentDensityPercentile > 60 ? 'High Demand' :
                             analysis.talentDensityPercentile > 40 ? 'Competitive' : 'Growth Opportunity'}
@@ -640,16 +645,19 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                   initial={{ y: -50, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.1 }}
-                  className="glass-card p-4 !border-cyan-500/30"
+                  className="oracle-panel oracle-panel--emerald p-4"
                 >
-                  <p className="text-xs text-silver uppercase tracking-wider mb-2 text-center flex justify-center items-center gap-1"><span className="material-symbols-rounded text-[14px] align-middle">route</span> Bridge Skills</p>
+                  <p className="text-[10px] text-emerald-400 uppercase tracking-widest mb-2.5 text-center flex justify-center items-center gap-1.5 font-semibold">
+                    <span className="material-symbols-rounded text-[14px]">route</span> Bridge Skills
+                    <span className="text-[9px] text-slate-500 normal-case tracking-normal font-normal ml-1">— learn to unlock new jobs</span>
+                  </p>
                   <div className="flex gap-2">
                     {analysis.bridgeSkills.map((skill, i) => (
                       <button
                         key={skill.skill}
                         onClick={() => toggleBridgeSkill(skill)}
                         className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${activeBridgeSkill?.skill === skill.skill
-                          ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/25'
+                          ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-white shadow-lg shadow-emerald-500/25'
                           : 'bg-white/10 text-white hover:bg-white/20'
                           }`}
                       >
@@ -668,15 +676,15 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                   className="flex flex-col gap-2 items-end"
                 >
                   {/* Data Source Badge */}
-                  <div className={`px-3 py-1.5 rounded-lg text-xs font-medium ${analysis.jobDataSource.includes('real') || analysis.jobDataSource.includes('API')
-                      ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                      : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                  <div className={`px-3 py-1.5 rounded-lg text-xs font-medium backdrop-blur-xl ${analysis.jobDataSource.includes('real') || analysis.jobDataSource.includes('API')
+                      ? 'bg-green-900/50 text-green-400 border border-green-500/30'
+                      : 'bg-orange-900/50 text-orange-400 border border-orange-500/30'
                     }`}>
                     {analysis.jobDataSource.includes('real') || analysis.jobDataSource.includes('API') ? <span className="material-symbols-rounded text-[12px] align-middle">public</span> : <span className="text-[12px] inline-block -mb-0.5"><span className="material-symbols-rounded">bolt</span></span>} {analysis.jobDataSource}
                   </div>
                   <button
                     onClick={() => setStep('setup')}
-                    className="px-4 py-2 rounded-xl bg-white/10 text-white text-sm font-medium hover:bg-white/20"
+                    className="oracle-panel px-4 py-2 text-white text-sm font-medium hover:bg-white/15 transition-all"
                   >
                     ← New Scan
                   </button>
@@ -685,8 +693,8 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
             </div>
 
             {/* 3D Canvas */}
-            <div className="flex-1 relative w-full h-full">
-              <DynamicCanvas className="w-full h-full" camera={{ position: [0, 0, 15], fov: 60 }}>
+            <div className="flex-1 relative w-full h-full overflow-hidden">
+              <DynamicCanvas className="w-full h-full" camera={{ position: [0, 5, 60], fov: 55 }}>
                 <Suspense fallback={null}>
                   <OracleScene
                     analysis={analysis}
@@ -694,86 +702,166 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                     setSelectedJob={setSelectedJob}
                     showBridge={showBridge}
                     activeBridgeSkill={activeBridgeSkill}
+                    visibleTiers={visibleTiers}
                   />
                 </Suspense>
               </DynamicCanvas>
             </div>
 
-            {/* Bottom HUD */}
+            {/* Bottom HUD — Visual Legend + Context */}
             <div className="absolute bottom-0 left-0 right-0 z-50 p-4 pointer-events-none">
-              <div className="flex items-end justify-between gap-4 pointer-events-auto">
-                {/* Skills Panel */}
+              <div className="flex items-end justify-between gap-3 pointer-events-auto">
+
+                {/* Galaxy Legend */}
                 <motion.div
                   initial={{ y: 50, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.3 }}
-                  className="glass-card p-4 max-w-md"
+                  className="oracle-panel p-4 max-w-[360px]"
                 >
-                  <p className="text-xs text-silver uppercase tracking-wider mb-2">Your Top Skills</p>
-                  <div className="flex flex-wrap gap-2">
-                    {analysis.topSkills.map((skill) => (
-                      <span key={skill} className="px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-400 text-xs border border-cyan-500/30">
-                        {skill}
-                      </span>
-                    ))}
+                  <p className="text-[10px] text-emerald-400 uppercase tracking-widest mb-3 flex items-center gap-1.5 font-semibold">
+                    <span className="material-symbols-rounded text-[14px]">map</span> Galaxy Legend
+                  </p>
+                  {/* Axes */}
+                  <div className="grid grid-cols-3 gap-2 mb-3">
+                    <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-white/5">
+                      <span className="text-emerald-400 text-[10px] font-bold">X →</span>
+                      <span className="text-[10px] text-slate-400">Fit Score</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-white/5">
+                      <span className="text-green-400 text-[10px] font-bold">Y ↑</span>
+                      <span className="text-[10px] text-slate-400">Salary</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-white/5">
+                      <span className="text-cyan-400 text-[10px] font-bold">Z ●</span>
+                      <span className="text-[10px] text-slate-400">Skill Match</span>
+                    </div>
                   </div>
-                  <p className="text-xs text-silver uppercase tracking-wider mt-3 mb-2">Missing Skills</p>
-                  <div className="flex flex-wrap gap-2">
-                    {analysis.missingSkills.map((skill) => (
-                      <span key={skill} className="px-3 py-1 rounded-full bg-red-500/20 text-red-400 text-xs border border-red-500/30">
-                        {skill}
-                      </span>
-                    ))}
+                  {/* Star Tiers — Clickable Filters */}
+                  <div className="flex items-center gap-2 text-[10px]">
+                    {[
+                      { tier: 'elite', label: '80%+', color: 'bg-emerald-400', shadow: 'shadow-[0_0_6px_rgba(6,214,160,0.6)]', size: 'w-2.5 h-2.5' },
+                      { tier: 'strong', label: '60%+', color: 'bg-cyan-400', shadow: 'shadow-[0_0_4px_rgba(14,165,233,0.5)]', size: 'w-2 h-2' },
+                      { tier: 'decent', label: '40%+', color: 'bg-amber-400', shadow: '', size: 'w-1.5 h-1.5' },
+                      { tier: 'low', label: '<40%', color: 'bg-gray-500', shadow: '', size: 'w-1 h-1' },
+                    ].map(({ tier, label, color, shadow, size }) => {
+                      const active = visibleTiers.has(tier);
+                      const count = analysis.jobs.filter(j => {
+                        if (tier === 'elite') return j.fitScore >= 0.8;
+                        if (tier === 'strong') return j.fitScore >= 0.6 && j.fitScore < 0.8;
+                        if (tier === 'decent') return j.fitScore >= 0.4 && j.fitScore < 0.6;
+                        return j.fitScore < 0.4;
+                      }).length;
+                      return (
+                        <button
+                          key={tier}
+                          onClick={() => {
+                            setVisibleTiers(prev => {
+                              const next = new Set(prev);
+                              if (next.has(tier)) {
+                                if (next.size > 1) next.delete(tier);
+                              } else {
+                                next.add(tier);
+                              }
+                              return next;
+                            });
+                          }}
+                          className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md transition-all cursor-pointer ${
+                            active ? 'bg-white/5 hover:bg-white/10' : 'opacity-30 hover:opacity-50'
+                          }`}
+                          title={`${active ? 'Hide' : 'Show'} ${label} fit jobs`}
+                        >
+                          <span className={`${size} rounded-full ${color} ${shadow} ${!active ? 'opacity-40' : ''}`} />
+                          <span className="text-slate-400">{label}</span>
+                          <span className={`text-[9px] ${active ? 'text-white/60' : 'text-white/30'}`}>({count})</span>
+                        </button>
+                      );
+                    })}
+                    <div className="flex items-center gap-1 ml-1 pl-2 border-l border-white/10">
+                      <span className="w-2 h-2 rounded-sm bg-emerald-400 rotate-45" />
+                      <span className="text-slate-400">You</span>
+                    </div>
                   </div>
                 </motion.div>
 
-                {/* Market Trends */}
+                {/* Skills Panel — Dark themed */}
                 <motion.div
                   initial={{ y: 50, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.4 }}
-                  className="glass-card p-4 max-w-sm"
+                  className="oracle-panel p-4 max-w-sm"
                 >
-                  <p className="text-xs text-silver uppercase tracking-wider mb-2 flex items-center gap-1"><span className="text-[14px]"><span className="material-symbols-rounded align-middle">trending_up</span></span> Market Trends</p>
-                  <div className="space-y-2">
-                    {analysis.marketTrends.slice(0, 4).map((trend) => (
-                      <div key={trend.skill} className="flex items-center justify-between">
-                        <span className="text-sm text-white">{trend.skill}</span>
-                        <span className={`text-xs ${trend.growth > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          {trend.growth > 0 ? '↑' : '↓'} {Math.abs(trend.growth)}%
-                        </span>
-                      </div>
+                  <p className="text-[10px] text-emerald-400 uppercase tracking-widest mb-2 flex items-center gap-1.5 font-semibold">
+                    <span className="material-symbols-rounded text-[14px]">psychology</span> Your Skills
+                  </p>
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {analysis.topSkills.map((skill) => (
+                      <span key={skill} className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 text-[10px] border border-emerald-500/25">
+                        {skill}
+                      </span>
                     ))}
                   </div>
+                  {analysis.missingSkills.length > 0 && (
+                    <>
+                      <p className="text-[10px] text-red-400/70 uppercase tracking-widest mb-1.5 font-medium">Gaps</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {analysis.missingSkills.slice(0, 5).map((skill) => (
+                          <span key={skill} className="px-2 py-0.5 rounded-full bg-red-500/10 text-red-400/80 text-[10px] border border-red-500/20">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </motion.div>
 
-                {/* Instructions */}
+                {/* How to Navigate */}
                 <motion.div
                   initial={{ y: 50, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.5 }}
-                  className="glass-card p-4"
+                  className="oracle-panel p-4"
                 >
-                  <p className="text-xs text-silver">
-                    <span className="text-[14px] inline-block -mb-0.5"><span className="material-symbols-rounded align-middle">mouse</span></span> Drag to rotate • Scroll to zoom • Click stars for details
+                  <p className="text-[10px] text-emerald-400 uppercase tracking-widest mb-2.5 flex items-center gap-1.5 font-semibold">
+                    <span className="material-symbols-rounded text-[14px]">gamepad</span> Controls
                   </p>
-                  <p className="text-xs text-cyan-400 mt-1">
-                    <span className="text-[14px] inline-block -mb-0.5"><span className="material-symbols-rounded align-middle">star</span></span> Bright stars = 80%+ match • Lines = constellation paths
-                  </p>
+                  <div className="space-y-1.5 text-[10px]">
+                    <div className="flex items-center gap-2 text-slate-400">
+                      <span className="material-symbols-rounded text-[12px] text-white/50">mouse</span>
+                      <span>Drag to orbit</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-slate-400">
+                      <span className="material-symbols-rounded text-[12px] text-white/50">unfold_more</span>
+                      <span>Scroll to zoom</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-slate-400">
+                      <span className="material-symbols-rounded text-[12px] text-white/50">ads_click</span>
+                      <span>Click star for details</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-emerald-400/70">
+                      <span className="material-symbols-rounded text-[12px]">arrow_right_alt</span>
+                      <span>Right = better fit for you</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-green-400/70">
+                      <span className="material-symbols-rounded text-[12px]">arrow_upward</span>
+                      <span>Up = higher salary</span>
+                    </div>
+                  </div>
                 </motion.div>
+
               </div>
             </div>
 
-            {/* Job Card Modal */}
+            {/* Job Detail Dock — Slide in from right */}
             <AnimatePresence>
               {showJobCard && selectedJob && (
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20"
+                  initial={{ opacity: 0, x: 80 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 80 }}
+                  className="absolute right-4 top-20 z-20 w-[340px] max-h-[calc(100vh-160px)]"
                 >
-                  <div className="glass-card p-6 !border-cyan-500/30 w-[420px] max-h-[80vh] overflow-y-auto">
+                  <div className="oracle-panel oracle-panel--emerald p-5 overflow-y-auto max-h-[calc(100vh-160px)]" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.2) transparent' }}>
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
@@ -808,13 +896,13 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                       <div className="p-3 rounded-xl bg-[var(--theme-bg-input)] border border-[var(--theme-border)]">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-sm text-silver">Match Score</span>
-                          <span className={`text-lg font-bold ${selectedJob.fitScore > 0.8 ? 'text-cyan-400' :
+                          <span className={`text-lg font-bold ${selectedJob.fitScore > 0.8 ? 'text-emerald-400' :
                             selectedJob.fitScore > 0.6 ? 'text-green-400' : 'text-yellow-400'
                             }`}>{Math.round(selectedJob.fitScore * 100)}%</span>
                         </div>
                         <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-gradient-to-r from-cyan-500 to-cyan-500 rounded-full"
+                            className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full"
                             style={{ width: `${selectedJob.fitScore * 100}%` }}
                           />
                         </div>
@@ -837,8 +925,8 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                         </div>
                       </div>
 
-                      <div className="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/30">
-                        <p className="text-xs text-cyan-400 uppercase tracking-wider mb-1 flex items-center gap-1"><span className="text-[14px]"><span className="material-symbols-rounded align-middle">lightbulb</span></span> Why You'll Win</p>
+                      <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+                        <p className="text-xs text-emerald-400 uppercase tracking-wider mb-1 flex items-center gap-1"><span className="text-[14px]"><span className="material-symbols-rounded align-middle">lightbulb</span></span> Why You'll Win</p>
                         <p className="text-sm text-silver">
                           {selectedJob.fitScore > 0.8
                             ? "Your skills are a near-perfect match. You're a top candidate for this role."
@@ -854,7 +942,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                           href={selectedJob.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="block w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-center font-bold hover:shadow-lg hover:shadow-cyan-500/25 transition-all"
+                          className="block w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white text-center font-bold hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
                         >
                           Apply Now →
                         </a>
@@ -864,7 +952,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                       <div className="pt-2 border-t border-white/10">
                         <p className="text-xs text-center text-silver">
                           {selectedJob.isReal ? (
-                            <span className="flex items-center justify-center gap-1"><span className="material-symbols-rounded text-[14px] align-middle">public</span> Source: <span className="text-cyan-400">{selectedJob.source || 'Job Board'}</span></span>
+                            <span className="flex items-center justify-center gap-1"><span className="material-symbols-rounded text-[14px] align-middle">public</span> Source: <span className="text-emerald-400">{selectedJob.source || 'Job Board'}</span></span>
                           ) : (
                             <span className="flex items-center justify-center gap-1"><span className="text-[14px]"><span className="material-symbols-rounded">bolt</span></span> Simulated job based on market data</span>
                           )}
@@ -886,7 +974,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                   className="absolute left-4 top-20 bottom-20 z-20 w-[380px] overflow-y-auto"
                   style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.2) transparent' }}
                 >
-                  <div className="glass-card !border-emerald-500/30 overflow-hidden">
+                  <div className="oracle-panel oracle-panel--emerald overflow-hidden">
                     {/* Header */}
                     <div className="p-4 border-b border-white/10 bg-gradient-to-r from-emerald-500/10 to-cyan-500/10">
                       <div className="flex items-center justify-between">
@@ -1039,7 +1127,7 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                         <p className="text-xs text-silver uppercase tracking-wider flex items-center gap-1"><span className="text-[14px]"><span className="material-symbols-rounded">my_location</span></span> Take Action</p>
                         <button
                           onClick={() => router.push('/suite/resume')}
-                          className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-sm font-semibold hover:shadow-lg hover:shadow-cyan-500/25 transition-all"
+                          className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white text-sm font-semibold hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
                         >
                           <span className="flex items-center justify-center gap-2"><span className="text-[18px]"><span className="material-symbols-rounded align-middle">sync</span></span> Morph Resume for This JD</span>
                         </button>
@@ -1083,9 +1171,9 @@ e.g., 'We're looking for a Senior Software Engineer to join our platform team...
                   exit={{ opacity: 0, x: 50 }}
                   className="absolute right-4 top-1/2 -translate-y-1/2 z-10"
                 >
-                  <div className="glass-card p-6 rounded-2xl border border-cyan-500/30 bg-[var(--theme-bg-card)]/95 backdrop-blur-xl w-80">
+                  <div className="oracle-panel oracle-panel--emerald p-6 w-80">
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center">
                         <span className="text-2xl text-white"><span className="material-symbols-rounded align-middle">route</span></span>
                       </div>
                       <div>

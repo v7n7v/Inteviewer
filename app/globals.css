@@ -450,6 +450,61 @@ input[type="range"].slider-enhanced::-webkit-slider-thumb {
   background: var(--border);
 }
 
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ============================================
+   PROFILE CARD — Tier Badge Shimmer
+   ============================================ */
+.tier-badge-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.tier-badge-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 200%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.2) 50%,
+    transparent 60%
+  );
+  animation: badgeShimmer 3s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes badgeShimmer {
+  0% { transform: translateX(-50%); }
+  100% { transform: translateX(50%); }
+}
+
+/* ── Profile Card Mesh Orb Animations ── */
+@keyframes profileOrb1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-12px, 8px) scale(1.08); }
+}
+@keyframes profileOrb2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(10px, -6px) scale(1.05); }
+}
+@keyframes profileOrb3 {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.08; }
+  50% { transform: translate(-50%, -50%) scale(1.15); opacity: 0.18; }
+}
+
+/* ── Twin Progress Track (mode-adaptive) ── */
+.twin-progress-track {
+  background: var(--border-subtle);
+}
+
 /* ============================================
    FOCUS & SELECTION
    ============================================ */
@@ -1400,6 +1455,19 @@ select:focus {
 [data-theme="light"] .elevation-1:hover,
 [data-theme="light"] .glass-card:hover {
   border-color: var(--border) !important;
+}
+
+/* Market Oracle HUD panels — always dark regardless of theme */
+.oracle-panel {
+  background: rgba(6, 6, 18, 0.92) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border-radius: 16px;
+  color: white;
+}
+.oracle-panel.oracle-panel--emerald {
+  border-color: rgba(6, 214, 160, 0.2) !important;
 }
 
 /* Input backgrounds in light mode */

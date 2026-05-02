@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useStore } from '@/lib/store';
 import { authFetch } from '@/lib/auth-fetch';
 import { motion } from 'framer-motion';
+import { useUserTier } from '@/hooks/use-user-tier';
+import { getTierTheme } from '@/lib/tier-theme';
+import JobFeedWidget from '@/components/JobFeedWidget';
 
 // Typewriter effect — types text, holds, then replays
 function TypewriterText({ text, delay = 0, interval = 30000 }: { text: string; delay?: number; interval?: number }) {
@@ -186,9 +189,12 @@ function getInitials(name: string): string {
     .join('');
 }
 
+// getTierTheme is now imported from lib/tier-theme.ts
+
 export default function DashboardPage() {
   const router = useRouter();
   const { user } = useStore();
+  const { tier, isPro } = useUserTier();
   const [vaultStats, setVaultStats] = useState<{ total: number; bridge: number; interview: number; flashcards: number } | null>(null);
   const [healthData, setHealthData] = useState<{
     score: number; velocity: number; responseRate: number;
@@ -274,154 +280,283 @@ export default function DashboardPage() {
   const score = healthData?.score || 0;
   const scoreColor = score >= 70 ? '#22c55e' : score >= 45 ? '#f59e0b' : '#ef4444';
   const completeness = twinData?.completeness?.score ?? null;
+  const theme = getTierTheme(tier);
+  const memberSince = user?.metadata?.creationTime
+    ? new Date(user.metadata.creationTime).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+    : null;
+  const currentTitle = twinData?.background?.currentTitle || null;
+  const targetRoles = twinData?.background?.targetRoles || [];
+  const confirmedSkills: string[] = (twinData?.profile?.skills?.confirmed || []).slice(0, 8);
+  const nextMissing = twinData?.completeness?.missing?.[0] || null;
 
   return (
     <div className="px-4 py-6 lg:px-8 lg:py-8 max-w-[1000px] mx-auto">
 
-      {/* ── Sticky Profile Intelligence Card ── */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
-        className="sticky top-0 z-30 mb-8 pl-10 lg:pl-0"
-      >
-        <div
-          className="relative rounded-2xl overflow-hidden cursor-pointer group"
-          onClick={() => router.push('/suite/intelligence')}
-          style={{
-            backdropFilter: 'blur(24px) saturate(1.6)',
-            WebkitBackdropFilter: 'blur(24px) saturate(1.6)',
-            background: 'linear-gradient(135deg, rgba(99,102,241,0.06) 0%, rgba(15,15,25,0.85) 40%, rgba(15,15,25,0.92) 100%)',
-            border: '1px solid rgba(99,102,241,0.12)',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.04) inset',
-          }}
-        >
-          {/* Mesh gradient background orbs */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {/* ── Premium Profile Card ── */}
+      {(() => {
+        const orbOpacity = Math.round(10 + theme.intensity * 10);
+        const borderGlow = Math.round(12 + theme.intensity * 5);
+        const shadowSpread = Math.round(4 + theme.intensity * 3);
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            className="sticky top-0 z-30 mb-8 pl-10 lg:pl-0"
+          >
             <div
-              className="absolute -top-8 -right-8 w-40 h-40 rounded-full opacity-30 blur-3xl"
-              style={{ background: `radial-gradient(circle, ${scoreColor}40, transparent 70%)` }}
-            />
-            <div className="absolute -bottom-6 -left-6 w-32 h-32 rounded-full opacity-20 blur-2xl" style={{ background: 'radial-gradient(circle, #6366f140, transparent 70%)' }} />
-          </div>
-
-          <div className="relative z-10 p-5 lg:p-6">
-            {/* Top row: Avatar + Greeting + Health Ring */}
-            <div className="flex items-center gap-4">
-              {/* Avatar with initials */}
-              <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 text-[18px] font-bold tracking-tight"
-                style={{
-                  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%)',
-                  color: '#fff',
-                  boxShadow: '0 4px 20px rgba(99,102,241,0.35), 0 0 0 2px rgba(99,102,241,0.15)',
-                }}
-              >
-                {initials}
+              className="relative rounded-3xl overflow-hidden cursor-pointer group"
+              onClick={() => router.push('/suite/intelligence')}
+              style={{
+                backdropFilter: 'blur(28px) saturate(1.7)',
+                WebkitBackdropFilter: 'blur(28px) saturate(1.7)',
+                background: `linear-gradient(145deg, color-mix(in srgb, ${theme.accent} 8%, var(--card-bg)), color-mix(in srgb, ${theme.accentAlt} 3%, var(--card-bg)))`,
+                border: `1px solid color-mix(in srgb, ${theme.accent} ${borderGlow}%, var(--border-subtle))`,
+                boxShadow: `0 8px 32px color-mix(in srgb, ${theme.accent} ${shadowSpread}%, transparent), 0 0 0 1px color-mix(in srgb, ${theme.accent} 5%, transparent) inset`,
+              }}
+            >
+              {/* ── Animated Mesh Gradient Orbs ── */}
+              <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div
+                  className="absolute -top-10 -right-10 w-52 h-52 rounded-full blur-3xl"
+                  style={{
+                    opacity: orbOpacity / 100,
+                    background: `radial-gradient(circle, color-mix(in srgb, ${theme.accent} 60%, transparent), transparent 70%)`,
+                    animation: 'profileOrb1 8s ease-in-out infinite',
+                  }}
+                />
+                <div
+                  className="absolute -bottom-8 -left-8 w-44 h-44 rounded-full blur-3xl"
+                  style={{
+                    opacity: (orbOpacity - 5) / 100,
+                    background: `radial-gradient(circle, color-mix(in srgb, ${theme.accentAlt} 50%, transparent), transparent 70%)`,
+                    animation: 'profileOrb2 10s ease-in-out infinite',
+                  }}
+                />
+                <div
+                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-32 rounded-full blur-3xl"
+                  style={{
+                    opacity: (orbOpacity - 8) / 100,
+                    background: `radial-gradient(ellipse, color-mix(in srgb, ${scoreColor} 30%, transparent), transparent 70%)`,
+                    animation: 'profileOrb3 12s ease-in-out infinite',
+                  }}
+                />
               </div>
 
-              {/* Greeting text */}
-              <div className="flex-1 min-w-0">
-                <h1 className="text-[22px] lg:text-[26px] font-semibold tracking-tight text-[var(--text-primary)] leading-tight truncate">
-                  {greeting}
-                </h1>
-                <p className="text-[13px] text-[var(--text-secondary)] mt-0.5 leading-snug line-clamp-1">
-                  {subtitle}
-                </p>
-              </div>
-
-              {/* Health Score Ring */}
-              {healthData && (
-                <div className="relative w-[60px] h-[60px] flex-shrink-0">
-                  <svg viewBox="0 0 36 36" className="w-[60px] h-[60px] -rotate-90">
-                    <circle cx="18" cy="18" r="14.5" fill="none" strokeWidth="2.5" stroke="rgba(255,255,255,0.06)" />
-                    <circle
-                      cx="18" cy="18" r="14.5" fill="none" strokeWidth="2.5" strokeLinecap="round"
-                      stroke={scoreColor}
-                      strokeDasharray={`${score * 0.91} ${91 - score * 0.91}`}
-                      className="transition-all duration-1000 ease-out"
-                      style={{ filter: `drop-shadow(0 0 6px ${scoreColor}50)` }}
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-[18px] font-black leading-none" style={{ color: scoreColor }}>{score}</span>
-                    <span className="text-[8px] text-[var(--text-muted)] font-medium uppercase tracking-wider mt-0.5">health</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Stats row + Completeness */}
-            <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-3">
-              {/* Inline metric chips */}
-              {healthData && (
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-lg font-medium"
-                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: 'var(--text-secondary)' }}>
-                    <span className="material-symbols-rounded text-[12px]" style={{ color: '#06b6d4' }}>speed</span>
-                    {healthData.velocity} apps/wk
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-lg font-medium"
-                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: 'var(--text-secondary)' }}>
-                    <span className="material-symbols-rounded text-[12px]" style={{ color: '#10b981' }}>mark_email_read</span>
-                    {healthData.responseRate}% response
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-lg font-medium"
-                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: 'var(--text-secondary)' }}>
-                    <span className="material-symbols-rounded text-[12px]" style={{ color: '#8b5cf6' }}>rate_review</span>
-                    {healthData.debriefs} debriefs
-                  </span>
-                  {healthData.topRec && (
-                    <span className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-lg font-medium"
-                      style={{ background: `${healthData.topRec.color}10`, border: `1px solid ${healthData.topRec.color}25`, color: healthData.topRec.color }}>
-                      <span className="material-symbols-rounded text-[12px]">{healthData.topRec.icon}</span>
-                      <span className="truncate max-w-[140px]">{healthData.topRec.title}</span>
-                    </span>
-                  )}
-                </div>
-              )}
-
-              {/* Spacer */}
-              <div className="flex-1" />
-
-              {/* Twin completeness mini bar */}
-              {completeness !== null && completeness < 100 && (
-                <div className="flex items-center gap-2.5 min-w-[160px]">
-                  <div className="flex items-center gap-1.5">
-                    <span className="material-symbols-rounded text-[12px]" style={{ color: '#6366f1' }}>person</span>
-                    <span className="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">Twin</span>
-                  </div>
-                  <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+              <div className="relative z-10 p-5 lg:p-7">
+                {/* ── Row 1: Avatar + Identity + Health Ring ── */}
+                <div className="flex items-start gap-4 lg:gap-5">
+                  {/* Avatar Column: 3D Initials + Tier Badge */}
+                  <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+                    {/* 3D Gradient Avatar */}
                     <div
-                      className="h-full rounded-full transition-all duration-1000 ease-out"
+                      className="w-16 h-16 lg:w-[72px] lg:h-[72px] rounded-2xl flex items-center justify-center text-[20px] lg:text-[22px] font-bold tracking-tight text-white transition-transform duration-200 group-hover:scale-105"
                       style={{
-                        width: `${completeness}%`,
-                        background: 'linear-gradient(90deg, #6366f1, #8b5cf6)',
-                        boxShadow: '0 0 8px rgba(99,102,241,0.4)',
+                        background: `linear-gradient(135deg, ${theme.accent}, ${theme.accentAlt})`,
+                        textShadow: [
+                          '-1px -1px 0 rgba(255,255,255,0.25)',
+                          '1px 1px 0 rgba(0,0,0,0.25)',
+                          '2px 2px 0 rgba(0,0,0,0.12)',
+                          `0 0 ${12 + theme.intensity * 6}px color-mix(in srgb, ${theme.accent} ${Math.round(30 + theme.intensity * 15)}%, transparent)`,
+                          `0 0 ${theme.intensity * 20}px color-mix(in srgb, ${theme.accent} ${Math.round(theme.intensity * 12)}%, transparent)`,
+                        ].join(', '),
+                        boxShadow: [
+                          `0 ${Math.round(4 + theme.intensity * 2)}px ${Math.round(16 + theme.intensity * 6)}px color-mix(in srgb, ${theme.accent} ${Math.round(25 + theme.intensity * 8)}%, transparent)`,
+                          `0 0 0 2px color-mix(in srgb, ${theme.accent} ${Math.round(10 + theme.intensity * 5)}%, transparent)`,
+                          `0 0 ${Math.round(theme.intensity * 20)}px color-mix(in srgb, ${theme.accent} ${Math.round(theme.intensity * 8)}%, transparent)`,
+                        ].join(', '),
                       }}
-                    />
-                  </div>
-                  <span className="text-[10px] font-bold tabular-nums" style={{ color: '#8b5cf6' }}>{completeness}%</span>
-                  {twinData?.exportable && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); window.open('/api/agent/intelligence?export=true', '_blank'); }}
-                      className="text-[10px] p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-white/5 transition-colors"
-                      title="Export Digital Twin"
                     >
-                      <span className="material-symbols-rounded text-[12px]">download</span>
-                    </button>
+                      {initials}
+                    </div>
+                    {/* Tier Badge */}
+                    <span
+                      className={`text-[9px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${theme.shimmer ? 'tier-badge-shimmer' : ''}`}
+                      style={{
+                        background: `color-mix(in srgb, ${theme.accent} 12%, var(--bg-elevated))`,
+                        color: theme.accentText,
+                        border: `1px solid color-mix(in srgb, ${theme.accent} 25%, transparent)`,
+                        boxShadow: theme.shimmer
+                          ? `0 0 ${Math.round(theme.intensity * 8)}px color-mix(in srgb, ${theme.accent} ${Math.round(theme.intensity * 12)}%, transparent)`
+                          : 'none',
+                      }}
+                    >
+                      {theme.label}
+                    </span>
+                  </div>
+
+                  {/* Identity block */}
+                  <div className="flex-1 min-w-0 pt-0.5">
+                    <h1 className="text-[22px] lg:text-[28px] font-bold tracking-tight text-[var(--text-primary)] leading-tight truncate">
+                      {greeting}
+                    </h1>
+
+                    {/* Career trajectory */}
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      {currentTitle && (
+                        <span className="text-[13px] text-[var(--text-secondary)] leading-snug">
+                          {currentTitle}
+                        </span>
+                      )}
+                      {currentTitle && targetRoles.length > 0 && (
+                        <span className="text-[11px] text-[var(--text-muted)]">→</span>
+                      )}
+                      {targetRoles.length > 0 && (
+                        <span className="text-[13px] font-medium leading-snug" style={{ color: `var(--tier-accent-text, ${theme.accentText})` }}>
+                          {targetRoles[0]}
+                        </span>
+                      )}
+                      {!currentTitle && !targetRoles.length && (
+                        <span className="text-[13px] text-[var(--text-secondary)] leading-snug line-clamp-1">
+                          {subtitle}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Member since */}
+                    {memberSince && (
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className="text-[11px] text-[var(--text-muted)] flex items-center gap-1">
+                          <span className="material-symbols-rounded text-[11px]">calendar_month</span>
+                          Since {memberSince}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Health Score Ring */}
+                  {healthData && (
+                    <div className="relative w-[68px] h-[68px] lg:w-[76px] lg:h-[76px] flex-shrink-0">
+                      <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                        <circle cx="18" cy="18" r="14.5" fill="none" strokeWidth="2" stroke="var(--border-subtle)" />
+                        <circle
+                          cx="18" cy="18" r="14.5" fill="none" strokeWidth="2.5" strokeLinecap="round"
+                          stroke={scoreColor}
+                          strokeDasharray={`${score * 0.91} ${91 - score * 0.91}`}
+                          className="transition-all duration-1000 ease-out"
+                          style={{ filter: `drop-shadow(0 0 6px color-mix(in srgb, ${scoreColor} 50%, transparent))` }}
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <span className="text-[20px] lg:text-[22px] font-black leading-none" style={{ color: scoreColor }}>{score}</span>
+                        <span className="text-[7px] lg:text-[8px] text-[var(--text-muted)] font-semibold uppercase tracking-widest mt-0.5">health</span>
+                      </div>
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
 
-            {/* Arrow hint */}
-            <div className="absolute top-1/2 -translate-y-1/2 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              <span className="material-symbols-rounded text-[18px] text-[var(--text-muted)]">arrow_forward</span>
+                {/* ── Row 2: Metric Chips ── */}
+                {healthData && (
+                  <div className="mt-5 flex items-center gap-2 flex-wrap">
+                    {[
+                      { icon: 'speed', color: '#06b6d4', label: `${healthData.velocity} apps/wk` },
+                      { icon: 'mark_email_read', color: '#10b981', label: `${healthData.responseRate}% response` },
+                      { icon: 'rate_review', color: '#8b5cf6', label: `${healthData.debriefs} debriefs` },
+                    ].map((chip) => (
+                      <span
+                        key={chip.icon}
+                        className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-xl font-medium text-[var(--text-secondary)]"
+                        style={{
+                          background: `color-mix(in srgb, ${chip.color} 8%, var(--card-bg))`,
+                          border: `1px solid color-mix(in srgb, ${chip.color} 15%, transparent)`,
+                        }}
+                      >
+                        <span className="material-symbols-rounded text-[13px]" style={{ color: chip.color }}>{chip.icon}</span>
+                        {chip.label}
+                      </span>
+                    ))}
+                    {healthData.topRec && (
+                      <span
+                        className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-xl font-medium"
+                        style={{
+                          background: `color-mix(in srgb, ${healthData.topRec.color} 10%, var(--card-bg))`,
+                          border: `1px solid color-mix(in srgb, ${healthData.topRec.color} 20%, transparent)`,
+                          color: healthData.topRec.color,
+                        }}
+                      >
+                        <span className="material-symbols-rounded text-[13px]">{healthData.topRec.icon}</span>
+                        <span className="truncate max-w-[140px]">{healthData.topRec.title}</span>
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* ── Row 3: Twin Completeness + Skills ── */}
+                <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                  {/* Twin completeness bar */}
+                  {completeness !== null && completeness < 100 && (
+                    <div className="flex items-center gap-2.5 min-w-0 sm:min-w-[200px]">
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <span className="material-symbols-rounded text-[13px]" style={{ color: theme.accentText }}>person</span>
+                        <span className="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">Twin</span>
+                      </div>
+                      <div className="flex-1 h-1.5 rounded-full overflow-hidden min-w-[60px] twin-progress-track">
+                        <div
+                          className="h-full rounded-full transition-all duration-1000 ease-out"
+                          style={{
+                            width: `${completeness}%`,
+                            background: `linear-gradient(90deg, ${theme.accent}, ${theme.accentAlt})`,
+                            boxShadow: `0 0 10px color-mix(in srgb, ${theme.accent} 40%, transparent)`,
+                          }}
+                        />
+                      </div>
+                      <span className="text-[10px] font-bold tabular-nums flex-shrink-0" style={{ color: theme.accentText }}>{completeness}%</span>
+                      {nextMissing && (
+                        <span className="text-[10px] text-[var(--text-muted)] truncate max-w-[120px] hidden sm:inline">
+                          Next: {nextMissing}
+                        </span>
+                      )}
+                      {twinData?.exportable && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); window.open('/api/agent/intelligence?export=true', '_blank'); }}
+                          className="text-[10px] p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors flex-shrink-0"
+                          title="Export Digital Twin"
+                        >
+                          <span className="material-symbols-rounded text-[12px]">download</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Spacer */}
+                  <div className="flex-1" />
+
+                  {/* Confirmed skills chips */}
+                  {confirmedSkills.length > 0 && (
+                    <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                      {confirmedSkills.map((skill) => (
+                        <span
+                          key={skill}
+                          className="text-[10px] px-2 py-0.5 rounded-md font-medium whitespace-nowrap flex-shrink-0 text-[var(--text-secondary)]"
+                          style={{
+                            background: `color-mix(in srgb, ${theme.accentAlt} 10%, var(--card-bg))`,
+                            border: `1px solid color-mix(in srgb, ${theme.accentAlt} 15%, transparent)`,
+                          }}
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                      {(twinData?.profile?.skills?.confirmed?.length || 0) > 8 && (
+                        <span className="text-[10px] text-[var(--text-muted)] whitespace-nowrap flex-shrink-0">
+                          +{(twinData?.profile?.skills?.confirmed?.length || 0) - 8}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Arrow hint on hover */}
+                <div className="absolute top-1/2 -translate-y-1/2 right-5 opacity-0 group-hover:opacity-60 transition-opacity duration-300">
+                  <span className="material-symbols-rounded text-[20px] text-[var(--text-muted)]">arrow_forward</span>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      </motion.div>
+          </motion.div>
+        );
+      })()}
+
+      {/* ── Opportunity Radar Widget ── */}
+      {user && <JobFeedWidget />}
 
       {/* ── Grouped Tool Grid ── */}
       {toolGroups.map((group, groupIdx) => (

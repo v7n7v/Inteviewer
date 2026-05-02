@@ -35,10 +35,11 @@ const SEARCH_STATUS = [
 interface OnboardingModalProps {
   onComplete: (profile: UserProfile) => void;
   onClose?: () => void;
+  onDismissPermanently?: () => void;
   userName?: string;
 }
 
-export default function OnboardingModal({ onComplete, onClose, userName }: OnboardingModalProps) {
+export default function OnboardingModal({ onComplete, onClose, onDismissPermanently, userName }: OnboardingModalProps) {
   const { setUserProfile } = useStore();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -372,13 +373,27 @@ export default function OnboardingModal({ onComplete, onClose, userName }: Onboa
                 )}
 
                 <div className="flex justify-between items-center mt-6">
-                  <button
-                    onClick={goNext}
-                    className="text-sm font-medium transition-colors hover:underline"
-                    style={{ color: 'var(--text-secondary)' }}
-                  >
-                    Skip for now →
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={goNext}
+                      className="text-sm font-medium transition-colors hover:underline"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      Skip for now →
+                    </button>
+                    {onDismissPermanently && (
+                      <>
+                        <span className="text-[10px]" style={{ color: 'var(--border)' }}>·</span>
+                        <button
+                          onClick={onDismissPermanently}
+                          className="text-xs transition-colors hover:underline"
+                          style={{ color: 'var(--text-secondary)' }}
+                        >
+                          Don&apos;t show again
+                        </button>
+                      </>
+                    )}
+                  </div>
                   {resumeText && (
                     <button
                       onClick={goNext}
