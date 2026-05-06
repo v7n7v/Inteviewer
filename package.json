@@ -36,7 +36,7 @@
     "framer-motion": "^11.0.3",
     "groq-sdk": "^0.37.0",
     "lottie-react": "^2.4.1",
-    "mammoth": "^1.11.0",
+    "mammoth": "^1.12.0",
     "mammoth-ea033c5d84d0b9b2": "npm:mammoth@^1.9.0",
     "next": "^16.1.7",
     "pako": "^2.1.0",
