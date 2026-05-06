@@ -159,7 +159,14 @@ export default function AdminDashboard() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       showToast(data.message, 'check_circle');
-      loadUsers(search);
+
+      // Optimistically update local state for tier changes
+      const tierMap: Record<string, string> = { set_pro: 'pro', set_max: 'studio', set_free: 'free' };
+      if (tierMap[action]) {
+        setUsersList(prev => prev.map(u => u.uid === uid ? { ...u, tier: tierMap[action] } : u));
+      } else if (action === 'disable' || action === 'enable') {
+        setUsersList(prev => prev.map(u => u.uid === uid ? { ...u, disabled: action === 'disable' } : u));
+      }
     } catch (err: any) { 
       showToast(err.message || 'Action failed', 'cancel'); 
     }
@@ -294,7 +301,7 @@ export default function AdminDashboard() {
     { key: 'skillBridge', label: 'Skill Bridge', icon: 'school' },
   ];
 
-  const tierFilters = ['all', 'admin', 'max', 'pro', 'free', 'disabled'];
+  const tierFilters = ['all', 'admin', 'studio', 'pro', 'free', 'disabled'];
   const filteredUsers = usersList.filter(u => {
     if (tierFilter === 'all') return true;
     if (tierFilter === 'disabled') return u.disabled;
@@ -481,7 +488,7 @@ export default function AdminDashboard() {
                         tierFilter === t ? 'bg-[var(--tag-green-bg)] text-[var(--tag-green-text)] border border-[var(--tag-green-text)]/30' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] border border-transparent'
                       }`}
                     >
-                      {t}
+                      {t === 'studio' ? 'max' : t}
                     </button>
                   ))}
                 </div>
@@ -568,16 +575,22 @@ export default function AdminDashboard() {
                                   {actionDropdown === u.uid && (
                                     <div className="absolute right-0 top-full mt-2 w-36 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl shadow-xl overflow-hidden z-50">
                                       {u.tier === 'free' && (
-                                        <button onClick={() => handleAction(u.uid, u.email, 'upgrade_pro')} className="w-full text-left px-4 py-2.5 text-xs text-[var(--tag-green-text)] hover:bg-[var(--bg-hover)] transition-colors">↑ Upgrade Pro</button>
+                                        <>
+                                          <button onClick={() => handleAction(u.uid, u.email, 'set_pro')} className="w-full text-left px-4 py-2.5 text-xs text-[var(--tag-green-text)] hover:bg-[var(--bg-hover)] transition-colors">↑ Upgrade Pro</button>
+                                          <button onClick={() => handleAction(u.uid, u.email, 'set_max')} className="w-full text-left px-4 py-2.5 text-xs text-[var(--tag-blue-text)] hover:bg-[var(--bg-hover)] transition-colors">↑ Upgrade Max</button>
+                                        </>
                                       )}
                                       {u.tier === 'pro' && (
                                         <>
-                                          <button onClick={() => handleAction(u.uid, u.email, 'downgrade_free')} className="w-full text-left px-4 py-2.5 text-xs text-[var(--text-muted)] hover:bg-[var(--bg-hover)] transition-colors">↓ Downgrade Free</button>
-                                          <button onClick={() => handleAction(u.uid, u.email, 'upgrade_studio')} className="w-full text-left px-4 py-2.5 text-xs text-[var(--tag-blue-text)] hover:bg-[var(--bg-hover)] transition-colors">↑ Upgrade Max</button>
+                                          <button onClick={() => handleAction(u.uid, u.email, 'set_free')} className="w-full text-left px-4 py-2.5 text-xs text-[var(--text-muted)] hover:bg-[var(--bg-hover)] transition-colors">↓ Downgrade Free</button>
+                                          <button onClick={() => handleAction(u.uid, u.email, 'set_max')} className="w-full text-left px-4 py-2.5 text-xs text-[var(--tag-blue-text)] hover:bg-[var(--bg-hover)] transition-colors">↑ Upgrade Max</button>
                                         </>
                                       )}
                                       {u.tier === 'studio' && (
-                                        <button onClick={() => handleAction(u.uid, u.email, 'downgrade_pro')} className="w-full text-left px-4 py-2.5 text-xs text-[var(--tag-green-text)] hover:bg-[var(--bg-hover)] transition-colors">↓ Downgrade Pro</button>
+                                        <>
+                                          <button onClick={() => handleAction(u.uid, u.email, 'set_pro')} className="w-full text-left px-4 py-2.5 text-xs text-[var(--tag-green-text)] hover:bg-[var(--bg-hover)] transition-colors">↓ Downgrade Pro</button>
+                                          <button onClick={() => handleAction(u.uid, u.email, 'set_free')} className="w-full text-left px-4 py-2.5 text-xs text-[var(--text-muted)] hover:bg-[var(--bg-hover)] transition-colors">↓ Downgrade Free</button>
+                                        </>
                                       )}
                                       <button onClick={() => handleAction(u.uid, u.email, u.disabled ? 'enable' : 'disable')} className="w-full text-left px-4 py-2.5 text-xs text-[var(--tag-rose-text)] border-t border-[var(--border-subtle)] hover:bg-[var(--bg-hover)] transition-colors">
                                         {u.disabled ? 'Unlock Account' : 'Suspend Account'}

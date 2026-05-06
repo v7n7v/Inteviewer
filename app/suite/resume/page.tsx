@@ -824,6 +824,7 @@ export default function LiquidResumePage() {
           localStorage.setItem('tc_skill_gaps', JSON.stringify({
             gaps: classified.map(c => ({ skill: c.skill, confidence: 'ai-added', category: c.category })),
             jdTitle: applicationData.jobTitle || 'Target Role',
+            companyName: applicationData.companyName || '',
             timestamp: Date.now(),
           }));
 

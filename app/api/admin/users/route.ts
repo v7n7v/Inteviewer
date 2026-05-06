@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
             tier = 'admin';
           } else if (subDoc.exists && subDoc.data()?.status === 'active') {
             const plan = subDoc.data()?.plan;
-            if (plan === 'studio') tier = 'max';
+            if (plan === 'studio') tier = 'studio';
             else if (plan === 'pro') tier = 'pro';
           }
           return { ...u, tier };

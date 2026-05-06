@@ -4,6 +4,9 @@
  * Inherits all behavior from useGeminiLive but instead of playing audio
  * through AudioContext directly, it forwards raw PCM audio chunks to 
  * TalkingHead's speakAudio() for lip-synced playback.
+ * 
+ * Transcript fragments are accumulated into coherent turns so the on-screen
+ * text matches what was actually spoken as complete sentences.
  */
 
 'use client';
@@ -56,6 +59,13 @@ export function useGeminiLiveAvatar() {
   const scriptNodeRef = useRef<ScriptProcessorNode | null>(null);
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Mic gating — prevents echo feedback loop where AI hears its own audio
+  const isSpeakingRef = useRef(false);
+  const speakingDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Transcript accumulation — merge consecutive fragments from the same role
+  const lastTranscriptRoleRef = useRef<'user' | 'ai' | null>(null);
 
   // Callbacks for avatar integration
   const onAudioChunkRef = useRef<AudioChunkCallback | null>(null);
@@ -144,6 +154,40 @@ export function useGeminiLiveAvatar() {
     }
   }, []);
 
+  /**
+   * Append a transcript fragment to fullTranscript.
+   * If the previous entry is the same role, merge into it (accumulate).
+   * If role changed, start a new entry.
+   */
+  const appendTranscript = useCallback((role: 'user' | 'ai', text: string) => {
+    setState(s => {
+      const transcript = [...s.fullTranscript];
+      const lastEntry = transcript.length > 0 ? transcript[transcript.length - 1] : null;
+
+      if (lastEntry && lastEntry.role === role) {
+        // Accumulate into the existing turn
+        transcript[transcript.length - 1] = {
+          ...lastEntry,
+          text: lastEntry.text + text,
+        };
+      } else {
+        // New turn
+        transcript.push({ role, text });
+      }
+
+      lastTranscriptRoleRef.current = role;
+
+      const isAi = role === 'ai';
+      return {
+        ...s,
+        fullTranscript: transcript,
+        userTranscript: isAi ? s.userTranscript : s.userTranscript + text,
+        aiTranscript: isAi ? s.aiTranscript + text : s.aiTranscript,
+        questionCount: isAi && text.includes('?') ? s.questionCount + 1 : s.questionCount,
+      };
+    });
+  }, []);
+
   const handleServerMessage = useCallback((msg: any) => {
     if (msg.setupComplete) {
       setState(s => ({ ...s, isConnected: true, isConnecting: false }));
@@ -163,6 +207,12 @@ export function useGeminiLiveAvatar() {
         for (const part of sc.modelTurn.parts) {
           if (part.inlineData?.data) {
             setState(s => ({ ...s, isSpeaking: true }));
+            // Immediately mute mic to prevent echo feedback
+            isSpeakingRef.current = true;
+            if (speakingDebounceRef.current) {
+              clearTimeout(speakingDebounceRef.current);
+              speakingDebounceRef.current = null;
+            }
             // Forward to avatar for lip-synced playback
             onAudioChunkRef.current?.(part.inlineData.data);
           }
@@ -171,35 +221,39 @@ export function useGeminiLiveAvatar() {
 
       if (sc.turnComplete) {
         setState(s => ({ ...s, isSpeaking: false }));
+        // Debounce 500ms before re-enabling mic — catches speaker echo tail
+        speakingDebounceRef.current = setTimeout(() => {
+          isSpeakingRef.current = false;
+          speakingDebounceRef.current = null;
+        }, 500);
+        // Signal that the AI turn is complete — next transcript from either
+        // role should start a new entry
+        lastTranscriptRoleRef.current = null;
         onTurnCompleteRef.current?.();
       }
 
-      // Transcriptions — also track in full transcript
+      // Transcriptions — accumulate fragments into coherent turns
       if (sc.inputTranscription?.text) {
-        const text = sc.inputTranscription.text;
-        setState(s => ({
-          ...s,
-          userTranscript: s.userTranscript + text,
-          fullTranscript: [...s.fullTranscript, { role: 'user', text }],
-        }));
+        appendTranscript('user', sc.inputTranscription.text);
       }
 
       if (sc.outputTranscription?.text) {
-        const text = sc.outputTranscription.text;
-        setState(s => ({
-          ...s,
-          aiTranscript: s.aiTranscript + text,
-          fullTranscript: [...s.fullTranscript, { role: 'ai', text }],
-          // Rough question counter: increment when AI output contains '?'
-          questionCount: text.includes('?') ? s.questionCount + 1 : s.questionCount,
-        }));
+        appendTranscript('ai', sc.outputTranscription.text);
       }
 
       if (sc.interrupted) {
         setState(s => ({ ...s, isSpeaking: false }));
+        // AI was interrupted — re-enable mic immediately (user is talking)
+        isSpeakingRef.current = false;
+        if (speakingDebounceRef.current) {
+          clearTimeout(speakingDebounceRef.current);
+          speakingDebounceRef.current = null;
+        }
+        // Reset accumulation so the next fragment starts fresh
+        lastTranscriptRoleRef.current = null;
       }
     }
-  }, []);
+  }, [appendTranscript]);
 
   const startMicCapture = useCallback(async () => {
     try {
@@ -226,6 +280,8 @@ export function useGeminiLiveAvatar() {
 
       scriptNode.onaudioprocess = (e) => {
         if (wsRef.current?.readyState !== WebSocket.OPEN) return;
+        // Mic gating: don't send audio while AI is speaking (prevents echo loop)
+        if (isSpeakingRef.current) return;
         const input = e.inputBuffer.getChannelData(0);
         const pcm16 = float32ToInt16(input);
         const base64 = arrayBufferToBase64(pcm16.buffer as ArrayBuffer);
@@ -273,6 +329,12 @@ export function useGeminiLiveAvatar() {
   }, [state.fullTranscript]);
 
   const cleanup = useCallback(() => {
+    if (speakingDebounceRef.current) {
+      clearTimeout(speakingDebounceRef.current);
+      speakingDebounceRef.current = null;
+    }
+    isSpeakingRef.current = false;
+    lastTranscriptRoleRef.current = null;
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -340,3 +402,4 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   }
   return btoa(binary);
 }
+

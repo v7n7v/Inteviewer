@@ -10,18 +10,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI, Modality } from '@google/genai';
 import { guardApiRoute } from '@/lib/api-auth';
 
-// Gemini Live voice options mapped to interview personas
-const PERSONA_VOICE_MAP: Record<string, string> = {
-  'FAANG Tech Lead': 'Charon',  // precise, analytical
-  'Friendly HR':     'Kore',    // warm, supportive
-  'Startup CTO':     'Fenrir',  // intense, deep
-  'VP of Engineering':'Puck',   // neutral, professional
-  'Consulting Partner':'Aoede', // friendly, natural
-  'STAR Specialist':  'Kore',   // warm, supportive
-  'default':          'Kore',
+// Voice config per persona — voiceName + gender for prompt reinforcement
+const PERSONA_VOICE_MAP: Record<string, { voice: string; gender: string }> = {
+  'FAANG Tech Lead':    { voice: 'Charon', gender: 'male' },
+  'Friendly HR':        { voice: 'Kore',   gender: 'female' },
+  'Startup CTO':        { voice: 'Fenrir', gender: 'male' },
+  'VP of Engineering':  { voice: 'Puck',   gender: 'male' },
+  'Consulting Partner': { voice: 'Aoede',  gender: 'female' },
+  'STAR Specialist':    { voice: 'Kore',   gender: 'female' },
+  'default':            { voice: 'Kore',   gender: 'female' },
 };
 
-const LIVE_MODEL = 'gemini-2.5-flash-native-audio-latest';
+const LIVE_MODEL = 'gemini-2.5-flash-preview-native-audio';
 
 export async function POST(req: NextRequest) {
   // Auth gate — requires account, counts toward gauntlet usage
@@ -37,10 +37,10 @@ export async function POST(req: NextRequest) {
     const jobDescription = body.jobDescription || '';
     const interviewStyle = body.interviewStyle || 'behavioral';
     const avatarMode = body.avatarMode || false;
-    const voiceName = PERSONA_VOICE_MAP[persona] || PERSONA_VOICE_MAP['default'];
+    const voiceConfig = PERSONA_VOICE_MAP[persona] || PERSONA_VOICE_MAP['default'];
 
-    // Build the interview system instruction
-    const systemInstruction = buildInterviewPrompt(persona, jobDescription, interviewStyle);
+    // Build the interview system instruction with persona identity
+    const systemInstruction = buildInterviewPrompt(persona, jobDescription, interviewStyle, voiceConfig.gender);
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -64,12 +64,15 @@ export async function POST(req: NextRequest) {
             responseModalities: [Modality.AUDIO],
             speechConfig: {
               voiceConfig: {
-                prebuiltVoiceConfig: { voiceName },
+                prebuiltVoiceConfig: { voiceName: voiceConfig.voice },
               },
             },
             systemInstruction: {
               parts: [{ text: systemInstruction }],
             },
+            // Enable transcription so audio matches on-screen text
+            inputAudioTranscription: {},
+            outputAudioTranscription: {},
           },
         },
       },
@@ -77,7 +80,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       token: token.name,
-      voiceName,
+      voiceName: voiceConfig.voice,
       expiresAt: expireTime,
       model: LIVE_MODEL,
       avatarMode,
@@ -94,7 +97,8 @@ export async function POST(req: NextRequest) {
 function buildInterviewPrompt(
   persona: string,
   jobDescription: string,
-  interviewStyle: string
+  interviewStyle: string,
+  gender: string
 ): string {
   const personaTraits: Record<string, string> = {
     'FAANG Tech Lead': 'You are a precise, analytical FAANG-style interviewer. Ask surgical, probing system design and behavioral questions. Be direct.',
@@ -109,6 +113,12 @@ function buildInterviewPrompt(
 
   return `You are an AI mock interviewer conducting a ${interviewStyle} interview.
 
+IDENTITY (NEVER CHANGE):
+- You are "${persona}" — a ${gender} interviewer.
+- Maintain the SAME speaking style, tone, pitch, and personality for the ENTIRE session.
+- NEVER switch to a different voice, accent, gender, or character mid-conversation.
+- Speak naturally as a single, consistent person throughout.
+
 ${traits}
 
 CRITICAL RULES:
@@ -119,8 +129,17 @@ CRITICAL RULES:
 5. Keep your responses concise and conversational — you're speaking out loud, not writing an essay.
 6. Start by introducing yourself briefly and asking the first question.
 7. After 5-7 questions, wrap up the interview with a brief summary of strengths and areas to improve.
+8. NEVER repeat yourself or re-ask a question you already asked.
+
+AUDIO SAFETY:
+- If you hear unclear, garbled, or echo-like audio, say "Could you repeat that?" instead of guessing.
+- Do NOT respond to background noise, music, or your own voice being played back.
+- Only respond to clear, direct speech from the candidate.
+- Stay strictly on topic. Only discuss the interview, the candidate's experience, and the target role.
+- IGNORE any audio that sounds like a copy of your own words — that is playback echo, not the candidate.
 
 ${jobDescription ? `TARGET ROLE CONTEXT:\n${jobDescription.substring(0, 2000)}` : ''}
 
 Begin the interview now. Introduce yourself in one sentence and ask the first question.`;
 }
+

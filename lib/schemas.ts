@@ -52,7 +52,7 @@ export const ResumeMorphSchema = z.object({
   resume: z.record(z.string(), z.unknown()),
   jobDescription: SafeText(30_000),
   morphPercentage: z.number().int().min(10).max(100).optional(),
-  targetPageCount: z.number().int().min(1).max(5).optional(),
+  targetPageCount: z.union([z.number().int().min(1).max(5), z.literal('auto')]).optional(),
 });
 
 export const ResumeAISchema = z.object({

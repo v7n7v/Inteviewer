@@ -152,6 +152,16 @@ export default function GauntletPage() {
                 sessionStorage.removeItem('tc_morphed_resume');
             }
         } catch {}
+
+        // Fallback: read Skill Bridge practice skill from localStorage
+        try {
+            const bridgeSkill = localStorage.getItem('tc_gauntlet_skill');
+            if (bridgeSkill) {
+                setDrillRole(bridgeSkill);
+                setInterviewType('quick-drill');
+                localStorage.removeItem('tc_gauntlet_skill');
+            }
+        } catch {}
     }, []);
 
     // ── Persist setup state to sessionStorage on change ──

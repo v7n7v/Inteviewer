@@ -3,19 +3,25 @@
 /**
  * useUserTier — Client-side hook for tier + usage awareness
  * Fetches from /api/usage on mount and exposes tier, usage, and helper methods.
- * Auto-detects upgrade success from URL params and refetches.
+ * Subscribes to Firestore subscription doc in real time so plan changes
+ * from the admin panel reflect instantly without page refresh.
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { authFetch } from '@/lib/auth-fetch';
 import { useStore } from '@/lib/store';
+import { db } from '@/lib/firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
 import type { UsageData } from '@/lib/usage-tracker';
 
 export type PlanTier = 'free' | 'pro' | 'studio' | 'god';
 
+const GOD_EMAILS = ['alula2006@gmail.com'];
+const MASTER_EMAILS = ['alula2006@gmail.com'];
+
 interface TierState {
   tier: PlanTier;
-  isPro: boolean; // true for 'pro' OR 'god'
+  isPro: boolean; // true for 'pro', 'studio', OR 'god'
   usage: UsageData;
   caps: Record<string, number> | null;
   loading: boolean;
@@ -35,6 +41,7 @@ export function useUserTier(): TierState {
   const [caps, setCaps] = useState<Record<string, number> | null>(DEFAULT_CAPS);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const initialFetchDone = useRef(false);
 
   const fetchUsage = useCallback(async () => {
     if (!user) {
@@ -51,6 +58,7 @@ export function useUserTier(): TierState {
         setUsage(data.usage || DEFAULT_USAGE);
         setCaps(serverTier === 'free' ? (data.caps || DEFAULT_CAPS) : null);
         setError(null);
+        initialFetchDone.current = true;
       }
     } catch (err: any) {
       setError(err.message);
@@ -63,15 +71,54 @@ export function useUserTier(): TierState {
     fetchUsage();
   }, [fetchUsage]);
 
+  // Real-time Firestore listener on subscription doc
+  // When admin changes a user's plan, this fires instantly
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    const email = user.email?.toLowerCase() || '';
+
+    // God/master accounts have fixed tiers — no need to listen
+    if (GOD_EMAILS.includes(email) || MASTER_EMAILS.includes(email)) return;
+
+    const subRef = doc(db, 'users', user.uid, 'subscription', 'current');
+    const unsub = onSnapshot(subRef, (snap) => {
+      // Skip the first snapshot if we already loaded from /api/usage
+      // to avoid a flash. After that, always apply real-time updates.
+      if (!initialFetchDone.current) return;
+
+      if (!snap.exists()) {
+        setTier('free');
+        setCaps(DEFAULT_CAPS);
+        return;
+      }
+
+      const data = snap.data();
+      const status = data?.status;
+      const plan = data?.plan;
+
+      if (status === 'active' || status === 'trialing') {
+        const newTier: PlanTier = plan === 'studio' ? 'studio' : plan === 'pro' ? 'pro' : 'free';
+        setTier(newTier);
+        setCaps(newTier === 'free' ? DEFAULT_CAPS : null);
+      } else {
+        setTier('free');
+        setCaps(DEFAULT_CAPS);
+      }
+    }, (err) => {
+      console.warn('[useUserTier] Subscription listener error:', err.message);
+    });
+
+    return () => unsub();
+  }, [user?.uid, user?.email]);
+
   // Auto-detect upgrade success from URL params and refetch
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     if (params.get('upgrade') === 'success') {
-      // Clean the URL
       const newUrl = window.location.pathname;
       window.history.replaceState({}, '', newUrl);
-      // Wait a moment for webhook to fire, then refetch
       const timer = setTimeout(() => fetchUsage(), 2000);
       return () => clearTimeout(timer);
     }

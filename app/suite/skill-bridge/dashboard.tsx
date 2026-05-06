@@ -31,7 +31,7 @@ const CAT_COLORS: Record<string, { accent: string; ring: string; trail: (l: bool
 // ═══════════════════════════════════════
 // LEARNING TRACK CARD
 // ═══════════════════════════════════════
-function LearningTrack({ skill, category, completedDays, totalDays, planData, onDayToggle, onMarkComplete, isLight, onGeneratePlan, loadingPlan, onPractice }: {
+function LearningTrack({ skill, category, completedDays, totalDays, planData, onDayToggle, onMarkComplete, isLight, onGeneratePlan, loadingPlan, onPractice, jobTitle, companyName }: {
   skill: string;
   category: string;
   completedDays: number[];
@@ -43,6 +43,8 @@ function LearningTrack({ skill, category, completedDays, totalDays, planData, on
   onGeneratePlan: (skill: string) => void;
   loadingPlan: boolean;
   onPractice: (skill: string) => void;
+  jobTitle?: string;
+  companyName?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
   const c = CAT_COLORS[category] || CAT_COLORS.technical;
@@ -71,6 +73,13 @@ function LearningTrack({ skill, category, completedDays, totalDays, planData, on
               <span className={`text-[9px] px-2 py-0.5 rounded-full border font-semibold ${c.badge(isLight)}`}>{category}</span>
               {isDone && <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold ${isLight ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>✓ Done</span>}
             </div>
+            {/* Job context badge */}
+            {(jobTitle || companyName) && (
+              <div className={`flex items-center gap-1 text-[10px] mt-0.5 ${isLight ? 'text-slate-400' : 'text-white/25'}`}>
+                <span className="material-symbols-rounded text-[11px]">work</span>
+                For: {jobTitle}{companyName ? ` @ ${companyName}` : ''}
+              </div>
+            )}
             {/* Mini progress bar */}
             <div className="flex items-center gap-2">
               <div className={`flex-1 h-1.5 rounded-full overflow-hidden ${isLight ? 'bg-slate-100' : 'bg-white/[0.06]'}`}>
@@ -293,6 +302,8 @@ export function LearningDashboard({ allProgress, gaps, onDayToggle, onMarkComple
                 onGeneratePlan={onGeneratePlan}
                 loadingPlan={!!loadingPlans[p.skill]}
                 onPractice={onPractice}
+                jobTitle={p.job_title}
+                companyName={p.company_name}
               />
             ))}
           </div>
@@ -320,6 +331,8 @@ export function LearningDashboard({ allProgress, gaps, onDayToggle, onMarkComple
                 onGeneratePlan={onGeneratePlan}
                 loadingPlan={!!loadingPlans[p.skill]}
                 onPractice={onPractice}
+                jobTitle={p.job_title}
+                companyName={p.company_name}
               />
             ))}
           </div>

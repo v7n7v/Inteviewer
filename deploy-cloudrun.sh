@@ -42,7 +42,6 @@ gcloud run deploy ${SERVICE_NAME} \
   --min-instances 0 \
   --max-instances 5 \
   --timeout 300 \
-  --set-env-vars "NODE_ENV=production" \
   --env-vars-file .env.cloudrun.yaml
 
 echo ""

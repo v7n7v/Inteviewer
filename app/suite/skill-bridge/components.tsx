@@ -321,6 +321,70 @@ export function PlanConfigurator({ selectedSkills, onGenerate, onBack, isLight, 
         </p>
       </div>
 
+      {/* ── Live Training Time Counter ── */}
+      {(() => {
+        const totalHours = configs.reduce((sum, c) => sum + c.durationDays * 24, 0);
+        const totalDays = configs.reduce((sum, c) => sum + c.durationDays, 0);
+        const displayTime = totalDays >= 1
+          ? `${totalDays % 1 === 0 ? totalDays : totalDays.toFixed(1)} day${totalDays !== 1 ? 's' : ''}`
+          : `${Math.round(totalHours)} hour${Math.round(totalHours) !== 1 ? 's' : ''}`;
+        const displayHours = totalDays >= 1 ? `${Math.round(totalHours)}h total` : '';
+
+        return (
+          <motion.div
+            layout
+            className={`mb-6 p-4 rounded-2xl border ${
+              isLight ? 'bg-emerald-50/50 border-emerald-200' : 'bg-emerald-500/[0.04] border-emerald-500/15'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className={`material-symbols-rounded text-lg ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`}>timer</span>
+                <span className={`text-xs font-bold uppercase tracking-wider ${isLight ? 'text-emerald-700' : 'text-emerald-400'}`}>
+                  Total Training Time
+                </span>
+              </div>
+              <div className="text-right">
+                <motion.span
+                  key={displayTime}
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`text-xl font-extrabold ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`}
+                >
+                  {displayTime}
+                </motion.span>
+                {displayHours && (
+                  <p className={`text-[10px] ${isLight ? 'text-emerald-500/60' : 'text-emerald-400/40'}`}>{displayHours}</p>
+                )}
+              </div>
+            </div>
+            {/* Per-skill mini bars */}
+            <div className="space-y-1.5">
+              {configs.map((cfg, i) => {
+                const maxDays = Math.max(...configs.map(c => c.durationDays), 0.08);
+                const pct = (cfg.durationDays / maxDays) * 100;
+                const hrs = cfg.durationDays * 24;
+                const label = hrs >= 24 ? `${cfg.durationDays % 1 === 0 ? cfg.durationDays : cfg.durationDays.toFixed(1)}d` : `${Math.round(hrs)}h`;
+                return (
+                  <div key={cfg.skill} className="flex items-center gap-2">
+                    <span className={`text-[10px] font-medium w-20 truncate ${isLight ? 'text-slate-500' : 'text-white/40'}`}>{cfg.skill}</span>
+                    <div className={`flex-1 h-2 rounded-full overflow-hidden ${isLight ? 'bg-emerald-100' : 'bg-emerald-500/10'}`}>
+                      <motion.div
+                        className="h-full rounded-full bg-emerald-500"
+                        initial={false}
+                        animate={{ width: `${pct}%` }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                      />
+                    </div>
+                    <span className={`text-[10px] font-bold w-7 text-right ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`}>{label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        );
+      })()}
+
       <div className="space-y-4">
         {configs.map((cfg, idx) => (
           <motion.div
@@ -355,14 +419,45 @@ export function PlanConfigurator({ selectedSkills, onGenerate, onBack, isLight, 
                   min={0} max={100} step={1}
                   value={cfg.durationValue}
                   onChange={(e) => handleSlider(idx, Number(e.target.value))}
-                  className="w-full h-2 rounded-full appearance-none cursor-pointer accent-emerald-500"
+                  className="w-full h-2 rounded-full appearance-none cursor-pointer accent-emerald-500 relative z-10"
                   style={{
                     background: `linear-gradient(to right, #10b981 0%, #10b981 ${cfg.durationValue}%, ${isLight ? '#e2e8f0' : 'rgba(255,255,255,0.08)'} ${cfg.durationValue}%, ${isLight ? '#e2e8f0' : 'rgba(255,255,255,0.08)'} 100%)`,
                   }}
                 />
-                <div className="flex justify-between mt-1">
-                  <span className={`text-[9px] ${isLight ? 'text-slate-300' : 'text-white/15'}`}>2h</span>
-                  <span className={`text-[9px] ${isLight ? 'text-slate-300' : 'text-white/15'}`}>7 days</span>
+                {/* Tick marks at each duration stop */}
+                <div className="relative w-full h-4 mt-1">
+                  {DURATION_STOPS.map((stop) => {
+                    const isActive = Math.abs(cfg.durationValue - stop.value) <= 7;
+                    return (
+                      <div
+                        key={stop.value}
+                        className="absolute flex flex-col items-center"
+                        style={{ left: `${stop.value}%`, transform: 'translateX(-50%)' }}
+                      >
+                        <div
+                          className="rounded-full transition-all"
+                          style={{
+                            width: isActive ? 3 : 2,
+                            height: isActive ? 8 : 5,
+                            background: isActive
+                              ? '#10b981'
+                              : isLight ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.12)',
+                          }}
+                        />
+                        <span
+                          className="text-[8px] mt-0.5 font-semibold transition-all whitespace-nowrap"
+                          style={{
+                            color: isActive
+                              ? '#10b981'
+                              : isLight ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.15)',
+                            fontWeight: isActive ? 700 : 500,
+                          }}
+                        >
+                          {stop.shortLabel}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>

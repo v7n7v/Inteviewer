@@ -108,6 +108,9 @@ function SkillBridgePageInner() {
   const [allProgress, setAllProgress] = useState<StudyProgress[]>([]);
   const [loadingPlans, setLoadingPlans] = useState<Record<string, boolean>>({});
   const [isGeneratingBatch, setIsGeneratingBatch] = useState(false);
+  const [jobTitle, setJobTitle] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [jobDescription, setJobDescription] = useState('');
 
   // Load gaps from localStorage
   useEffect(() => {
@@ -122,6 +125,9 @@ function SkillBridgePageInner() {
           priority: i + 1,
           reason: g.reason || '',
         }));
+        if (parsed.jdTitle) setJobTitle(parsed.jdTitle);
+        if (parsed.companyName) setCompanyName(parsed.companyName);
+        if (parsed.jd) setJobDescription(parsed.jd);
         if (gapData.length > 0) { setGaps(gapData); return; }
       }
     } catch {}
@@ -154,6 +160,7 @@ function SkillBridgePageInner() {
   // ── PHASE 2 HANDLER: Generate plans ──
   const handleGenerateAll = async (configs: SelectedSkillConfig[]) => {
     setIsGeneratingBatch(true);
+    const jc = (jobTitle || companyName) ? { jobTitle, companyName } : undefined;
     let successCount = 0;
     for (const cfg of configs) {
       try {
@@ -169,13 +176,12 @@ function SkillBridgePageInner() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         if (data.schedule && data.schedule.length > 0) {
-          await saveStudyProgress(cfg.skill, cfg.category, data, applicationId || undefined);
+          await saveStudyProgress(cfg.skill, cfg.category, data, applicationId || undefined, jc);
           successCount++;
         }
       } catch (err: any) {
         console.error(`[SkillBridge] Failed for ${cfg.skill}:`, err);
-        // Still save progress without AI plan
-        await saveStudyProgress(cfg.skill, cfg.category, undefined, applicationId || undefined);
+        await saveStudyProgress(cfg.skill, cfg.category, undefined, applicationId || undefined, jc);
         successCount++;
       }
     }
@@ -187,15 +193,15 @@ function SkillBridgePageInner() {
 
   // ── PHASE 3 HANDLERS ──
   const handleDayToggle = async (skill: string, day: number, isDone: boolean) => {
+    const jc = (jobTitle || companyName) ? { jobTitle, companyName } : undefined;
     if (isDone) {
       const result = await unmarkDayComplete(skill, day);
       if (result.success) { showToast(`Day ${day} unmarked`, '↺'); loadProgress(); }
     } else {
-      // Ensure progress exists
       const hasProgress = allProgress.some(p => p.skill.toLowerCase() === skill.toLowerCase());
       if (!hasProgress) {
         const gap = gaps.find(g => g.skill === skill);
-        await saveStudyProgress(skill, gap?.category || 'technical', undefined, applicationId || undefined);
+        await saveStudyProgress(skill, gap?.category || 'technical', undefined, applicationId || undefined, jc);
       }
       const result = await markDayComplete(skill, day);
       if (result.success) { showToast(`Day ${day} complete ✓`, 'check_circle'); loadProgress(); }
@@ -205,8 +211,9 @@ function SkillBridgePageInner() {
   const handleMarkComplete = async (skill: string, complete: boolean) => {
     const days = getTrainingDays(skill, gaps.find(g => g.skill === skill)?.category || 'technical');
     const hasProgress = allProgress.some(p => p.skill.toLowerCase() === skill.toLowerCase());
+    const jc = (jobTitle || companyName) ? { jobTitle, companyName } : undefined;
     if (!hasProgress) {
-      await saveStudyProgress(skill, gaps.find(g => g.skill === skill)?.category || 'technical', undefined, applicationId || undefined);
+      await saveStudyProgress(skill, gaps.find(g => g.skill === skill)?.category || 'technical', undefined, applicationId || undefined, jc);
     }
     if (complete) {
       const result = await markCourseComplete(skill, days);
@@ -219,6 +226,7 @@ function SkillBridgePageInner() {
 
   const handleSingleGenerate = async (skill: string) => {
     setLoadingPlans(prev => ({ ...prev, [skill]: true }));
+    const jc = (jobTitle || companyName) ? { jobTitle, companyName } : undefined;
     try {
       const category = gaps.find(g => g.skill === skill)?.category || 'technical';
       const totalDays = getTrainingDays(skill, category);
@@ -230,7 +238,7 @@ function SkillBridgePageInner() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       if (data.schedule?.length > 0) {
-        await saveStudyProgress(skill, category, data, applicationId || undefined);
+        await saveStudyProgress(skill, category, data, applicationId || undefined, jc);
         showToast(`Plan for ${skill} created!`, 'calendar_month');
         loadProgress();
       }
@@ -241,7 +249,13 @@ function SkillBridgePageInner() {
   };
 
   const handlePractice = (skill: string) => {
-    localStorage.setItem('tc_gauntlet_skill', skill);
+    // Write full context so Gauntlet auto-fills Quick Drill mode
+    sessionStorage.setItem('tc_interview_setup', JSON.stringify({
+      interviewType: 'quick-drill',
+      drillCategory: 'technical',
+      drillRole: skill,
+      jobDescription: jobDescription || '',
+    }));
     router.push('/suite/flashcards');
   };
 

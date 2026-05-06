@@ -210,6 +210,7 @@ const navGroups: NavigationGroup[] = [
         label: 'Avatar Interview',
         description: '3D AI Face-to-Face Interview',
         path: '/suite/interview-sim',
+        badge: 'NEW',
         iconName: 'videocam',
         color: { iconColor: '#f43f5e' },
       },

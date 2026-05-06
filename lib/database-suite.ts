@@ -65,8 +65,8 @@ export async function saveResumeVersion(
     const docData = {
       user_id: userId,
       version_name: versionName,
-      content,
-      skill_graph: skillGraph,
+      content: stripUndefined(content),
+      skill_graph: stripUndefined(skillGraph),
       mode,
       is_active: true,
       created_at: now,
@@ -78,6 +78,18 @@ export async function saveResumeVersion(
     console.error('saveResumeVersion error:', error.message);
     return { success: false, error: error.message };
   }
+}
+
+/** Recursively replace `undefined` with `null` — Firestore rejects undefined. */
+function stripUndefined(obj: any): any {
+  if (obj === undefined) return null;
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(stripUndefined);
+  const clean: Record<string, any> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    clean[k] = v === undefined ? null : stripUndefined(v);
+  }
+  return clean;
 }
 
 export async function getResumeVersions(): Promise<{
@@ -577,6 +589,8 @@ export interface StudyProgress {
   plan_data?: any;
   email_reminders: boolean;
   application_ids?: string[];
+  job_title?: string;
+  company_name?: string;
   started_at: string;
   last_activity_at: string;
   completed_at?: string;
@@ -591,7 +605,8 @@ export async function saveStudyProgress(
   skill: string,
   category: 'technical' | 'soft' | 'domain',
   planData?: any,
-  applicationId?: string
+  applicationId?: string,
+  jobContext?: { jobTitle?: string; companyName?: string }
 ): Promise<{ success: boolean; data?: StudyProgress; error?: string }> {
   try {
     const userId = getUserId();
@@ -619,6 +634,9 @@ export async function saveStudyProgress(
         appIds.push(applicationId);
         updates.application_ids = appIds;
       }
+      // Update job context if provided and not already set
+      if (jobContext?.jobTitle && !data.job_title) updates.job_title = jobContext.jobTitle;
+      if (jobContext?.companyName && !data.company_name) updates.company_name = jobContext.companyName;
 
       if (Object.keys(updates).length > 1 || appIds !== (data.application_ids || [])) {
         await withTimeout(updateDoc(docRef, updates));
@@ -641,11 +659,13 @@ export async function saveStudyProgress(
       skill,
       skill_id: skillId,
       category,
-      total_days: planDays || 4, // default to 4 if no plan
+      total_days: planDays || 4,
       completed_days: [],
       plan_data: planData || null,
       email_reminders: false,
       application_ids: applicationId ? [applicationId] : [],
+      job_title: jobContext?.jobTitle || null,
+      company_name: jobContext?.companyName || null,
       started_at: now,
       last_activity_at: now,
     };

@@ -784,6 +784,7 @@ function HeroHumanizer({ onShowSignup }: { onShowSignup: () => void }) {
 const allToolsList = [
   { icon: 'auto_awesome', label: 'Resume Studio' },
   { icon: 'chat', label: 'Interview Simulator' },
+  { icon: 'videocam', label: 'Avatar Interview (NEW)' },
   { icon: 'ink_pen', label: 'AI Detector' },
   { icon: 'auto_fix_high', label: 'AI Humanizer' },
   { icon: 'troubleshoot', label: 'Market Oracle' },

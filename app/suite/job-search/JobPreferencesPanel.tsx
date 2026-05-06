@@ -132,7 +132,22 @@ export default function JobPreferencesPanel({ onPrefsLoaded, onClose, visible }:
 
     setSaving(true);
     try {
-      const prefs: JobPreferences = { targetRoles, preferredCities, remotePref, salaryMin, industries, emailNotifications };
+      // Auto-commit any pending role/city input
+      let roles = targetRoles;
+      const pendingRole = roleInput.trim();
+      if (pendingRole && !roles.includes(pendingRole) && roles.length < 10) {
+        roles = [...roles, pendingRole];
+        setTargetRoles(roles);
+        setRoleInput('');
+      }
+      let cities = preferredCities;
+      const pendingCity = cityInput.trim();
+      if (pendingCity && !cities.includes(pendingCity) && cities.length < 10) {
+        cities = [...cities, pendingCity];
+        setPreferredCities(cities);
+        setCityInput('');
+      }
+      const prefs: JobPreferences = { targetRoles: roles, preferredCities: cities, remotePref, salaryMin, industries, emailNotifications };
       const res = await fetch('/api/jobs/preferences', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -292,7 +307,7 @@ export default function JobPreferencesPanel({ onPrefsLoaded, onClose, visible }:
                     onChange={e => setRoleInput(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addRole())}
                     onFocus={() => setFocusedSection('roles')}
-                    onBlur={() => setFocusedSection(null)}
+                    onBlur={() => { addRole(); setFocusedSection(null); }}
                     placeholder={targetRoles.length === 0 ? 'Software Engineer, PM...' : 'Add more...'}
                     className="flex-1 min-w-[80px] bg-transparent text-[12px] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none"
                   />
@@ -694,7 +709,7 @@ export default function JobPreferencesPanel({ onPrefsLoaded, onClose, visible }:
               whileHover={{ scale: 1.005 }}
               whileTap={{ scale: 0.995 }}
               onClick={savePrefs}
-              disabled={saving || targetRoles.length === 0}
+              disabled={saving || (targetRoles.length === 0 && !roleInput.trim())}
               className="w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed text-white relative overflow-hidden group"
               style={{
                 background: 'linear-gradient(135deg, #06b6d4, #10b981)',
@@ -709,7 +724,7 @@ export default function JobPreferencesPanel({ onPrefsLoaded, onClose, visible }:
               ) : (
                 <span className="material-symbols-rounded text-lg">save</span>
               )}
-              {saving ? 'Saving...' : targetRoles.length === 0 ? 'Add at least one target role' : 'Save Profile & Get Suggestions'}
+              {saving ? 'Saving...' : (targetRoles.length === 0 && !roleInput.trim()) ? 'Add at least one target role' : 'Save Profile & Get Suggestions'}
             </motion.button>
           </div>
         </div>

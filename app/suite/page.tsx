@@ -113,6 +113,10 @@ const toolGroups = [
         path: '/suite/flashcards', iconName: 'chat', iconColor: '#3b82f6', accentRgb: '59,130,246',
       },
       {
+        id: 'interview-sim', name: 'Avatar Interview', description: 'Live 3D AI recruiter face-to-face mock interview.',
+        path: '/suite/interview-sim', badge: 'NEW', iconName: 'videocam', iconColor: '#f43f5e', accentRgb: '244,63,94',
+      },
+      {
         id: 'debrief', name: 'Interview Debrief', description: 'Log every interview. Track patterns and build confidence.',
         path: '/suite/interview-debrief', iconName: 'rate_review', iconColor: '#8b5cf6', accentRgb: '139,92,246',
       },
