@@ -53,7 +53,7 @@
     "three": "^0.160.1",
     "ws": "^8.20.0",
     "zod": "^4.3.6",
-    "zustand": "^4.5.0"
+    "zustand": "^5.0.12"
   },
   "devDependencies": {
     "@types/canvas-confetti": "^1.9.0",
