@@ -1,9 +1,70 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Per-user data isolation: only the owner can read/write
-    match /users/{userId}/{document=**} {
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function isUserMutableCollection(collectionId) {
+      return collectionId in [
+        'agent',
+        'agent_queue',
+        'agent_stories',
+        'applicationQueue',
+        'applications',
+        'cover_letters',
+        'debriefs',
+        'feedback',
+        'fit_analyses',
+        'interview_sessions',
+        'jd_templates',
+        'jobAlertEvents',
+        'morale',
+        'network_contacts',
+        'outcomes',
+        'personas',
+        'preferences',
+        'profile',
+        'referral',
+        'resume_versions',
+        'skill_verifications',
+        'study_progress',
+        'vault',
+        'writing_sessions'
+      ];
+    }
+
+    // Per-user root documents: user can maintain their own profile shell.
+    match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Billing and usage are server-authoritative. Users may read usage/subscription
+    // via APIs, but must not be able to forge plan status or reset quotas client-side.
+    match /users/{userId}/subscription/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /users/{userId}/usage/{document=**} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+    }
+
+    // User settings are owner-readable/writable except security-sensitive records
+    // that must be updated through server routes.
+    match /users/{userId}/settings/{settingId} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) && settingId != 'resumeMorphSafety';
+    }
+
+    match /users/{userId}/settings/{settingId}/{document=**} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) && settingId != 'resumeMorphSafety';
+    }
+
+    // Per-user product data isolation: only owner can read/write known mutable areas.
+    match /users/{userId}/{collectionId}/{document=**} {
+      allow read, write: if isOwner(userId) && isUserMutableCollection(collectionId);
     }
 
     // Study vault: server-side writes via Admin SDK, user reads own docs
@@ -12,9 +73,9 @@ service cloud.firestore {
       allow create, update, delete: if false; // Admin SDK only (server-side)
     }
 
-    // Team interest form: public create, admin-only read
+    // Team interest form: server-side writes via Admin SDK only
     match /team_interest/{docId} {
-      allow create: if true;
+      allow create: if false;
       allow read, update, delete: if false; // Admin SDK only
     }
 

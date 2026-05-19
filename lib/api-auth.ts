@@ -10,6 +10,7 @@ import { checkRateLimit } from './rate-limit';
 import { getUserTier, getRateLimit as getTierRateLimit, isMasterAccount, type PlanTier } from './pricing-tiers';
 import { checkUsageAllowed, incrementUsage, FREE_CAPS, ANON_CAPS, type UsageFeature } from './usage-tracker';
 import { monitor } from './monitor';
+import { featureLabel, limitReachedBody } from './product-copy';
 
 interface AuthResult {
   uid: string;
@@ -73,7 +74,7 @@ export async function authenticateRequest(req: NextRequest): Promise<Omit<AuthRe
  */
 export async function guardApiRoute(
   req: NextRequest,
-  options?: { rateLimit?: number; rateLimitWindow?: number; feature?: UsageFeature; allowAnonymous?: boolean }
+  options?: { rateLimit?: number; rateLimitWindow?: number; feature?: UsageFeature; allowAnonymous?: boolean; skipUsageCap?: boolean }
 ): Promise<{ user: AuthResult; error?: never } | { user?: never; error: NextResponse }> {
 
   const ip = getClientIp(req);
@@ -104,7 +105,7 @@ export async function guardApiRoute(
       // Tracked in-memory per IP. 30-day window = effectively permanent per server uptime.
       // Only a server restart or IP change resets this — same friction as clearing cookies.
       const feature = options.feature ?? getFeatureForRoute(pathname);
-      if (feature) {
+      if (feature && !options.skipUsageCap) {
         const cap = ANON_CAPS[feature] ?? 1;
         const capKey = `anon-cap:${ip}:${feature}`;
         const { allowed: capOk } = await checkRateLimit(capKey, cap, 30 * 24 * 60 * 60 * 1000); // 30-day window
@@ -153,7 +154,7 @@ export async function guardApiRoute(
   // ── FREE TIER: Lifetime cap check ──
   if (tier === 'free') {
     const feature = options?.feature ?? getFeatureForRoute(pathname);
-    if (feature) {
+    if (feature && !options?.skipUsageCap) {
       const usage = await checkUsageAllowed(authUser.uid, feature, tier);
       if (!usage.allowed) {
         monitor.metric('Free Cap Hit', `User exhausted ${feature}`, [
@@ -164,14 +165,14 @@ export async function guardApiRoute(
         return {
           error: NextResponse.json(
             {
-              error: `You've used all 3 free ${feature.replace('_', ' ')} sessions. Upgrade to Pro for unlimited access.`,
+              error: limitReachedBody(feature),
               limitReached: true,
               feature,
               used: usage.used,
               cap: usage.cap,
               remaining: 0,
               upgradeUrl: '/suite/upgrade',
-              upgrade: 'Upgrade to Pro — $9.99/mo for unlimited access',
+              upgrade: `Unlock higher ${featureLabel(feature)} limits`,
             },
             {
               status: 429,

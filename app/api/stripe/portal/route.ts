@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     const customers = await stripe.customers.list({ email: email!, limit: 1 });
     if (customers.data.length === 0) {
       return NextResponse.json(
-        { error: 'No subscription found. Please upgrade first.' },
+        { error: 'No active billing account found. Choose a plan to start.' },
         { status: 404 }
       );
     }
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
 
     const session = await stripe.billingPortal.sessions.create({
       customer: customers.data[0].id,
-      return_url: `${origin}/suite`,
+      return_url: `${origin}/suite/settings?tab=subscription&billing=returned`,
     });
 
     return NextResponse.json({ url: session.url });
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     console.error('Portal session error:', error);
     monitor.critical('Tool: stripe/portal', String(error));
     return NextResponse.json(
-      { error: 'Failed to create portal session' },
+      { error: 'Billing is unavailable right now. Please try again.' },
       { status: 500 }
     );
   }

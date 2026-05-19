@@ -6,8 +6,8 @@
  * 
  * Gating:
  *   Free: 2 lifetime interactions
- *   Pro ($9.99): 1 interaction per week
- *   Max ($19.99): Unlimited
+ *   Pro: 1 interaction per week
+ *   Max: Unlimited
  */
 
 import { NextRequest } from 'next/server';
@@ -16,6 +16,7 @@ import { getAdminDb } from '@/lib/firebase-admin';
 import { SONA_TOOLS, executeTool } from '@/lib/sona-tools';
 import { quickClean } from '@/lib/humanize-guard';
 import { monitor } from '@/lib/monitor';
+import { createSonaActionPlan, formatActionPlanForPrompt, getSonaContext } from '@/lib/sona-context';
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
@@ -140,7 +141,7 @@ delve, tapestry, testament, intricacies, multifaceted, ever-evolving, ever-chang
 - If information is not in the user's Vault resume, say "I don't have this data — please add it to your resume."
 - Do NOT invent achievements, metrics, or employer names.
 - If asked to write something you lack context for, say specifically what's missing.
-- When morphing resumes, only REFRAME existing bullets — never ADD fictional experiences, certifications, licenses, or degrees. If the JD requires a cert the user doesn't have, leave it out.
+- When morphing resumes, only REFRAME existing bullets — never ADD fictional experiences, schools, degrees, certifications, licenses, employers, job titles, dates, or contact details. If the JD requires a cert the user doesn't have, leave it out. Education must remain exactly unchanged.
 
 You are part of the TalentConsulting.io platform which includes: Resume Studio (morphing), Interview Simulator (The Gauntlet), Skill Bridge, Market Oracle, Job Search, Application Tracker, AI Writing Tools, and the STAR Story Bank.
 `;
@@ -164,7 +165,7 @@ async function checkSonaAccess(uid: string, tier: string): Promise<{ allowed: bo
     // Pro: 1 per week
     const weeklyCount = data.weekStart === currentWeek ? (data.weeklyCount || 0) : 0;
     if (weeklyCount >= 1) {
-      return { allowed: false, reason: 'You\'ve used your weekly Sona check-in. Upgrade to Max for unlimited access.', used: weeklyCount, cap: 1 };
+      return { allowed: false, reason: 'You used your weekly Sona check-in. Unlock Max for more Sona room.', used: weeklyCount, cap: 1 };
     }
     return { allowed: true, used: weeklyCount, cap: 1 };
   }
@@ -172,7 +173,7 @@ async function checkSonaAccess(uid: string, tier: string): Promise<{ allowed: bo
   // Free: 2 lifetime
   const lifetimeCount = data.lifetimeCount || 0;
   if (lifetimeCount >= 2) {
-    return { allowed: false, reason: 'You\'ve used both Sona demo sessions. Upgrade to Pro ($9.99/mo) for weekly check-ins or Max ($19.99/mo) for unlimited.', used: lifetimeCount, cap: 2 };
+    return { allowed: false, reason: 'You used both Sona demo sessions. Unlock higher limits when you are ready for more.', used: lifetimeCount, cap: 2 };
   }
   return { allowed: true, used: lifetimeCount, cap: 2 };
 }
@@ -283,7 +284,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { messages, personality = 'coach', conversationId: incomingConvId, resumeVersionId } = body;
+  const { messages, personality = 'coach', conversationId: incomingConvId, resumeVersionId, applicationId, jobContext } = body;
 
   if (!messages || !Array.isArray(messages) || messages.length === 0) {
     return new Response(JSON.stringify({ error: 'Messages required' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
@@ -296,41 +297,21 @@ export async function POST(req: NextRequest) {
   // Load personality
   const personalitySystem = PERSONALITIES[personality] || PERSONALITIES.coach;
 
-  // Load user profile for personalization
-  const adminDb = getAdminDb();
-  const profileSnap = await adminDb.collection('users').doc(uid)
-    .collection('profile').doc('main').get();
-  const profile = profileSnap.exists ? profileSnap.data() : null;
+  const latestUserMessage = messages[messages.length - 1]?.content || '';
+  const sonaContext = await getSonaContext(uid, {
+    resumeVersionId,
+    applicationId,
+    conversationId,
+    jobContext,
+  });
+  const actionPlan = createSonaActionPlan(latestUserMessage, sonaContext);
 
-  const personalizationBlock = profile?.onboarding_completed ? `
-## User Context (from onboarding profile)
-- Name: ${profile.full_name || 'Unknown'}
-- Career Fields: ${(profile.career_fields || []).join(', ') || 'not set'}
-- Target Roles: ${(profile.target_roles || []).join(', ') || 'not specified'}
-- Seniority: ${profile.seniority_level || 'not specified'}
-- Job Search Status: ${profile.job_search_status || 'unknown'}
-- Location Preference: ${profile.location_preference || 'not set'}
-${profile.salary_range ? `- Salary Range: $${profile.salary_range.min}k – $${profile.salary_range.max}k` : ''}
-
-Address the user by their first name ("${(profile.full_name || '').split(' ')[0] || 'there'}"). Tailor all advice to their career field, seniority level, and goals. You already know their background — don't ask basic questions that are answered above.
-` : '';
-
-  // Pre-load selected resume if provided
-  let activeResumeBlock = '';
-  if (resumeVersionId) {
-    try {
-      const rvSnap = await adminDb.collection('users').doc(uid).collection('resume_versions').doc(resumeVersionId).get();
-      if (rvSnap.exists) {
-        const rvData = rvSnap.data()!;
-        const name = rvData.version_name || 'Selected Resume';
-        const content = rvData.content;
-        const summary = content ? `Name: ${content.name || ''}, Title: ${content.title || ''}, Skills: ${(content.skills || []).join(', ')}` : '';
-        activeResumeBlock = `\n## Active Working Resume\nThe user selected "${name}" as their active resume. Use this for all operations unless they specify otherwise.\nResume Summary: ${summary}\n`;
-      }
-    } catch { /* silent */ }
-  }
-
-  const systemPrompt = `${personalitySystem}\n${personalizationBlock}\n${activeResumeBlock}\n${BASE_SYSTEM}`;
+  const systemPrompt = [
+    personalitySystem,
+    sonaContext.promptBlock,
+    formatActionPlanForPrompt(actionPlan),
+    BASE_SYSTEM,
+  ].join('\n\n');
 
   // Build context: load persisted history if resuming, otherwise use client messages
   let contextMessages: Array<{ role: string; content: string }>;
@@ -393,6 +374,8 @@ Address the user by their first name ("${(profile.full_name || '').split(' ')[0]
       message: assistantMessage,
       role: 'assistant',
       conversationId,
+      actionPlan,
+      contextSources: sonaContext.sources,
       usage: responseData.usage,
     }), { headers: { 'Content-Type': 'application/json' } });
 
@@ -452,4 +435,3 @@ async function callOpenRouter(messages: any[]) {
     }),
   });
 }
-
