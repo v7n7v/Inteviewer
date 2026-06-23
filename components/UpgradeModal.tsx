@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * UpgradeModal — In-app Stripe Embedded Checkout modal
+ * UpgradeModal - In-app Stripe Embedded Checkout modal
  * Uses Stripe Embedded Checkout (ui_mode: 'embedded') for PCI-compliant payment.
- * Supports monthly ($9.99) and annual ($99.99) billing with plan toggle.
+ * Supports Stripe-sourced monthly and annual billing with plan toggle.
  */
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,6 +11,9 @@ import { loadStripe } from '@stripe/stripe-js';
 import { EmbeddedCheckoutProvider, EmbeddedCheckout } from '@stripe/react-stripe-js';
 import { useTheme } from '@/components/ThemeProvider';
 import { authFetch } from '@/lib/auth-fetch';
+import { useBillingPrices } from '@/hooks/use-billing-prices';
+import { getPlanIdentity } from '@/lib/plan-identity';
+import { PlanBadge } from '@/components/plan/PlanIdentity';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -22,17 +25,17 @@ interface UpgradeModalProps {
 
 type BillingInterval = 'month' | 'year';
 
-const PLANS = {
-  month: { price: '$9.99', period: '/mo', label: 'Monthly', savings: '' },
-  year: { price: '$99.99', period: '/yr', label: 'Annual', savings: 'Save 17%' },
+const PLAN_LABELS = {
+  month: 'Monthly',
+  year: 'Annual',
 } as const;
 
 const PRO_FEATURES = [
-  { icon: 'bolt', text: 'Unlimited resume morphs' },
-  { icon: 'mic', text: 'Unlimited interview practice' },
+  { icon: 'bolt', text: 'Higher AI limits' },
+  { icon: 'mic', text: 'Interview practice' },
   { icon: 'search', text: 'AI Detection (4K words/mo)' },
   { icon: 'edit_note', text: 'AI Humanizer (4K words/mo)' },
-  { icon: 'speed', text: '3× faster AI processing' },
+  { icon: 'speed', text: '3x faster AI processing' },
   { icon: 'download', text: 'Export to .docx' },
 ];
 
@@ -43,6 +46,8 @@ export default function UpgradeModal({ isOpen, onClose, onSuccess }: UpgradeModa
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { prices } = useBillingPrices();
+  const proPlan = getPlanIdentity('pro');
 
   const createCheckoutSession = useCallback(async (selectedInterval: BillingInterval) => {
     setLoading(true);
@@ -58,11 +63,11 @@ export default function UpgradeModal({ isOpen, onClose, onSuccess }: UpgradeModa
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to initialize payment');
+        throw new Error(data.error || 'Checkout is unavailable right now. Please try again.');
       }
 
       if (!data.clientSecret) {
-        throw new Error('No client secret returned');
+        throw new Error('Checkout is unavailable right now. Please try again.');
       }
 
       setClientSecret(data.clientSecret);
@@ -127,11 +132,14 @@ export default function UpgradeModal({ isOpen, onClose, onSuccess }: UpgradeModa
             {/* Header */}
             <div className="px-6 pt-6 pb-4">
               <div className="flex items-center gap-2 mb-1">
-                <span className="material-symbols-rounded text-lg">bolt</span>
+                <span className="icon-shell-neutral flex h-9 w-9 items-center justify-center rounded-[12px] border">
+                  <span className="material-symbols-rounded text-lg">bolt</span>
+                </span>
                 <h2 className="text-xl font-bold">Upgrade to Pro</h2>
               </div>
+              <PlanBadge tier="pro" active className="mb-3 mt-2" />
               <p className="text-sm text-[var(--theme-text-secondary)]">
-                Unlock the full power of your AI career platform.
+                Higher limits and the full career writing workflow.
               </p>
             </div>
 
@@ -149,18 +157,19 @@ export default function UpgradeModal({ isOpen, onClose, onSuccess }: UpgradeModa
                     onClick={() => handleIntervalChange(int)}
                     className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all relative ${
                       interval === int
-                        ? 'bg-emerald-500 text-white shadow-md'
+                        ? 'shadow-md'
                         : 'text-[var(--theme-text-secondary)] hover:text-[var(--theme-text)]'
                     }`}
+                    style={interval === int ? { background: proPlan.accent, color: proPlan.buttonText } : undefined}
                   >
-                    {PLANS[int].label} — {PLANS[int].price}{PLANS[int].period}
-                    {int === 'year' && PLANS[int].savings && (
+                    {PLAN_LABELS[int]} - {prices.plans.pro[int].display}
+                    {int === 'year' && prices.plans.pro[int].savingsLabel && (
                       <span className={`ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
                         interval === 'year'
-                          ? 'bg-white/20 text-white'
-                          : 'bg-emerald-500/10 text-emerald-500'
+                          ? 'bg-[var(--bg-elevated)] text-[var(--text-primary)]'
+                          : 'text-[var(--text-secondary)]'
                       }`}>
-                        {PLANS[int].savings}
+                        {prices.plans.pro[int].savingsLabel}
                       </span>
                     )}
                   </button>
@@ -178,7 +187,7 @@ export default function UpgradeModal({ isOpen, onClose, onSuccess }: UpgradeModa
               >
                 {PRO_FEATURES.map((f) => (
                   <div key={f.text} className="flex items-center gap-2 text-xs text-[var(--theme-text-secondary)]">
-                    <span className="text-sm">{f.icon}</span>
+                    <span className="material-symbols-rounded text-sm text-[var(--text-muted)]">{f.icon}</span>
                     <span>{f.text}</span>
                   </div>
                 ))}
@@ -189,7 +198,10 @@ export default function UpgradeModal({ isOpen, onClose, onSuccess }: UpgradeModa
             <div className="px-6 pb-6">
               {loading && (
                 <div className="flex items-center justify-center py-12">
-                  <div className="w-6 h-6 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
+                  <div
+                    className="w-6 h-6 border-2 rounded-full animate-spin"
+                    style={{ borderColor: `color-mix(in srgb, ${proPlan.accent} 30%, transparent)`, borderTopColor: proPlan.accent }}
+                  />
                 </div>
               )}
 
@@ -198,7 +210,8 @@ export default function UpgradeModal({ isOpen, onClose, onSuccess }: UpgradeModa
                   <p className="text-sm text-red-500 mb-3">{error}</p>
                   <button
                     onClick={() => createCheckoutSession(interval)}
-                    className="text-sm text-emerald-500 hover:underline"
+                    className="text-sm hover:underline"
+                    style={{ color: proPlan.accent }}
                   >
                     Try again
                   </button>
@@ -218,7 +231,7 @@ export default function UpgradeModal({ isOpen, onClose, onSuccess }: UpgradeModa
             </div>
 
             <p className="text-[11px] text-center text-[var(--theme-text-tertiary)] pb-4">
-              Secure payment powered by Stripe • Cancel anytime
+              Secure checkout by Stripe. Manage billing from Settings.
             </p>
           </motion.div>
         </motion.div>

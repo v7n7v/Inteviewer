@@ -1,4 +1,21 @@
+/**
+ * Email Send Functions
+ * All functions use the shared template system from email-templates.ts
+ * and send via Resend.
+ */
 import { Resend } from 'resend';
+import {
+  EMAIL_FROM,
+  buildUpgradeEmail,
+  buildWelcomeEmail,
+  buildSubscriptionConfirmedEmail,
+  buildSubscriptionCancelledEmail,
+  buildTrialEndingEmail,
+  buildPlanChangeEmail,
+  buildCustomEmail,
+} from './email-templates';
+import { getBillingPrice } from '@/lib/billing-prices';
+import { type BillingInterval, type BillingPlan } from '@/lib/billing-price-types';
 
 let _resend: Resend | null = null;
 function getResend() {
@@ -9,56 +26,67 @@ function getResend() {
   }
   return _resend;
 }
-const FROM_EMAIL = 'TalentConsulting <hello@talentconsulting.io>';
 
-export async function sendUpgradeEmail(toEmail: string, plan: string, months?: number) {
+async function send(to: string, subject: string, html: string): Promise<boolean> {
   try {
-    if (!toEmail) return false;
-
-    const planName = plan === 'studio' ? 'Max Tier' : plan === 'pro' ? 'Pro Tier' : 'Free Tier';
-    const durationText = months ? `for the next ${months} months` : 'permanently';
-
-    const html = `
-      <div style="font-family: -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
-        <div style="background: linear-gradient(135deg, #059669, #0d9488); padding: 20px 24px; border-radius: 12px 12px 0 0;">
-          <h1 style="color: white; margin: 0; font-size: 20px;">Your Account has been Upgraded!</h1>
-        </div>
-        <div style="background: #f9fafb; padding: 24px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
-          <p style="font-size: 16px; color: #1f2937; line-height: 1.6;">
-            Hello,
-          </p>
-          <p style="font-size: 16px; color: #1f2937; line-height: 1.6;">
-            We are excited to let you know that your Talent Consulting account has just been upgraded to the <strong>${planName}</strong>.
-          </p>
-          <div style="margin: 24px 0; padding: 16px; background: white; border: 1px solid #e5e7eb; border-radius: 8px; text-align: center;">
-            <p style="margin: 0; color: #6b7280; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">New Access Level</p>
-            <p style="margin: 8px 0 0; color: #059669; font-size: 24px; font-weight: bold;">${planName}</p>
-            ${months ? `<p style="margin: 4px 0 0; color: #6b7280; font-size: 12px;">Valid ${durationText}</p>` : ''}
-          </div>
-          <p style="font-size: 16px; color: #1f2937; line-height: 1.6;">
-            You now have access to enhanced features, increased AI generation limits, and premium tools.
-          </p>
-          <div style="margin-top: 32px; text-align: center;">
-            <a href="https://talentconsulting.io/suite" style="display: inline-block; background: #059669; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">Go to Dashboard</a>
-          </div>
-          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 32px 0;" />
-          <p style="font-size: 12px; color: #9ca3af; margin: 0; text-align: center;">
-            TalentConsulting.io &bull; The Industrial Tech Forge
-          </p>
-        </div>
-      </div>
-    `;
-
-    await getResend().emails.send({
-      from: FROM_EMAIL,
-      to: [toEmail],
-      subject: `Account Upgrade: ${planName} unlocked!`,
-      html,
-    });
-
+    if (!to) return false;
+    await getResend().emails.send({ from: EMAIL_FROM, to: [to], subject, html });
     return true;
   } catch (error) {
-    console.error('[email] Failed to send upgrade email:', error);
+    console.error('[email] Send failed:', error);
     return false;
   }
+}
+
+/** Send account upgrade notification (admin-granted) */
+export async function sendUpgradeEmail(toEmail: string, plan: string, months?: number): Promise<boolean> {
+  const { subject, html } = buildUpgradeEmail(plan, months);
+  return send(toEmail, subject, html);
+}
+
+/** Send welcome email after signup */
+export async function sendWelcomeEmail(toEmail: string, name: string): Promise<boolean> {
+  const { subject, html } = buildWelcomeEmail(name);
+  return send(toEmail, subject, html);
+}
+
+/** Send subscription confirmation after Stripe checkout */
+export async function sendSubscriptionEmail(toEmail: string, name: string, plan: string, interval: string, priceDisplay?: string): Promise<boolean> {
+  let display = priceDisplay;
+  if (!display && (plan === 'pro' || plan === 'studio') && (interval === 'month' || interval === 'year')) {
+    const price = await getBillingPrice(plan as BillingPlan, interval as BillingInterval);
+    display = price.unitAmount == null ? undefined : price.display;
+  }
+  const { subject, html } = buildSubscriptionConfirmedEmail(name, plan, interval, display);
+  return send(toEmail, subject, html);
+}
+
+/** Send cancellation notice */
+export async function sendCancellationEmail(toEmail: string, name: string, accessEndsAt?: string): Promise<boolean> {
+  const { subject, html } = buildSubscriptionCancelledEmail(name, accessEndsAt);
+  return send(toEmail, subject, html);
+}
+
+/** Send trial ending warning */
+export async function sendTrialEndingEmail(toEmail: string, name: string, daysLeft: number): Promise<boolean> {
+  const { subject, html } = buildTrialEndingEmail(name, daysLeft);
+  return send(toEmail, subject, html);
+}
+
+/** Send plan change notification (upgrade/downgrade) */
+export async function sendPlanChangeEmail(toEmail: string, name: string, oldPlan: string, newPlan: string): Promise<boolean> {
+  const { subject, html } = buildPlanChangeEmail(name, oldPlan, newPlan);
+  return send(toEmail, subject, html);
+}
+
+/** Send custom admin email using the branded shell */
+export async function sendCustomEmail(
+  toEmail: string,
+  subject: string,
+  bodyHtml: string,
+  ctaLabel?: string,
+  ctaUrl?: string
+): Promise<boolean> {
+  const built = buildCustomEmail(subject, bodyHtml, ctaLabel, ctaUrl);
+  return send(toEmail, built.subject, built.html);
 }

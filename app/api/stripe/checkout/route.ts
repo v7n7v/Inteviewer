@@ -1,6 +1,6 @@
 /**
  * Stripe Checkout Session API
- * Creates a checkout session for the Pro plan ($2.99/mo)
+ * Creates a checkout session for the Pro plan.
  * POST /api/stripe/checkout
  */
 import { NextRequest, NextResponse } from 'next/server';
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
 
     const priceId = process.env.STRIPE_PRO_PRICE_ID;
     if (!priceId) {
-      return NextResponse.json({ error: 'Stripe price not configured' }, { status: 500 });
+      return NextResponse.json({ error: 'This plan is not ready for checkout yet. Please contact support.' }, { status: 500 });
     }
 
     // Determine base URL for redirects
@@ -49,9 +49,13 @@ export async function POST(req: NextRequest) {
       client_reference_id: uid,
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${origin}/suite?upgrade=success`,
-      cancel_url: `${origin}/suite?upgrade=canceled`,
+      success_url: `${origin}/suite/settings?tab=subscription&checkout=success`,
+      cancel_url: `${origin}/suite/settings?tab=subscription&checkout=canceled`,
       allow_promotion_codes: true,
+      automatic_tax: { enabled: true },
+      billing_address_collection: 'auto',
+      customer_update: { address: 'auto', name: 'auto' },
+      tax_id_collection: { enabled: true },
       subscription_data: {
         trial_period_days: 7,
         metadata: { firebaseUid: uid },
@@ -64,7 +68,7 @@ export async function POST(req: NextRequest) {
     console.error('Stripe checkout error:', error);
     monitor.critical('Tool: stripe/checkout', String(error));
     return NextResponse.json(
-      { error: 'Failed to create checkout session' },
+      { error: 'Checkout is unavailable right now. Please try again.' },
       { status: 500 }
     );
   }

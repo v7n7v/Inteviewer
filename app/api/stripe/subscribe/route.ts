@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
 
     if (!priceId) {
       return NextResponse.json(
-        { error: `Stripe ${plan} ${interval}ly price not configured. Contact support.` },
+        { error: 'This plan is not ready for checkout yet. Please contact support.' },
         { status: 500 }
       );
     }
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
       ui_mode: 'embedded',
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
-      return_url: `${origin}/suite?upgrade=success&session_id={CHECKOUT_SESSION_ID}`,
+      return_url: `${origin}/suite/settings?tab=subscription&checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       allow_promotion_codes: true,
       subscription_data: {
         trial_period_days: 7,
@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
     console.error('[api/stripe/subscribe] Error:', error);
     monitor.critical('Tool: stripe/subscribe', String(error));
     return NextResponse.json(
-      { error: 'Failed to create subscription' },
+      { error: 'Checkout is unavailable right now. Please try again.' },
       { status: 500 }
     );
   }

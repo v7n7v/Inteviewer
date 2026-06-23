@@ -55,6 +55,13 @@ export const ResumeMorphSchema = z.object({
   targetPageCount: z.union([z.number().int().min(1).max(5), z.literal('auto')]).optional(),
 });
 
+export const ResumeMorphConsentSchema = z.object({
+  unlock100: z.boolean(),
+  typedName: SafeString(120).optional(),
+  acknowledgements: z.array(SafeString(500)).max(10).optional(),
+  consentVersion: SafeString(80).optional(),
+});
+
 export const ResumeAISchema = z.object({
   action: z.enum(['extract_company', 'generate_summary', 'generate_achievements', 'suggest_skills']),
   text: SafeString(20_000).optional(),
@@ -162,6 +169,15 @@ export const AdminActionSchema = z.object({
   months: z.number().int().min(1).max(120).optional(),
 });
 
+export const AdminEmailSchema = z.object({
+  to: z.string().trim().email().max(320),
+  uid: z.string().min(1).max(128).optional(),
+  subject: z.string().trim().min(1).max(200),
+  body: z.string().trim().min(1).max(50_000),
+  ctaLabel: z.string().trim().max(100).optional(),
+  ctaUrl: z.string().trim().url().max(2000).optional(),
+});
+
 // ──────────────────────────────────────────────
 // /api/oracle/analyze
 // ──────────────────────────────────────────────
@@ -195,9 +211,13 @@ export const StripeSubscribeSchema = z.object({
 // ──────────────────────────────────────────────
 
 export const VaultGenerateSchema = z.object({
-  type: z.enum(['flashcards', 'interview']),
+  type: z.enum(['flashcards', 'interview', 'skill-bridge']),
   topic: SafeString(500),
   items: z.array(z.record(z.string(), z.unknown())).min(1).max(50),
+  skill: SafeString(200).optional(),
+  applicationId: z.string().max(100).optional().nullable(),
+  resumeVersionId: z.string().max(100).optional().nullable(),
+  sourceTool: SafeString(80).optional(),
 });
 
 export const VaultExportPlanSchema = z.object({
@@ -205,6 +225,7 @@ export const VaultExportPlanSchema = z.object({
   schedule: z.array(z.record(z.string(), z.unknown())).min(1).max(30),
   summary: SafeString(5000).optional(),
   applicationId: z.string().max(100).optional().nullable(),
+  resumeVersionId: z.string().max(100).optional().nullable(),
 });
 
 // ──────────────────────────────────────────────
@@ -244,6 +265,11 @@ export const HumanizeSchema = z.object({
   domain: z.enum(['general', 'academic', 'resume', 'marketing', 'creative']).optional().default('general'),
   tone: z.enum(['professional', 'creative', 'casual', 'academic', 'confident']).optional().default('professional'),
   lengthMode: z.enum(['exact', 'condense', 'expand']).optional().default('exact'),
+  mode: z.enum(['safe_polish', 'voice_match', 'recruiter_ready', 'academic_integrity', 'creative_rewrite']).optional(),
+  intensity: z.enum(['light', 'balanced', 'deep']).optional().default('balanced'),
+  qualityMode: z.enum(['fast', 'best']).optional().default('fast'),
+  protectedTerms: z.array(z.string().trim().min(1).max(120)).max(120).optional(),
+  rewriteScope: z.enum(['full', 'flagged_paragraphs']).optional().default('flagged_paragraphs'),
   paragraphIndices: z.array(z.number().int().min(0).max(200)).optional(),
 });
 
@@ -277,4 +303,3 @@ export const ATSScoreSchema = z.object({
   resumeText: SafeText(100_000),
   jobDescription: SafeText(30_000),
 });
-

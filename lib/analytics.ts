@@ -5,7 +5,7 @@
 
 declare global {
   interface Window {
-    gtag: (...args: any[]) => void;
+    gtag?: (...args: any[]) => void;
   }
 }
 
@@ -19,7 +19,12 @@ type ConversionEvent =
   | 'job_search'
   | 'job_apply'
   | 'preferences_saved'
-  | 'email_digest_sent';
+  | 'email_digest_sent'
+  | 'newsletter_subscribe'
+  | 'digest_sent'
+  | 'digest_click_prepare'
+  | 'digest_unsubscribe'
+  | 'social_signup';
 
 interface EventParams {
   method?: string;
@@ -87,5 +92,25 @@ export const analytics = {
   /** Weekly digest email sent */
   emailDigestSent(jobCount: number) {
     track('email_digest_sent', { job_count: jobCount });
+  },
+
+  newsletterSubscribe(source: string, frequency: string) {
+    track('newsletter_subscribe', { source, frequency, event_category: 'growth' });
+  },
+
+  digestSent(jobCount: number, frequency?: string) {
+    track('digest_sent', { job_count: jobCount, frequency, event_category: 'growth' });
+  },
+
+  digestClickPrepare(source = 'email') {
+    track('digest_click_prepare', { source, event_category: 'growth' });
+  },
+
+  digestUnsubscribe(source = 'email') {
+    track('digest_unsubscribe', { source, event_category: 'growth' });
+  },
+
+  socialSignup(source: string) {
+    track('social_signup', { source, event_category: 'growth' });
   },
 };

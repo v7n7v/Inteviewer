@@ -8,44 +8,54 @@ import { useTheme } from '@/components/ThemeProvider';
 import { authFetch } from '@/lib/auth-fetch';
 import { analytics } from '@/lib/analytics';
 import { useRouter } from 'next/navigation';
+import { useBillingPrices } from '@/hooks/use-billing-prices';
+import { type PublicBillingPrice } from '@/lib/billing-price-types';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 type BillingInterval = 'month' | 'year';
 type PlanOption = 'pro' | 'studio';
 
-const PLAN_CONFIG = {
+function parsePlanParam(value: string | null): PlanOption {
+  return value === 'studio' || value === 'pro' ? value : 'pro';
+}
+
+function parseIntervalParam(value: string | null): BillingInterval {
+  return value === 'year' || value === 'month' ? value : 'month';
+}
+
+const PLAN_COPY = {
   pro: {
-    month: {
-      price: '$9.99', period: '/mo', label: 'Monthly',
-      billed: 'Billed monthly — cancel anytime',
-    },
-    year: {
-      price: '$99.99', period: '/yr', label: 'Annual', savings: 'Save 17%',
-      billed: 'Billed annually — $8.33/mo effective',
-    },
+    month: { label: 'Monthly' },
+    year: { label: 'Annual' },
   },
   studio: {
-    month: {
-      price: '$19.99', period: '/mo', label: 'Monthly',
-      billed: 'Billed monthly — cancel anytime',
-    },
-    year: {
-      price: '$179.99', period: '/yr', label: 'Annual', savings: 'Save 25%',
-      billed: 'Billed annually — $15.00/mo effective',
-    },
+    month: { label: 'Monthly' },
+    year: { label: 'Annual' },
   },
 } as const;
 
+function priceIsAvailable(price: PublicBillingPrice) {
+  return price.unitAmount != null;
+}
+
+function billingLine(price: PublicBillingPrice) {
+  if (!priceIsAvailable(price)) return 'Final price appears inside secure checkout.';
+  if (price.interval === 'year') {
+    return `Billed annually. ${price.effectiveMonthlyDisplay}.`;
+  }
+  return 'Billed monthly. Manage or cancel from Settings.';
+}
+
 const PRO_FEATURES = [
-  { icon: 'bolt', color: '#f59e0b', title: '3× AI Speed & Volume', desc: 'Triple rate limits across all tools.' },
-  { icon: 'auto_awesome', color: '#3b82f6', title: 'Resume AI Morphing — Unlimited', desc: 'Tailor your resume to any job description.' },
+  { icon: 'bolt', color: '#f59e0b', title: '3x AI Speed & Volume', desc: 'Triple rate limits across all tools.' },
+  { icon: 'auto_awesome', color: '#3b82f6', title: 'Resume AI Morphing', desc: 'Tailor your resume to any job description.' },
   { icon: 'mic', color: '#a855f7', title: 'Full Interview Simulator', desc: 'Unlimited AI interview sessions with voice.' },
   { icon: 'route', color: '#10b981', title: 'Skill Bridge — Priority Access', desc: 'Generate learning paths for any skill gap.' },
   { icon: 'troubleshoot', color: '#a855f7', title: 'Market Oracle — Full Intel', desc: 'Decode any JD: fit score, salary, red flags.' },
-  { icon: 'folder_open', color: '#f97316', title: 'Unlimited Study Vault', desc: 'Save every coaching note and interview feedback.' },
-  { icon: 'build', color: '#8b5cf6', title: 'Tools Gallery — Pro Tools', desc: 'Paraphraser, Email Composer, Thesis Generator.' },
-  { icon: 'verified_user', color: '#06b6d4', title: 'Priority Support', desc: 'Jump the queue — direct help when you need it.' },
+  { icon: 'inventory_2', color: '#10b981', title: 'Unlimited Skill Bridge Memory', desc: 'Save every coaching note, proof, and interview feedback.' },
+  { icon: 'widgets', color: '#8b5cf6', title: 'Writing Toolkit', desc: 'Cover letters, LinkedIn, humanizer, and career writing tools.' },
+  { icon: 'verified_user', color: '#06b6d4', title: 'Priority Support', desc: 'Faster help when something blocks your search.' },
 ];
 
 const STUDIO_EXTRAS = [
@@ -60,20 +70,21 @@ const COMPARISON = [
   { label: 'Resume morphs', free: '3 lifetime', pro: 'Unlimited', studio: 'Unlimited' },
   { label: 'Interview sessions', free: '3 lifetime', pro: 'Unlimited', studio: 'Unlimited' },
   { label: 'Market Oracle', free: '3 lifetime', pro: 'Unlimited', studio: 'Unlimited' },
-  { label: 'Gallery — Pro tools', free: '—', pro: '✓', studio: '✓' },
-  { label: 'AI Detection', free: '—', pro: '4,000 words/mo', studio: '◆ Unlimited' },
-  { label: 'AI Humanizer', free: '—', pro: '4,000 words/mo', studio: '◆ 50,000 words/mo' },
-  { label: 'Uniqueness Check', free: '—', pro: '✓', studio: '✓' },
-  { label: 'Export to .docx', free: '—', pro: '✓', studio: '✓' },
-  { label: 'Priority support', free: '—', pro: '✓', studio: '✓ Priority+' },
+  { label: 'Writing Toolkit', free: 'Limited', pro: 'Full access', studio: 'Full access' },
+  { label: 'AI Detection', free: 'Limited', pro: '4,000 words/mo', studio: 'Unlimited' },
+  { label: 'AI Humanizer', free: 'Limited', pro: '4,000 words/mo', studio: '50,000 words/mo' },
+  { label: 'Uniqueness Check', free: 'Limited', pro: 'Included', studio: 'Included' },
+  { label: 'Export to .docx', free: 'Limited', pro: 'Included', studio: 'Included' },
+  { label: 'Priority support', free: 'Standard', pro: 'Included', studio: 'Priority+' },
 ];
 
 export default function UpgradePage() {
   const { theme } = useTheme();
   const isLight = theme === 'light';
   const router = useRouter();
+  const { prices } = useBillingPrices();
   const [interval, setInterval] = useState<BillingInterval>('month');
-  const [selectedPlan, setSelectedPlan] = useState<PlanOption>('studio');
+  const [selectedPlan, setSelectedPlan] = useState<PlanOption>('pro');
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -88,20 +99,26 @@ export default function UpgradePage() {
         body: JSON.stringify({ interval: int, plan }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to initialize payment');
-      if (!data.clientSecret) throw new Error('No client secret returned');
+      if (!res.ok) throw new Error(data.error || 'Checkout is unavailable right now. Please try again.');
+      if (!data.clientSecret) throw new Error('Checkout is unavailable right now. Please try again.');
       setClientSecret(data.clientSecret);
-      const price = parseFloat(PLAN_CONFIG[plan][int].price.replace('$', ''));
-      analytics.beginCheckout(plan, price);
+      const price = prices.plans[plan][int].unitAmount;
+      analytics.beginCheckout(plan, price == null ? 0 : price / 100);
     } catch (err: any) {
       setError(err.message || 'Something went wrong');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [prices]);
 
   useEffect(() => {
-    createCheckoutSession(selectedPlan, interval);
+    const params = new URLSearchParams(window.location.search);
+    const initialPlan = parsePlanParam(params.get('plan'));
+    const initialInterval = parseIntervalParam(params.get('interval'));
+
+    setSelectedPlan(initialPlan);
+    setInterval(initialInterval);
+    createCheckoutSession(initialPlan, initialInterval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -117,7 +134,7 @@ export default function UpgradePage() {
     createCheckoutSession(selectedPlan, newInterval);
   };
 
-  const planCfg = PLAN_CONFIG[selectedPlan][interval];
+  const planCfg = prices.plans[selectedPlan][interval];
   const isStudio = selectedPlan === 'studio';
 
   return (
@@ -146,16 +163,16 @@ export default function UpgradePage() {
               color: isStudio ? '#f43f5e' : '#10b981',
               border: `1px solid ${isStudio ? 'rgba(244,63,94,0.2)' : 'rgba(16,185,129,0.2)'}`,
             }}>
-            <span className="material-symbols-rounded text-[12px]">{isStudio ? 'ink_pen' : 'bolt'}</span>
+                <span className="material-symbols-rounded text-[12px]">{isStudio ? 'ink_pen' : 'bolt'}</span>
             {isStudio ? 'TALENT MAX' : 'TALENT PRO'}
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-[var(--text-primary)] mb-3 leading-tight">
-            {isStudio ? <>AI Writing +<br />Career Intelligence</> : <>Supercharge your<br />career intelligence</>}
+            {isStudio ? <>Talent Max</> : <>Talent Pro</>}
           </h1>
           <p className="text-[var(--text-secondary)] text-base max-w-md">
             {isStudio
-              ? 'Everything in Pro plus the AI Humanizer pipeline — 50K words/month of AI-to-human rewriting.'
-              : 'Every tool. No daily caps. 3× faster AI. Your unfair advantage in the job market.'}
+              ? 'Everything in Pro plus the AI Humanizer pipeline and higher writing limits.'
+              : 'Core career tools with higher limits, faster AI, and a cleaner writing workflow.'}
           </p>
         </motion.div>
 
@@ -189,11 +206,10 @@ export default function UpgradePage() {
                     )}
                   </div>
                   <p className="text-xl font-black text-[var(--text-primary)]">
-                    {PLAN_CONFIG[plan][interval].price}
-                    <span className="text-sm font-normal text-[var(--text-secondary)]">{PLAN_CONFIG[plan][interval].period}</span>
+                    {prices.plans[plan][interval].display}
                   </p>
                   <p className="text-[10px] text-[var(--text-secondary)] mt-1">
-                    {plan === 'studio' ? 'Everything + 50K AI words/mo' : 'All career tools unlocked'}
+                    {plan === 'studio' ? 'Higher writing limits' : 'Core tools unlocked'}
                   </p>
                   {active && (
                     <motion.div
@@ -229,14 +245,14 @@ export default function UpgradePage() {
                   }`}
                   style={interval === int ? { backgroundColor: accent, boxShadow: `0 4px 14px ${accent}30` } : {}}
                 >
-                  {PLAN_CONFIG[selectedPlan][int].label} — {PLAN_CONFIG[selectedPlan][int].price}{PLAN_CONFIG[selectedPlan][int].period}
-                  {int === 'year' && (
+                  {PLAN_COPY[selectedPlan][int].label} — {prices.plans[selectedPlan][int].display}
+                  {int === 'year' && prices.plans[selectedPlan][int].savingsLabel && (
                     <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
                       interval === 'year' ? 'bg-white/25 text-white' : `text-[${accent}]`
                     }`}
                       style={interval !== 'year' ? { background: `${accent}18`, color: accent } : {}}
                     >
-                      {(PLAN_CONFIG[selectedPlan][int] as any).savings}
+                      {prices.plans[selectedPlan][int].savingsLabel}
                     </span>
                   )}
                 </button>
@@ -248,7 +264,7 @@ export default function UpgradePage() {
             <span className="material-symbols-rounded text-[13px]">
               {interval === 'year' ? 'trending_down' : 'local_cafe'}
             </span>
-            {planCfg.billed}
+            {billingLine(planCfg)}
           </p>
         </motion.div>
 
@@ -342,14 +358,13 @@ export default function UpgradePage() {
               </div>
               <div className="text-right">
                 <p className="text-2xl font-black" style={{ color: isStudio ? '#f43f5e' : '#10b981' }}>
-                  {planCfg.price}
+                  {planCfg.display}
                 </p>
-                <p className="text-[11px] text-[var(--text-muted)]">{planCfg.period}</p>
               </div>
             </div>
             <p className="text-xs text-[var(--text-secondary)] mt-2 border-t pt-2"
               style={{ borderColor: isStudio ? 'rgba(244,63,94,0.15)' : 'rgba(16,185,129,0.15)' }}>
-              {planCfg.billed}
+              {billingLine(planCfg)}
             </p>
           </div>
 
@@ -362,7 +377,7 @@ export default function UpgradePage() {
                   borderTopColor: isStudio ? '#f43f5e' : '#10b981',
                 }}
               />
-              <p className="text-sm text-[var(--text-secondary)]">Preparing secure checkout...</p>
+              <p className="text-sm text-[var(--text-secondary)]">Opening secure checkout...</p>
             </div>
           )}
 
@@ -392,7 +407,7 @@ export default function UpgradePage() {
 
           <p className="text-[11px] text-center text-[var(--text-muted)] mt-6 flex justify-center items-center gap-1.5">
             <span className="material-symbols-rounded text-[13px]">lock</span>
-            Secure · Powered by Stripe · Cancel anytime
+            Secure checkout by Stripe. Manage billing from Settings.
           </p>
         </div>
       </div>

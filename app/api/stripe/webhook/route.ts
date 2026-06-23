@@ -14,6 +14,7 @@ import { getFirestore, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { monitor } from '@/lib/monitor';
 import { triggerReferralReward } from '@/lib/referral';
+import { sendSubscriptionEmail, sendCancellationEmail, sendTrialEndingEmail, sendPlanChangeEmail } from '@/lib/email';
 
 let _stripe: Stripe | null = null;
 function getStripe() {
@@ -34,6 +35,18 @@ function getDb() {
     _db = getFirestore(app);
   }
   return _db;
+}
+
+function formatStripePrice(price?: Stripe.Price | null) {
+  if (!price?.unit_amount) return undefined;
+  const amount = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: price.currency.toUpperCase(),
+    minimumFractionDigits: price.unit_amount % 100 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(price.unit_amount / 100);
+  const interval = price.recurring?.interval === 'year' ? 'yr' : 'mo';
+  return `${amount}/${interval}`;
 }
 
 export async function POST(req: NextRequest) {
@@ -75,15 +88,22 @@ export async function POST(req: NextRequest) {
           plan = 'studio';
         }
 
-        const amount = plan === 'studio' ? 999 : 499; // cents
-
         const subId = session.subscription as string;
         let status: string = 'active';
         let trialEnd: string | null = null;
+        let amount = (session as any).amount_total ?? 0;
+        let currency = session.currency || 'usd';
+        let interval = session.metadata?.interval || 'month';
+        let priceDisplay: string | undefined;
         if (subId) {
           try {
             const stripe2 = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-02-25.clover' });
             const sub = await stripe2.subscriptions.retrieve(subId);
+            const price = sub.items?.data?.[0]?.price;
+            amount = price?.unit_amount ?? amount;
+            currency = price?.currency || currency;
+            interval = price?.recurring?.interval || interval;
+            priceDisplay = formatStripePrice(price);
             if (sub.status === 'trialing') {
               status = 'trialing';
               trialEnd = sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : null;
@@ -97,7 +117,7 @@ export async function POST(req: NextRequest) {
           stripeCustomerId: session.customer as string,
           stripeSubscriptionId: subId || (session.subscription as string),
           amount,
-          currency: 'usd',
+          currency,
           ...(trialEnd ? { trialEnd } : {}),
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
@@ -114,6 +134,9 @@ export async function POST(req: NextRequest) {
         const customerEmail = (session as any).customer_details?.email;
         if (customerEmail) {
           triggerReferralReward(uid, customerEmail).catch(() => {});
+          // Send subscription confirmation email
+          const customerName = (session as any).customer_details?.name || customerEmail.split('@')[0];
+          sendSubscriptionEmail(customerEmail, customerName, plan, interval, priceDisplay).catch(() => {});
         }
         break;
       }
@@ -167,7 +190,7 @@ export async function POST(req: NextRequest) {
         const uid = customer.metadata?.firebaseUid;
         if (!uid) break;
 
-        const status = subscription.status; // active, past_due, canceled, etc.
+        const status = subscription.status; // active, trialing, past_due, canceled, etc.
 
         // Detect plan from metadata or price ID
         const studioPrices2 = [process.env.STRIPE_STUDIO_PRICE_ID, process.env.STRIPE_STUDIO_ANNUAL_PRICE_ID].filter(Boolean);
@@ -175,13 +198,49 @@ export async function POST(req: NextRequest) {
         const updPlan = subscription.metadata?.plan || (studioPrices2.includes(subPriceId) ? 'studio' : 'pro');
 
         await setDoc(doc(getDb(), 'users', uid, 'subscription', 'current'), {
-          plan: status === 'active' ? updPlan : 'free',
+          plan: ['active', 'trialing'].includes(status) ? updPlan : 'free',
           status,
           stripeSubscriptionId: subscription.id,
+          cancelAtPeriodEnd: subscription.cancel_at_period_end,
+          currentPeriodEnd: (subscription as any).current_period_end
+            ? new Date((subscription as any).current_period_end * 1000).toISOString()
+            : null,
           updatedAt: serverTimestamp(),
         }, { merge: true });
 
         console.log(`[stripe] subscription.updated uid=${uid.slice(0, 8)}… plan=${updPlan} status=${status}`);
+
+        // Detect plan change and send notification email
+        const prevAttrs = (event.data as any).previous_attributes;
+        if (prevAttrs && status === 'active' && customer.email) {
+          const prevPriceId = prevAttrs?.items?.data?.[0]?.price?.id;
+          if (prevPriceId && prevPriceId !== subPriceId) {
+            const prevPlan = studioPrices2.includes(prevPriceId) ? 'studio' : 'pro';
+            if (prevPlan !== updPlan) {
+              const changeName = customer.name || customer.email.split('@')[0];
+              sendPlanChangeEmail(customer.email, changeName, prevPlan, updPlan).catch(() => {});
+              monitor.info('Plan Changed', `${prevPlan} → ${updPlan}`, [
+                { name: 'UID', value: uid.slice(0, 8) + '…' },
+              ]);
+            }
+          }
+        }
+
+        if (customer.email && subscription.cancel_at_period_end && prevAttrs?.cancel_at_period_end === false) {
+          const cancelName = customer.name || customer.email.split('@')[0];
+          const accessEndsAt = (subscription as any).current_period_end
+            ? new Date((subscription as any).current_period_end * 1000).toLocaleDateString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+              })
+            : undefined;
+          sendCancellationEmail(customer.email, cancelName, accessEndsAt).catch(() => {});
+          monitor.info('Subscription Cancel Scheduled', 'User will retain access through the billing period', [
+            { name: 'UID', value: uid.slice(0, 8) + '…' },
+            { name: 'Access ends', value: accessEndsAt || 'period end' },
+          ]);
+        }
         break;
       }
 
@@ -204,6 +263,19 @@ export async function POST(req: NextRequest) {
         monitor.warn('Subscription Canceled', 'User downgraded to free', [
           { name: 'UID', value: uid.slice(0, 8) + '…' },
         ]);
+
+        // Send cancellation email
+        if (customer.email) {
+          const cancelName = customer.name || customer.email.split('@')[0];
+          const accessEndsAt = (subscription as any).current_period_end
+            ? new Date((subscription as any).current_period_end * 1000).toLocaleDateString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+              })
+            : undefined;
+          sendCancellationEmail(customer.email, cancelName, accessEndsAt).catch(() => {});
+        }
         break;
       }
 
@@ -216,6 +288,15 @@ export async function POST(req: NextRequest) {
           { name: 'Email', value: cust.email || 'unknown' },
           { name: 'Auto-Renew', value: sub.cancel_at_period_end ? 'No' : 'Yes' },
         ]);
+
+        // Send trial ending email
+        if (cust.email) {
+          const trialName = cust.name || cust.email.split('@')[0];
+          const daysLeft = sub.trial_end
+            ? Math.max(1, Math.ceil((sub.trial_end * 1000 - Date.now()) / (24 * 60 * 60 * 1000)))
+            : 3;
+          sendTrialEndingEmail(cust.email, trialName, daysLeft).catch(() => {});
+        }
         break;
       }
 

@@ -34,6 +34,7 @@ const PUBLIC_API_PATHS = [
   '/api/auth',
   '/api/health',
   '/api/contact',
+  '/api/billing/prices',
   '/api/stripe/webhook',
   '/api/teams/interest',
   '/api/monitor/alert',

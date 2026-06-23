@@ -12,7 +12,7 @@ import {
   GoogleAuthProvider,
   signOut as firebaseSignOut,
   sendPasswordResetEmail,
-  updateEmail as firebaseUpdateEmail,
+  verifyBeforeUpdateEmail,
   updatePassword as firebaseUpdatePassword,
   updateProfile,
   onAuthStateChanged,
@@ -41,6 +41,7 @@ import {
   serverTimestamp,
   type Timestamp,
 } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 // Firebase config from environment variables
 const firebaseConfig = {
@@ -56,6 +57,7 @@ const firebaseConfig = {
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const storage = getStorage(app);
 
 // Google OAuth provider
 const googleProvider = new GoogleAuthProvider();
@@ -176,7 +178,13 @@ export const authHelpers = {
   async updateEmail(newEmail: string) {
     try {
       if (!auth.currentUser) throw new Error('Not authenticated');
-      await firebaseUpdateEmail(auth.currentUser, newEmail);
+      const actionCodeSettings = typeof window !== 'undefined'
+        ? {
+            url: `${window.location.origin}/suite/settings?tab=security&email=verified`,
+            handleCodeInApp: false,
+          }
+        : undefined;
+      await verifyBeforeUpdateEmail(auth.currentUser, newEmail, actionCodeSettings);
       return { data: {}, error: null };
     } catch (error: any) {
       return { data: null, error };
@@ -327,7 +335,7 @@ export const authHelpers = {
 };
 
 // Export Firebase instances
-export { app, auth, db };
+export { app, auth, db, storage };
 export { serverTimestamp };
 export type { User };
 

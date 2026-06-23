@@ -11,6 +11,8 @@
 import { getAdminDb } from '@/lib/firebase-admin';
 import { searchJobsAdzuna, calculateFitScore, extractSkillsFromDescription } from '@/lib/job-search-api';
 import { searchCompanyJobs } from '@/lib/portal-scanner';
+import { createStoryBankStory, listStoryBankStories } from '@/lib/story-bank';
+import { invalidateTwin } from '@/lib/career-twin';
 
 // ── Tool Schemas (for OpenRouter/Gemini function calling) ──
 
@@ -849,9 +851,8 @@ export async function executeTool(
         // Accumulates across evaluations, building a story bank for interview prep
         if (fitScore >= 60 && latestRole && matchingSkills.length > 0) {
           try {
-            const storyId = `fit_${args.jobTitle?.replace(/\W+/g, '_').toLowerCase()}_${Date.now()}`;
             const topSkills = matchingSkills.slice(0, 3).join(', ');
-            await db.collection('users').doc(uid).collection('stories').doc(storyId).set({
+            await createStoryBankStory(uid, {
               title: `${latestRole} → ${args.jobTitle || 'Target Role'}`,
               situation: `While working as ${latestRole}, I encountered challenges that directly relate to the ${args.jobTitle} role requiring ${topSkills}.`,
               task: `The key requirement was demonstrating competency in ${topSkills}, which maps to this JD's core asks.`,
@@ -860,10 +861,9 @@ export async function executeTool(
               reflection: `This story maps ${matchingSkills.length} skills from the ${args.company || 'target'} JD. Refine it before your interview.`,
               tags: [...matchingSkills.slice(0, 4), args.company || 'General'].filter(Boolean),
               source: 'fit_analysis',
-              createdAt: new Date().toISOString(),
-              fitScore,
-              targetCompany: args.company || '',
-              targetRole: args.jobTitle || '',
+              sourceTool: 'sona_fit_gate',
+              company: args.company || '',
+              role: args.jobTitle || '',
             });
           } catch { /* story save is best-effort, don't break fit analysis */ }
         }
@@ -928,9 +928,16 @@ export async function executeTool(
             company: e.company || '',
             bullets: (e.bullets || e.highlights || []).slice(0, 4),
           })),
+          education: (resume.education || []).slice(0, 4).map((e: any) => ({
+            degree: e.degree || '',
+            institution: e.institution || e.school || e.university || '',
+            year: e.year || e.graduation || e.date || '',
+            details: e.details || '',
+          })),
+          certifications: resume.certifications || [],
           keywordsToInject: keywordsToInject.slice(0, 10),
           matchingKeywords: jobSkills.filter(js => !keywordsToInject.includes(js)).slice(0, 10),
-          instruction: `Rewrite the resume experience bullets to naturally incorporate these missing keywords: [${keywordsToInject.join(', ')}]. Keep all facts truthful — only reframe existing experiences to emphasize relevant skills. Do NOT invent new experiences or skills. HUMANIZE: Use varied action verbs (built, shipped, cut, grew, ran, designed). Each bullet = micro-story (what → how → result). Mix sentence lengths. Never use: spearheaded, leveraged, utilized, facilitated, comprehensive, robust, seamless. Present as a draft for user review.`,
+          instruction: `Rewrite the resume experience bullets to naturally incorporate these missing keywords: [${keywordsToInject.join(', ')}]. Keep all facts truthful — only reframe existing experiences to emphasize relevant skills. Do NOT invent new experiences, skills, certifications, licenses, degrees, schools, employers, job titles, dates, or contact details. Keep education exactly unchanged. HUMANIZE: Use varied action verbs (built, shipped, cut, grew, ran, designed). Each bullet = micro-story (what → how → result). Mix sentence lengths. Never use: spearheaded, leveraged, utilized, facilitated, comprehensive, robust, seamless. Present as a draft for user review.`,
         });
       } catch (e: any) {
         return JSON.stringify({ error: e.message });
@@ -979,10 +986,10 @@ CRITICAL: Only use facts from the provided resume data. If you don't have enough
 
     case 'queue_application': {
       try {
-        const queueRef = db.collection('users').doc(uid).collection('applicationQueue');
+        const queueRef = db.collection('users').doc(uid).collection('agent_queue');
 
         // Check queue size (cap at 25 pending)
-        const pendingSnap = await queueRef.where('status', '==', 'queued').get();
+        const pendingSnap = await queueRef.where('status', '==', 'pending').get();
         if (pendingSnap.size >= 25) {
           return JSON.stringify({
             error: 'Your application queue is full (25 pending). Submit or skip some before adding more.',
@@ -991,20 +998,38 @@ CRITICAL: Only use facts from the provided resume data. If you don't have enough
         }
 
         const doc = await queueRef.add({
+          user_id: uid,
+          job_title: args.role,
           company: args.company,
-          role: args.role,
-          url: args.url || '',
-          fitScore: args.fitScore || 0,
-          resumeSummary: args.resumeSummary || '',
-          coverLetterPreview: args.coverLetterPreview || '',
-          status: 'queued',
-          createdAt: new Date().toISOString(),
+          location: args.location || 'Not specified',
+          job_url: args.url || '',
+          job_description: args.jobDescription || '',
+          salary: { min: null, max: null },
+          employment_type: args.employmentType || 'Not specified',
+          posted_date: new Date().toISOString(),
+          match_score: Math.max(0, Math.min(100, Number(args.fitScore || 0))),
+          match_reason: args.resumeSummary || 'Queued by Sona for your review.',
+          morphed_resume: null,
+          cover_letter: args.coverLetterPreview || '',
+          status: 'pending',
+          source: 'sona_chat',
+          packetStatus: 'needs_review',
+          fitSignals: args.resumeSummary ? [args.resumeSummary] : ['Sona prepared this from your chat context.'],
+          riskSignals: ['Review the posting, resume, and cover letter before submitting.'],
+          nextAction: 'Review the packet, refine it with Sona if needed, then apply manually.',
+          feedbackTags: [],
+          agentRunId: `sona_${Date.now()}`,
+          created_at: new Date().toISOString(),
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          batch_id: 'sona_chat',
+          batch_date: new Date().toISOString().split('T')[0],
         });
+        invalidateTwin(uid).catch(() => {});
 
         return JSON.stringify({
           success: true,
           queueId: doc.id,
-          message: `Application for ${args.role} at ${args.company} has been queued. Review and submit from your Application Queue.`,
+          message: `Application for ${args.role} at ${args.company} has been queued. Review the packet from Agent Queue before submitting.`,
           queueSize: pendingSnap.size + 1,
         });
       } catch (e: any) {
@@ -1085,6 +1110,8 @@ For EXPERIENCE bullets, rewrite to emphasize relevance to this JD:
 - Prioritize bullets that match JD requirements
 - Inject keywords naturally: [${missingKeywords.join(', ')}]
 - Keep all facts truthful — only reframe, never invent
+- Keep EDUCATION exactly unchanged. Do not add, remove, rename, reorder, or reword schools, degrees, years, or details.
+- Do not invent certifications, licenses, employers, job titles, dates, or contact details.
 - Each bullet: action verb → what you did → measurable result
 - Vary action verbs: built, shipped, cut, grew, ran, designed, reduced, launched
 
@@ -1113,7 +1140,7 @@ Present the tailored resume in a clear format the user can review and download a
           });
         }
 
-        const doc = await storiesRef.add({
+        const story = await createStoryBankStory(uid, {
           title: args.title,
           situation: args.situation,
           task: args.task,
@@ -1122,12 +1149,13 @@ Present the tailored resume in a clear format the user can review and download a
           reflection: args.reflection || '',
           tags: args.tags || [],
           source: 'chat',
-          createdAt: new Date().toISOString(),
+          sourceTool: 'sona_chat',
         });
+        invalidateTwin(uid).catch(() => {});
 
         return JSON.stringify({
           success: true,
-          storyId: doc.id,
+          storyId: story.id,
           message: `Saved "${args.title}" to your Story Bank. You now have ${countSnap.data().count + 1} stories ready for interview prep.`,
           tags: args.tags || [],
         });
@@ -1139,14 +1167,10 @@ Present the tailored resume in a clear format the user can review and download a
     // ── v3.0: Get Story Bank ──
     case 'get_story_bank': {
       try {
-        const storiesRef = db.collection('users').doc(uid).collection('agent_stories');
         const limit = args.limit || 10;
+        const { stories: bankStories } = await listStoryBankStories(uid, { limit: Math.min(limit, 50) });
 
-        let query = storiesRef.orderBy('createdAt', 'desc').limit(limit);
-
-        const snap = await query.get();
-
-        if (snap.empty) {
+        if (bankStories.length === 0) {
           return JSON.stringify({
             found: false,
             count: 0,
@@ -1154,20 +1178,19 @@ Present the tailored resume in a clear format the user can review and download a
           });
         }
 
-        let stories = snap.docs.map(d => {
-          const s = d.data();
-          return {
-            id: d.id,
-            title: s.title,
-            situation: s.situation,
-            task: s.task,
-            action: s.action,
-            result: s.result,
-            reflection: s.reflection || '',
-            tags: s.tags || [],
-            createdAt: s.createdAt,
-          };
-        });
+        let stories = bankStories.map(s => ({
+          id: s.id,
+          title: s.title,
+          situation: s.situation,
+          task: s.task,
+          action: s.action,
+          result: s.result,
+          reflection: s.reflection || '',
+          tags: s.tags || [],
+          category: s.category,
+          proofScore: s.proofScore,
+          createdAt: s.createdAt,
+        }));
 
         // Filter by tags if provided
         if (args.tags && args.tags.length > 0) {
@@ -1191,7 +1214,7 @@ Present the tailored resume in a clear format the user can review and download a
     case 'prep_for_interview': {
       try {
         // Fetch story bank
-        const storySnap = await db.collection('users').doc(uid).collection('agent').doc('stories').collection('items').orderBy('createdAt', 'desc').limit(20).get();
+        const storySnap = await db.collection('users').doc(uid).collection('agent_stories').orderBy('createdAt', 'desc').limit(20).get();
         const storyList = storySnap.docs.map(d => ({ title: (d.data() as any).title, tags: (d.data() as any).tags || [] }));
 
         // Find matching application for more context
@@ -1327,7 +1350,7 @@ Present the tailored resume in a clear format the user can review and download a
 
         // Auto-generate STAR story
         if (args.strengths) {
-          await db.collection('users').doc(uid).collection('stories').add({
+          await createStoryBankStory(uid, {
             title: `${role} @ ${company} — Interview Debrief`,
             situation: `Interviewed at ${company} for the ${role} position (${(args.roundType || 'behavioral').replace('_', ' ')} round).`,
             task: `Demonstrate qualification for the ${role} role.`,
@@ -1336,7 +1359,9 @@ Present the tailored resume in a clear format the user can review and download a
             reflection: args.weaknesses || 'Continue preparing for similar questions.',
             tags: [company, (args.roundType || 'behavioral').replace('_', ' ')],
             source: 'interview_debrief',
-            createdAt: new Date().toISOString(),
+            sourceTool: 'sona_debrief',
+            company,
+            role,
           });
         }
 

@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
     return new Response(JSON.stringify({
       insights: [],
       gated: true,
-      message: 'Proactive insights are a Max feature. Upgrade for $19.99/mo.',
+      message: 'Proactive insights are a Max feature. Upgrade to unlock them.',
     }), { headers: { 'Content-Type': 'application/json' } });
   }
 

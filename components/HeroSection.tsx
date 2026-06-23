@@ -2388,12 +2388,12 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
                 <div className="relative mb-5">
                   <h3 className={`text-[15px] font-semibold mb-1 ${isLight ? 'text-gray-900' : 'text-white/90'}`}>Pro</h3>
                   <div className="flex items-baseline gap-1">
-                    <span className={`text-3xl font-bold ${isLight ? 'text-gray-900' : 'text-white'}`}>$9.99</span>
-                    <span className={`text-[12px] ${isLight ? 'font-bold text-gray-900' : 'text-white/30'}`}>/ month</span>
+                    <span className={`text-3xl font-bold ${isLight ? 'text-gray-900' : 'text-white'}`}>Pro</span>
+                    <span className={`text-[12px] ${isLight ? 'font-bold text-gray-900' : 'text-white/30'}`}>plan</span>
                   </div>
                   <p className="text-[12px] text-emerald-400/60 mt-2 flex items-center gap-1.5">
-                    <span className={`line-through ${isLight ? 'text-gray-900' : 'text-white/15'}`}>$119.88/yr</span>
-                    <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-bold text-emerald-400">$99.99/yr — SAVE 17%</span>
+                    <span>Current pricing is shown at checkout</span>
+                    <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-bold text-emerald-400">Stripe sourced</span>
                   </p>
                 </div>
 
@@ -2421,8 +2421,8 @@ export default function HeroSection({ onGetStarted, onShowLogin, onShowSignup, i
                 <div className="relative mb-5">
                   <h3 className={`text-[15px] font-semibold mb-1 ${isLight ? 'text-gray-900' : 'text-white/90'}`}>Max</h3>
                   <div className="flex items-baseline gap-1">
-                    <span className={`text-3xl font-bold ${isLight ? 'text-gray-900' : 'text-white'}`}>$19.99</span>
-                    <span className={`text-[12px] ${isLight ? 'font-bold text-gray-900' : 'text-white/30'}`}>/ month</span>
+                    <span className={`text-3xl font-bold ${isLight ? 'text-gray-900' : 'text-white'}`}>Max</span>
+                    <span className={`text-[12px] ${isLight ? 'font-bold text-gray-900' : 'text-white/30'}`}>plan</span>
                   </div>
                   <p className="text-[12px] text-emerald-400/60 mt-2 flex items-center gap-1.5">
                     <span className={`line-through ${isLight ? 'text-gray-900' : 'text-white/15'}`}>$239.88/yr</span>
