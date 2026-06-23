@@ -9,6 +9,12 @@
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
+    "seo:audit": "node scripts/seo-audit.js",
+    "seo:audit:ci": "node scripts/seo-audit.js --ci",
+    "seo:audit:test": "node --test scripts/seo-audit.test.js",
+    "security:cve": "node scripts/security-cve-audit.js",
+    "security:cve:ci": "node scripts/security-cve-audit.js --ci",
+    "security:cve:test": "node --test scripts/security-cve-audit.test.js",
     "deploy": "node deploy-fix.js",
     "deploy:preview": "firebase hosting:channel:deploy preview",
     "deploy:cloudrun": "bash deploy-cloudrun.sh"
