@@ -7,6 +7,9 @@
 
 # testing
 /coverage
+/.seo-audit
+/.security-cve
+/email-previews
 
 # next.js
 /.next/
@@ -31,6 +34,7 @@ yarn-error.log*
 # secrets & credentials
 *.key
 *serviceAccount*.json
+hermes-agent-keys.txt
 
 # vercel
 .vercel
@@ -39,6 +43,7 @@ yarn-error.log*
 .firebase
 firebase-debug.log
 firebase-debug.*.log
+firestore-debug.log
 
 # typescript
 *.tsbuildinfo
@@ -58,3 +63,7 @@ YOUR_CREDENTIALS.txt
 
 # Cloud Run
 .env.cloudrun.yaml
+
+# recovery artefacts (25 July 2026) — not source
+/_backup
+/_to_delete

@@ -1,3 +1,10 @@
+> 🛑 **OBSOLETE SETUP GUIDE — DO NOT FOLLOW.**
+> Written for the Hirely.ai era, when the project targeted Supabase/Postgres. That stack was never shipped.
+> The live system is **Next.js + Firebase (Auth, Firestore, Storage) + Stripe + Resend**, deployed to Cloud Run.
+> Any `NEXT_PUBLIC_SUPABASE_*` variable here is dead, and any Supabase project reference is stale — treat it as a credential to revoke, not to use.
+> **Current setup instructions: [`README.md`](../../../README.md). Architecture: [`TALENT_SUITE_ARCHITECTURE.md`](../../../TALENT_SUITE_ARCHITECTURE.md).**
+> Superseded 25 July 2026. Archived for history only.
+
 # 🚨 Quick Fix: Supabase URL Error
 
 ## What Happened?

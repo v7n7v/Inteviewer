@@ -1,3 +1,8 @@
+> ⚠️ **SUPERSEDED — DO NOT BUILD AGAINST THIS.**
+> This describes a Supabase/Postgres design that was never shipped. The live system uses **Cloud Firestore**.
+> Verified 25 July 2026: no `@supabase/*` dependency exists, and zero files under `lib/`, `app/` or `components/` reference Supabase.
+> Current source of truth: [`TALENT_SUITE_ARCHITECTURE.md`](./TALENT_SUITE_ARCHITECTURE.md). Retained for history only; safe to delete.
+
 # 🔧 Step-by-Step Supabase Setup for Hirely.ai
 
 **Follow these exact steps to set up Supabase and fix the "Supabase URL is required" error**

@@ -1,0 +1,200 @@
+# CLAUDE.md — Talent Studio (`talentconsulting-io`)
+
+Context for Claude Code working in this repository. Verified against source on 25 July 2026.
+
+**Read `TALENT_SUITE_ARCHITECTURE.md` before touching data, auth or billing.** Several older documents in this repo are wrong; see §8.
+
+---
+
+## 1. What this product is
+
+TalentConsulting.io is a mobile-first AI career workspace. The assistant is **Taco**. A user uploads a real resume, states a target role, gets a small number of **explainable** job matches, and Taco prepares a truthful application packet the user reviews before anything leaves the product.
+
+**It is not auto-apply.** Nothing is submitted, emailed or sent externally without explicit user approval.
+
+North star: resume upload → 3 explainable matches + 1 review-ready packet, in under 10 minutes.
+
+---
+
+## 2. Stack — ground truth
+
+| Layer | Actual implementation |
+| --- | --- |
+| App | Next.js App Router, React, TypeScript, `output: 'standalone'` |
+| Data | **Cloud Firestore** |
+| Auth | Firebase Auth, **ID-token bearer, no session cookies** |
+| Storage | Firebase Storage |
+| Billing | Stripe Embedded Checkout + webhooks |
+| Email | Resend + Firestore outbox |
+| Rate limit | Upstash Redis |
+| Hosting | Cloud Run (primary) + Firebase Hosting SSR |
+
+**There is no Supabase, Postgres or pgvector.** Verified: no `@supabase/*` dependency; zero references in `lib/`, `app/`, `components/`.
+
+### AI providers — three, via Vercel AI SDK (`lib/ai/providers.ts`, `lib/ai/models.ts`)
+
+```
+fast:      groq('openai/gpt-oss-120b')
+validator: google('gemini-3-flash-preview')
+sona:      openrouter('qwen/qwen3.6-plus')
+writing:   default openai/gpt-oss-120b | verifier deepseek-v4-flash
+           premium deepseek-v4-pro     | fallback qwen3.6-plus   (all OpenRouter)
+```
+
+Voice: STT **Deepgram** `nova-2`; TTS **OpenRouter** `openai/gpt-4o-mini-tts-2025-12-15`; live `gemini-2.5-flash-preview-native-audio`.
+
+Two traps:
+- `lib/gemini.ts` is **not** a Gemini client — it POSTs to `/api/ai`. The real client is `lib/ai/gemini-client.ts`.
+- **ElevenLabs is unused.** It appears only in CSP allowlists.
+
+---
+
+## 3. Non-negotiable product rules
+
+### Truth locks — enforced in the database, not just in code
+
+`firestore.rules` is the enforcement point. `resume_versions` become **immutable once a `guardrail_report` is attached**; packet proof fields on `applications` are unwritable by clients; `settings.resumeMorphSafety` and `settings.privacyControls` are server-only.
+
+Do not add a client write path that works around these. The rules will reject it, and that rejection is correct.
+
+Never generate or permit: invented skills, metrics, certifications, degrees, employers, titles, dates. Truth locks are re-applied at the **PDF/DOCX export boundary** (`lib/resume-export-truth.ts`), not only at generation.
+
+**Unknown evidence stays unknown — never render it as a measured zero.**
+
+### Auth
+
+- User routes: `guardApiRoute()` in `lib/api-auth.ts`.
+- Admin routes: `requireAdmin(request, permission)` in `lib/admin-auth.ts` — revocation-checked token, `admin_accounts/{uid}` lookup, custom-claim cross-check, `email_verified`, MFA.
+- **`isMasterAccount` is a commercial-entitlement override only. Never use it to authorize an admin route.** The source says so explicitly.
+
+### Billing
+
+`PLAN_PRICE` is `null` for every paid tier **by design**. Prices resolve from Stripe at runtime (`lib/billing-prices.ts`). **Never hardcode a price.** Repricing is a Stripe dashboard operation plus env var changes.
+
+Tiers in code: `free | pro | studio | god`. Strategy calls `studio` **"Max"** — customer-facing name only; `studio` is canonical in code.
+
+### Secrets
+
+| File | Rule |
+| --- | --- |
+| `.env`, `.env.local`, `.env.cloudrun.yaml`, `hermes-agent-keys.txt` | gitignored — **never commit** |
+| `.env.production` | **tracked by design** — only `NEXT_PUBLIC_*` values baked into the client bundle; the Docker build needs it |
+
+---
+
+## 4. Repository state — READ THIS FIRST
+
+**The repo is damaged and the work is uncommitted.** As of 25 July 2026:
+
+- `.git/objects/pack/` has `.idx` and `.rev` but **no `.pack`** — 272 objects unreadable. `git diff` fails; history traversal truncates.
+- Last commit `6bfd9a6` is dated **2026-05-06**. ~900 files are uncommitted (552 modified, 352 untracked) — about 2.5 months of real work.
+- Cause: the repo lives in a **OneDrive-synced folder**. Move it out.
+- Backups verified 25 July: `_backup/src.tar.gz`, `_backup/root-config.tar.gz`, `_backup/public.tar.gz`.
+
+**Do this before any other work:** follow `GIT-RECOVERY-RUNBOOK.md` — run `recover-repo.ps1` then `commit-batches.ps1`. Both were tested end-to-end against a simulated reproduction.
+
+Unrecoverable (trees are inside the missing pack, not on the remote): branches `codex/audit-automation-recovery`, `codex/release-safe-cleanup`, and both stashes. Check the OneDrive recycle bin for `pack-3b21952154748776d171e0df6104b4c73e7b860c.pack` before accepting that loss.
+
+**Never deploy from an unreviewed dirty tree.**
+
+---
+
+## 5. Verification — run these
+
+```bash
+npm run type-check
+npm run build                      # expect 180–181 static pages
+npm run test:release-safety        # 244/244
+npm run test:assistant-harness     # 329/329
+npm run test:admin-command-grid    # 24/24
+npm run test:email-system          # 59/59
+npm run test:observability         # 31/31
+npm run security:cve:ci            # 0 high/critical
+npm run seo:audit:ci
+```
+
+A UI change is **not complete** until: `type-check` passes, `build` passes, and a real browser run at **320 / 390 / 430 / 768 / 1024 / 1440px** shows the core result state, a clean console, and no horizontal overflow.
+
+---
+
+## 6. Design system
+
+**Current state is fragmented.** Measured 25 July 2026 across `app/` + `components/`:
+
+| Metric | Value |
+| --- | --- |
+| Distinct hardcoded hex | 508 (1,573 occurrences) |
+| Prohibited class occurrences | 1,231 (`text-white` 397, `shadow-` 279, `bg-white/` 175, purple 181, `bg-gradient` 107, `backdrop-blur` 47, `bg-black` 45) |
+| Distinct radius values | ~70 against a documented single 12px standard (64% non-compliant) |
+| Buttons inline vs `btn-primary` | 344 vs 22 |
+| Cards inline vs `glass-card` | 488 vs 68 |
+| Suite routes outside `SuiteToolShell` | 18 of 43 |
+| Token definition files | 6 |
+| Tokens referenced but never defined | 28 |
+
+Counterpoint: **8,101 `var()` calls** — the token habit is strong. Infrastructure is fine; enforcement is absent.
+
+`DESIGN.md` and `UI_DESIGN_GUIDE.md` **contradict each other** (cyan/emerald, gradients, card background, sidebar width) and `.glass-card` is named for a treatment both documents ban. Resolve against `docs/design-system-v2-plan.md`, not against either older document.
+
+**Direction is decided** — see `docs/design-system-v2-plan.md`:
+
+1. **Evidence-first semantics.** Color encodes epistemic status: verified / inferred / draft / missing.
+2. **New accent hue family**, replacing both the Google-blue token and the stray emerald.
+3. **Admin folds into the main system**, keeping its density via a modifier rather than a 30-token fork.
+4. **TACO = assistant, TC = company.** Retire the `brand-*` and Sona mark systems.
+
+Do not start the design work until the repo is recovered and committed. It touches every file.
+
+### Where things live
+
+- `.agent/.shared/ui-ux-pro-max/` is a **generic** design knowledge base. It recommends Lucide icons and glassmorphism, both of which contradict this project. Reference only — not project law.
+- Resume templates (`components/resume-templates/`, `lib/resume-templates/`) are **intentionally visually independent** — they're documents for employers, not product UI. Verified clean separation. Leave them out of unification.
+
+---
+
+## 7. Blocked workstreams — all owner-gated, none engineering-blocked
+
+| Workstream | Blocked on |
+| --- | --- |
+| Admin Command Grid | `ADMIN_AGGREGATE_CRON_SECRET`, `ADMIN_REFERENCE_SECRET`, **a named second MFA recovery owner**, auth-domain alignment |
+| Admin RBAC | MFA enforcement, pending that same second recovery owner |
+| Email V2 | Cloudflare MX + `_dmarc` for `support@`/`ops@`/`dmarc@`; `.env.production` V2 credentials |
+| User Observability v1 | retention-policy approval, managed HMAC secrets, approved rollback runbook |
+| Resume Studio QA | 2 template captures blocked — browser refused `localhost` |
+
+**Naming the second recovery owner unblocks the most.** The owner must supply the exact verified email — never guess one.
+
+Standing holds: no live payments, no real user emails, no external submission without human approval.
+
+---
+
+## 8. Documents that are WRONG — do not build against them
+
+Bannered as superseded on 25 July 2026:
+
+- `docs/archive/hirely-era/` — 10 Hirely.ai setup guides telling you to configure Supabase. Archived out of the repo root because their filenames (`QUICKSTART.md`, `GETTING_STARTED.md`, `README_NEXTJS.md`) are what a newcomer opens first. They leak a stale Supabase project ref (`qsriqbphmvnnbterqnsv`) — **treat it as a credential to revoke, not to use.**
+- `schema.sql`, `suite_schema.sql`, `suite_migration.sql`, `supabase/` — orphaned Postgres DDL. Safe to delete.
+- `TalentConsulting_Architecture_Rebuttal.md` — its `$2.99` pricing argument is superseded.
+
+**Current and correct:** `README.md`, `TALENT_SUITE_ARCHITECTURE.md`, `TALENT_SUITE_STATUS.md`, `CHANGELOG.md`, `GIT-RECOVERY-RUNBOOK.md`, `docs/pricing-reconciliation.md`, `docs/design-system-v2-plan.md`.
+
+---
+
+## 9. Gotchas that will bite you
+
+1. **`NEXT_PUBLIC_*` is baked at Docker build time.** Changing one requires a rebuild, not just a redeploy.
+2. **Security headers are duplicated** in `firebase.json` and `next.config.js`. Change both or they drift.
+3. **Two deploy paths coexist** (Cloud Run and Firebase SSR). Confirm which serves production before deploying.
+4. **Text wrapping is a release blocker.** `min-w-0` on every text-bearing flex/grid child; `wrap-anywhere` only for URLs/IDs; stat numbers `tabular-nums whitespace-nowrap`, never stacked. Test any card below 420px.
+5. **The global theme cascade has caused the same P0 twice** — a light-theme override inverting an intentionally dark surface while leaving light text. Theme-invariant surfaces need an explicit boundary.
+6. Mobile has **no bottom nav bar**. `MobileQuickToolsRail` sits at the top below 1024px. Sticky bottom bars are for workflow actions only.
+7. **Never fabricate UI content** — no fake scores, mock saved data, or placeholder illustrations. `design-qa.md` strips these repeatedly.
+
+---
+
+## 10. Working style for this repo
+
+- Verify against code, not against documentation. This repo's docs have drifted before.
+- Prefer editing an existing file over creating a new one; this repo already has documentation sprawl.
+- Run the relevant test suite before claiming a change works.
+- For UI changes, a browser run is mandatory — "declared complete without a browser run" is an explicit anti-pattern here.

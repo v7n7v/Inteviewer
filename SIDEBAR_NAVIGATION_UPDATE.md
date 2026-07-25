@@ -1,3 +1,5 @@
+> 📎 **Historical note.** This document is from the Hirely.ai era and may reference Supabase or old branding. The product is now **Talent Studio** on Firebase/Firestore. Superseded 25 July 2026 — see [`TALENT_SUITE_ARCHITECTURE.md`](./TALENT_SUITE_ARCHITECTURE.md). Kept as a record of what was built.
+
 # 🎨 Sidebar Navigation - COMPLETE!
 
 **Status:** ✅ **LIVE AND RUNNING**

@@ -1,3 +1,5 @@
+> ⚠️ **Pricing in this document is superseded.** The $2.99/$24.99 argument was overridden by the July 2026 strategy train. Current target: **Free $0 / Pro $19 / Max $49** — see [`docs/pricing-reconciliation.md`](./docs/pricing-reconciliation.md). The engineering arguments below remain valid history.
+
 # TalentConsulting.io — Senior Architecture Review
 ### Platform Overview, Feature Portfolio, Monetization & Build Roadmap
 **Prepared:** March 17, 2026  

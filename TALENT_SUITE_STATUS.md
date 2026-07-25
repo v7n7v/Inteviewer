@@ -1,346 +1,144 @@
-# 🚀 Hirely.ai Talent Intelligence Suite - Implementation Status
+# Talent Studio — Status Board
 
-**Last Updated:** January 2026  
-**Version:** 2.0 - Talent Suite Expansion
-
----
-
-## 🎯 Vision Recap
-
-Transform Hirely.ai from an interview platform into a **complete end-to-end Talent Intelligence Suite** with:
-- 📄 **Liquid Resume Builder** (JD-morphing resumes)
-- 💼 **Persona-JD Engine** (AI job descriptions)
-- 🎭 **Shadow Interviewer** (24/7 mock practice)
-- 🔮 **Market Oracle** (Salary intelligence)
-- 🎙️ **Interview Co-Pilot** (Existing feature)
+**As of:** 25 July 2026
+**Supersedes:** the January 2026 "Hirely.ai" revision, which described a Supabase/IndexedDB stack and a Liquid Resume / Shadow Interviewer roadmap that were never shipped.
 
 ---
 
-## ✅ Phase 1: Foundation - COMPLETED
+## 1. Headline
 
-### What's Been Built:
+Four major workstreams are **code-complete, test-passing, and not shipped**. Every one of them is blocked on an external prerequisite an operator must supply — not on engineering.
 
-#### 1. **Project Architecture** ✅
-- [x] Complete architecture document (`TALENT_SUITE_ARCHITECTURE.md`)
-- [x] Component structure planned
-- [x] Database schema designed
-- [x] Tech stack defined
-
-#### 2. **Command Bar Navigation** ✅
-- [x] Bottom-docked glass navigation bar
-- [x] Module switcher with expansion
-- [x] Command Palette (Cmd+K) for quick access
-- [x] Smooth Framer Motion animations
-- [x] 40px blur effect (enhanced from 20px)
-- [x] Beautiful glassmorphism aesthetic
-
-#### 3. **Package Dependencies** ✅
-- [x] Updated `package.json` with new libraries:
-  - `framer-motion` (animations)
-  - `@react-three/fiber` & `@react-three/drei` (3D)
-  - `three` (WebGL)
-  - `react-spring` (transitions)
-  - `d3` (data visualization)
-
-#### 4. **Database Schema** ✅
-- [x] `suite_schema.sql` created
-- [x] 6 new tables:
-  - `resume_versions` (Liquid Resume data)
-  - `job_descriptions` (JD generation)
-  - `mock_interviews` (Shadow Interviewer sessions)
-  - `user_profiles` (User skills & preferences)
-  - `market_data` (Salary intelligence)
-  - `skill_recommendations` (Oracle suggestions)
-- [x] Row Level Security policies
-- [x] Indexes for performance
-- [x] Triggers for auto-updates
-
-#### 5. **Folder Structure** ✅
-```
-components/command-bar/     ← Command Bar created!
-app/(suite)/                ← Ready for modules
-  ├── resume/
-  ├── jd-generator/
-  ├── shadow-interview/
-  └── market-oracle/
-lib/ai/                     ← Ready for AI logic
-lib/voice/                  ← Ready for speech
-lib/3d/                     ← Ready for Three.js
-```
+**One decision unblocks the most: naming and verifying a second admin recovery owner.** It gates both admin MFA enforcement and admin production activation.
 
 ---
 
-## 🚧 Phase 2-5: Modules - READY TO BUILD
+## 2. Repository health — action required
 
-### Module Status Overview:
+| Fact | Detail |
+| --- | --- |
+| Last commit | `6bfd9a6`, 2026-05-06 |
+| Uncommitted | 552 modified, 352 untracked files (~2.5 months of work) |
+| Repo integrity | **Damaged** — `.git/objects/pack/` has `.idx` and `.rev` but no `.pack`; 272 objects unreadable |
+| Consequence | `git diff` and history traversal fail partway; `git bundle` and `format-patch` fail |
+| Lost refs | `codex/audit-automation-recovery`, `codex/release-safe-cleanup`, and both stashes are **unrecoverable** from this clone — their trees live in the missing pack and are not on the remote |
+| Backup | Working tree archived and verified, 25 July 2026 — `_backup/src.tar.gz` (1,181 files), `_backup/root-config.tar.gz` (315 files) |
 
-| Module | Status | Complexity | Est. Time |
-|--------|--------|------------|-----------|
-| **Liquid Resume** | 🟡 Ready | High | 2-3 days |
-| **Persona-JD Engine** | 🟡 Ready | Medium | 2 days |
-| **Shadow Interviewer** | 🟡 Ready | Very High | 3-4 days |
-| **Market Oracle** | 🟡 Ready | Very High | 3-4 days |
-| **Interview Co-Pilot** | 🟢 Exists | - | Enhancement |
-
----
-
-## 📋 What Needs to Be Done Next
-
-### Immediate Next Steps:
-
-#### 1. **Install New Dependencies** (5 minutes)
-```bash
-cd /Users/alulagebreegziabher/Documents/Intetviewer
-npm install framer-motion @react-three/fiber @react-three/drei three react-spring d3
-```
-
-#### 2. **Deploy Extended Database Schema** (2 minutes)
-1. Go to Supabase SQL Editor
-2. Run `suite_schema.sql`
-3. Verify 6 new tables created
-
-#### 3. **Choose First Module to Build** (Your Decision!)
-
-**Option A: Liquid Resume Builder** (Recommended First)
-- Most visual impact
-- Foundation for other features
-- Users can see immediate value
-- Features:
-  - Resume canvas with "Ghost Paper" effect
-  - Context Toggle (Technical ↔ Leadership)
-  - JD-morphing AI
-  - Skill Graph visualization
-
-**Option B: Persona-JD Engine**
-- Useful for employers
-- Easier than Shadow Interviewer
-- Features:
-  - AI job description generator
-  - Talent Density Score gauge
-  - Bias detection
-  - Typewriter animation
-
-**Option C: Shadow Interviewer**
-- Most innovative feature
-- Highest complexity (voice + 3D)
-- Would be a major differentiator
-- Requires:
-  - Web Speech API integration
-  - React Three Fiber for Neural Sphere
-  - Voice analysis algorithms
+**Procedure:** `GIT-RECOVERY-RUNBOOK.md`.
+**Probable cause:** the repository lives inside a OneDrive-synced folder. Move it out.
 
 ---
 
-## 🎨 Design System - Already Established
+## 3. Workstream status
 
-### What's Ready:
+| Workstream | Code | Tests | Ships when |
+| --- | --- | --- | --- |
+| Admin Command Grid | Complete (§0–16) | 24/24 | §17 prerequisites cleared |
+| Admin RBAC | Live in production | — | MFA enforcement pending 2nd recovery owner |
+| Email V2 | Complete | 59/59 | DNS + `.env.production` V2 credentials |
+| User Observability v1 | Complete | 31/31 | Retention policy + HMAC secrets + runbook |
+| Resume Studio redesign | Complete | — | 1 design-QA item blocked |
 
-✅ **Colors:**
-- Obsidian: #020202 (background)
-- Cyber Cyan: #00f5ff (primary)
-- Neon Violet: #bf00ff (secondary)
-- Deep Red: #ff0055 (stress/danger)
-- Neon Green: #00ff88 (success)
+### 3.1 Admin Command Grid — section 17 open
 
-✅ **Effects:**
-- 40px blur for command bar
-- Glass cards with translucent borders
-- Framer Motion for layout morphing
-- Smooth transitions everywhere
+Nine modules on branch `codex/admin-command-grid`. Sections 0–16 verified. Outstanding:
 
-✅ **Components Ready:**
-- `.glass-card` with enhanced blur
-- `.btn-primary` / `.btn-secondary`
-- `.neural-feed` for transcripts
-- Animation utilities
+- [ ] Provision `ADMIN_AGGREGATE_CRON_SECRET` in the production GitHub environment; prove the scheduled workflow reaches production
+- [ ] Provision and verify a **second active recovery owner with MFA**
+- [ ] Align production auth-domain and admin rollout environment values
+- [ ] Install a strong production `ADMIN_REFERENCE_SECRET`
+- [ ] Run the live recovery-owner proof and authenticated MFA smoke token
+- [ ] Capture rollback point, deploy, prime aggregates, run smoke tests — **only on explicit request**
 
----
+Current flags: `ADMIN_MFA_ENFORCED=false`, `FIREBASE_MFA_PROJECT_ENABLED=false`.
 
-## 💡 The "Hirely Twist" Features
+> The owner must supply the exact verified email for the second recovery owner. Nothing will be guessed.
 
-### Unique Innovations to Implement:
+### 3.2 Email V2 — cutover blocked
 
-1. **Context Toggle** (Resume)
-   - One-click switch: Technical ↔ Leadership
-   - Floating glass layers that stack/unstack
-   - Framer Motion layout animations
+Catalog of 74 events (72 live, 2 marketing disabled). Sender domain `talentconsulting.io` verified and sending; 71/71 live samples accepted by Resend.
 
-2. **Talent Density Score** (JD Generator)
-   - Live meter: 0 (common) → 10 (unicorn)
-   - Color gradient: Green → Cyan → Violet
-   - Real-time calculation
+Blocked on:
 
-3. **Stress Testing** (Shadow Interviewer)
-   - AI interrupts mid-answer
-   - Asks "Why?" 3 times
-   - Background turns red
-   - Measures composure
+- [ ] Cloudflare Email Routing MX records for `support@`, `ops@`, `dmarc@`
+- [ ] `_dmarc` TXT record
+- [ ] Destination mailbox for branded Resend SMTP replies
+- [ ] `.env.production`: V2 API + webhook credentials, sender/reply routing, signing secrets, ops destination, app origin, cutover flags
 
-4. **Opportunity Radar** (Market Oracle)
-   - 3D starfield with WebGL
-   - Each star = a job
-   - Closer to center = better fit
-   - Navigate with mouse
+Known gaps in one run: notification suite 31/32 (missing `app/api/cron/weekly-suggestions/route.ts` — **this file now exists uncommitted, +612 lines**); release-safety 220/237 due to env drift and Windows permission expectations. Both should re-run clean after the repo recovery.
 
----
+Procedure: `docs/email-system-runbook.md`. Run shadow rendering before cutover.
 
-## 📊 Implementation Priority Recommendation
+### 3.3 User Observability v1 — behind a disabled flag
 
-### Week 1: Foundation ✅ DONE
-- [x] Command Bar
-- [x] Database schema
-- [x] Dependencies
-- [x] Architecture
+AC-01..AC-16 accepted 24 July 2026. Independent Auditor, Skeptic and UI-Verifier all PASS.
 
-### Week 2: Liquid Resume (Recommended Next)
-**Why First:**
-- Visual impact is immediate
-- Foundation for JD-morphing across suite
-- Users can start using right away
-- Not as complex as 3D features
+Blocked on:
 
-**What to Build:**
-1. Resume canvas component
-2. Context Toggle with animations
-3. JD morphing AI integration
-4. Skill Graph SVG generation
-5. "Ghost Paper" aesthetic
+- [ ] Retention policy approval
+- [ ] Managed HMAC secrets
+- [ ] Approved smoke and rollback runbook
 
-### Week 3: Persona-JD Engine
-**Build on Resume:**
-- Use resume data for JD suggestions
-- Implement Talent Density calculator
-- Add bias detection
-- Create typewriter animation
+Flag `USER_OBSERVABILITY_V1_ENABLED` stays off until all three clear.
 
-### Week 4: Shadow Interviewer
-**Most Complex:**
-- Requires voice API
-- 3D Neural Sphere (React Three Fiber)
-- AI persona system
-- Stress visualization
+### 3.4 Resume Studio — one QA item blocked
 
-### Week 5: Market Oracle
-**Data Science Heavy:**
-- Salary data aggregation
-- Vector similarity search (if using pgvector)
-- 3D Opportunity Radar
-- Skill recommendations
+9 of 10 design-QA sections pass. **Three Signature Resume Templates** is `blocked`: the in-app browser refused `localhost` under its URL security policy, so Technical Signal and Brutalist Voltage have no rendered captures or source/implementation comparisons.
+
+Closeout needs, per template: A4 captures, combined comparisons, and verification of selection, reload mapping, 390px mobile, dark-paper isolation and console state.
 
 ---
 
-## 🔧 Technical Decisions Needed
+## 4. Test posture
 
-### Questions for You:
-
-1. **Which module should we build first?**
-   - Liquid Resume (recommended)
-   - Persona-JD Engine
-   - Shadow Interviewer
-   - Market Oracle
-
-2. **For AI features:**
-   - Continue using Gemini 2.0 for all AI? ✅
-   - Or add OpenAI for specific tasks?
-
-3. **For 3D features:**
-   - Full WebGL with React Three Fiber?
-   - Or simpler 2D canvas animations first?
-
-4. **Data sources for Market Oracle:**
-   - Manual data entry for MVP?
-   - Or integrate with job APIs immediately?
+| Suite | Result |
+| --- | --- |
+| `npm run test:release-safety` | 244/244 |
+| `npm run test:assistant-harness` | 329/329 |
+| `npm run test:admin-command-grid` | 24/24 |
+| `npm run test:email-system` | 59/59 |
+| `npm run test:observability` | 31/31 |
+| `npm run build` | 180–181 static pages |
+| `npm run security:cve:ci` | 0 high / 0 critical |
+| `npm run seo:audit:ci` | 42 medium content issues on production |
 
 ---
 
-## 🎯 Quick Win: Build Liquid Resume First
+## 5. Commercial state
 
-### Why This Makes Sense:
+| | Strategy target | Live in Stripe |
+| --- | --- | --- |
+| Pro | ~$19/mo, $149/yr | $4.99/mo, $9.99/yr¹ |
+| Max (`studio` in code) | ~$49/mo, $399/yr | — |
+| Sprint pass | $7–12 / 7 days | not built |
 
-✅ **Immediate Value:**
-- Users can create/edit resumes today
-- See JD morphing in action
-- Export beautiful skill graphs
+¹ As recorded in `docs/launch-readiness-report.md`, 5 July 2026. Prices resolve from Stripe at runtime (`lib/billing-prices.ts`); code holds no prices. **Changing price is a Stripe dashboard operation.**
 
-✅ **Foundation for Other Features:**
-- Resume data feeds JD generator
-- Resume informs Shadow Interviewer questions
-- Skills data powers Market Oracle
+Provider cost basis: $1.488/month Pro, $4.3989/month Max maximum included Taco workload — directional provider cost only. At target pricing that implies ~92% and ~91% gross margin respectively.
 
-✅ **Technical Learning:**
-- Master Framer Motion animations
-- Build reusable AI integration patterns
-- Perfect the glass aesthetic
+See `docs/pricing-reconciliation.md` for the three-way contradiction across strategy, launch-readiness and the architecture rebuttal, and what to change.
 
-✅ **Reasonable Scope:**
-- Can build MVP in 2-3 days
-- Doesn't require complex 3D
-- AI is straightforward text processing
+**Naming mismatch:** strategy says **Max**, code says **`studio`** (`PlanTier`, `STRIPE_STUDIO_*`). Unresolved.
 
 ---
 
-## 📦 What's in the Box (Current Files)
+## 6. Standing holds
 
-### New Files Created:
-1. ✅ `TALENT_SUITE_ARCHITECTURE.md` - Complete architecture
-2. ✅ `TALENT_SUITE_STATUS.md` - This file
-3. ✅ `suite_schema.sql` - Database schema
-4. ✅ `components/command-bar/CommandBar.tsx` - Navigation
-5. ✅ Updated `package.json` - New dependencies
+These are deliberate and remain in force:
 
-### Updated Files:
-- `package.json` - Added Framer Motion, Three.js, etc.
-
-### Ready to Create:
-- Resume module components
-- JD generator components
-- Shadow interview components  
-- Market oracle components
-- AI utility functions
-- Voice processing utilities
-- 3D rendering components
+- No live payments
+- No real user emails
+- No external application submission without human approval
+- No blind auto-apply, ever
+- No restricted-source scraping in the default product
 
 ---
 
-## 🚀 Next Action
+## 7. Ordered next steps
 
-**You decide:**
-
-**Option 1: Install Dependencies & Deploy Schema**
-```bash
-npm install
-# Then run suite_schema.sql in Supabase
-```
-
-**Option 2: Pick a Module to Build**
-Tell me which module excites you most, and I'll build it!
-
-**Option 3: See a Demo**
-I can build a quick prototype of one feature to show you the pattern.
-
----
-
-## 💬 My Recommendation
-
-**Start with Liquid Resume Builder:**
-
-1. It's the most visual and immediately impressive
-2. Provides foundation for other modules
-3. Reasonable complexity for first implementation
-4. Users can actually use it to get hired!
-
-**Then add modules in order:**
-Resume → JD Engine → Shadow Interview → Market Oracle
-
-Each builds on the previous, creating a complete talent intelligence ecosystem.
-
----
-
-**What would you like to do next?** 🎯
-
-A) Install dependencies and deploy schema  
-B) Build Liquid Resume module  
-C) Build a different module  
-D) See a demo/prototype first  
-
-Let me know and I'll get started! 🚀
+1. **Recover the repository** and commit the outstanding work — `GIT-RECOVERY-RUNBOOK.md`. Everything else is at risk until this is done.
+2. **Name the second admin recovery owner.** Unblocks admin MFA and production activation.
+3. **Complete email DNS**, populate `.env.production` V2 values, run shadow rendering, then cut over.
+4. **Capture the two missing resume-template comparisons** to clear the last design-QA blocker.
+5. **Approve observability retention policy and HMAC secrets** before enabling the flag.
+6. **Decide pricing** and align Stripe to it.
