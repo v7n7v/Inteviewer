@@ -72,3 +72,7 @@ YOUR_CREDENTIALS.txt
 /output
 /test-results
 /.playwright-cli
+
+# recovery/tooling artefacts
+/_to_delete
+/.ui-verify
