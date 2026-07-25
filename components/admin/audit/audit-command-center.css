@@ -1,0 +1,359 @@
+.admin-command-grid .audit-module {
+  display: grid;
+  min-width: 0;
+  gap: 14px;
+}
+
+.admin-command-grid .audit-hero {
+  border-bottom-color: color-mix(in srgb, var(--admin-info) 48%, var(--admin-border));
+}
+
+.admin-command-grid .audit-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.admin-command-grid .audit-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--admin-border);
+  border-radius: 11px;
+  background: var(--admin-surface-panel);
+  box-shadow: var(--admin-shadow-panel);
+}
+
+.admin-command-grid .audit-metric-grid .admin-metric-card {
+  border: 0;
+  border-right: 1px solid var(--admin-border);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.admin-command-grid .audit-metric-grid .admin-metric-card:last-child {
+  border-right: 0;
+}
+
+.admin-command-grid .audit-log-panel .admin-panel-content {
+  padding: 0;
+}
+
+.admin-command-grid .audit-log-panel .admin-filter-bar {
+  border-bottom: 1px solid var(--admin-border);
+  padding: 10px 12px;
+}
+
+.admin-command-grid .audit-filter-select select {
+  width: min(220px, 100%);
+  min-height: 36px;
+  border: 1px solid var(--admin-border) !important;
+  border-radius: 8px;
+  background: var(--admin-surface-elevated);
+  color: var(--admin-text-primary);
+  padding: 0 30px 0 10px;
+  font-size: 10px;
+  text-transform: capitalize;
+}
+
+.admin-command-grid .audit-desktop-table {
+  min-width: 0;
+}
+
+.admin-command-grid .audit-time-cell {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-command-grid .audit-time-cell strong,
+.admin-command-grid .audit-action-cell strong {
+  font-size: 10px;
+}
+
+.admin-command-grid .audit-time-cell small,
+.admin-command-grid .audit-action-cell small {
+  color: var(--admin-text-muted);
+  font-size: 8px;
+}
+
+.admin-command-grid .audit-action-cell {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 9px;
+}
+
+.admin-command-grid .audit-action-cell > .material-symbols-rounded {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 7px;
+  background: var(--admin-cobalt-soft);
+  color: var(--admin-info);
+  font-size: 17px;
+}
+
+.admin-command-grid .audit-action-cell > span:last-child {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.admin-command-grid .audit-action-cell strong,
+.admin-command-grid .audit-action-cell small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-command-grid .audit-metadata-count {
+  color: var(--admin-text-muted);
+  font-size: 9px;
+}
+
+.admin-command-grid .audit-pagination {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--admin-border);
+  background: var(--admin-surface-elevated);
+  padding: 8px 12px;
+}
+
+.admin-command-grid .audit-pagination > span {
+  color: var(--admin-text-secondary);
+  font-size: 9px;
+}
+
+.admin-command-grid .audit-privacy-panel .admin-panel-content {
+  padding: 0;
+}
+
+.admin-command-grid .audit-privacy-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.admin-command-grid .audit-privacy-grid > span {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 3px 9px;
+  min-height: 90px;
+  align-content: center;
+  border-right: 1px solid var(--admin-border);
+  padding: 14px;
+}
+
+.admin-command-grid .audit-privacy-grid > span:last-child {
+  border-right: 0;
+}
+
+.admin-command-grid .audit-privacy-grid .material-symbols-rounded {
+  grid-row: 1 / span 2;
+  color: var(--admin-violet);
+  font-size: 21px;
+}
+
+.admin-command-grid .audit-privacy-grid strong {
+  font-size: 10px;
+}
+
+.admin-command-grid .audit-privacy-grid small {
+  color: var(--admin-text-secondary);
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+.admin-command-grid .audit-detail {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-command-grid .audit-detail-heading {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  border: 1px solid var(--admin-border);
+  border-radius: 9px;
+  background: var(--admin-surface-elevated);
+  padding: 12px;
+}
+
+.admin-command-grid .audit-detail-heading > .material-symbols-rounded {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--admin-cobalt-soft);
+  color: var(--admin-info);
+  font-size: 19px;
+}
+
+.admin-command-grid .audit-detail-heading > div {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-command-grid .audit-detail-heading strong {
+  font-size: 11px;
+}
+
+.admin-command-grid .audit-detail-heading small {
+  color: var(--admin-text-muted);
+  font-size: 9px;
+}
+
+.admin-command-grid .audit-detail > dl,
+.admin-command-grid .audit-detail section dl {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.admin-command-grid .audit-detail dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--admin-border);
+  padding: 9px 0;
+}
+
+.admin-command-grid .audit-detail dt {
+  color: var(--admin-text-muted);
+  font-size: 9px;
+  text-transform: capitalize;
+}
+
+.admin-command-grid .audit-detail dd {
+  max-width: 62%;
+  margin: 0;
+  color: var(--admin-text-primary);
+  font-size: 9px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.admin-command-grid .audit-detail section {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-command-grid .audit-detail h3,
+.admin-command-grid .audit-detail p {
+  margin: 0;
+}
+
+.admin-command-grid .audit-detail h3 {
+  font-size: 11px;
+}
+
+.admin-command-grid .audit-detail p {
+  color: var(--admin-text-secondary);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .admin-command-grid .audit-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
+  }
+
+  .admin-command-grid .audit-metric-grid .admin-metric-card {
+    scroll-snap-align: start;
+  }
+
+  .admin-command-grid .audit-metric-grid .admin-metric-card:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .admin-command-grid .audit-metric-grid .admin-metric-card:nth-child(-n+2) {
+    border-bottom: 1px solid var(--admin-border);
+  }
+
+  .admin-command-grid .audit-privacy-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-command-grid .audit-privacy-grid > span:nth-child(2) {
+    border-right: 0;
+  }
+
+  .admin-command-grid .audit-privacy-grid > span:nth-child(-n+2) {
+    border-bottom: 1px solid var(--admin-border);
+  }
+}
+
+@media (max-width: 390px) {
+  .admin-command-grid .audit-metric-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-command-grid .audit-metric-grid .admin-metric-card,
+  .admin-command-grid .audit-metric-grid .admin-metric-card:nth-child(2n) {
+    border-right: 0;
+    border-bottom: 1px solid var(--admin-border);
+  }
+
+  .admin-command-grid .audit-metric-grid .admin-metric-card:last-child {
+    border-bottom: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .admin-command-grid .audit-hero-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-command-grid .audit-hero-actions .admin-button {
+    width: 100%;
+  }
+
+  .admin-command-grid .audit-filter-bar,
+  .admin-command-grid .admin-filter-controls,
+  .admin-command-grid .admin-filter-actions {
+    align-items: stretch;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .admin-command-grid .audit-filter-select select,
+  .admin-command-grid .audit-filter-bar .admin-button {
+    width: 100%;
+  }
+
+  .admin-command-grid .audit-desktop-table {
+    display: block;
+  }
+
+  .admin-command-grid .audit-pagination {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 540px) {
+  .admin-command-grid .audit-privacy-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-command-grid .audit-privacy-grid > span,
+  .admin-command-grid .audit-privacy-grid > span:nth-child(2),
+  .admin-command-grid .audit-privacy-grid > span:nth-child(-n+2) {
+    min-height: 74px;
+    border-right: 0;
+    border-bottom: 1px solid var(--admin-border);
+  }
+
+  .admin-command-grid .audit-privacy-grid > span:last-child {
+    border-bottom: 0;
+  }
+}

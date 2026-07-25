@@ -1,0 +1,381 @@
+.admin-command-grid .email-module {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-command-grid .email-hero {
+  border-bottom-color: color-mix(in srgb, var(--admin-violet) 52%, var(--admin-border));
+}
+
+.admin-command-grid .email-hero-actions {
+  display: grid;
+  grid-auto-flow: column;
+  align-items: center;
+  justify-content: end;
+  gap: 10px;
+}
+
+.admin-command-grid .email-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--admin-border);
+  border-radius: 11px;
+  background: var(--admin-surface-panel);
+  box-shadow: var(--admin-shadow-panel);
+}
+
+.admin-command-grid .email-metric-grid .admin-metric-card {
+  border: 0;
+  border-right: 1px solid var(--admin-border);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.admin-command-grid .email-metric-grid .admin-metric-card:last-child {
+  border-right: 0;
+}
+
+.admin-command-grid .email-primary-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(290px, 0.65fr);
+  gap: 12px;
+}
+
+.admin-command-grid .email-readiness-panel .admin-panel-content,
+.admin-command-grid .email-canary-panel .admin-panel-content {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-command-grid .email-proof-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-command-grid .email-proof-grid article {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px;
+  align-content: start;
+  min-height: 154px;
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  background: var(--admin-surface-row);
+  padding: 13px;
+  transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.admin-command-grid .email-proof-grid article:hover {
+  border-color: var(--admin-border-strong);
+  background: var(--admin-surface-hover);
+  transform: translateY(-2px);
+}
+
+.admin-command-grid .email-proof-grid article > .material-symbols-rounded {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--admin-degraded-soft);
+  color: var(--admin-degraded);
+  font-size: 19px;
+}
+
+.admin-command-grid .email-proof-grid article.is-verified > .material-symbols-rounded {
+  background: var(--admin-healthy-soft);
+  color: var(--admin-healthy);
+}
+
+.admin-command-grid .email-proof-grid article > div {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-command-grid .email-proof-grid strong {
+  font-size: 11px;
+}
+
+.admin-command-grid .email-proof-grid p,
+.admin-command-grid .email-proof-grid small {
+  margin: 0;
+  color: var(--admin-text-secondary);
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.admin-command-grid .email-proof-grid small {
+  color: var(--admin-text-muted);
+}
+
+.admin-command-grid .email-canary-target {
+  display: flex;
+  gap: 11px;
+  align-items: center;
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  background: var(--admin-violet-soft);
+  padding: 13px;
+}
+
+.admin-command-grid .email-canary-target > .material-symbols-rounded {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--admin-surface-panel);
+  color: var(--admin-violet);
+  font-size: 20px;
+}
+
+.admin-command-grid .email-canary-target > div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.admin-command-grid .email-canary-target small {
+  color: var(--admin-text-muted);
+  font-size: 8px;
+  font-weight: 760;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.admin-command-grid .email-canary-target strong {
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+}
+
+.admin-command-grid .email-canary-target p,
+.admin-command-grid .email-canary-note {
+  margin: 0;
+  color: var(--admin-text-secondary);
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.admin-command-grid .email-safety-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-command-grid .email-safety-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--admin-text-secondary);
+  font-size: 9px;
+}
+
+.admin-command-grid .email-safety-list .material-symbols-rounded {
+  color: var(--admin-healthy);
+  font-size: 16px;
+}
+
+.admin-command-grid .email-outbox-panel .admin-panel-content {
+  padding: 0;
+}
+
+.admin-command-grid .email-outbox-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.admin-command-grid .email-outbox-grid article {
+  display: grid;
+  gap: 9px;
+  min-height: 94px;
+  border-right: 1px solid var(--admin-border);
+  border-bottom: 1px solid var(--admin-border);
+  background: var(--admin-surface-row);
+  padding: 13px 14px;
+}
+
+.admin-command-grid .email-outbox-grid article:nth-child(3n) {
+  border-right: 0;
+}
+
+.admin-command-grid .email-outbox-grid article:nth-last-child(-n+3) {
+  border-bottom: 0;
+}
+
+.admin-command-grid .email-outbox-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.admin-command-grid .email-outbox-heading strong {
+  font-size: 10px;
+}
+
+.admin-command-grid .email-outbox-heading b {
+  color: var(--admin-text-primary);
+  font-size: 15px;
+}
+
+.admin-command-grid .email-outbox-grid progress {
+  width: 100%;
+  height: 4px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 99px;
+  background: var(--admin-border);
+}
+
+.admin-command-grid .email-outbox-grid progress::-webkit-progress-bar {
+  background: var(--admin-border);
+}
+
+.admin-command-grid .email-outbox-grid progress::-webkit-progress-value {
+  border-radius: 99px;
+  background: var(--admin-info);
+}
+
+.admin-command-grid .email-outbox-grid .is-attention progress::-webkit-progress-value {
+  background: var(--admin-critical);
+}
+
+.admin-command-grid .email-outbox-grid small {
+  color: var(--admin-text-muted);
+  font-size: 8px;
+}
+
+.admin-command-grid .email-privacy-panel .admin-panel-content {
+  padding: 0;
+}
+
+.admin-command-grid .email-privacy-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.admin-command-grid .email-privacy-grid > span {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 3px 9px;
+  min-height: 90px;
+  align-content: center;
+  border-right: 1px solid var(--admin-border);
+  padding: 14px;
+}
+
+.admin-command-grid .email-privacy-grid > span:last-child {
+  border-right: 0;
+}
+
+.admin-command-grid .email-privacy-grid .material-symbols-rounded {
+  grid-row: 1 / span 2;
+  color: var(--admin-info);
+  font-size: 21px;
+}
+
+.admin-command-grid .email-privacy-grid strong {
+  font-size: 10px;
+}
+
+.admin-command-grid .email-privacy-grid small {
+  color: var(--admin-text-secondary);
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+@media (max-width: 1050px) {
+  .admin-command-grid .email-primary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .admin-command-grid .email-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
+  }
+
+  .admin-command-grid .email-metric-grid .admin-metric-card {
+    scroll-snap-align: start;
+  }
+
+  .admin-command-grid .email-proof-grid,
+  .admin-command-grid .email-privacy-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-command-grid .email-privacy-grid > span:nth-child(2) {
+    border-right: 0;
+  }
+
+  .admin-command-grid .email-privacy-grid > span:nth-child(-n+2) {
+    border-bottom: 1px solid var(--admin-border);
+  }
+}
+
+@media (max-width: 390px) {
+  .admin-command-grid .email-metric-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-command-grid .email-hero-actions {
+    grid-auto-flow: row;
+    justify-content: stretch;
+  }
+
+  .admin-command-grid .email-hero-actions .admin-button {
+    width: 100%;
+  }
+
+  .admin-command-grid .email-proof-grid,
+  .admin-command-grid .email-outbox-grid,
+  .admin-command-grid .email-privacy-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-command-grid .email-proof-grid article {
+    min-height: 0;
+  }
+
+  .admin-command-grid .email-outbox-grid article,
+  .admin-command-grid .email-outbox-grid article:nth-child(3n),
+  .admin-command-grid .email-outbox-grid article:nth-last-child(-n+3) {
+    border-right: 0;
+    border-bottom: 1px solid var(--admin-border);
+  }
+
+  .admin-command-grid .email-outbox-grid article:last-child {
+    border-bottom: 0;
+  }
+
+  .admin-command-grid .email-privacy-grid > span,
+  .admin-command-grid .email-privacy-grid > span:nth-child(2),
+  .admin-command-grid .email-privacy-grid > span:nth-child(-n+2) {
+    min-height: 76px;
+    border-right: 0;
+    border-bottom: 1px solid var(--admin-border);
+  }
+
+  .admin-command-grid .email-privacy-grid > span:last-child {
+    border-bottom: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-command-grid .email-proof-grid article {
+    transition: none;
+  }
+
+  .admin-command-grid .email-proof-grid article:hover {
+    transform: none;
+  }
+}

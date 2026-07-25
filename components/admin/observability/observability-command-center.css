@@ -1,0 +1,1247 @@
+.admin-command-grid .observability-module {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-command-grid .observability-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  min-height: 214px;
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--admin-violet) 44%, var(--admin-border));
+  background:
+    radial-gradient(circle at 82% 34%, color-mix(in srgb, var(--admin-cobalt) 24%, transparent), transparent 28%),
+    radial-gradient(circle at 60% 100%, color-mix(in srgb, var(--admin-violet) 14%, transparent), transparent 35%),
+    var(--admin-surface-panel);
+}
+
+.admin-command-grid .observability-hero::before {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--admin-border) 38%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--admin-border) 38%, transparent) 1px, transparent 1px);
+  background-size: 38px 38px;
+  content: "";
+  mask-image: linear-gradient(90deg, transparent 25%, rgb(0 0 0 / 55%));
+  pointer-events: none;
+}
+
+.admin-command-grid .observability-hero-copy {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  align-content: center;
+  gap: 10px;
+  max-width: 780px;
+}
+
+.admin-command-grid .observability-principles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.admin-command-grid .observability-principles > span {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid color-mix(in srgb, var(--admin-info) 30%, var(--admin-border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--admin-info-soft) 62%, var(--admin-surface-elevated));
+  color: var(--admin-text-secondary);
+  padding: 5px 10px;
+  font-size: 10px;
+  font-weight: 680;
+}
+
+.admin-command-grid .observability-principles i {
+  color: var(--admin-info);
+  font-size: 15px;
+  font-style: normal;
+}
+
+.admin-command-grid .observability-hero-orbit {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 180px;
+  height: 180px;
+  place-self: center;
+  place-items: center;
+}
+
+.admin-command-grid .observability-orbit-ring {
+  position: absolute;
+  border: 1px solid color-mix(in srgb, var(--admin-cobalt) 52%, transparent);
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 26px color-mix(in srgb, var(--admin-cobalt) 9%, transparent),
+    0 0 20px color-mix(in srgb, var(--admin-violet) 8%, transparent);
+}
+
+.admin-command-grid .observability-orbit-ring.is-outer {
+  width: 166px;
+  height: 166px;
+  animation: observability-orbit-spin 18s linear infinite;
+}
+
+.admin-command-grid .observability-orbit-ring.is-outer::before,
+.admin-command-grid .observability-orbit-ring.is-inner::before {
+  position: absolute;
+  top: 50%;
+  left: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--admin-info);
+  box-shadow: 0 0 18px var(--admin-info);
+  content: "";
+}
+
+.admin-command-grid .observability-orbit-ring.is-inner {
+  width: 112px;
+  height: 112px;
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--admin-violet) 58%, transparent);
+  animation: observability-orbit-spin 12s linear infinite reverse;
+}
+
+.admin-command-grid .observability-orbit-ring.is-inner::before {
+  top: 10px;
+  left: 84px;
+  background: var(--admin-violet);
+  box-shadow: 0 0 18px var(--admin-violet);
+}
+
+.admin-command-grid .observability-orbit-core {
+  display: grid;
+  width: 66px;
+  height: 66px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--admin-info) 58%, var(--admin-border));
+  border-radius: 20px;
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--admin-cobalt) 24%, var(--admin-surface-elevated)), var(--admin-surface-elevated));
+  box-shadow:
+    0 0 0 8px color-mix(in srgb, var(--admin-cobalt) 5%, transparent),
+    0 16px 45px color-mix(in srgb, var(--admin-cobalt) 25%, transparent);
+  color: var(--admin-text-primary);
+  font-size: 32px;
+}
+
+.admin-command-grid .observability-orbit-node {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--admin-healthy);
+  box-shadow: 0 0 13px var(--admin-healthy);
+  animation: observability-node-pulse 2.6s ease-in-out infinite;
+}
+
+.admin-command-grid .observability-orbit-node.is-one {
+  top: 11px;
+  right: 44px;
+}
+
+.admin-command-grid .observability-orbit-node.is-two {
+  right: 7px;
+  bottom: 47px;
+  animation-delay: -0.8s;
+}
+
+.admin-command-grid .observability-orbit-node.is-three {
+  bottom: 17px;
+  left: 35px;
+  animation-delay: -1.5s;
+}
+
+.admin-command-grid .observability-view-switcher {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  background: var(--admin-surface-panel);
+  box-shadow: var(--admin-shadow-panel);
+  padding: 6px;
+}
+
+.admin-command-grid .observability-view-switcher > button {
+  position: relative;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 10px;
+  min-height: 62px;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--admin-text-secondary);
+  padding: 9px 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.admin-command-grid .observability-view-switcher > button::after {
+  position: absolute;
+  inset: auto 12px 0;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--admin-cobalt), var(--admin-violet));
+  content: "";
+  opacity: 0;
+  transform: scaleX(0.4);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.admin-command-grid .observability-view-switcher > button:hover {
+  border-color: var(--admin-border);
+  background: var(--admin-surface-hover);
+  transform: translateY(-1px);
+}
+
+.admin-command-grid .observability-view-switcher > button.is-active {
+  border-color: color-mix(in srgb, var(--admin-cobalt) 42%, var(--admin-border));
+  background: linear-gradient(135deg, var(--admin-cobalt-soft), var(--admin-violet-soft));
+  color: var(--admin-text-primary);
+}
+
+.admin-command-grid .observability-view-switcher > button.is-active::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.admin-command-grid .observability-view-switcher .material-symbols-rounded {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid var(--admin-border-strong);
+  border-radius: 10px;
+  background: var(--admin-surface-elevated);
+  color: var(--admin-info);
+  font-size: 21px;
+}
+
+.admin-command-grid .observability-view-switcher button > span:last-child {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.admin-command-grid .observability-view-switcher strong {
+  font-size: 11px;
+}
+
+.admin-command-grid .observability-view-switcher small {
+  color: var(--admin-text-muted);
+  font-size: 9px;
+}
+
+.admin-command-grid .observability-tab-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-command-grid .observability-tab-panel[hidden] {
+  display: none;
+}
+
+.admin-command-grid .observability-disabled-state {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid color-mix(in srgb, var(--admin-violet) 34%, var(--admin-border));
+  border-radius: 11px;
+  background:
+    linear-gradient(100deg, var(--admin-violet-soft), transparent 44%),
+    var(--admin-surface-panel);
+  padding: 13px 15px;
+}
+
+.admin-command-grid .observability-disabled-state > .material-symbols-rounded {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--admin-violet-soft);
+  color: var(--admin-violet);
+  font-size: 22px;
+}
+
+.admin-command-grid .observability-disabled-state div {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-command-grid .observability-disabled-state strong {
+  font-size: 12px;
+}
+
+.admin-command-grid .observability-disabled-state p {
+  margin: 0;
+  color: var(--admin-text-secondary);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.admin-command-grid .observability-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--admin-border);
+  border-radius: 11px;
+  background: var(--admin-surface-panel);
+  box-shadow: var(--admin-shadow-panel);
+}
+
+.admin-command-grid .observability-metric-grid .admin-metric-card {
+  border: 0;
+  border-right: 1px solid var(--admin-border);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.admin-command-grid .observability-metric-grid .admin-metric-card:last-child {
+  border-right: 0;
+}
+
+.admin-command-grid .observability-aggregate-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.65fr);
+  gap: 12px;
+}
+
+.admin-command-grid .observability-tool-panel .admin-panel-content,
+.admin-command-grid .observability-outcome-panel .admin-panel-content,
+.admin-command-grid .observability-timeline-panel .admin-panel-content {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-command-grid .observability-sparse-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, var(--admin-degraded) 30%, var(--admin-border));
+  border-radius: 8px;
+  background: var(--admin-degraded-soft);
+  color: var(--admin-text-secondary);
+  padding: 8px 10px;
+  font-size: 9px;
+}
+
+.admin-command-grid .observability-sparse-note .material-symbols-rounded {
+  color: var(--admin-degraded);
+  font-size: 17px;
+}
+
+.admin-command-grid .observability-sparse-note strong {
+  color: var(--admin-text-primary);
+}
+
+.admin-command-grid .observability-bar-list {
+  display: grid;
+}
+
+.admin-command-grid .observability-bar-row {
+  display: grid;
+  grid-template-columns: 28px minmax(112px, 0.8fr) minmax(150px, 1.4fr) 54px;
+  gap: 10px;
+  align-items: center;
+  min-height: 46px;
+  border-bottom: 1px solid var(--admin-border);
+  padding: 7px 3px;
+}
+
+.admin-command-grid .observability-bar-row:last-child {
+  border-bottom: 0;
+}
+
+.admin-command-grid .observability-bar-rank {
+  color: var(--admin-text-muted);
+  font-family: var(--font-mono), "JetBrains Mono", monospace;
+  font-size: 8px;
+}
+
+.admin-command-grid .observability-bar-label {
+  overflow: hidden;
+  color: var(--admin-text-primary);
+  font-size: 10px;
+  font-weight: 680;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-command-grid .observability-bar-track {
+  position: relative;
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--admin-surface-elevated);
+  box-shadow: inset 0 0 0 1px var(--admin-border);
+}
+
+.admin-command-grid .observability-bar-track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--admin-cobalt), var(--admin-violet));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--admin-cobalt) 32%, transparent);
+  transition: width 320ms ease;
+}
+
+.admin-command-grid .observability-bar-row > strong {
+  color: var(--admin-text-secondary);
+  font-family: var(--font-mono), "JetBrains Mono", monospace;
+  font-size: 10px;
+  text-align: right;
+}
+
+.admin-command-grid .observability-outcome-visual {
+  display: grid;
+  gap: 18px;
+  justify-items: center;
+  padding: 4px 0;
+}
+
+.admin-command-grid .observability-donut {
+  display: grid;
+  width: 148px;
+  height: 148px;
+  place-items: center;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at center, var(--admin-surface-panel) 0 57%, transparent 58%),
+    conic-gradient(
+      var(--admin-healthy) 0 var(--observability-success, 0deg),
+      var(--admin-violet) var(--observability-success, 0deg) 360deg
+    );
+  box-shadow:
+    inset 0 0 0 1px var(--admin-border),
+    0 0 28px color-mix(in srgb, var(--admin-violet) 13%, transparent);
+}
+
+.admin-command-grid .observability-donut > span {
+  display: grid;
+  justify-items: center;
+}
+
+.admin-command-grid .observability-donut strong {
+  font-family: var(--font-brand), var(--font-inter), sans-serif;
+  font-size: 26px;
+  letter-spacing: -0.04em;
+}
+
+.admin-command-grid .observability-donut small {
+  color: var(--admin-text-muted);
+  font-size: 8px;
+  font-weight: 720;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-command-grid .observability-outcome-list {
+  display: grid;
+  width: 100%;
+}
+
+.admin-command-grid .observability-outcome-list > div {
+  display: flex;
+  min-height: 32px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.admin-command-grid .observability-outcome-list > div:last-child {
+  border-bottom: 0;
+}
+
+.admin-command-grid .observability-outcome-list span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--admin-text-secondary);
+  font-size: 9px;
+}
+
+.admin-command-grid .observability-outcome-list i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--admin-text-muted);
+}
+
+.admin-command-grid .observability-outcome-list i.is-healthy {
+  background: var(--admin-healthy);
+}
+
+.admin-command-grid .observability-outcome-list i.is-degraded {
+  background: var(--admin-degraded);
+}
+
+.admin-command-grid .observability-outcome-list i.is-critical {
+  background: var(--admin-critical);
+}
+
+.admin-command-grid .observability-outcome-list i.is-info {
+  background: var(--admin-info);
+}
+
+.admin-command-grid .observability-outcome-list strong {
+  color: var(--admin-text-primary);
+  font-family: var(--font-mono), "JetBrains Mono", monospace;
+  font-size: 9px;
+}
+
+.admin-command-grid .observability-context-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-command-grid .observability-context-grid .admin-panel-content {
+  display: grid;
+  gap: 13px;
+}
+
+.admin-command-grid .observability-fact-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  margin: 0;
+}
+
+.admin-command-grid .observability-fact-list > div {
+  display: grid;
+  gap: 4px;
+  border-bottom: 1px solid var(--admin-border);
+  padding: 9px 0;
+}
+
+.admin-command-grid .observability-fact-list > div:nth-child(odd) {
+  border-right: 1px solid var(--admin-border);
+  padding-right: 12px;
+}
+
+.admin-command-grid .observability-fact-list > div:nth-child(even) {
+  padding-left: 12px;
+}
+
+.admin-command-grid .observability-fact-list dt {
+  color: var(--admin-text-muted);
+  font-size: 8px;
+  font-weight: 720;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.admin-command-grid .observability-fact-list dd {
+  margin: 0;
+  color: var(--admin-text-primary);
+  font-size: 9px;
+  font-weight: 670;
+}
+
+.admin-command-grid .observability-limitation-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-command-grid .observability-limitation-list li {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  min-height: 38px;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  background: var(--admin-surface-elevated);
+  color: var(--admin-text-secondary);
+  padding: 7px 9px;
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.admin-command-grid .observability-limitation-list .material-symbols-rounded {
+  color: var(--admin-healthy);
+  font-size: 17px;
+}
+
+.admin-command-grid .observability-diagnostic-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.34fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.admin-command-grid .observability-diagnostic-controls {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.admin-command-grid .observability-case-panel {
+  border-color: color-mix(in srgb, var(--admin-cobalt) 42%, var(--admin-border));
+}
+
+.admin-command-grid .observability-case-form {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-command-grid .observability-case-form > label {
+  color: var(--admin-text-primary);
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.admin-command-grid .observability-case-form > div {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-command-grid .observability-case-form input,
+.admin-command-grid .observability-case-form select {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  padding: 0 11px;
+  font-family: var(--font-mono), "JetBrains Mono", monospace;
+  font-size: 16px;
+}
+
+.admin-command-grid .observability-case-picker {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 4px;
+}
+
+.admin-command-grid .observability-case-picker label {
+  color: var(--admin-text-primary);
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.admin-command-grid .observability-case-form .admin-button {
+  width: 100%;
+  min-height: 48px;
+}
+
+.admin-command-grid .observability-case-form small {
+  color: var(--admin-text-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.admin-command-grid .observability-step-up-form {
+  display: grid;
+  gap: 9px;
+  margin-top: 12px;
+  border-top: 1px solid var(--admin-border);
+  padding-top: 12px;
+}
+
+.admin-command-grid .observability-step-up-form > div {
+  display: grid;
+  gap: 3px;
+}
+
+.admin-command-grid .observability-step-up-form strong,
+.admin-command-grid .observability-step-up-form small,
+.admin-command-grid .observability-step-up-form p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.admin-command-grid .observability-step-up-form small,
+.admin-command-grid .observability-step-up-form p {
+  color: var(--admin-text-muted);
+}
+
+.admin-command-grid .observability-step-up-form input {
+  min-height: 48px;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  padding: 0 11px;
+  font-size: 16px;
+}
+
+.admin-command-grid .observability-step-up-form input:focus-visible,
+.admin-command-grid .observability-case-form input:focus-visible,
+.admin-command-grid .observability-case-form select:focus-visible {
+  border-color: var(--admin-cobalt);
+  outline: 3px solid color-mix(in srgb, var(--admin-cobalt) 24%, transparent);
+  outline-offset: 2px;
+}
+
+.admin-command-grid .observability-gate-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-command-grid .observability-gate-list li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 9px;
+  min-height: 52px;
+  align-items: start;
+}
+
+.admin-command-grid .observability-gate-list li:not(:last-child)::after {
+  position: absolute;
+  top: 28px;
+  bottom: -2px;
+  left: 14px;
+  width: 1px;
+  background: var(--admin-border-strong);
+  content: "";
+}
+
+.admin-command-grid .observability-gate-list li.is-ready:not(:last-child)::after {
+  background: color-mix(in srgb, var(--admin-healthy) 60%, var(--admin-border));
+}
+
+.admin-command-grid .observability-gate-list .material-symbols-rounded {
+  z-index: 1;
+  display: grid;
+  width: 29px;
+  height: 29px;
+  place-items: center;
+  border: 1px solid var(--admin-border-strong);
+  border-radius: 50%;
+  background: var(--admin-surface-elevated);
+  color: var(--admin-text-muted);
+  font-size: 15px;
+}
+
+.admin-command-grid .observability-gate-list li.is-ready .material-symbols-rounded {
+  border-color: color-mix(in srgb, var(--admin-healthy) 48%, var(--admin-border));
+  background: var(--admin-healthy-soft);
+  color: var(--admin-healthy);
+}
+
+.admin-command-grid .observability-gate-list li > span:last-child {
+  display: grid;
+  gap: 3px;
+  padding-top: 3px;
+}
+
+.admin-command-grid .observability-gate-list strong {
+  font-size: 12px;
+}
+
+.admin-command-grid .observability-gate-list small {
+  overflow-wrap: anywhere;
+  color: var(--admin-text-muted);
+  font-size: 11px;
+}
+
+.admin-command-grid .observability-timeline-panel {
+  min-width: 0;
+  border-color: color-mix(in srgb, var(--admin-violet) 30%, var(--admin-border));
+}
+
+.admin-command-grid .observability-timeline-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-command-grid .observability-timeline-toolbar select {
+  min-height: 44px;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  padding: 0 28px 0 9px;
+  font-size: 12px;
+}
+
+.admin-command-grid .observability-timeline-toolbar .admin-button {
+  min-height: 44px;
+}
+
+.admin-command-grid .observability-access-note {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+  border: 1px solid var(--admin-border);
+  border-radius: 9px;
+  background: var(--admin-surface-elevated);
+  padding: 9px 10px;
+}
+
+.admin-command-grid .observability-access-note > .material-symbols-rounded {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--admin-critical-soft);
+  color: var(--admin-critical);
+  font-size: 17px;
+}
+
+.admin-command-grid .observability-access-note > span:last-child {
+  display: grid;
+  gap: 3px;
+  color: var(--admin-text-secondary);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.admin-command-grid .observability-access-note strong {
+  color: var(--admin-text-primary);
+  font-size: 12px;
+}
+
+.admin-command-grid .observability-access-note.is-warning,
+.admin-command-grid .observability-access-note.is-step-up-required,
+.admin-command-grid .observability-access-note.is-step-up-expired,
+.admin-command-grid .observability-access-note.is-grant-required {
+  border-color: color-mix(in srgb, var(--admin-degraded) 36%, var(--admin-border));
+  background: var(--admin-degraded-soft);
+}
+
+.admin-command-grid .observability-access-note.is-warning > .material-symbols-rounded,
+.admin-command-grid .observability-access-note.is-step-up-required > .material-symbols-rounded,
+.admin-command-grid .observability-access-note.is-step-up-expired > .material-symbols-rounded,
+.admin-command-grid .observability-access-note.is-grant-required > .material-symbols-rounded {
+  background: color-mix(in srgb, var(--admin-degraded) 12%, var(--admin-surface-elevated));
+  color: var(--admin-degraded);
+}
+
+.admin-command-grid .observability-access-note.is-disabled {
+  border-color: color-mix(in srgb, var(--admin-violet) 36%, var(--admin-border));
+  background: var(--admin-violet-soft);
+}
+
+.admin-command-grid .observability-access-note.is-disabled > .material-symbols-rounded {
+  background: color-mix(in srgb, var(--admin-violet) 12%, var(--admin-surface-elevated));
+  color: var(--admin-violet);
+}
+
+.admin-command-grid .observability-timeline {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-command-grid .observability-timeline > li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 10px;
+  padding-bottom: 12px;
+}
+
+.admin-command-grid .observability-timeline > li:not(:last-child)::after {
+  position: absolute;
+  top: 34px;
+  bottom: -1px;
+  left: 17px;
+  width: 1px;
+  background: linear-gradient(var(--admin-border-strong), var(--admin-border));
+  content: "";
+}
+
+.admin-command-grid .observability-timeline-marker {
+  z-index: 1;
+  display: grid;
+  width: 35px;
+  height: 35px;
+  place-items: center;
+  border: 1px solid var(--admin-border-strong);
+  border-radius: 11px;
+  background: var(--admin-surface-elevated);
+  color: var(--admin-text-muted);
+}
+
+.admin-command-grid .observability-timeline-marker.is-healthy {
+  border-color: color-mix(in srgb, var(--admin-healthy) 48%, var(--admin-border));
+  background: var(--admin-healthy-soft);
+  color: var(--admin-healthy);
+}
+
+.admin-command-grid .observability-timeline-marker.is-degraded {
+  border-color: color-mix(in srgb, var(--admin-degraded) 48%, var(--admin-border));
+  background: var(--admin-degraded-soft);
+  color: var(--admin-degraded);
+}
+
+.admin-command-grid .observability-timeline-marker.is-critical {
+  border-color: color-mix(in srgb, var(--admin-critical) 48%, var(--admin-border));
+  background: var(--admin-critical-soft);
+  color: var(--admin-critical);
+}
+
+.admin-command-grid .observability-timeline-marker .material-symbols-rounded {
+  font-size: 18px;
+}
+
+.admin-command-grid .observability-timeline article {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  background: var(--admin-surface-row);
+  transition: border-color 150ms ease, background-color 150ms ease, transform 150ms ease;
+}
+
+.admin-command-grid .observability-timeline article:hover {
+  border-color: var(--admin-border-strong);
+  background: var(--admin-surface-hover);
+  transform: translateY(-1px);
+}
+
+.admin-command-grid .observability-timeline article > header {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--admin-border);
+  padding: 9px 11px;
+}
+
+.admin-command-grid .observability-timeline article > header > span:first-child {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.admin-command-grid .observability-timeline article > header strong {
+  font-size: 13px;
+}
+
+.admin-command-grid .observability-timeline article > header small {
+  color: var(--admin-text-muted);
+  font-size: 11px;
+}
+
+.admin-command-grid .observability-timeline dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+}
+
+.admin-command-grid .observability-timeline dl > div {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  border-right: 1px solid var(--admin-border);
+  border-bottom: 1px solid var(--admin-border);
+  padding: 9px 11px;
+}
+
+.admin-command-grid .observability-timeline dl > div:nth-child(3n) {
+  border-right: 0;
+}
+
+.admin-command-grid .observability-timeline dl > div:nth-last-child(-n + 3) {
+  border-bottom: 0;
+}
+
+.admin-command-grid .observability-timeline dt {
+  color: var(--admin-text-muted);
+  font-size: 10px;
+  font-weight: 740;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.admin-command-grid .observability-timeline dd {
+  overflow: hidden;
+  margin: 0;
+  color: var(--admin-text-secondary);
+  font-size: 11px;
+  font-weight: 640;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-command-grid .observability-timeline time {
+  font: inherit;
+}
+
+.admin-command-grid .observability-filter-empty {
+  margin: 0;
+  border: 1px dashed var(--admin-border-strong);
+  border-radius: 9px;
+  color: var(--admin-text-secondary);
+  padding: 18px;
+  font-size: 11px;
+  text-align: center;
+}
+
+.admin-command-grid .observability-timeline-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--admin-border);
+  padding-top: 12px;
+}
+
+.admin-command-grid .observability-timeline-footer > span {
+  color: var(--admin-text-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+@keyframes observability-orbit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes observability-node-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+@media (max-width: 1120px) {
+  .admin-command-grid .observability-aggregate-grid,
+  .admin-command-grid .observability-diagnostic-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-command-grid .observability-diagnostic-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .admin-command-grid .observability-hero {
+    grid-template-columns: minmax(0, 1fr) 140px;
+  }
+
+  .admin-command-grid .observability-hero-orbit {
+    width: 130px;
+    height: 130px;
+    transform: scale(0.76);
+  }
+
+  .admin-command-grid .observability-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-command-grid .observability-metric-grid .admin-metric-card:nth-child(2) {
+    border-right: 0;
+  }
+
+  .admin-command-grid .observability-metric-grid .admin-metric-card:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--admin-border);
+  }
+
+  .admin-command-grid .observability-context-grid,
+  .admin-command-grid .observability-diagnostic-controls {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-command-grid .observability-hero {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .admin-command-grid .observability-hero-orbit {
+    position: absolute;
+    top: -18px;
+    right: -22px;
+    opacity: 0.42;
+    pointer-events: none;
+  }
+
+  .admin-command-grid .observability-hero-copy {
+    padding-right: 18px;
+  }
+
+  .admin-command-grid .observability-principles {
+    display: grid;
+  }
+
+  .admin-command-grid .observability-principles > span {
+    width: fit-content;
+  }
+
+  .admin-command-grid .observability-view-switcher {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-command-grid .observability-view-switcher > button {
+    min-height: 56px;
+  }
+
+  .admin-command-grid .observability-disabled-state {
+    grid-template-columns: 38px minmax(0, 1fr);
+  }
+
+  .admin-command-grid .observability-disabled-state > .admin-status-badge {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .admin-command-grid .observability-bar-row {
+    grid-template-columns: 24px minmax(90px, 0.9fr) minmax(72px, 1fr) 44px;
+    gap: 7px;
+  }
+
+  .admin-command-grid .observability-fact-list {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-command-grid .observability-fact-list > div:nth-child(odd) {
+    border-right: 0;
+    padding-right: 0;
+  }
+
+  .admin-command-grid .observability-fact-list > div:nth-child(even) {
+    padding-left: 0;
+  }
+
+  .admin-command-grid .observability-timeline-toolbar {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .admin-command-grid .observability-timeline-toolbar label,
+  .admin-command-grid .observability-timeline-toolbar select,
+  .admin-command-grid .observability-timeline-toolbar .admin-button {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .admin-command-grid .observability-timeline > li {
+    grid-template-columns: 29px minmax(0, 1fr);
+    gap: 7px;
+  }
+
+  .admin-command-grid .observability-timeline > li:not(:last-child)::after {
+    top: 29px;
+    left: 14px;
+  }
+
+  .admin-command-grid .observability-timeline-marker {
+    width: 29px;
+    height: 29px;
+    border-radius: 9px;
+  }
+
+  .admin-command-grid .observability-timeline article > header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-command-grid .observability-timeline dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-command-grid .observability-timeline dl > div:nth-child(3n) {
+    border-right: 1px solid var(--admin-border);
+  }
+
+  .admin-command-grid .observability-timeline dl > div:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .admin-command-grid .observability-timeline dl > div:nth-last-child(-n + 3) {
+    border-bottom: 1px solid var(--admin-border);
+  }
+
+  .admin-command-grid .observability-timeline dl > div:nth-last-child(-n + 2) {
+    border-bottom: 0;
+  }
+
+  .admin-command-grid .observability-timeline-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-command-grid .observability-timeline-footer .admin-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 390px) {
+  .admin-command-grid .observability-metric-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-command-grid .observability-metric-grid .admin-metric-card {
+    border-right: 0;
+    border-bottom: 1px solid var(--admin-border);
+  }
+
+  .admin-command-grid .observability-metric-grid .admin-metric-card:last-child {
+    border-bottom: 0;
+  }
+
+  .admin-command-grid .observability-bar-row {
+    grid-template-columns: 22px minmax(90px, 1fr) 46px;
+  }
+
+  .admin-command-grid .observability-bar-track {
+    display: none;
+  }
+
+  .admin-command-grid .observability-timeline-toolbar {
+    flex-direction: column;
+  }
+
+  .admin-command-grid .observability-timeline-toolbar label,
+  .admin-command-grid .observability-timeline-toolbar select,
+  .admin-command-grid .observability-timeline-toolbar .admin-button {
+    width: 100%;
+    min-height: 48px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-command-grid .observability-orbit-ring,
+  .admin-command-grid .observability-orbit-node {
+    animation: none;
+  }
+
+  .admin-command-grid .observability-view-switcher > button,
+  .admin-command-grid .observability-view-switcher > button::after,
+  .admin-command-grid .observability-bar-track i,
+  .admin-command-grid .observability-timeline article {
+    transition: none;
+  }
+
+  .admin-command-grid .observability-view-switcher > button:hover,
+  .admin-command-grid .observability-timeline article:hover {
+    transform: none;
+  }
+}

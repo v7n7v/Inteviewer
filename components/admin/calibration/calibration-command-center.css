@@ -1,0 +1,404 @@
+.admin-command-grid .calibration-module {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-command-grid .calibration-hero {
+  border-bottom-color: color-mix(in srgb, var(--admin-healthy) 42%, var(--admin-border));
+}
+
+.admin-command-grid .calibration-hero-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.admin-command-grid .calibration-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--admin-border);
+  border-radius: 11px;
+  background: var(--admin-surface-panel);
+  box-shadow: var(--admin-shadow-panel);
+}
+
+.admin-command-grid .calibration-metric-grid .admin-metric-card {
+  border: 0;
+  border-right: 1px solid var(--admin-border);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.admin-command-grid .calibration-metric-grid .admin-metric-card:last-child {
+  border-right: 0;
+}
+
+.admin-command-grid .calibration-primary-grid,
+.admin-command-grid .calibration-secondary-grid,
+.admin-command-grid .calibration-lower-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(290px, 0.65fr);
+  gap: 12px;
+}
+
+.admin-command-grid .calibration-secondary-grid,
+.admin-command-grid .calibration-lower-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-command-grid .calibration-segment-group {
+  display: grid;
+  gap: 11px;
+}
+
+.admin-command-grid .calibration-segment-group > header {
+  display: grid;
+  gap: 3px;
+}
+
+.admin-command-grid .calibration-segment-group > header strong {
+  font-size: 10px;
+}
+
+.admin-command-grid .calibration-segment-group > header small {
+  color: var(--admin-text-secondary);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.admin-command-grid .calibration-segment-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.admin-command-grid .calibration-segment-list article {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  background: var(--admin-surface-row);
+  padding: 12px;
+  transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.admin-command-grid .calibration-segment-list article:hover {
+  border-color: var(--admin-border-strong);
+  background: var(--admin-surface-hover);
+  transform: translateY(-2px);
+}
+
+.admin-command-grid .calibration-segment-list article.is-suppressed {
+  background: var(--admin-surface-elevated);
+}
+
+.admin-command-grid .calibration-segment-title {
+  display: flex;
+  min-height: 21px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 7px;
+  color: var(--admin-text-secondary);
+  font-size: 9px;
+  font-weight: 720;
+}
+
+.admin-command-grid .calibration-segment-list article > strong {
+  font-size: 20px;
+  letter-spacing: -0.035em;
+}
+
+.admin-command-grid .calibration-segment-list article > small {
+  color: var(--admin-text-muted);
+  font-size: 8px;
+}
+
+.admin-command-grid .calibration-segment-list progress {
+  width: 100%;
+  height: 4px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 99px;
+  background: var(--admin-border);
+}
+
+.admin-command-grid .calibration-segment-list progress::-webkit-progress-bar {
+  background: var(--admin-border);
+}
+
+.admin-command-grid .calibration-segment-list progress::-webkit-progress-value {
+  border-radius: 99px;
+  background: var(--admin-healthy);
+}
+
+.admin-command-grid .calibration-segment-list .is-suppressed progress::-webkit-progress-value {
+  background: var(--admin-text-muted);
+}
+
+.admin-command-grid .calibration-segment-list dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin: 2px 0 0;
+}
+
+.admin-command-grid .calibration-segment-list dl > div {
+  display: grid;
+  gap: 3px;
+}
+
+.admin-command-grid .calibration-segment-list dt {
+  color: var(--admin-text-muted);
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.admin-command-grid .calibration-segment-list dd {
+  margin: 0;
+  color: var(--admin-text-secondary);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.admin-command-grid .calibration-gate-panel .admin-panel-content {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.admin-command-grid .calibration-gate-status {
+  display: flex;
+  gap: 11px;
+  align-items: center;
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  background: var(--admin-violet-soft);
+  padding: 13px;
+}
+
+.admin-command-grid .calibration-gate-status > .material-symbols-rounded {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--admin-surface-panel);
+  color: var(--admin-violet);
+  font-size: 21px;
+}
+
+.admin-command-grid .calibration-gate-status > div {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-command-grid .calibration-gate-status strong {
+  font-size: 11px;
+}
+
+.admin-command-grid .calibration-gate-status small {
+  color: var(--admin-text-secondary);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.admin-command-grid .calibration-missing-list {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-command-grid .calibration-missing-list li {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  color: var(--admin-text-secondary);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.admin-command-grid .calibration-missing-list .material-symbols-rounded {
+  color: var(--admin-degraded);
+  font-size: 15px;
+}
+
+.admin-command-grid .calibration-gate-clear {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  border-radius: 8px;
+  background: var(--admin-healthy-soft);
+  color: var(--admin-healthy);
+  padding: 11px;
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.admin-command-grid .calibration-gate-clear .material-symbols-rounded {
+  font-size: 16px;
+}
+
+.admin-command-grid .calibration-exclusion-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.admin-command-grid .calibration-exclusion-list > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  background: var(--admin-surface-row);
+  padding: 10px;
+}
+
+.admin-command-grid .calibration-exclusion-list strong {
+  color: var(--admin-text-secondary);
+  font-size: 9px;
+  font-weight: 650;
+  text-transform: capitalize;
+}
+
+.admin-command-grid .calibration-exclusion-list b {
+  color: var(--admin-text-primary);
+  font-size: 12px;
+}
+
+.admin-command-grid .calibration-empty {
+  margin: 0;
+  color: var(--admin-text-muted);
+  font-size: 10px;
+}
+
+.admin-command-grid .calibration-safety-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.admin-command-grid .calibration-safety-grid > span {
+  display: grid;
+  grid-template-columns: 25px minmax(0, 1fr);
+  gap: 3px 8px;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  background: var(--admin-surface-row);
+  padding: 10px;
+}
+
+.admin-command-grid .calibration-safety-grid .material-symbols-rounded {
+  grid-row: 1 / span 2;
+  color: var(--admin-info);
+  font-size: 18px;
+}
+
+.admin-command-grid .calibration-safety-grid strong {
+  font-size: 9px;
+}
+
+.admin-command-grid .calibration-safety-grid small {
+  color: var(--admin-text-secondary);
+  font-size: 8px;
+  line-height: 1.4;
+}
+
+.admin-command-grid .calibration-limitations {
+  display: flex;
+  gap: 11px;
+  border: 1px solid var(--admin-border);
+  border-left: 3px solid var(--admin-info);
+  border-radius: 9px;
+  background: var(--admin-info-soft);
+  padding: 13px 15px;
+}
+
+.admin-command-grid .calibration-limitations > .material-symbols-rounded {
+  color: var(--admin-info);
+  font-size: 20px;
+}
+
+.admin-command-grid .calibration-limitations > div {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-command-grid .calibration-limitations strong {
+  font-size: 10px;
+}
+
+.admin-command-grid .calibration-limitations ul {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding-left: 16px;
+  color: var(--admin-text-secondary);
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+@media (max-width: 1100px) {
+  .admin-command-grid .calibration-hero-actions {
+    flex-wrap: wrap;
+  }
+
+  .admin-command-grid .calibration-primary-grid,
+  .admin-command-grid .calibration-secondary-grid,
+  .admin-command-grid .calibration-lower-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .admin-command-grid .calibration-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
+  }
+
+  .admin-command-grid .calibration-metric-grid .admin-metric-card {
+    scroll-snap-align: start;
+  }
+}
+
+@media (max-width: 390px) {
+  .admin-command-grid .calibration-metric-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-command-grid .calibration-hero-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-command-grid .calibration-hero-actions .admin-button {
+    width: 100%;
+  }
+
+  .admin-command-grid .calibration-segment-list,
+  .admin-command-grid .calibration-exclusion-list,
+  .admin-command-grid .calibration-safety-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-command-grid .calibration-segment-list article {
+    transition: none;
+  }
+
+  .admin-command-grid .calibration-segment-list article:hover {
+    transform: none;
+  }
+}
