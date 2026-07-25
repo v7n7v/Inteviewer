@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
 
     if (guard.user.tier === 'free') {
       return NextResponse.json(
-        { error: 'LinkedIn Optimizer is a Pro feature.', upgrade: true },
+        { error: 'LinkedIn Optimizer is a Standard feature.', upgrade: true },
         { status: 403 }
       );
     }

@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
 
     if (guard.user.tier === 'free') {
       return NextResponse.json(
-        { error: 'Cover Letter Studio is a Pro feature.', upgrade: true },
+        { error: 'Cover Letter Studio is a Standard feature.', upgrade: true },
         { status: 403 }
       );
     }
