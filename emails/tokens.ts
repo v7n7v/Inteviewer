@@ -1,0 +1,36 @@
+export const emailTokens = {
+  color: {
+    brand: '#2E3FFF',
+    brandSoft: '#EEF0FF',
+    brandSecondary: '#5A6BFF',
+    ink: '#111827',
+    text: '#374151',
+    muted: '#6B7280',
+    subtle: '#9CA3AF',
+    border: '#E5E7EB',
+    surface: '#FFFFFF',
+    canvas: '#F6F7FB',
+    success: '#047857',
+    successSoft: '#ECFDF5',
+    warning: '#B45309',
+    warningSoft: '#FFFBEB',
+    danger: '#B91C1C',
+    dangerSoft: '#FEF2F2',
+    info: '#1D4ED8',
+    infoSoft: '#EFF6FF',
+  },
+  fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+  width: 600,
+  radius: 14,
+} as const;
+
+export const emailBrand = {
+  name: 'TalentConsulting.io',
+  origin: 'https://talentconsulting.io',
+  logoUrl: 'https://talentconsulting.io/brand/talentconsulting-logo-email.png',
+  markUrl: 'https://talentconsulting.io/brand/talentconsulting-mark-192.png',
+  tacoMarkUrl: 'https://talentconsulting.io/brand/talentconsulting-mark-192.png',
+  settingsUrl: 'https://talentconsulting.io/suite/settings?tab=notifications',
+  supportUrl: 'https://talentconsulting.io/contact',
+  privacyUrl: 'https://talentconsulting.io/privacy',
+} as const;
