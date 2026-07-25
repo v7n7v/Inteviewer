@@ -136,7 +136,7 @@ export function generateRecommendations(profile: CareerProfile): Recommendation[
       icon: 'auto_stories',
       title: `No STAR Stories for "${profile.stories.coverageGaps[0]}"`,
       description: `You're weak on "${profile.stories.coverageGaps[0]}" in interviews but have no prepared stories for it. Build your story bank.`,
-      action: 'Create a story with Sona',
+      action: 'Create a story with Taco',
       actionPath: '/suite/agent',
       color: '#10b981',
       category: 'story',
@@ -165,7 +165,7 @@ export function generateRecommendations(profile: CareerProfile): Recommendation[
       priority: 'medium',
       icon: 'rate_review',
       title: 'Start Logging Interview Debriefs',
-      description: 'You have applications in progress but no debriefs. Logging each interview helps Sona identify your patterns.',
+      description: 'You have applications in progress but no debriefs. Logging each interview helps Taco identify your patterns.',
       action: 'Log your first debrief',
       actionPath: '/suite/interview-debrief',
       color: '#8b5cf6',
@@ -211,7 +211,7 @@ export function generateRecommendations(profile: CareerProfile): Recommendation[
 }
 
 /**
- * Generates a concise text summary for Sona to use in chat.
+ * Generates a concise text summary for Taco to use in chat.
  */
 export function generateProfileSummary(profile: CareerProfile): string {
   const lines: string[] = [];
