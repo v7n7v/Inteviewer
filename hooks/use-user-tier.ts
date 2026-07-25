@@ -2,22 +2,17 @@
 
 /**
  * useUserTier — Client-side hook for tier + usage awareness
- * Fetches from /api/usage on mount and exposes tier, usage, and helper methods.
- * Subscribes to Firestore subscription doc in real time so plan changes
- * from the admin panel reflect instantly without page refresh.
+ * Fetches server-authoritative billing data from /api/usage and refreshes it
+ * when the customer returns to the app or a local billing action completes.
  */
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { authFetch } from '@/lib/auth-fetch';
 import { useStore } from '@/lib/store';
-import { db } from '@/lib/firebase';
-import { doc, onSnapshot } from 'firebase/firestore';
 import type { UsageData } from '@/lib/usage-tracker';
+import { isDemoModeEnabled } from '@/lib/demo-mode';
 
 export type PlanTier = 'free' | 'pro' | 'studio' | 'god';
-
-const GOD_EMAILS = ['alula2006@gmail.com'];
-const MASTER_EMAILS = ['alula2006@gmail.com'];
 
 interface TierState {
   tier: PlanTier;
@@ -41,15 +36,25 @@ export function useUserTier(): TierState {
   const [caps, setCaps] = useState<Record<string, number> | null>(DEFAULT_CAPS);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const initialFetchDone = useRef(false);
+  const hasLoaded = useRef(false);
 
   const fetchUsage = useCallback(async () => {
+    if (isDemoModeEnabled()) {
+      setTier('studio');
+      setUsage(DEFAULT_USAGE);
+      setCaps(null);
+      setError(null);
+      setLoading(false);
+      hasLoaded.current = true;
+      return;
+    }
+
     if (!user) {
       setLoading(false);
       return;
     }
     try {
-      setLoading(true);
+      if (!hasLoaded.current) setLoading(true);
       const res = await authFetch('/api/usage');
       if (res.ok) {
         const data = await res.json();
@@ -58,7 +63,7 @@ export function useUserTier(): TierState {
         setUsage(data.usage || DEFAULT_USAGE);
         setCaps(serverTier === 'free' ? (data.caps || DEFAULT_CAPS) : null);
         setError(null);
-        initialFetchDone.current = true;
+        hasLoaded.current = true;
       }
     } catch (err: any) {
       setError(err.message);
@@ -71,46 +76,29 @@ export function useUserTier(): TierState {
     fetchUsage();
   }, [fetchUsage]);
 
-  // Real-time Firestore listener on subscription doc
-  // When admin changes a user's plan, this fires instantly
+  // Subscription documents are server-only by design. Revalidate through the
+  // authenticated API instead of opening a client Firestore watch that rules deny.
   useEffect(() => {
+    if (isDemoModeEnabled()) return;
     if (!user?.uid) return;
 
-    const email = user.email?.toLowerCase() || '';
+    const refreshUsage = () => {
+      void fetchUsage();
+    };
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') refreshUsage();
+    };
 
-    // God/master accounts have fixed tiers — no need to listen
-    if (GOD_EMAILS.includes(email) || MASTER_EMAILS.includes(email)) return;
+    window.addEventListener('focus', refreshUsage);
+    window.addEventListener('talent:subscription-updated', refreshUsage);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
 
-    const subRef = doc(db, 'users', user.uid, 'subscription', 'current');
-    const unsub = onSnapshot(subRef, (snap) => {
-      // Skip the first snapshot if we already loaded from /api/usage
-      // to avoid a flash. After that, always apply real-time updates.
-      if (!initialFetchDone.current) return;
-
-      if (!snap.exists()) {
-        setTier('free');
-        setCaps(DEFAULT_CAPS);
-        return;
-      }
-
-      const data = snap.data();
-      const status = data?.status;
-      const plan = data?.plan;
-
-      if (status === 'active' || status === 'trialing') {
-        const newTier: PlanTier = plan === 'studio' ? 'studio' : plan === 'pro' ? 'pro' : 'free';
-        setTier(newTier);
-        setCaps(newTier === 'free' ? DEFAULT_CAPS : null);
-      } else {
-        setTier('free');
-        setCaps(DEFAULT_CAPS);
-      }
-    }, (err) => {
-      console.warn('[useUserTier] Subscription listener error:', err.message);
-    });
-
-    return () => unsub();
-  }, [user?.uid, user?.email]);
+    return () => {
+      window.removeEventListener('focus', refreshUsage);
+      window.removeEventListener('talent:subscription-updated', refreshUsage);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
+  }, [fetchUsage, user?.uid]);
 
   // Auto-detect upgrade success from URL params and refetch
   useEffect(() => {

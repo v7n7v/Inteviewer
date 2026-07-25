@@ -5,7 +5,7 @@ import { getAdminDb } from '@/lib/firebase-admin';
 /**
  * POST /api/onboarding/seed-vault
  * Seeds the user's `vault` collection with their onboarding resume.
- * This is the collection Sona and all AI tools read from.
+ * This is the collection Taco and all AI tools read from.
  */
 export async function POST(req: NextRequest) {
   const guard = await guardApiRoute(req, { rateLimit: 5, rateLimitWindow: 60_000 });
@@ -21,11 +21,16 @@ export async function POST(req: NextRequest) {
     const db = getAdminDb();
     const now = new Date().toISOString();
 
-    // Save to the vault collection that Sona reads from
+    // Save to the vault collection that Taco reads from
     await db.collection('users').doc(uid).collection('vault').add({
       resume,
       parsed: resume,
       source: 'onboarding',
+      provenance: {
+        verified: true,
+        origin: 'onboarding_upload',
+        recordedAt: now,
+      },
       createdAt: now,
       updatedAt: now,
     });

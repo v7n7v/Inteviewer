@@ -48,7 +48,7 @@ const HELP_CONTENT: Record<string, ToolHelp> = {
     tips: [
       'Always test all 3 ATS systems — each has different rules.',
       'Toggle "Show Raw View" to see the recruiter\'s exact view.',
-      'A score above 90 means your resume will parse correctly everywhere.',
+      'A score above 90 is a strong result in this simulator, not a guarantee across every employer or ATS.',
     ],
   },
 
@@ -56,7 +56,7 @@ const HELP_CONTENT: Record<string, ToolHelp> = {
     title: 'Story Bank',
     subtitle: 'Your STAR stories for behavioral interviews',
     steps: [
-      { icon: 'chat', title: 'Chat with Sona', description: 'Tell Sona about your past achievements and work experiences. She automatically saves them as STAR stories.' },
+      { icon: 'chat', title: 'Chat with Taco', description: 'Tell Taco about your past achievements and work experiences. She automatically saves them as STAR stories.' },
       { icon: 'add', title: 'Add Stories Manually', description: 'Click "New Story" to write your own. Fill in Situation, Task, Action, and Result for each experience.' },
       { icon: 'psychology', title: 'Use Question Matcher', description: 'Paste a behavioral interview question (e.g. "Tell me about leading a team") and find which stories match.' },
       { icon: 'grid_view', title: 'Check Coverage Map', description: 'See which interview categories (leadership, conflict, etc.) you have stories for — and which are gaps.' },
@@ -64,7 +64,7 @@ const HELP_CONTENT: Record<string, ToolHelp> = {
     ],
     tips: [
       'Aim for 8–12 stories covering different categories.',
-      'Stories from Sona chats and fit analyses are auto-tagged.',
+      'Stories from Taco chats and fit analyses are auto-tagged.',
       'The "Question Matcher" also drafts a sample answer for you.',
     ],
   },
@@ -73,9 +73,9 @@ const HELP_CONTENT: Record<string, ToolHelp> = {
     title: 'Application Quality',
     subtitle: 'Track quality over quantity metrics',
     steps: [
-      { icon: 'target', title: 'Check Avg Fit Score', description: 'This is the average score from Sona\'s Fit Gate across all your applications. Higher = better targeting.' },
+      { icon: 'target', title: 'Check Avg Fit Score', description: 'This is the average score from Taco\'s Fit Gate across all your applications. Higher = better targeting.' },
       { icon: 'filter_alt', title: 'Read the Pipeline Funnel', description: 'See Applied → Interviewing → Offer → Rejected breakdown to understand your conversion rates.' },
-      { icon: 'tune', title: 'Tailored vs Generic Ratio', description: 'Shows how many applications used a Sona-tailored resume vs. a generic one. Tailored apps convert 3–5x better.' },
+      { icon: 'tune', title: 'Tailored vs Generic Ratio', description: 'Shows how many applications used a Taco-tailored resume vs. a generic one. Tailored apps convert 3–5x better.' },
       { icon: 'trending_up', title: 'Track Interview Yield', description: 'What percentage of your applications lead to interviews. Industry average is 10–15%.' },
       { icon: 'history', title: 'Review Recent Activity', description: 'See your latest applications with their current status at a glance.' },
     ],
@@ -102,16 +102,16 @@ const HELP_CONTENT: Record<string, ToolHelp> = {
   },
 
   vault: {
-    title: 'Study Vault',
-    subtitle: 'Your saved study materials and resources',
+    title: 'Skill Bridge Memory',
+    subtitle: 'Your saved prep materials and resources',
     steps: [
-      { icon: 'search', title: 'Search Your Vault', description: 'Use the search bar to find flashcards, notes, or any saved material by keyword.' },
+      { icon: 'search', title: 'Search Memory', description: 'Use the search bar to find flashcards, notes, or any saved material by keyword.' },
       { icon: 'filter_list', title: 'Filter by Category', description: 'Use the category filters to narrow down to specific topics like technical, behavioral, or system design.' },
-      { icon: 'bookmark', title: 'Save from Other Tools', description: 'Flashcards and study materials are auto-saved here when you generate them from the Flashcards tool.' },
+      { icon: 'bookmark', title: 'Save from Other Tools', description: 'Plans, proofs, flashcards, and interview notes are saved into Skill Bridge Memory.' },
     ],
     tips: [
-      'Review your vault before each interview.',
-      'Star important items to find them faster.',
+      'Review Memory before each interview.',
+      'Use filters to jump between plans, interview notes, and flashcards.',
       'Materials are organized by category automatically.',
     ],
   },
@@ -165,18 +165,18 @@ const HELP_CONTENT: Record<string, ToolHelp> = {
   },
 
   negotiate: {
-    title: 'Salary Negotiation Coach',
-    subtitle: 'Data-backed negotiation strategy',
+    title: 'Offer Coach',
+    subtitle: 'Offer negotiation now lives inside Applications',
     steps: [
-      { icon: 'edit_note', title: 'Enter Offer Details', description: 'Input your job title, company, base salary, equity, signing bonus, and any other comp components.' },
-      { icon: 'analytics', title: 'Get Market Comparison', description: 'See how your offer compares to market rates for your role, level, and location.' },
-      { icon: 'psychology', title: 'Receive a Strategy', description: 'Get a personalized negotiation script with specific ask amounts, leverage points, and timing advice.' },
-      { icon: 'content_copy', title: 'Use the Script', description: 'Copy the suggested talking points and email templates for your negotiation conversation.' },
+      { icon: 'work', title: 'Open Applications', description: 'Select the application that moved to offer stage.' },
+      { icon: 'payments', title: 'Capture Offer Details', description: 'Add base, total compensation, equity, bonus, deadline, and context in the application drawer.' },
+      { icon: 'psychology', title: 'Generate a Brief', description: 'Taco prepares the counter strategy, leverage points, scripts, and non-salary asks.' },
+      { icon: 'fact_check', title: 'Record the Decision', description: 'Track whether the counter was sent, accepted, or declined.' },
     ],
     tips: [
-      'Always negotiate — 85% of employers expect it.',
-      'Total comp matters more than base salary. Check equity and benefits.',
-      'The best time to negotiate is after the verbal offer, before signing.',
+      'Offer Coach appears when an application reaches Offer stage.',
+      'Total compensation matters more than base salary alone.',
+      'Taco drafts language, but you stay in control of every message.',
     ],
   },
 
@@ -203,7 +203,7 @@ const HELP_CONTENT: Record<string, ToolHelp> = {
       { icon: 'auto_awesome', title: 'Generate Cards', description: 'Enter a topic (e.g., "React hooks", "System design") and the AI creates targeted flashcards.' },
       { icon: 'upload', title: 'Use Your Resume', description: 'Upload your resume to generate cards specifically about your tech stack and experience.' },
       { icon: 'style', title: 'Study the Cards', description: 'Flip through cards one at a time. The front shows a question, the back shows the answer.' },
-      { icon: 'bookmark', title: 'Save to Vault', description: 'Save useful card sets to your Study Vault for quick review before interviews.' },
+      { icon: 'bookmark', title: 'Save to Memory', description: 'Save useful card sets to Skill Bridge Memory for quick review before interviews.' },
     ],
     tips: [
       'Generate cards for each company\'s tech stack before interviewing.',
@@ -251,7 +251,7 @@ const HELP_CONTENT: Record<string, ToolHelp> = {
       { icon: 'tune', title: 'Set Preferences', description: 'Configure your desired role, location, salary range, and work style (remote, hybrid, onsite).' },
       { icon: 'search', title: 'Search Jobs', description: 'Enter keywords or use your profile for AI-matched results. The AI ranks jobs by fit to your resume.' },
       { icon: 'bookmark', title: 'Save Interesting Jobs', description: 'Bookmark roles you like. Saved jobs appear in your weekly picks and feed into intelligence.' },
-      { icon: 'send', title: 'Apply Directly', description: 'Click "Apply" to open the company\'s application page. Use Sona\'s Fit Gate for tailored applications.' },
+      { icon: 'send', title: 'Apply Directly', description: 'Click "Apply" to open the company\'s application page. Use Taco\'s Fit Gate for tailored applications.' },
     ],
     tips: [
       'Update your preferences regularly as your search focus evolves.',
@@ -267,7 +267,7 @@ const HELP_CONTENT: Record<string, ToolHelp> = {
       { icon: 'upload', title: 'Upload or Build', description: 'Upload an existing resume (PDF), or build one from scratch using the structured editor.' },
       { icon: 'edit', title: 'Edit Sections', description: 'Update your experience, education, skills, and summary. The editor auto-formats everything.' },
       { icon: 'auto_awesome', title: 'Morph for a Job', description: 'Paste a JD and click "Morph" — the AI tailors your resume to match the job\'s requirements.' },
-      { icon: 'download', title: 'Export as PDF', description: 'Download your finished resume as a clean, ATS-compatible PDF.' },
+      { icon: 'download', title: 'Export as PDF', description: 'Download a selectable-text PDF, or use the linear Word companion for conservative parsing workflows.' },
     ],
     tips: [
       'Keep your master resume comprehensive — morph it per job.',
@@ -278,33 +278,33 @@ const HELP_CONTENT: Record<string, ToolHelp> = {
 
   'skill-bridge': {
     title: 'Skill Bridge',
-    subtitle: 'Map and close your skill gaps',
+    subtitle: 'Close gaps, prove skills, and prepare for interviews',
     steps: [
-      { icon: 'upload', title: 'Import Your Skills', description: 'Your skills are automatically extracted from your resume and job analyses. You can also add skills manually.' },
-      { icon: 'compare', title: 'Compare to Target Roles', description: 'See how your current skills stack up against the requirements of your target roles.' },
-      { icon: 'school', title: 'Get Learning Paths', description: 'For each skill gap, get curated resources, courses, and estimated time to proficiency.' },
-      { icon: 'trending_up', title: 'Track Progress', description: 'Mark skills as "learning" or "acquired" to track your bridge-building progress over time.' },
+      { icon: 'priority_high', title: 'Start With Today', description: 'Use the command strip to find review-due skills, proof-ready gaps, active bridges, and application-linked gaps.' },
+      { icon: 'route', title: 'Build The Bridge', description: 'Generate focused study plans from resume gaps, job descriptions, applications, or manual skill targets.' },
+      { icon: 'verified', title: 'Climb The Proof Ladder', description: 'Use quick checks, applied challenges, and Interview Studio drills to prove what you can explain honestly.' },
+      { icon: 'inventory_2', title: 'Review Memory', description: 'Use Skill Bridge Memory to revisit plans, proof summaries, interview notes, flashcards, and resume-linked prep.' },
     ],
     tips: [
-      'Focus on the top 3 gaps first — don\'t spread too thin.',
-      'Skills marked "In Demand" on Market Oracle should be prioritized.',
-      'Even partial skill acquisition (basics) is worth mentioning in interviews.',
+      'Verify fewer skills deeply instead of collecting shallow course completions.',
+      'Use applied challenges for skills you plan to mention on your resume or in interviews.',
+      'Ask Taco for coaching, but let Skill Bridge proof attempts decide readiness.',
     ],
   },
 
   network: {
-    title: 'Network Tracker',
-    subtitle: 'Track your professional networking activity',
+    title: 'Network CRM',
+    subtitle: 'Plan follow-ups and keep relationship context close',
     steps: [
-      { icon: 'person_add', title: 'Add Contacts', description: 'Log people you\'ve connected with — recruiters, hiring managers, referrals, and informational interview contacts.' },
-      { icon: 'event', title: 'Track Interactions', description: 'Log when you reached out, had a call, or got a referral. Track follow-up dates.' },
-      { icon: 'notifications', title: 'Get Follow-up Reminders', description: 'The tool nudges you when it\'s time to follow up with a contact.' },
-      { icon: 'insights', title: 'See Your Network Map', description: 'Visualize your network by company, industry, and connection strength.' },
+      { icon: 'priority_high', title: 'Start With Today', description: 'Use the command strip to find due follow-ups, dormant contacts, referrals, and contacts tied to active applications.' },
+      { icon: 'person_add', title: 'Add the Context', description: 'Save recruiters, hiring managers, referrals, and peers with company, role, contact info, notes, and an optional linked application.' },
+      { icon: 'add_comment', title: 'Log Each Touch', description: 'Record emails, calls, meetings, LinkedIn messages, referrals, and notes. Add the next follow-up date while the context is fresh.' },
+      { icon: 'auto_awesome', title: 'Ask Taco', description: 'Open Taco from the command strip, cards, or drawer to draft a message or decide the best next move. Nothing is sent automatically.' },
     ],
     tips: [
-      'Follow up within 48 hours of meeting someone.',
-      '80% of jobs are filled through networking — invest time here.',
-      'Quality over quantity: 10 strong connections > 100 LinkedIn adds.',
+      'A short note after every conversation is more useful than a perfect contact record.',
+      'Link contacts to applications when they can influence a specific opportunity.',
+      'Review the Needs Attention lane before sending new outreach.',
     ],
   },
 
@@ -325,49 +325,97 @@ const HELP_CONTENT: Record<string, ToolHelp> = {
   },
 
   gallery: {
-    title: 'Template Gallery',
-    subtitle: 'Browse and use resume templates',
+    title: 'Writing Toolkit',
+    subtitle: 'Polish, communicate, and research from one writing workbench',
     steps: [
-      { icon: 'grid_view', title: 'Browse Templates', description: 'Scroll through available resume templates organized by style and industry.' },
-      { icon: 'visibility', title: 'Preview a Template', description: 'Click any template to see a full preview with sample content.' },
-      { icon: 'download', title: 'Use a Template', description: 'Select a template to apply it to your resume in the Resume Builder.' },
+      { icon: 'auto_fix_high', title: 'Choose a Lane', description: 'Use Polish for editing, Communicate for emails, or Research for summaries and citations.' },
+      { icon: 'edit_note', title: 'Paste Context', description: 'Add your draft, notes, source information, or message goal into the editor.' },
+      { icon: 'task_alt', title: 'Review and Copy', description: 'Check the structured output, copy what you need, and move it into your resume or application workflow.' },
     ],
     tips: [
-      'Simpler templates parse better through ATS systems.',
-      'Use industry-appropriate templates — creative for design, clean for tech/finance.',
-      'Test your chosen template in ATS Preview before applying.',
+      'Use Email Composer for recruiter follow-ups, referrals, and thank-you notes.',
+      'Use AI Humanizer for deep trust checks. Use this toolkit for fast utility work.',
+      'Citations are a drafting aid. Cross-check important academic references before submission.',
     ],
   },
 
   agent: {
-    title: 'Sona — AI Career Agent',
+    title: 'Taco — AI Career Agent',
     subtitle: 'Your personal career strategist',
     steps: [
-      { icon: 'chat', title: 'Start a Conversation', description: 'Type anything career-related. Sona can help with resume advice, interview prep, job strategy, and more.' },
-      { icon: 'auto_awesome', title: 'Use Sona\'s Tools', description: 'Sona can run fit analyses, morph resumes, find jobs, generate cover letters — all from the chat.' },
-      { icon: 'auto_stories', title: 'Share Achievements', description: 'Tell Sona about your work wins. She automatically saves them as STAR stories for interview prep.' },
+      { icon: 'chat', title: 'Start a Conversation', description: 'Type anything career-related. Taco can help with resume advice, interview prep, job strategy, and more.' },
+      { icon: 'auto_awesome', title: 'Use Taco\'s Tools', description: 'Taco can run fit analyses, morph resumes, find jobs, generate cover letters — all from the chat.' },
+      { icon: 'auto_stories', title: 'Share Achievements', description: 'Tell Taco about your work wins. She automatically saves them as STAR stories for interview prep.' },
       { icon: 'psychology', title: 'Get Strategic Advice', description: 'Ask about negotiation tactics, career pivots, networking strategies, or what to focus on next.' },
     ],
     tips: [
       'Be specific: "Help me prep for a Google PM interview" > "Help me with interviews"',
-      'Sona remembers your resume and preferences across conversations.',
-      'Ask Sona to run a "fit analysis" on any job description.',
+      'Taco remembers your resume and preferences across conversations.',
+      'Ask Taco to run a "fit analysis" on any job description.',
     ],
   },
 
   applications: {
-    title: 'Applications Tracker',
-    subtitle: 'Track every job you\'ve applied to',
+    title: 'Applications Command Center',
+    subtitle: 'Track applications, follow-ups, interviews, and offers',
     steps: [
-      { icon: 'add', title: 'Add Applications', description: 'Log each job you apply to with company, role, date, and source. Or let Sona auto-log when you use Fit Gate.' },
-      { icon: 'edit', title: 'Update Status', description: 'As you progress, update each application: Applied → Interviewing → Offer or Rejected.' },
-      { icon: 'filter_list', title: 'Filter and Search', description: 'Filter by status, date range, or company. Search by keyword to find specific applications.' },
-      { icon: 'insights', title: 'Track Metrics', description: 'See response rates, time-to-response, and which sources yield the best results.' },
+      { icon: 'bolt', title: 'Start with Today', description: 'Use the command strip to find follow-ups, interview prep, drafts, and offers that need review.' },
+      { icon: 'edit', title: 'Update Status', description: 'Move each application from draft to applied, interviews, offer, accepted, rejected, or withdrawn.' },
+      { icon: 'payments', title: 'Review Offers', description: 'When an application reaches Offer stage, capture compensation details and generate a negotiation brief.' },
+      { icon: 'psychology', title: 'Use Taco', description: 'Ask Taco for follow-ups, interview prep, offer language, or the next best action.' },
     ],
     tips: [
-      'Log every application — even ones through Sona — for accurate analytics.',
-      'Update statuses promptly so your intelligence dashboard stays current.',
-      'Use notes to track key details about each company for interview prep.',
+      'Log outcomes promptly so Career Intelligence stays accurate.',
+      'Use notes for recruiter names, deadlines, and follow-up context.',
+      'Offer Coach only appears when it is relevant, keeping the page clean.',
+    ],
+  },
+
+  feedback: {
+    title: 'Feedback',
+    subtitle: 'Help shape the future of TalentConsulting.io',
+    steps: [
+      { icon: 'sentiment_satisfied', title: 'Rate Your Mood', description: 'Select how you\'re feeling about the platform. This helps us understand overall satisfaction trends.' },
+      { icon: 'category', title: 'Choose a Category', description: 'Pick the area your feedback relates to — feature request, bug report, UX improvement, or general.' },
+      { icon: 'edit_note', title: 'Write Your Feedback', description: 'Describe your experience, suggestion, or issue in detail. The more specific, the more actionable.' },
+      { icon: 'send', title: 'Submit', description: 'Your feedback is sent directly to the product team. Every submission is reviewed.' },
+    ],
+    tips: [
+      'Be specific — "The morph button on mobile is too small" > "Mobile is hard to use."',
+      'Feature requests with use-cases get prioritized faster.',
+      'You can submit as often as you like — no limits.',
+    ],
+  },
+
+  'interview-sim': {
+    title: 'Interview Studio',
+    subtitle: 'Practice, whiteboard, and debrief with Taco',
+    steps: [
+      { icon: 'tune', title: 'Set Context', description: 'Choose an application, resume, pasted JD, persona, interview type, intensity, and duration.' },
+      { icon: 'graphic_eq', title: 'Practice With Taco', description: 'Use Quick Drill, Full Mock, Live Interview with Taco, Avatar Live, or the structured technical whiteboard.' },
+      { icon: 'auto_stories', title: 'Use Your Memory', description: 'Taco surfaces relevant Story Bank examples, JD keywords, and session goals while you practice.' },
+      { icon: 'analytics', title: 'Review Debrief', description: 'Completed sessions save a transcript, score, rubric, delivery telemetry, weak spots, and next drills.' },
+    ],
+    tips: [
+      'Use headphones for voice sessions to reduce echo.',
+      'For behavioral answers, include situation, task, action, and result.',
+      'Use the whiteboard to narrate assumptions, trade-offs, and validation.',
+    ],
+  },
+
+  'agent-queue': {
+    title: 'Agent Queue',
+    subtitle: 'Taco-prepared application packets for review',
+    steps: [
+      { icon: 'auto_awesome', title: 'Taco Scouts', description: 'Taco uses your job preferences to find roles, score fit, and build a short review queue.' },
+      { icon: 'inventory_2', title: 'Review Packets', description: 'Each packet can include fit signals, risk checks, a tailored resume, a cover letter draft, and a next action.' },
+      { icon: 'psychology', title: 'Teach Taco', description: 'Use feedback tags like "More like this" or "Salary too low" so future runs become sharper.' },
+      { icon: 'open_in_new', title: 'Stay In Control', description: 'Approved packets open the posting and add a tracker entry. Taco does not submit applications or send external emails for you.' },
+    ],
+    tips: [
+      'Turn on the Taco digest only if you want structured review emails.',
+      'Items may expire after 7 days, so review high-fit packets first.',
+      'Ask Taco to explain a packet, improve a cover letter, or prioritize the queue.',
     ],
   },
 };
@@ -406,25 +454,25 @@ export default function PageHelp({ toolId }: { toolId: string }) {
               onClick={() => setOpen(false)}
             />
 
-            {/* Drawer */}
+            {/* Panel */}
             <motion.div
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-              className="fixed top-0 right-0 h-full w-full max-w-md z-[1000] overflow-y-auto"
+              className="fixed top-4 right-4 bottom-4 w-full max-w-md z-[1000] flex flex-col overflow-hidden rounded-2xl"
               style={{
                 background: 'var(--bg-primary)',
-                borderLeft: '1px solid var(--border-subtle)',
-                boxShadow: '-8px 0 30px rgba(0,0,0,0.15)',
+                border: '1px solid var(--border-subtle)',
+                boxShadow: '0 8px 40px rgba(0,0,0,0.25)',
               }}
             >
               {/* Header */}
-              <div className="sticky top-0 z-10 px-6 py-5 flex items-center justify-between"
+              <div className="flex-shrink-0 px-6 py-5 flex items-center justify-between"
                 style={{ background: 'var(--bg-primary)', borderBottom: '1px solid var(--border-subtle)' }}>
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                    <span className="material-symbols-rounded text-lg text-emerald-500">menu_book</span>
+                  <div className="icon-shell-neutral w-9 h-9 rounded-xl border flex items-center justify-center">
+                    <span className="material-symbols-rounded text-lg">menu_book</span>
                   </div>
                   <div>
                     <h2 className="text-base font-bold text-[var(--text-primary)]">How to Use</h2>
@@ -440,7 +488,7 @@ export default function PageHelp({ toolId }: { toolId: string }) {
               </div>
 
               {/* Content */}
-              <div className="px-6 py-6 space-y-6">
+              <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
                 {/* Intro */}
                 <div className="rounded-xl p-4" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}>
                   <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{help.subtitle}</p>
@@ -449,7 +497,7 @@ export default function PageHelp({ toolId }: { toolId: string }) {
                 {/* Steps */}
                 <div className="space-y-3">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] flex items-center gap-2">
-                    <span className="material-symbols-rounded text-sm text-emerald-500">format_list_numbered</span>
+                    <span className="material-symbols-rounded icon-neutral text-sm">format_list_numbered</span>
                     Step by Step
                   </h3>
                   {help.steps.map((step, i) => (
@@ -461,8 +509,8 @@ export default function PageHelp({ toolId }: { toolId: string }) {
                       className="flex gap-3 p-3.5 rounded-xl"
                       style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}
                     >
-                      <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <span className="text-xs font-black text-emerald-500">{i + 1}</span>
+                      <div className="icon-shell-neutral w-8 h-8 rounded-lg border flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-xs font-black text-[var(--text-secondary)]">{i + 1}</span>
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5 mb-1">
@@ -479,13 +527,13 @@ export default function PageHelp({ toolId }: { toolId: string }) {
                 {help.tips && help.tips.length > 0 && (
                   <div className="space-y-2.5">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] flex items-center gap-2">
-                      <span className="material-symbols-rounded text-sm text-amber-500">tips_and_updates</span>
+                      <span className="material-symbols-rounded icon-neutral text-sm">tips_and_updates</span>
                       Pro Tips
                     </h3>
                     <div className="rounded-xl p-4 space-y-2.5" style={{ background: 'rgba(245,158,11,0.04)', border: '1px solid rgba(245,158,11,0.12)' }}>
                       {help.tips.map((tip, i) => (
                         <div key={i} className="flex items-start gap-2">
-                          <span className="material-symbols-rounded text-[14px] text-amber-500 mt-0.5 flex-shrink-0">lightbulb</span>
+                          <span className="material-symbols-rounded icon-neutral text-[14px] mt-0.5 flex-shrink-0">lightbulb</span>
                           <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{tip}</p>
                         </div>
                       ))}

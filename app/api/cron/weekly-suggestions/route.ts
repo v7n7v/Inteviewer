@@ -1,211 +1,632 @@
 /**
- * Weekly Job Suggestions Cron — /api/cron/weekly-suggestions
- * 
- * Triggered by Google Cloud Scheduler (or external cron) every Monday at 9am.
- * Self-contained: fetches jobs, scores with AI, sends digest emails.
- * 
- * Setup: 
- *   1. Set CRON_SECRET env var in Firebase/Cloud Run
- *   2. Create Cloud Scheduler job:
- *      URL:  https://talentconsulting.io/api/cron/weekly-suggestions
- *      Method: POST
- *      Headers: Authorization: Bearer <CRON_SECRET>
- *      Schedule: 0 9 * * 1 (every Monday at 9am)
+ * Career Picks by Taco cron
+ *
+ * Cloud Scheduler calls this route on weekdays. Delivery cadence is resolved
+ * per account (weekly for most plans, weekdays for eligible Max accounts).
+ * This route only discovers and recommends roles. It never applies, submits,
+ * contacts an employer, or prepares application materials.
  */
-
+import { randomUUID, timingSafeEqual } from 'node:crypto';
+import type { DocumentReference, Firestore } from 'firebase-admin/firestore';
 import { NextRequest, NextResponse } from 'next/server';
-import { getAdminDb } from '@/lib/firebase-admin';
-import { searchJobsAdzuna, calculateFitScore, type RealJob } from '@/lib/job-search-api';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { Resend } from 'resend';
+import { getAdminAuth, getAdminDb } from '@/lib/firebase-admin';
 import { monitor } from '@/lib/monitor';
+import { sendRenderedEmailResult } from '@/lib/email';
+import { renderEmail } from '@/lib/email/render';
+import { buildEmailUnsubscribeUrl } from '@/lib/email/unsubscribe';
+import { logUserCommunication } from '@/lib/communications';
+import {
+  getJobAlertEmailConsent,
+  sanitizeJobDeliveryError,
+} from '@/lib/job-notification-delivery';
+import { getJobNotificationDeliveryReadinessForStore } from '@/lib/job-notification-readiness';
+import {
+  getJobAlertSendLimit,
+  normalizeJobAlertsFrequency,
+  shouldSendJobAlertDigest,
+  withSonaPicksUtm,
+} from '@/lib/job-alerts';
+import { getResendDeliveryTags, isJobEmailDeliveryLockActive } from '@/lib/job-notification-receipt-contract';
+import {
+  acceptJobEmailDeliveryAttempt,
+  buildJobEmailIdempotencyKey,
+  createJobEmailDeliveryAttempt,
+  failJobEmailDeliveryAttempt,
+  planJobEmailDeliveryClaim,
+} from '@/lib/job-notification-receipts';
+import {
+  dedupeTalentJobs,
+  finalizeTalentRecommendations,
+  getTrustedTalentJobApplyUrl,
+  isJobSupplyOperational,
+  loadRecommendationLedger,
+  recordRecommendationImpressions,
+  searchTalentJobSupply,
+  suppressLedgerMatches,
+  type TalentJob,
+} from '@/lib/job-recommendation-platform';
+import { scoreAllGhostRisks } from '@/lib/ghost-filter';
+import {
+  extractResumeSkills,
+  getLatestVerifiedResumeForUser as getLatestResumeForUser,
+} from '@/lib/server-resume';
+import { getUserTier, type PlanTier } from '@/lib/pricing-tiers';
+import { selectDailyCronBatch } from '@/lib/assistant/cron-user-batch';
 
+export const runtime = 'nodejs';
 export const maxDuration = 300;
 
-export async function POST(req: NextRequest) {
-  const authHeader = req.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
+const DEFAULT_USER_LIMIT = 10;
+const MAX_USER_LIMIT = 25;
+const MAX_SEARCH_COMBINATIONS = 4;
+const DELIVERY_LOCK_MS = 15 * 60 * 1000;
+const PLATFORM_ORIGIN = 'https://talentconsulting.io';
 
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+type CronResult = {
+  status: string;
+  jobCount?: number;
+};
+
+type PreferenceRecord = Record<string, unknown>;
+
+function cronJson(body: unknown, status = 200) {
+  return NextResponse.json(body, {
+    status,
+    headers: {
+      'Cache-Control': 'private, no-store, max-age=0',
+      Pragma: 'no-cache',
+    },
+  });
+}
+
+function authorizedCronRequest(request: NextRequest) {
+  const expected = process.env.CRON_SECRET?.trim() || '';
+  if (!expected) return false;
+  const authorization = request.headers.get('authorization') || '';
+  const supplied = authorization.startsWith('Bearer ') ? authorization.slice(7) : '';
+  const expectedBytes = Buffer.from(expected);
+  const suppliedBytes = Buffer.from(supplied);
+  return expectedBytes.length === suppliedBytes.length
+    && timingSafeEqual(expectedBytes, suppliedBytes);
+}
+
+function boundedUserLimit(request: NextRequest) {
+  const requested = Number(request.nextUrl.searchParams.get('limit') || DEFAULT_USER_LIMIT);
+  return Number.isFinite(requested)
+    ? Math.min(MAX_USER_LIMIT, Math.max(1, Math.floor(requested)))
+    : DEFAULT_USER_LIMIT;
+}
+
+function boundedStrings(value: unknown, limit: number) {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(
+    value
+      .filter((item): item is string => typeof item === 'string')
+      .map(item => item.replace(/\s+/g, ' ').trim().slice(0, 120))
+      .filter(Boolean),
+  )].slice(0, limit);
+}
+
+function boundedSalary(value: unknown) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.min(500_000, Math.max(0, Math.round(parsed))) : 0;
+}
+
+function platformUrl(path: string, campaignPart: string) {
+  return withSonaPicksUtm(new URL(path, PLATFORM_ORIGIN).toString(), campaignPart);
+}
+
+function mostRecentCadenceTimestamp(...values: unknown[]) {
+  const valid = values
+    .filter((value): value is string => typeof value === 'string')
+    .map(value => ({ value, timestamp: Date.parse(value) }))
+    .filter(item => Number.isFinite(item.timestamp))
+    .sort((left, right) => right.timestamp - left.timestamp);
+  return valid[0]?.value;
+}
+
+function deliveryCadence(
+  latestData: PreferenceRecord,
+  tier: PlanTier,
+  now: Date,
+) {
+  const consent = getJobAlertEmailConsent(latestData);
+  const frequency = normalizeJobAlertsFrequency(latestData.jobAlertsFrequency, tier);
+  return shouldSendJobAlertDigest({
+    enabled: consent.granted,
+    emailNotifications: consent.granted,
+    frequency,
+    tier,
+    lastSentAt: mostRecentCadenceTimestamp(
+      latestData.jobAlertsLastAcceptedAt,
+      latestData.jobAlertsLastAttemptAt,
+    ),
+    now,
+  });
+}
+
+async function discoverRecommendations(
+  db: Firestore,
+  uid: string,
+  preferences: PreferenceRecord,
+  tier: PlanTier,
+) {
+  const targetRoles = boundedStrings(preferences.targetRoles, 3);
+  if (targetRoles.length === 0) {
+    return { status: 'skip:no-target-role' as const, jobs: [] as TalentJob[] };
+  }
+  const preferredCities = boundedStrings(preferences.preferredCities, 2);
+  const locations = preferredCities.length > 0 ? preferredCities : [''];
+  const remotePref = typeof preferences.remotePref === 'string'
+    && ['remote', 'hybrid', 'onsite', 'any'].includes(preferences.remotePref)
+    ? preferences.remotePref
+    : 'any';
+  const salaryMin = boundedSalary(preferences.salaryMin);
+
+  let userSkills: string[] = [];
+  try {
+    const latestResume = await getLatestResumeForUser(db, uid);
+    userSkills = extractResumeSkills(latestResume.resume).slice(0, 80);
+  } catch {
+    userSkills = boundedStrings(preferences.manualSkills, 80);
+  }
+
+  const ledger = await loadRecommendationLedger(db, uid);
+  const searches = targetRoles
+    .flatMap(role => locations.map(location => ({ role, location })))
+    .slice(0, MAX_SEARCH_COMBINATIONS);
+  const settled = await Promise.allSettled(searches.map(({ role, location }) => {
+    return searchTalentJobSupply({
+      query: role,
+      location,
+      country: 'us',
+      page: 1,
+      resultsPerPage: 10,
+      sortBy: 'relevance',
+      salaryMin: salaryMin || undefined,
+      remote: remotePref === 'remote' || undefined,
+    });
+  }));
+
+  const discovered: TalentJob[] = [];
+  let unavailableSearches = 0;
+  for (const result of settled) {
+    if (result.status === 'rejected' || !isJobSupplyOperational(result.value.providerStatus)) {
+      unavailableSearches += 1;
+      continue;
+    }
+    discovered.push(...suppressLedgerMatches(result.value.jobs, ledger));
+  }
+  if (discovered.length === 0) {
+    return {
+      status: unavailableSearches === settled.length ? 'error:job-supply-unavailable' as const : 'skip:no-matches' as const,
+      jobs: [] as TalentJob[],
+    };
+  }
+
+  const deduped = dedupeTalentJobs(discovered).slice(0, 40);
+  const ghostAssessments = scoreAllGhostRisks(deduped.map(job => ({
+    title: job.title,
+    company: job.company,
+    postedDate: job.postedDate,
+    description: job.description,
+    salary: job.salary,
+    url: job.url,
+    location: job.location,
+  })));
+  const ranked = finalizeTalentRecommendations(
+    deduped.map((job, index) => ({ ...job, ghostRisk: ghostAssessments[index] })),
+    {
+      userSkills,
+      targetRoles,
+      preferredCities,
+      remotePref,
+      salaryMin,
+      ledger,
+    },
+  );
+
+  const trusted = ranked
+    .flatMap(job => {
+      const trustedApplyUrl = getTrustedTalentJobApplyUrl(job);
+      return trustedApplyUrl
+        ? [{ ...job, url: trustedApplyUrl, outboundLinkVerified: true }]
+        : [];
+    })
+    .slice(0, getJobAlertSendLimit(tier));
+
+  if (trusted.length === 0) {
+    return { status: 'skip:no-trusted-matches' as const, jobs: [] as TalentJob[] };
+  }
+  await recordRecommendationImpressions(db, uid, trusted);
+  return { status: 'ready' as const, jobs: trusted };
+}
+
+async function recordDeliveryEvent(
+  db: Firestore,
+  uid: string,
+  input: {
+    status: string;
+    attemptId: string;
+    jobCount: number;
+    topScore: number;
+    error?: string | null;
+  },
+) {
+  await db.collection('users').doc(uid).collection('jobAlertEvents').add({
+    type: 'digest_delivery',
+    channel: 'email',
+    source: 'weekly_suggestions_cron',
+    status: input.status,
+    attemptId: input.attemptId,
+    jobCount: input.jobCount,
+    topScore: input.topScore,
+    error: input.error || null,
+    createdAt: new Date().toISOString(),
+  }).catch(() => {});
+}
+
+async function processUser(
+  db: Firestore,
+  userRef: DocumentReference,
+  now: Date,
+): Promise<CronResult> {
+  const uid = userRef.id;
+  const prefsRef = db.collection('users').doc(uid).collection('settings').doc('jobPreferences');
+  const initialSnapshot = await prefsRef.get();
+  if (!initialSnapshot.exists) return { status: 'skip:no-preferences' };
+  const initialData = initialSnapshot.data() || {};
+  if (!getJobAlertEmailConsent(initialData).granted) return { status: 'skip:no-consent' };
+
+  const authUser = await getAdminAuth().getUser(uid).catch(() => null);
+  const verifiedAuthEmail = authUser?.emailVerified ? authUser.email : null;
+  if (!verifiedAuthEmail) return { status: 'skip:no-verified-email' };
+  const tier = await getUserTier(uid, verifiedAuthEmail);
+  if (!deliveryCadence(initialData, tier, now).send) return { status: 'skip:cadence' };
+
+  const recommendationResult = await discoverRecommendations(db, uid, initialData, tier);
+  if (recommendationResult.status !== 'ready') return { status: recommendationResult.status };
+  const jobs = recommendationResult.jobs;
+  const topScore = Math.max(...jobs.map(job => job.fitScore?.overall || 0));
+  const rendered = await renderEmail('product.career_picks', {
+    recipientName: authUser?.displayName?.split(/\s+/)[0] || undefined,
+    summary: `${jobs.length} verified role${jobs.length === 1 ? '' : 's'} matched your current profile. The strongest Talent Fit score is ${topScore}%.`,
+    items: jobs.map(job => {
+      const score = job.fitScore?.overall || 0;
+      const reason = job.recommendationReason || 'Review the evidence and decide whether this role belongs in your pipeline.';
+      return `${job.title} at ${job.company} — ${job.location} — ${score}% Talent Fit — ${reason}`.slice(0, 300);
+    }),
+    actionUrl: platformUrl('/suite/job-search', 'open_picks'),
+    preferenceUrl: platformUrl('/suite/settings', 'preferences'),
+    unsubscribeUrl: buildEmailUnsubscribeUrl(uid, 'jobDigest'),
+  });
+
+  const dayKey = now.toISOString().slice(0, 10);
+  const idempotencyKey = buildJobEmailIdempotencyKey('sona-picks', [uid, dayKey]);
+  const claimRef = db.collection('users').doc(uid).collection('notificationClaims').doc(idempotencyKey);
+  const proposedAttemptId = randomUUID();
+  const requestedAt = now.toISOString();
+  const claim = await db.runTransaction(async transaction => {
+    const [latestSnapshot, claimSnapshot] = await Promise.all([
+      transaction.get(prefsRef),
+      transaction.get(claimRef),
+    ]);
+    const latestData = latestSnapshot.data() || {};
+    if (!getJobAlertEmailConsent(latestData).granted) {
+      return { outcome: 'consent_revoked' as const };
+    }
+    const cadence = shouldSendJobAlertDigest({
+      enabled: latestData.jobAlertsEnabled === true,
+      emailNotifications: latestData.emailNotifications === true,
+      frequency: normalizeJobAlertsFrequency(latestData.jobAlertsFrequency, tier),
+      tier,
+      lastSentAt: mostRecentCadenceTimestamp(
+        latestData.jobAlertsLastAcceptedAt,
+        latestData.jobAlertsLastAttemptAt,
+      ),
+      now,
+    });
+    if (!cadence.send) return { outcome: 'cadence_blocked' as const };
+    if (isJobEmailDeliveryLockActive(latestData.jobAlertsDeliveryLockUntil, now.getTime())) {
+      return { outcome: 'delivery_in_progress' as const };
+    }
+
+    const existingClaim = claimSnapshot.data() || {};
+    const existingAttemptId = typeof existingClaim.attemptId === 'string' ? existingClaim.attemptId : '';
+    const existingAttemptSnapshot = existingAttemptId
+      ? await transaction.get(db.collection('emailDeliveryAttempts').doc(existingAttemptId))
+      : null;
+    const deliveryPlan = planJobEmailDeliveryClaim({
+      baseIdempotencyKey: idempotencyKey,
+      proposedAttemptId,
+      existingAttemptId,
+      existingClaimStatus: existingClaim.status,
+      existingAttemptStatus: existingAttemptSnapshot?.data()?.status,
+      existingProviderIdempotencyKey: existingClaim.providerIdempotencyKey,
+      existingRetryCount: existingClaim.retryCount,
+      lockUntil: existingClaim.lockUntil,
+      now: now.getTime(),
+    });
+    if (deliveryPlan.outcome !== 'acquired') return deliveryPlan;
+
+    const lockUntil = new Date(now.getTime() + DELIVERY_LOCK_MS).toISOString();
+    transaction.set(claimRef, {
+      status: 'sending',
+      idempotencyKey,
+      providerIdempotencyKey: deliveryPlan.providerIdempotencyKey,
+      attemptId: deliveryPlan.attemptId,
+      retryCount: deliveryPlan.retryCount,
+      lockUntil,
+      createdAt: existingClaim.createdAt || requestedAt,
+      updatedAt: requestedAt,
+    }, { merge: true });
+    transaction.set(prefsRef, {
+      jobAlertsDeliveryStatus: 'sending',
+      jobAlertsDeliveryAttemptId: deliveryPlan.attemptId,
+      jobAlertsDeliveryUpdatedAt: requestedAt,
+      jobAlertsDeliveryError: null,
+      jobAlertsDeliveryLockUntil: lockUntil,
+      jobAlertsLastAttemptAt: requestedAt,
+    }, { merge: true });
+    return deliveryPlan;
+  });
+
+  if (claim.outcome === 'duplicate') return { status: 'duplicate', jobCount: jobs.length };
+  if (claim.outcome !== 'acquired') return { status: `skip:${claim.outcome}` };
+  const attemptId = claim.attemptId;
+  await recordDeliveryEvent(db, uid, {
+    status: 'sending',
+    attemptId,
+    jobCount: jobs.length,
+    topScore,
+  });
+
+  try {
+    await createJobEmailDeliveryAttempt(db, {
+      uid,
+      attemptId,
+      purpose: 'job_alert',
+      source: 'weekly_cron',
+      createdAt: requestedAt,
+      recipientEmail: verifiedAuthEmail,
+    });
+  } catch (error) {
+    const failedAt = new Date().toISOString();
+    const safeError = sanitizeJobDeliveryError(error);
+    await db.runTransaction(async transaction => {
+      const [latestPreferences, latestClaim] = await Promise.all([
+        transaction.get(prefsRef),
+        transaction.get(claimRef),
+      ]);
+      if (latestPreferences.data()?.jobAlertsDeliveryAttemptId === attemptId) {
+        transaction.set(prefsRef, {
+          jobAlertsDeliveryStatus: 'failed',
+          jobAlertsDeliveryUpdatedAt: failedAt,
+          jobAlertsDeliveryError: safeError,
+          jobAlertsDeliveryLockUntil: null,
+          jobAlertsLastAttemptAt: null,
+        }, { merge: true });
+      }
+      if (latestClaim.data()?.attemptId === attemptId) {
+        transaction.set(claimRef, {
+          status: 'failed',
+          error: safeError,
+          lockUntil: null,
+          updatedAt: failedAt,
+        }, { merge: true });
+      }
+    }).catch(() => {});
+    await recordDeliveryEvent(db, uid, {
+      status: 'failed',
+      attemptId,
+      jobCount: jobs.length,
+      topScore,
+      error: safeError,
+    });
+    await logUserCommunication({
+      uid,
+      email: verifiedAuthEmail,
+      subject: rendered.subject,
+      bodyPreview: `Career Picks by Taco delivery failed before provider submission for ${jobs.length} recommendations.`,
+      template: 'sona_picks_weekly_digest',
+      sentBy: 'cron/weekly-suggestions',
+      status: 'failed',
+      metadata: { attemptId, jobCount: jobs.length, stage: 'receipt_registration' },
+    }).catch(() => {});
+    return { status: 'error:receipt-tracking-unavailable' };
+  }
+
+  try {
+    const delivery = await sendRenderedEmailResult(verifiedAuthEmail, rendered, {
+      idempotencyKey: `sona-picks-${claim.providerIdempotencyKey.replace(/^sona-picks-/, '')}`,
+      additionalTags: getResendDeliveryTags(attemptId, 'job_alert'),
+    });
+    if (delivery.error) throw new Error(delivery.error);
+    if (!delivery.ok) throw new Error('Provider rejected the Career Picks email');
+
+    const acceptedAt = new Date().toISOString();
+    let acceptedStatus = 'accepted';
+    try {
+      const accepted = await acceptJobEmailDeliveryAttempt(db, {
+        attemptId,
+        providerMessageId: delivery.id || null,
+        acceptedAt,
+      });
+      acceptedStatus = accepted.status;
+    } catch (error) {
+      console.error('[cron/weekly-suggestions] Provider accepted delivery but receipt state could not be persisted:', error);
+    }
+    await db.runTransaction(async transaction => {
+      const [latestPreferences, latestClaim] = await Promise.all([
+        transaction.get(prefsRef),
+        transaction.get(claimRef),
+      ]);
+      if (latestPreferences.data()?.jobAlertsDeliveryAttemptId === attemptId) {
+        transaction.set(prefsRef, {
+          jobAlertsDeliveryStatus: acceptedStatus,
+          jobAlertsDeliveryUpdatedAt: acceptedAt,
+          jobAlertsDeliveryError: null,
+          jobAlertsProviderMessageId: delivery.id || null,
+          jobAlertsReceiptTracking: delivery.id ? 'pending' : 'unavailable',
+          lastNotificationSentAt: acceptedAt,
+          jobAlertsLastSentAt: acceptedAt,
+          jobAlertsLastAcceptedAt: acceptedAt,
+          jobAlertsLastJobCount: jobs.length,
+          jobAlertsDeliveryLockUntil: null,
+        }, { merge: true });
+      }
+      if (latestClaim.data()?.attemptId === attemptId) {
+        transaction.set(claimRef, {
+          status: acceptedStatus,
+          providerMessageId: delivery.id || null,
+          acceptedAt,
+          lockUntil: null,
+          updatedAt: acceptedAt,
+        }, { merge: true });
+      }
+    }).catch(error => {
+      console.error('[cron/weekly-suggestions] Provider accepted delivery but cadence state could not be persisted:', error);
+    });
+    await recordDeliveryEvent(db, uid, {
+      status: acceptedStatus,
+      attemptId,
+      jobCount: jobs.length,
+      topScore,
+    });
+    await logUserCommunication({
+      uid,
+      email: verifiedAuthEmail,
+      subject: rendered.subject,
+      bodyPreview: `Career Picks by Taco provider outcome: ${acceptedStatus} for ${jobs.length} review-only recommendations. No application was submitted.`,
+      template: 'sona_picks_weekly_digest',
+      sentBy: 'cron/weekly-suggestions',
+      status: acceptedStatus,
+      metadata: { attemptId, jobCount: jobs.length, topScore },
+    }).catch(() => {});
+    return { status: acceptedStatus, jobCount: jobs.length };
+  } catch (error) {
+    const failedAt = new Date().toISOString();
+    const safeError = sanitizeJobDeliveryError(error);
+    const failure = await failJobEmailDeliveryAttempt(db, {
+      attemptId,
+      failedAt,
+      error: safeError,
+    }).catch(() => ({ updated: false, status: null }));
+    const finalStatus = !failure.updated && failure.status && failure.status !== 'failed'
+      ? failure.status
+      : 'failed';
+    await db.runTransaction(async transaction => {
+      const [latestPreferences, latestClaim] = await Promise.all([
+        transaction.get(prefsRef),
+        transaction.get(claimRef),
+      ]);
+      if (latestPreferences.data()?.jobAlertsDeliveryAttemptId === attemptId && finalStatus === 'failed') {
+        transaction.set(prefsRef, {
+          jobAlertsDeliveryStatus: 'failed',
+          jobAlertsDeliveryUpdatedAt: failedAt,
+          jobAlertsDeliveryError: safeError,
+          jobAlertsDeliveryLockUntil: null,
+          jobAlertsLastAttemptAt: null,
+        }, { merge: true });
+      }
+      if (latestClaim.data()?.attemptId === attemptId) {
+        transaction.set(claimRef, {
+          status: finalStatus,
+          error: finalStatus === 'failed' ? safeError : null,
+          lockUntil: null,
+          updatedAt: failedAt,
+        }, { merge: true });
+      }
+    }).catch(() => {});
+    await recordDeliveryEvent(db, uid, {
+      status: finalStatus,
+      attemptId,
+      jobCount: jobs.length,
+      topScore,
+      error: finalStatus === 'failed' ? safeError : null,
+    });
+    await logUserCommunication({
+      uid,
+      email: verifiedAuthEmail,
+      subject: rendered.subject,
+      bodyPreview: `Career Picks by Taco provider outcome: ${finalStatus} for ${jobs.length} review-only recommendations.`,
+      template: 'sona_picks_weekly_digest',
+      sentBy: 'cron/weekly-suggestions',
+      status: finalStatus,
+      metadata: { attemptId, jobCount: jobs.length, topScore },
+    }).catch(() => {});
+    return {
+      status: finalStatus === 'failed' ? 'error:delivery-failed' : finalStatus,
+      jobCount: jobs.length,
+    };
+  }
+}
+
+export async function POST(request: NextRequest) {
+  // Authentication is intentionally the first operation. No database,
+  // provider, queue, or user enumeration work occurs before this check.
+  if (!authorizedCronRequest(request)) {
+    return cronJson({ error: 'Unauthorized' }, 401);
   }
 
   const db = getAdminDb();
-  const results: { uid: string; email?: string; status: string; jobCount?: number; error?: string }[] = [];
+  const deliveryReadiness = await getJobNotificationDeliveryReadinessForStore(db);
+  if (!deliveryReadiness.canSendTrackedEmail) {
+    return cronJson({
+      success: false,
+      code: 'EMAIL_DELIVERY_NOT_READY',
+      error: 'Confirmed email delivery is not ready. No accounts were scanned and no messages were sent.',
+    }, 503);
+  }
 
+  const now = new Date();
   try {
-    const usersSnap = await db.collection('users').listDocuments();
-
-    for (const userDocRef of usersSnap) {
-      const uid = userDocRef.id;
-
+    // listDocuments reads identifiers only; data/provider work remains bounded
+    // to the rotating batch selected below.
+    const userDocuments = await db.collection('users').listDocuments();
+    const users = selectDailyCronBatch(userDocuments, boundedUserLimit(request), now);
+    const results: CronResult[] = [];
+    for (const userRef of users) {
       try {
-        // 1. Load preferences
-        const prefsSnap = await db.collection('users').doc(uid).collection('settings').doc('jobPreferences').get();
-        if (!prefsSnap.exists) { results.push({ uid, status: 'skip:no-prefs' }); continue; }
-
-        const prefs = prefsSnap.data()!;
-        if (!prefs.emailNotifications) { results.push({ uid, status: 'skip:notif-off' }); continue; }
-
-        const targetRoles: string[] = prefs.targetRoles || [];
-        const preferredCities: string[] = prefs.preferredCities || [];
-        const remotePref: string = prefs.remotePref || 'any';
-        const salaryMin: number = prefs.salaryMin || 0;
-
-        if (targetRoles.length === 0) { results.push({ uid, status: 'skip:no-roles' }); continue; }
-
-        // 2. Get user email
-        const profileSnap = await db.collection('users').doc(uid).collection('profile').doc('main').get();
-        const email = profileSnap.data()?.email;
-        const fullName = profileSnap.data()?.full_name || 'there';
-        if (!email) { results.push({ uid, status: 'skip:no-email' }); continue; }
-
-        // 3. Fetch jobs from Adzuna
-        const allJobs: RealJob[] = [];
-        const seenIds = new Set<string>();
-        const cities = preferredCities.length > 0 ? preferredCities.slice(0, 3) : [''];
-        const roles = targetRoles.slice(0, 3);
-        const combos = roles.flatMap(role => cities.map(city => ({ role, city }))).slice(0, 6);
-
-        for (const { role, city } of combos) {
-          try {
-            const result = await searchJobsAdzuna({ query: role, location: city, country: 'us', page: 1, resultsPerPage: 10, sortBy: 'relevance', salaryMin: salaryMin || undefined });
-            for (const job of result.jobs) {
-              const key = `${job.title.toLowerCase().trim()}|${job.company.toLowerCase().trim()}`;
-              if (seenIds.has(key)) continue;
-              seenIds.add(key);
-              const loc = job.location.toLowerCase();
-              if (remotePref === 'remote' && !loc.includes('remote')) continue;
-              if (remotePref === 'onsite' && loc.includes('remote')) continue;
-              allJobs.push(job);
-            }
-          } catch { /* skip failed combo */ }
-        }
-
-        if (allJobs.length === 0) { results.push({ uid, email, status: 'skip:no-jobs' }); continue; }
-
-        // 4. Score with Gemini
-        let userSkills: string[] = [];
-        try {
-          const vaultSnap = await db.collection('users').doc(uid).collection('vault').limit(1).get();
-          if (!vaultSnap.empty) {
-            const data = vaultSnap.docs[0].data();
-            userSkills = data.skills || data.parsed?.skills || [];
-          }
-        } catch { /* no skills */ }
-        if (userSkills.length === 0 && prefs.manualSkills) userSkills = prefs.manualSkills;
-
-        interface ScoredJob extends RealJob { acceptanceChance: number; acceptanceReason: string; }
-        let scoredJobs: ScoredJob[] = [];
-
-        const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY;
-        if (apiKey && userSkills.length > 0) {
-          try {
-            const genAI = new GoogleGenerativeAI(apiKey);
-            const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-            const candidates = allJobs.slice(0, 20);
-            const summaries = candidates.map((j, i) => `[${i}] ${j.title} at ${j.company} | ${j.location} | Skills: ${j.skills.join(', ')}`).join('\n');
-
-            const result = await model.generateContent(
-              `Rate each job for a candidate with skills [${userSkills.join(', ')}] looking for ${targetRoles.join(', ')} roles.
-Score "Chance of Acceptance" 0-100. Respond ONLY with JSON array:
-[{"index":0,"score":85,"reason":"Strong match"}]
-
-Jobs:\n${summaries}`
-            );
-            const text = result.response.text().replace(/```json?\n?/g, '').replace(/```/g, '').trim();
-            const scores: { index: number; score: number; reason: string }[] = JSON.parse(text);
-
-            scoredJobs = scores
-              .filter(s => s.index >= 0 && s.index < candidates.length)
-              .map(s => ({ ...candidates[s.index], acceptanceChance: Math.min(98, Math.max(15, s.score)), acceptanceReason: s.reason }))
-              .sort((a, b) => b.acceptanceChance - a.acceptanceChance)
-              .slice(0, 10);
-          } catch { /* fallback below */ }
-        }
-
-        if (scoredJobs.length === 0) {
-          scoredJobs = allJobs
-            .map(j => ({
-              ...j,
-              acceptanceChance: userSkills.length > 0 ? calculateFitScore(userSkills, j.skills, j.title) : 60,
-              acceptanceReason: 'Keyword match score',
-            }))
-            .sort((a, b) => b.acceptanceChance - a.acceptanceChance)
-            .slice(0, 10);
-        }
-
-        // 5. Send email
-        const resendKey = process.env.RESEND_API_KEY;
-        if (!resendKey) { results.push({ uid, email, status: 'skip:no-resend-key' }); continue; }
-
-        const resend = new Resend(resendKey);
-        const jobRows = scoredJobs.map(j =>
-          `<tr>
-            <td style="padding:12px 16px;border-bottom:1px solid #f0f0f0">
-              <a href="${j.url}" style="color:#0ea5e9;font-weight:600;text-decoration:none">${j.title}</a>
-              <br><span style="color:#666;font-size:13px">${j.company} · ${j.location}</span>
-            </td>
-            <td style="padding:12px 16px;border-bottom:1px solid #f0f0f0;text-align:center">
-              <span style="display:inline-block;padding:4px 10px;border-radius:8px;font-weight:700;font-size:13px;background:${j.acceptanceChance >= 80 ? '#dcfce7;color:#16a34a' : j.acceptanceChance >= 60 ? '#dbeafe;color:#2563eb' : '#fef3c7;color:#d97706'}">
-                ${j.acceptanceChance}%
-              </span>
-            </td>
-          </tr>`
-        ).join('');
-
-        await resend.emails.send({
-          from: 'Talent Studio <hello@talentconsulting.io>',
-          to: email,
-          subject: `Your Weekly Job Picks — ${scoredJobs.length} matches found`,
-          html: `
-            <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:32px 20px">
-              <h1 style="font-size:24px;color:#111;margin-bottom:4px">Your Weekly Picks</h1>
-              <p style="color:#666;font-size:14px;margin-bottom:24px">
-                Hi ${fullName}, here are your top ${scoredJobs.length} AI-curated matches based on your skills and preferences.
-              </p>
-              <table style="width:100%;border-collapse:collapse;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb">
-                <thead>
-                  <tr style="background:#f8fafc">
-                    <th style="padding:10px 16px;text-align:left;font-size:12px;color:#666;font-weight:600">ROLE</th>
-                    <th style="padding:10px 16px;text-align:center;font-size:12px;color:#666;font-weight:600">FIT</th>
-                  </tr>
-                </thead>
-                <tbody>${jobRows}</tbody>
-              </table>
-              <div style="margin-top:24px;text-align:center">
-                <a href="https://talentconsulting.io/suite/job-search" style="display:inline-block;padding:12px 32px;background:linear-gradient(135deg,#06b6d4,#10b981);color:#fff;font-weight:600;border-radius:10px;text-decoration:none">
-                  View All in Talent Studio →
-                </a>
-              </div>
-              <p style="color:#999;font-size:11px;margin-top:32px;text-align:center">
-                Talent Studio by TalentConsulting.io · You're receiving this because you enabled weekly job notifications.
-              </p>
-            </div>
-          `,
-        });
-
-        // Update timestamp
-        await db.collection('users').doc(uid).collection('settings').doc('jobPreferences').update({
-          lastCronAt: new Date().toISOString(),
-          lastCronJobCount: scoredJobs.length,
-        }).catch(() => {});
-
-        results.push({ uid, email, status: 'sent', jobCount: scoredJobs.length });
-
-      } catch (userErr: any) {
-        results.push({ uid, status: 'error', error: userErr.message });
+        results.push(await processUser(db, userRef, now));
+      } catch (error) {
+        console.error('[cron/weekly-suggestions] Account processing failed:', error);
+        results.push({ status: 'error:account-processing' });
       }
     }
 
-    const sent = results.filter(r => r.status === 'sent').length;
-    const skipped = results.filter(r => r.status.startsWith('skip')).length;
-    const errors = results.filter(r => r.status === 'error').length;
-
-    return NextResponse.json({ success: true, summary: { total: results.length, sent, skipped, errors }, results });
-  } catch (err: any) {
-    console.error('[cron] Fatal error:', err);
-    monitor.critical('Tool: cron/weekly-suggestions', String(err));
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    const accepted = results.filter(result => ['accepted', 'delivered', 'delayed'].includes(result.status)).length;
+    const duplicate = results.filter(result => result.status === 'duplicate').length;
+    const failed = results.filter(({ status }) => status.startsWith('error')).length;
+    const skipped = results.length - accepted - duplicate - failed;
+    monitor.info('Career Picks Cron', `Processed ${results.length} bounded accounts`, [
+      { name: 'Accepted', value: String(accepted) },
+      { name: 'Duplicate', value: String(duplicate) },
+      { name: 'Skipped', value: String(skipped) },
+      { name: 'Failed', value: String(failed) },
+    ]);
+    return cronJson({
+      success: failed === 0,
+      results,
+      summary: {
+        processed: results.length,
+        accepted,
+        duplicate,
+        skipped,
+        failed,
+      },
+    });
+  } catch (error) {
+    console.error('[cron/weekly-suggestions] Fatal error:', error);
+    monitor.critical('Tool: cron/weekly-suggestions', String(error));
+    return cronJson({
+      success: false,
+      code: 'WEEKLY_SUGGESTIONS_FAILED',
+      error: 'The bounded Career Picks run could not be completed.',
+    }, 500);
   }
+}
+
+export async function GET(request: NextRequest) {
+  return POST(request);
 }

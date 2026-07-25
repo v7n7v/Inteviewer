@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { useTheme } from '@/components/ThemeProvider';
 import { useStore } from '@/lib/store';
 import { authFetch } from '@/lib/auth-fetch';
-import PageHelp from '@/components/PageHelp';
+import { SuiteToolHeader } from '@/components/suite/SuiteToolChrome';
 
 interface QualityMetrics {
   avgFitScore: number;
@@ -113,31 +113,23 @@ export default function QualityDashboard() {
   const { avgFitScore, totalApplications, tailoredCount, tailoredRatio, pipeline, interviewYield, weeklyVelocity, queueSize, recentActivity } = metricsData;
 
   return (
-    <div className="min-h-screen p-4 md:p-6 max-w-5xl mx-auto space-y-6">
-      {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center shadow-lg shadow-rose-500/20">
-              <span className="material-symbols-rounded text-white text-2xl">monitoring</span>
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-[var(--text-primary)]">Application Quality</h1>
-              <p className="text-sm text-[var(--text-tertiary)]">Quality over quantity — every metric that matters</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <PageHelp toolId="quality" />
-            <button
-              onClick={loadMetrics}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] border border-[var(--border-subtle)] transition-colors"
-            >
-              <span className="material-symbols-rounded text-[14px]">refresh</span>
-              Refresh
-            </button>
-          </div>
-        </div>
-      </motion.div>
+    <div className="mobile-app-content min-h-dvh max-w-5xl mx-auto space-y-5 px-4 py-3 md:space-y-6 md:p-6">
+      <SuiteToolHeader
+        tool="quality"
+        title="Application Quality"
+        subtitle="Quality over quantity: every metric that matters."
+        icon="monitoring"
+        pageHelpId="quality"
+        actions={
+          <button
+            onClick={loadMetrics}
+            className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] px-3 py-2 text-xs font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)]"
+          >
+            <span className="material-symbols-rounded text-[14px]">refresh</span>
+            Refresh
+          </button>
+        }
+      />
 
       {loading && (
         <div className="space-y-4">
@@ -275,7 +267,7 @@ export default function QualityDashboard() {
             />
           </div>
           <p className="text-[10px] text-[var(--text-muted)] mt-3">
-            {tailoredCount} tailored via Sona · {metrics.genericCount} generic
+            {tailoredCount} tailored via Taco · {metrics.genericCount} generic
           </p>
         </motion.div>
       </div>
@@ -331,7 +323,7 @@ export default function QualityDashboard() {
                 <span className="material-symbols-rounded text-3xl text-rose-500">monitoring</span>
               </div>
               <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">No Application Data Yet</h3>
-              <p className="text-sm text-[var(--text-tertiary)] mb-5">Start tracking applications and using Sona&apos;s Fit Gate to see quality metrics.</p>
+              <p className="text-sm text-[var(--text-tertiary)] mb-5">Start tracking applications and using Taco&apos;s Fit Gate to see quality metrics.</p>
               <a href="/suite/applications"
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white"
                 style={{ background: 'linear-gradient(135deg, #f43f5e, #db2777)', boxShadow: '0 4px 16px rgba(244,63,94,0.3)' }}>

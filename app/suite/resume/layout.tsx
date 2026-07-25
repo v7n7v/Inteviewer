@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'AI Resume Studio — ATS-Optimized Resume Builder',
-  description: 'Build and morph your resume to match any job description. AI-powered keyword injection, ATS optimization, 18+ templates, PDF & Word export. Free to try.',
+  description: 'Build and morph your resume to match a job description, compare 20 curated formats, and export a designed PDF plus a linear Word companion.',
   alternates: { canonical: '/suite/resume' },
 };
 

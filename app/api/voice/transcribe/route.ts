@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json(
                 {
                     error: isFreeTier
-                        ? 'Voice mode is a Pro feature. Upgrade to access voice transcription.'
+                        ? 'Voice mode is a Standard feature. Upgrade to access voice transcription.'
                         : `Monthly voice limit reached (${Math.floor(voiceCheck.capSeconds / 60)} min). Resets next month.`,
                     upgrade: isFreeTier,
                     remainingSeconds: voiceCheck.remainingSeconds,

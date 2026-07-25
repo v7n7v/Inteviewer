@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       ...data,
       shareUrl,
-      shareText: `Get 50% off 3 months of Talent Consulting Pro! Use my referral code: ${data.code} — ${shareUrl}`,
+      shareText: `Join me on TalentConsulting.io and see the current founding prices for Standard and Max. Use my referral code: ${data.code} — ${shareUrl}`,
     });
   } catch (err) {
     console.error('[referral] GET error:', err);
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Referral code applied! You\'ll both get 50% off for 3 months when you upgrade.',
+      message: 'Referral code applied. Eligible new subscribers will see the current founding price automatically in checkout.',
     });
   } catch (err) {
     console.error('[referral] POST error:', err);

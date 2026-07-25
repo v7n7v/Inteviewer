@@ -51,7 +51,7 @@ export default function PromoBanner() {
             color: promoConfig.accentColor,
           }}
         >
-          {promoConfig.code}
+          {promoConfig.automatic ? 'AUTO-APPLIED' : promoConfig.code}
         </span>
 
         {/* CTA */}

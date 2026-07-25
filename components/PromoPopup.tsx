@@ -9,6 +9,7 @@ interface PromoData {
   headline: string;
   code: string;
   ctaText: string;
+  automatic?: boolean;
 }
 
 /**
@@ -30,7 +31,7 @@ export default function PromoPopup() {
       return;
     }
 
-    fetch('/api/admin/promo')
+    fetch('/api/promo')
       .then(r => r.json())
       .then(data => {
         if (data.active) {
@@ -123,8 +124,8 @@ export default function PromoPopup() {
               {/* Content */}
               <div className="relative z-10">
                 {/* Sparkle icon */}
-                <div className="w-16 h-16 rounded-2xl bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center mx-auto mb-5">
-                  <span className="material-symbols-rounded text-3xl text-emerald-400">local_offer</span>
+                <div className="icon-shell-neutral w-16 h-16 rounded-2xl border flex items-center justify-center mx-auto mb-5">
+                  <span className="material-symbols-rounded text-3xl">local_offer</span>
                 </div>
 
                 <h3 className="text-xl font-bold text-white mb-2">
@@ -132,27 +133,22 @@ export default function PromoPopup() {
                 </h3>
 
                 <p className="text-sm text-gray-400 mb-5">
-                  Use code at checkout to save on your Pro subscription. Limited time offer.
+                  Founding members keep the discounted rate while their subscription stays active. Available to eligible new subscribers through October 31.
                 </p>
 
                 {/* Code pill */}
                 <div
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl mb-6 cursor-pointer group"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl mb-6 group"
                   style={{
                     background: 'rgba(16, 185, 129, 0.1)',
                     border: '1px dashed rgba(16, 185, 129, 0.3)',
                   }}
-                  onClick={() => {
-                    navigator.clipboard.writeText(promo.code);
-                    const el = document.getElementById('promo-copied');
-                    if (el) { el.textContent = 'Copied!'; setTimeout(() => { el.textContent = 'Click to copy'; }, 1500); }
-                  }}
                 >
                   <span className="text-lg font-bold tracking-widest text-emerald-400">
-                    {promo.code}
+                    {promo.automatic ? 'AUTO-APPLIED' : promo.code}
                   </span>
-                  <span id="promo-copied" className="text-[10px] text-emerald-500/60 group-hover:text-emerald-400 transition-colors">
-                    Click to copy
+                  <span className="text-[10px] text-emerald-500/60">
+                    {promo.automatic ? 'in secure checkout' : 'at checkout'}
                   </span>
                 </div>
 
@@ -167,7 +163,7 @@ export default function PromoPopup() {
                   </Link>
 
                   <p className="text-[11px] text-gray-500">
-                    7-day free trial included · Cancel anytime
+                    Eligible new subscribers get a 7-day trial · Cancel anytime
                   </p>
                 </div>
               </div>
