@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     // Pro-only feature
     if (guard.user.tier === 'free') {
       return NextResponse.json(
-        { error: 'Resume Checker is a Pro feature. Upgrade to access dual-AI tools.', upgrade: true },
+        { error: 'Resume Checker is a Standard feature. Upgrade to access dual-AI tools.', upgrade: true },
         { status: 403 }
       );
     }

@@ -1,0 +1,2 @@
+export { recommendTemplateIds } from './catalog';
+

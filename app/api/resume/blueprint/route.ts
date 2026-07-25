@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     if (guard.user.tier === 'free') {
       return NextResponse.json(
         {
-          error: 'Day-Zero Blueprint is a Pro feature. Upgrade to generate strategic proposals.',
+          error: 'Day-Zero Blueprint is a Standard feature. Upgrade to generate strategic proposals.',
           upgrade: true,
           preview: true,
         },

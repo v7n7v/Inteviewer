@@ -1,0 +1,594 @@
+.resume-workbench {
+  width: 100%;
+  max-width: 1480px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: 0 20px 20px;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+}
+
+.resume-workbench .resume-studio-header {
+  margin-inline: -20px;
+  padding-inline: 20px;
+}
+
+.resume-review-toolbar {
+  display: flex;
+  min-height: 54px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid var(--resume-studio-rule);
+}
+
+.resume-review-toolbar__signals,
+.resume-review-toolbar__views {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+}
+
+.resume-review-toolbar__signals {
+  gap: 0;
+}
+
+.resume-review-toolbar__signals > span,
+.resume-review-toolbar__signals > button {
+  position: relative;
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  padding: 0 16px;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.resume-review-toolbar__signals > span:first-child,
+.resume-review-toolbar__signals > button:first-child {
+  padding-left: 0;
+}
+
+.resume-review-toolbar__signals > span:not(:last-child)::after,
+.resume-review-toolbar__signals > button:not(:last-child)::after {
+  position: absolute;
+  top: 9px;
+  right: 0;
+  width: 1px;
+  height: 14px;
+  background: var(--resume-studio-rule);
+  content: '';
+}
+
+.resume-review-toolbar__signals strong {
+  color: var(--resume-studio-blue);
+}
+
+.resume-review-toolbar__signals .is-verified {
+  color: var(--resume-studio-green);
+}
+
+.resume-review-toolbar__signals button {
+  cursor: pointer;
+}
+
+.resume-review-toolbar__signals button:hover {
+  color: var(--text-primary);
+}
+
+.resume-review-toolbar__signals button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.resume-review-toolbar__signals .material-symbols-rounded {
+  font-size: 15px;
+}
+
+.resume-review-toolbar__views {
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--resume-studio-rule);
+  border-radius: 8px;
+  background: var(--bg-surface);
+}
+
+.resume-review-toolbar__views button {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  padding: 0 12px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.resume-review-toolbar__views button[aria-pressed='true'] {
+  background: var(--bg-elevated);
+  color: var(--resume-studio-blue);
+}
+
+.resume-review-toolbar__views .material-symbols-rounded {
+  font-size: 16px;
+}
+
+.resume-review-stage {
+  border-bottom: 1px solid var(--resume-studio-rule);
+}
+
+.resume-review-documents {
+  position: relative;
+  padding-top: 22px;
+}
+
+.resume-review-documents__scroller {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 82px minmax(0, 1fr);
+  height: clamp(540px, 64vh, 680px);
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.resume-review-document {
+  position: relative;
+  overflow-y: auto;
+  border: 1px solid #dce2eb;
+  border-radius: 4px;
+  background: #fff;
+  padding: 30px 34px 56px;
+  color: #172033;
+  font-family: Georgia, 'Times New Roman', serif;
+  scrollbar-color: #c4cad3 transparent;
+  scrollbar-width: thin;
+}
+
+.resume-review-document:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--resume-studio-blue) 60%, transparent);
+  outline-offset: -3px;
+}
+
+.resume-review-document__tag {
+  position: sticky;
+  z-index: 2;
+  top: -30px;
+  margin: -30px -34px 18px;
+  border-bottom: 1px solid #e6eaf0;
+  background: rgba(255, 255, 255, 0.96);
+  padding: 10px 14px;
+  color: #657086;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  backdrop-filter: blur(8px);
+}
+
+.resume-review-document header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  border-bottom: 3px solid #1c3f72;
+  padding-bottom: 15px;
+}
+
+.resume-review-document h2,
+.resume-review-document h3,
+.resume-review-document h4,
+.resume-review-document p {
+  margin: 0;
+}
+
+.resume-review-document h2 {
+  color: #173f78;
+  font-size: clamp(25px, 2vw, 34px);
+  line-height: 1.05;
+}
+
+.resume-review-document__title {
+  margin-top: 5px !important;
+  color: #285d9c;
+  font-size: 15px;
+}
+
+.resume-review-document address {
+  display: flex;
+  max-width: 46%;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px 12px;
+  color: #566276;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 9px;
+  font-style: normal;
+}
+
+.resume-review-document section {
+  margin-top: 20px;
+}
+
+.resume-review-document h3 {
+  margin-bottom: 9px;
+  color: #173f78;
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.resume-review-document section > p,
+.resume-review-document li,
+.resume-review-document__skills p {
+  font-size: 11px;
+  line-height: 1.42;
+}
+
+.resume-review-document__entry {
+  margin-top: 14px;
+}
+
+.resume-review-document__entry-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.resume-review-document__entry-heading h4 {
+  font-size: 12px;
+}
+
+.resume-review-document__entry-heading p {
+  margin-top: 2px;
+  color: #2f68ad;
+  font-size: 10px;
+}
+
+.resume-review-document__entry-heading > span {
+  flex: 0 0 auto;
+  color: #5c6675;
+  font-size: 9px;
+}
+
+.resume-review-document ul {
+  margin: 7px 0 0;
+  padding-left: 17px;
+}
+
+.resume-review-document li {
+  margin-top: 2px;
+  padding: 2px 6px;
+  border: 1px solid transparent;
+}
+
+.resume-review-document .is-selected-line {
+  border-radius: 3px;
+}
+
+.resume-review-document.is-source .is-selected-line {
+  border-color: rgba(231, 104, 104, 0.45);
+  background: rgba(231, 104, 104, 0.08);
+  text-decoration: line-through;
+  text-decoration-color: rgba(188, 53, 53, 0.6);
+}
+
+.resume-review-document.is-tailored .is-selected-line {
+  border-color: rgba(77, 130, 255, 0.58);
+  background: rgba(77, 130, 255, 0.1);
+  color: #1555bd;
+}
+
+.resume-review-bridge {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+
+.resume-review-bridge::before,
+.resume-review-bridge::after {
+  position: absolute;
+  top: 55%;
+  width: 50%;
+  height: 1px;
+  background: var(--resume-studio-rule);
+  content: '';
+}
+
+.resume-review-bridge::before {
+  left: 0;
+}
+
+.resume-review-bridge::after {
+  right: 0;
+}
+
+.resume-review-bridge strong {
+  margin-top: 2px;
+  color: var(--text-primary);
+  font-size: 11px;
+}
+
+.resume-review-bridge i {
+  z-index: 1;
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  margin-top: 14px;
+  border: 1px solid color-mix(in srgb, var(--resume-studio-blue) 55%, transparent);
+  border-radius: 999px;
+  background: #2f67df;
+  color: #fff;
+  font-size: 20px;
+  font-style: normal;
+}
+
+.resume-review-stage.is-focused .resume-review-documents__scroller {
+  grid-template-columns: minmax(0, 900px);
+  justify-content: center;
+}
+
+.resume-review-stage.is-focused [data-resume-document='source'],
+.resume-review-stage.is-focused .resume-review-bridge {
+  display: none;
+}
+
+.resume-review-decision-dock {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto;
+  min-height: 142px;
+  align-items: center;
+  gap: 28px;
+  border-top: 1px solid var(--resume-studio-rule);
+  background: var(--bg-surface);
+  padding: 18px 20px;
+}
+
+.resume-review-decision-dock__summary {
+  min-width: 0;
+  padding-right: 28px;
+  border-right: 1px solid var(--resume-studio-rule);
+}
+
+.resume-review-decision-dock__summary > span {
+  color: var(--resume-studio-blue);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.resume-review-decision-dock__summary strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--text-primary);
+  font-size: 15px;
+}
+
+.resume-review-decision-dock__summary p {
+  max-width: 640px;
+  margin: 5px 0 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.resume-review-decision-dock__summary small {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  color: var(--text-muted);
+  font-size: 9px;
+}
+
+.resume-review-decision-dock__summary small .material-symbols-rounded {
+  font-size: 13px;
+}
+
+.resume-review-decision-dock__actions {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.resume-review-decision-dock__actions > button {
+  display: inline-flex;
+  min-width: 130px;
+  min-height: 58px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--resume-studio-rule);
+  border-radius: 8px;
+  background: transparent;
+  padding: 8px 14px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.resume-review-decision-dock__actions > button:hover:not(:disabled),
+.resume-review-decision-dock__actions > button[aria-pressed='true'] {
+  border-color: color-mix(in srgb, var(--resume-studio-blue) 48%, var(--border));
+  color: var(--text-primary);
+}
+
+.resume-review-decision-dock__actions > button.is-primary {
+  border-color: var(--resume-studio-blue);
+  color: var(--text-primary);
+}
+
+.resume-review-decision-dock__actions > button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.resume-review-decision-dock__actions .material-symbols-rounded {
+  font-size: 20px;
+}
+
+.resume-review-decision-dock__actions .is-next {
+  display: grid;
+  min-width: 112px;
+  grid-template-columns: 1fr auto;
+  gap: 2px 8px;
+  text-align: left;
+}
+
+.resume-review-decision-dock__actions .is-next span:first-child {
+  color: var(--text-muted);
+  font-size: 9px;
+}
+
+.resume-review-decision-dock__actions .is-next strong {
+  grid-row: 2;
+  color: var(--text-primary);
+  font-size: 11px;
+}
+
+.resume-review-decision-dock__actions .is-next .material-symbols-rounded {
+  grid-column: 2;
+  grid-row: 1 / 3;
+}
+
+.resume-review-unavailable {
+  display: flex;
+  min-height: 320px;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  border-bottom: 1px solid var(--resume-studio-rule);
+  padding: 40px;
+}
+
+.resume-review-unavailable > .material-symbols-rounded {
+  color: var(--resume-studio-blue);
+  font-size: 32px;
+}
+
+.resume-review-unavailable h2,
+.resume-review-unavailable p {
+  margin: 0;
+}
+
+.resume-review-unavailable h2 {
+  font-size: 18px;
+}
+
+.resume-review-unavailable p {
+  max-width: 560px;
+  margin-top: 5px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.resume-review-unavailable button {
+  min-height: 40px;
+  border: 1px solid var(--resume-studio-rule);
+  border-radius: 8px;
+  background: transparent;
+  padding: 0 14px;
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+@media (max-width: 1180px) {
+  .resume-review-toolbar__signals > span:nth-of-type(4),
+  .resume-review-toolbar__signals > span:nth-of-type(5) {
+    display: none;
+  }
+
+  .resume-review-decision-dock {
+    grid-template-columns: 1fr;
+  }
+
+  .resume-review-decision-dock__summary {
+    border-right: 0;
+    padding-right: 0;
+  }
+
+  .resume-review-decision-dock__actions {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 900px) {
+  .resume-workbench {
+    padding-inline: 12px;
+  }
+
+  .resume-workbench .resume-studio-header {
+    margin-inline: -12px;
+    padding-inline: 12px;
+  }
+
+  .resume-review-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+    padding-block: 10px;
+  }
+
+  .resume-review-toolbar__signals {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .resume-review-documents__scroller {
+    height: auto;
+    max-height: 720px;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    overflow-y: auto;
+  }
+
+  .resume-review-bridge {
+    display: none;
+  }
+
+  .resume-review-document {
+    min-height: 620px;
+  }
+
+  .resume-review-decision-dock {
+    padding-inline: 0;
+  }
+
+  .resume-review-decision-dock__actions > button {
+    min-width: 0;
+    flex: 1 1 140px;
+  }
+}
+
+@media (max-width: 640px) {
+  .resume-review-toolbar__signals > span:nth-of-type(n + 3) {
+    display: none;
+  }
+
+  .resume-review-document {
+    padding-inline: 20px;
+  }
+
+  .resume-review-document__tag {
+    margin-inline: -20px;
+  }
+
+  .resume-review-document header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .resume-review-document address {
+    max-width: 100%;
+    justify-content: flex-start;
+  }
+}

@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     // Pro-only feature
     if (guard.user.tier === 'free') {
       return NextResponse.json(
-        { error: 'LinkedIn Builder is a Pro feature. Upgrade to access dual-AI tools.', upgrade: true },
+        { error: 'LinkedIn Builder is a Standard feature. Upgrade to access dual-AI tools.', upgrade: true },
         { status: 403 }
       );
     }
