@@ -224,7 +224,7 @@ Evidence: `lib/admin-auth.ts`, `lib/admin/mutation-claims.ts`, `lib/admin/aggreg
 ## 17. External production activation
 
 - [!] Provision `ADMIN_AGGREGATE_CRON_SECRET` in the production GitHub environment and prove the scheduled workflow can reach production.
-- [!] Provision and verify a second active recovery owner with MFA.
+- [!] Provision and verify a second active recovery owner with MFA. Owner `quantumsec01@gmail.com` provisioned and sign-in verified 25 July 2026; **MFA not yet enrolled** - Firebase project MFA is still disabled, so no second factor exists on either owner. This item stays open until both owners have enrolled.
 - [!] Align the production auth-domain and Admin rollout environment values.
 - [!] Install a strong production `ADMIN_REFERENCE_SECRET`.
 - [!] Run the live recovery-owner proof and authenticated MFA smoke token.

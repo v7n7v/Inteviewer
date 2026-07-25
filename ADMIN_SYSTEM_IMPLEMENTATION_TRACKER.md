@@ -61,7 +61,7 @@ This tracker is the source of truth for the administrator account system. A task
   - Evidence: `alula2006@gmail.com` has active Firebase owner claims and a matching active version-1 Firestore administrator record. Previous refresh tokens were revoked and the branded invitation was sent.
 - [x] Verify the owner against the deployed production APIs.
   - Live evidence (2026-07-23): health and `/suite/admin` passed; the owner session was authorized as `owner`; the active directory record was readable at version 1; audit access passed; anonymous access was denied.
-- [!] Provision and verify a second recovery owner.
+- [x] Provision and verify a second recovery owner. `quantumsec01@gmail.com` provisioned and **verified** 25 July 2026 11:09 - signed in successfully and renders the Admin Access module as the current account, which proves the Firestore record, minted custom claims, verified email and role permission all resolve. Both owners Active at role version v1.
   - Required owner decision: provide the exact verified email address for the second trusted owner. No security principal will be guessed or created without that selection.
 
 ## 6. MFA Rollout
@@ -70,7 +70,7 @@ This tracker is the source of truth for the administrator account system. A task
   - Evidence: the server requires an MFA-authenticated identity whenever `ADMIN_MFA_ENFORCED=true`; deployment preflight rejects enforcement when the Firebase project MFA capability is not enabled.
 - [x] Keep enforcement disabled until recovery safety exists.
   - Evidence: `NEXT_PUBLIC_MFA_ENABLED=false`, `FIREBASE_MFA_PROJECT_ENABLED=false`, and `ADMIN_MFA_ENFORCED=false` are the verified current production posture.
-- [!] Enable Firebase MFA, enroll two owners, and enforce MFA for administrator access.
+- [!] Enable Firebase MFA, enroll two owners, and enforce MFA for administrator access. Unblocked as of 25 July 2026 - a second owner now exists, which was the prerequisite. Order matters: enable in Firebase console, rebuild for `NEXT_PUBLIC_MFA_ENABLED`, enrol BOTH owners, then set `ADMIN_MFA_ENFORCED=true`.
   - Prerequisites: select and verify the second owner, enable the Firebase project MFA capability, test enrollment and recovery, then turn on server enforcement.
 
 ## 7. Verification and Production Deployment
