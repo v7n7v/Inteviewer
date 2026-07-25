@@ -1,6 +1,6 @@
 # Design System v2 — "Evidence You Can See"
 
-**Status:** direction approved 25 July 2026. Not started.
+**Status:** direction approved 25 July 2026. Not started. Metrics and the accent decision re-measured 25 July 2026 — see §1 and §3.1; **the accent choice is reopened and Phase 1 must not implement one until it is confirmed.**
 **Prerequisite:** the repository must be recovered and committed first (`GIT-RECOVERY-RUNBOOK.md`). This plan touches nearly every file and is unreviewable against an uncommitted tree.
 **Supersedes on conflict:** `DESIGN.md`, `UI_DESIGN_GUIDE.md`.
 
@@ -10,19 +10,23 @@
 
 The problem was never a missing philosophy. It was that the existing one is **unenforceable and self-contradictory**, so drift was the predictable outcome.
 
-Measured drift, `app/` + `components/`, 25 July 2026:
+Measured drift, `app/` + `components/` (411 files), re-measured by `node scripts/design-audit.js` on 25 July 2026:
 
-| Metric | Value |
-| --- | --- |
-| Distinct hardcoded hex | **508** (1,573 occurrences, 90 files) |
-| Prohibited class occurrences | **1,231** |
-| Distinct radius values vs one documented standard | **~70** (64% non-compliant) |
-| Buttons: inline vs `btn-primary` | **344 vs 22** |
-| Cards: inline vs `glass-card` | **488 vs 68** |
-| Suite routes outside `SuiteToolShell` | **18 of 43** |
-| Token definition files | **6** |
-| Tokens referenced but never defined | **28** |
-| Competing brand mark systems | **4** |
+| Metric | Value | Earlier hand count |
+| --- | --- | --- |
+| Distinct hardcoded hex | **465** (1,553 occurrences) | 508 |
+| Prohibited class occurrences | **1,290** | 1,231 |
+| Distinct radius values vs one documented standard | **32** | ~70 |
+| Buttons: inline vs `btn-*` | **301 vs 22** | 344 vs 22 |
+| Cards: inline vs shared | **1,212 vs 68** | 488 vs 68 |
+| Suite routes outside `SuiteToolShell` | **22 of 43** | 18 of 43 |
+| Token definition files | **6** | 6 |
+| Tokens referenced but never defined | **23** | 28 |
+| Competing brand mark systems | 4 *(not tool-measured)* | 4 |
+
+**`scripts/design-audit.js` is the authority for these numbers, not this table.** The first column is a snapshot; re-run the tool rather than trusting it.
+
+The hand counts in the second column are what the rest of this document was originally written against, and two of the differences change scope materially: **inline cards are 1,212, not 488** — Phase 3 is roughly 2.5× the size it was planned at — and the prohibited-class count rose because the audit was extended to catch CSS-level occurrences that a `.tsx`-only scan missed.
 
 The existing documents contradict each other on cyan/emerald, gradients, card background, and sidebar width — and the shared card class is called `.glass-card` while both documents ban glass. An engineer reading all of it and choosing reasonably still drifts.
 
@@ -63,28 +67,57 @@ The "Silicon Valley clean" quality is the *output* of that restraint, not a styl
 
 The old `--accent` (`#a8c7fa` dark / `#1a73e8` light) reads as generic Google, and a stray emerald ships in the sidebar with no token behind it. Both retire.
 
-**Structural finding:** no single hex clears 4.5:1 on both a near-black and a near-white surface — a step light enough for dark mode is too light for white. So the accent is a **hue family with one step per mode**. This is what the current system already does; keep the shape, change the hue.
+> ⚠️ **This section was re-measured on 25 July 2026 and its original recommendation did not survive.** Two claims below were wrong: that one step per mode is sufficient, and that Cyan gives the greatest separation from the status hues. The decision is **reopened** — see the bottom of this section. Nothing has been implemented against it yet.
 
-Validated candidates (contrast measured against `#131314` dark surface and `#f8f9fa` light surface):
+**Original structural finding:** no single hex clears 4.5:1 on both a near-black and a near-white surface, so the accent is a **hue family with one step per mode**.
 
-| Family | Dark step | Ratio | Light step | Ratio |
+That is true but incomplete, and the incompleteness is the problem. Contrast was validated against exactly one surface per mode (`#131314` dark, `#f8f9fa` light). The token system actually defines **seven surfaces per mode**, spanning far more luminance than a single step can cover:
+
+| Surface | Cyan dark `#0891b2` | Surface | Cyan light `#0e7490` |
+| --- | --- | --- | --- |
+| `--bg-deep` `#0b0b0b` | 5.35 ✅ | `--bg-deep` `#ffffff` | 5.36 ✅ |
+| `--bg-surface` `#131314` *(only one validated)* | 5.04 ✅ | `--bg-surface` `#f8f9fa` *(only one validated)* | 5.08 ✅ |
+| `--bg-elevated` / `--card-bg` `#1a1a1b` | 4.72 ✅ | `--bg-elevated` `#f1f3f4` | 4.81 ✅ |
+| `--bg-input` `#1e1e1f` | 4.52 ✅ | `--card-bg` / `--bg-input` `#ffffff` | 5.36 ✅ |
+| `--bg-hover` `#1f1f21` | **4.47 ❌** | `--bg-hover` `#e8eaed` | **4.45 ❌** |
+| `--theme-surface-active` `#232325` | **4.26 ❌** | `--theme-surface-active` `#e8eaed` | **4.45 ❌** |
+
+**Cyan fails AA on hover and active surfaces in both themes** — and hover/active is exactly where accent-colored interactive text lives, so the failure is concentrated where the accent is used most.
+
+No candidate passes on all ten surfaces. **The one-step-per-mode model is the actual defect, not the hue.** Whichever family is chosen needs either a step per *surface tier*, or hover/active surfaces constrained so they stop shifting luminance this far.
+
+### Candidates, fully measured
+
+Hue separation is CIELAB LCh angle from the nearest reserved status color (success `#188038` 145°, danger `#d93025` 37°, warning `#e37400` 61°). Chroma is a proxy for visual insistence — lower is calmer, which matters for an anxious user.
+
+| Family | Dark / light step | Min hue sep | Chroma | AA pass (of 10 surfaces) |
 | --- | --- | --- | --- | --- |
-| **Cyan** | `#0891b2` | 5.04 | `#0e7490` | 5.08 |
-| **Sky** | `#0284c7` | 4.53 | `#0369a1` | 5.63 |
-| **Teal** | `#0d9488` | 4.96 | `#0f766e` | 5.19 |
-| **Cobalt** | `#5a7fff` | 5.23 | `#315cff` | 4.85 |
-| **Azure** | `#1e88e5` | 5.05 | `#1565c0` | 5.45 |
+| **Azure** | `#1e88e5` / `#1565c0` | **122°** | 55 | **8/10** |
+| **Sky** | `#0284c7` / `#0369a1` | 118° | 43 | 6/10 (worst 3.83) |
+| **Cobalt** | `#5a7fff` / `#315cff` | 100° | **95** | **8/10** |
+| **Cyan** | `#0891b2` / `#0e7490` | 87° | **33** | 7/10 |
+| **Teal** | `#0d9488` / `#0f766e` | **39°** ❌ | 35 | 7/10 |
 
-All five clear 4.5:1 in both modes. Selection constraints:
+The original text rejected Teal for sitting too close to success green — correctly, at 39°. But it then selected **Cyan, the next-closest at 87°**, on the stated grounds of "maximum separation from success/danger/warning." That claim is false: Azure (122°), Sky (118°) and Cobalt (100°) all separate further.
 
-- **Teal is risky** — it sits close to success green (`#188038`) and will blur the accent/success distinction the evidence system depends on.
-- **Azure is close to the Google blue being retired** — little differentiation gained.
-- **Cobalt** is already the admin console's `--admin-cobalt` (`#315cff`), so choosing it makes the admin fold-in nearly free.
-- **Cyan / Sky** are the most distinctive and sit furthest from all four reserved status hues.
+Azure's only recorded demerit was proximity to the retired Google blue. That is a *brand* objection, and it loses to an accessibility failure. It also cuts the other way: blue-family reads as "interactive" by convention, so proximity is a usability asset for a link color.
 
-**Recommendation: Cyan** (`#0891b2` dark / `#0e7490` light) — maximum separation from success/danger/warning, distinct from the retired Google blue, and it reads as precise and instrument-like, which suits a career console. **Cobalt** is the pragmatic alternative if minimising admin churn matters more than distinctiveness.
+### The conflation to resolve first
 
-Reserved and unchanged: success `#188038`, danger `#d93025`, warning `#e37400`. Status always ships with an icon and label, never color alone.
+The accent is being asked to do two jobs with opposite optimal answers:
+
+- **Interactive affordance** — links, buttons, focus rings. Wants to be *conventional*.
+- **Brand identity** — wants to be *distinctive*.
+
+Fusing them is what produced the argument that cyan "reads as precise and instrument-like" — brand reasoning applied to a link color, which pushed the choice toward the weakest option on separation and a real contrast failure. Carry distinctiveness in the TACO mark, typography and register, where it costs nothing in comprehension.
+
+### Status: reopened — owner decision
+
+**Recommendation: Azure** (`#1e88e5` dark / `#1565c0` light), best or tied-best on both measured criteria, plus per-surface-tier steps to close the hover/active gap.
+
+**Cobalt** remains the pragmatic alternative — equal AA pass rate and it is already `--admin-cobalt` (`#315cff`), making the admin fold-in nearly free — at the cost of chroma 95, by far the most visually insistent option.
+
+This is a product/brand tradeoff the plan does not settle on measurement alone. **Do not implement an accent until it is confirmed.** Reserved and unchanged either way: success `#188038`, danger `#d93025`, warning `#e37400` (light `#a85200`). Status always ships with an icon and label, never color alone.
 
 ### 3.2 Admin — fold in, keep density
 
@@ -110,19 +143,23 @@ Only cleanup: normalise their 86 distinct hex into the `catalog.ts` palettes rat
 
 ## 4. Phases
 
-Each phase ends green on `type-check`, `build`, and a browser run at 320/390/430/768/1024/1440px.
+Each phase ends green on `node scripts/verify.js` (types, build, tests, design drift, CVE) and, if anything renders, `node scripts/ui-verify.js` at 320/390/430/768/1024/1440px in both themes. Both scripts exist as of 25 July 2026; the manual checklist this section originally described is superseded by them.
 
 ### Phase 0 — Prerequisite
 Repo recovered, committed, pushed. **Do not begin Phase 1 before this.**
 
+*Status, 25 July 2026:* recovered ✅ · committed ✅ · **pushed ❌**.
+
+The repository was repaired **in place** by restoring the missing pack file, not by the fresh clone this document originally assumed — `git diff` works and history is whole at 96 commits. The working tree is committed across 15 commits on `codex/admin-command-grid`. The push is blocked on GitHub credentials, which is an owner action. Phase 0 is not met until it lands.
+
 ### Phase 1 — One source of truth
-- Collapse 6 token files into one canonical token module.
-- Define or delete the 28 phantom tokens.
+- Collapse 6 token files into one canonical token module. Handle the **7 admin tokens that shadow global names with different values** (§3.2) as part of this — `admin-command-grid.css` holds 60 of the 256 definitions, and collapsing without resolving the collision will silently restyle admin.
+- Define or delete the **23** phantom tokens (tool-measured; this document previously said 28). Each is a judgment call — deleting a referenced-but-undefined token changes rendering by falling back to inherited or initial. Produce the list with a proposed disposition and get it approved rather than deciding 23 things inside a whole-repo diff.
 - Resolve every `DESIGN.md` / `UI_DESIGN_GUIDE.md` contradiction; both become pointers to this document.
-- Introduce the accent family and the four evidence-state tokens.
+- Introduce the four evidence-state tokens. **The accent family is blocked** pending the reopened decision in §3.1 — and whichever family wins needs a step per surface tier, not one per mode.
 - Rename `.glass-card` → `.surface-card`. The current name describes a banned treatment.
 
-*Exit: one token file, zero undefined tokens, both legacy docs superseded.*
+*Exit: one token file, zero undefined tokens, both legacy docs superseded, no shadowed token names.*
 
 ### Phase 2 — Make violations impossible
 This is the phase that determines whether v2 survives contact with a deadline.
@@ -184,16 +221,20 @@ The current failure is not that marketing looks different. It's that marketing i
 
 ## 6. Definition of done
 
-- [ ] One token file; 0 undefined tokens
-- [ ] Distinct hardcoded hex in `app/` + `components/` **< 20** (down from 508)
-- [ ] Prohibited class occurrences **0** (down from 1,231)
-- [ ] Distinct radius values **≤ 6** (down from ~70)
-- [ ] Inline button patterns **< 20** (down from 344)
-- [ ] Inline card patterns **< 30** (down from 488)
-- [ ] All 43 suite routes on `SuiteToolShell`
-- [ ] `design:audit:ci` green and gating CI
+Baselines below are the tool-measured values recorded in `.design-audit-baseline.json` on 25 July 2026. Re-run `node scripts/design-audit.js` rather than trusting them.
+
+- [ ] One token file; **0** undefined tokens (from 23)
+- [ ] No token name shadowed with a different value (from 7)
+- [ ] Distinct hardcoded hex in `app/` + `components/` **< 20** (from **465**)
+- [ ] Prohibited class occurrences **0** (from **1,290**)
+- [ ] Distinct radius values **≤ 6** (from **32**)
+- [ ] Inline button patterns **< 20** (from **301**)
+- [ ] Inline card patterns **< 30** (from **1,212**)
+- [ ] All 43 suite routes on `SuiteToolShell` (from **22** off-shell)
+- [ ] `design-audit.js --ci` green and gating CI
 - [ ] One brand mark system
 - [ ] PDF/DOCX exports match the web preview
-- [ ] WCAG 2.2 AA across both themes
-- [ ] Browser run clean at 320/390/430/768/1024/1440px
-- [ ] `type-check`, `build`, and all test suites green
+- [ ] WCAG 2.2 AA across both themes — **validated per surface tier, not per mode** (see §3.1)
+- [ ] Browser run clean at 320/390/430/768/1024/1440px in both themes, via `node scripts/ui-verify.js`
+- [ ] Screenshot baselines gating CI — static audit cannot catch the theme-cascade P0 class
+- [ ] `node scripts/verify.js` green (types, build, tests, design drift, CVE)

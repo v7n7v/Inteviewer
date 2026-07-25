@@ -84,16 +84,16 @@ Tiers in code: `free | pro | studio | god`. Strategy calls `studio` **"Max"** �
 
 ## 4. Repository state — READ THIS FIRST
 
-**The repo is damaged and the work is uncommitted.** As of 25 July 2026:
+**Recovered and committed as of 25 July 2026. One action outstanding: the push.**
 
-- `.git/objects/pack/` has `.idx` and `.rev` but **no `.pack`** — 272 objects unreadable. `git diff` fails; history traversal truncates.
-- Last commit `6bfd9a6` is dated **2026-05-06**. ~900 files are uncommitted (552 modified, 352 untracked) — about 2.5 months of real work.
-- Cause: the repo lives in a **OneDrive-synced folder**. Move it out.
-- Backups verified 25 July: `_backup/src.tar.gz`, `_backup/root-config.tar.gz`, `_backup/public.tar.gz`.
+- The missing `.pack` was **found and restored** — in the sibling folder `Talent Consulting 04112026 - OLD-ANIMATED`, not the recycle bin. `git diff` works; history is whole at 96 commits.
+- The working tree is committed across **15 commits** on `codex/admin-command-grid`. Tree clean.
+- **`git push -u origin codex/admin-command-grid` has not run.** Git Credential Manager holds no `github.com` credential — only a legacy `api.github.com` entry — so it falls back to an interactive prompt. This is an owner action; nothing is on the remote yet.
+- The repo **still lives in a OneDrive-synced folder**. Root cause unaddressed. `recover-repo.ps1` performs the migration to `C:\dev\talent-consulting` if you want it, but recovery no longer depends on it.
 
-**Do this before any other work:** follow `GIT-RECOVERY-RUNBOOK.md` — run `recover-repo.ps1` then `commit-batches.ps1`. Both were tested end-to-end against a simulated reproduction.
+Actually lost: **`stash@{0}`** only. Its tree is among 16 still missing, and it is why `git gc` aborts — `gc.auto` is set to `0` locally so commits aren't interrupted. `stash@{1}` survived and is readable. The branches `codex/audit-automation-recovery` and `codex/release-safe-cleanup` were **never lost**; both are on GitHub at the commits the runbook lists as unrecoverable.
 
-Unrecoverable (trees are inside the missing pack, not on the remote): branches `codex/audit-automation-recovery`, `codex/release-safe-cleanup`, and both stashes. Check the OneDrive recycle bin for `pack-3b21952154748776d171e0df6104b4c73e7b860c.pack` before accepting that loss.
+`GIT-RECOVERY-RUNBOOK.md` is now historical. Both its scripts needed fixes to run on Windows PowerShell 5.1 (UTF-8 BOM, and `$ErrorActionPreference` vs native git stderr); the fixes are committed.
 
 **Never deploy from an unreviewed dirty tree.**
 
@@ -119,18 +119,20 @@ A UI change is **not complete** until: `type-check` passes, `build` passes, and 
 
 ## 6. Design system
 
-**Current state is fragmented.** Measured 25 July 2026 across `app/` + `components/`:
+**Current state is fragmented.** Run `node scripts/design-audit.js` — **it is the authority, not this table.** Snapshot of 25 July 2026, `app/` + `components/` (411 files):
 
 | Metric | Value |
 | --- | --- |
-| Distinct hardcoded hex | 508 (1,573 occurrences) |
-| Prohibited class occurrences | 1,231 (`text-white` 397, `shadow-` 279, `bg-white/` 175, purple 181, `bg-gradient` 107, `backdrop-blur` 47, `bg-black` 45) |
-| Distinct radius values | ~70 against a documented single 12px standard (64% non-compliant) |
-| Buttons inline vs `btn-primary` | 344 vs 22 |
-| Cards inline vs `glass-card` | 488 vs 68 |
-| Suite routes outside `SuiteToolShell` | 18 of 43 |
+| Distinct hardcoded hex | 465 (1,553 occurrences) |
+| Prohibited class occurrences | 1,290 (includes CSS-level, which a `.tsx`-only scan misses) |
+| Distinct radius values | 32 against a documented single 12px standard |
+| Buttons inline vs `btn-*` | 301 vs 22 |
+| Cards inline vs shared | 1,212 vs 68 |
+| Suite routes outside `SuiteToolShell` | 22 of 43 |
 | Token definition files | 6 |
-| Tokens referenced but never defined | 28 |
+| Tokens referenced but never defined | 23 |
+
+Earlier hand counts (508 hex, 1,231 prohibited, 344 buttons, 488 cards, 18 routes, 28 tokens) are superseded. The inline-card figure matters most: **1,212, not 488** — Phase 3 is ~2.5× its planned size.
 
 Counterpoint: **8,101 `var()` calls** — the token habit is strong. Infrastructure is fine; enforcement is absent.
 
@@ -139,11 +141,13 @@ Counterpoint: **8,101 `var()` calls** — the token habit is strong. Infrastruct
 **Direction is decided** — see `docs/design-system-v2-plan.md`:
 
 1. **Evidence-first semantics.** Color encodes epistemic status: verified / inferred / draft / missing.
-2. **New accent hue family**, replacing both the Google-blue token and the stray emerald.
+2. **New accent hue family**, replacing both the Google-blue token and the stray emerald. **Which family is reopened** — Cyan was chosen on a justification that failed re-measurement (it fails AA on hover/active in both themes, and is the second-closest candidate to the status hues, not the furthest). Recommendation is Azure. See §3.1 of the plan and `docs/DECISIONS.md`. **Do not implement an accent until an owner confirms one.**
 3. **Admin folds into the main system**, keeping its density via a modifier rather than a 30-token fork.
 4. **TACO = assistant, TC = company.** Retire the `brand-*` and Sona mark systems.
 
-Do not start the design work until the repo is recovered and committed. It touches every file.
+Do not start the design work until the repo is recovered, committed **and pushed** (§4 — the push is outstanding). It touches every file.
+
+A structural finding worth carrying: the accent cannot be **one step per mode**. The token system defines seven surfaces per mode and no candidate clears 4.5:1 on all of them — it needs a step per *surface tier*. Validate contrast per surface, never per mode.
 
 ### Where things live
 
@@ -156,13 +160,13 @@ Do not start the design work until the repo is recovered and committed. It touch
 
 | Workstream | Blocked on |
 | --- | --- |
-| Admin Command Grid | `ADMIN_AGGREGATE_CRON_SECRET`, `ADMIN_REFERENCE_SECRET`, **a named second MFA recovery owner**, auth-domain alignment |
-| Admin RBAC | MFA enforcement, pending that same second recovery owner |
+| Admin Command Grid | `ADMIN_AGGREGATE_CRON_SECRET`, `ADMIN_REFERENCE_SECRET`, second-owner **provisioning**, auth-domain alignment |
+| Admin RBAC | MFA enforcement, pending that same second-owner provisioning |
 | Email V2 | Cloudflare MX + `_dmarc` for `support@`/`ops@`/`dmarc@`; `.env.production` V2 credentials |
 | User Observability v1 | retention-policy approval, managed HMAC secrets, approved rollback runbook |
-| Resume Studio QA | 2 template captures blocked — browser refused `localhost` |
+| ~~Resume Studio QA~~ | **unblocked** — `node scripts/ui-verify.js` drives local Playwright, which has no `localhost` restriction |
 
-**Naming the second recovery owner unblocks the most.** The owner must supply the exact verified email — never guess one.
+**The second recovery owner is named:** `quantumsec01@gmail.com`, by the existing owner on 25 July 2026. What remains is **provisioning**, not naming — steps in `docs/SECOND-RECOVERY-OWNER.md`, run by the *existing* owner from a trusted environment with the production service account. It is still the single action that unblocks the most.
 
 Standing holds: no live payments, no real user emails, no external submission without human approval.
 

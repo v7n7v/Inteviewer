@@ -18,6 +18,42 @@ Append-only. Newest at the top. One entry per decision that would otherwise get 
 
 ---
 
+## 2026-07-25 - Accent decision reopened; Cyan's justification did not survive measurement
+
+**Decision:** The accent choice is **reopened**. Phase 1 must not implement an accent until an owner confirms one. Recommendation is **Azure** (`#1e88e5` dark / `#1565c0` light), with a step per *surface tier* rather than one per mode.
+
+**Constraint:** Two measurements contradict the earlier entry.
+
+*Contrast.* The original validation used one surface per mode (`#131314`, `#f8f9fa`). The token system defines seven per mode. Cyan scores 4.47 on `--bg-hover` and 4.26 on `--theme-surface-active` in dark, and 4.45 on both in light - **failing AA on exactly the surfaces where interactive accent text lives.** No candidate passes all ten surfaces, so *one step per mode is itself the defect*, independent of hue.
+
+*Hue separation.* Measured as CIELAB LCh angle to the nearest reserved status color, Cyan is **87°** - the second-worst of the five, after the Teal that was already rejected at 39° for exactly this reason. Azure is 122°, Sky 118°, Cobalt 100°. The earlier entry's stated ground for Cyan, "maximum separation from success/danger/warning," is false.
+
+**Rejected:** Keeping Cyan and accepting the two failing surfaces. The failures are on hover and active states, which is where a link colour is most used, not an edge case. Also rejected: switching to Azure unilaterally - the original objection to it (proximity to the retired Google blue) is a brand judgement, and brand judgements are the owner's, not measurement's. Recorded here so the tradeoff is visible rather than re-derived.
+
+**Note:** Azure's demerit may be an asset. Blue-family reads as "interactive" by convention, so proximity to a familiar blue helps comprehension. The deeper issue is that one token is being asked to carry both interactive affordance (wants conventional) and brand identity (wants distinctive). Distinctiveness is cheaper to carry in the TACO mark, typography and register.
+
+**Revisit if:** the owner confirms a family, or brand work establishes a company colour that should also serve as the product accent.
+
+## 2026-07-25 - Design drift metrics re-baselined against the audit tool
+
+**Decision:** `scripts/design-audit.js` and `.design-audit-baseline.json` are the authority for drift metrics. The hand counts previously carried in `CLAUDE.md` and `docs/design-system-v2-plan.md` are superseded.
+
+**Constraint:** The tool disagrees with the hand counts on eight of nine metrics, and two differences change scope materially. **Inline cards are 1,212, not 488** - Phase 3 is roughly 2.5× its planned size, and its exit criterion was written against the wrong number. **Undefined tokens are 23, not 28.** Prohibited classes rose (1,290 vs 1,231) because the audit was extended to catch CSS-level occurrences a `.tsx`-only scan missed; hex, radii and buttons all fell.
+
+**Rejected:** Updating the documents to new fixed numbers and leaving it there. That reproduces the original failure - three documents carrying three sets of numbers for the same metrics. The tables now point at the tool and are labelled as snapshots.
+
+## 2026-07-25 - Repository repaired in place; the fresh clone was not needed
+
+**Decision:** The damaged clone was repaired **in place** by restoring the missing pack file. `C:\dev\talent-consulting` was never created. Work is committed across 15 commits on `codex/admin-command-grid`, in the original OneDrive-hosted folder.
+
+**Constraint:** `pack-3b21952154748776d171e0df6104b4c73e7b860c.pack` was found byte-matching the surviving `.idx`, in a sibling folder - not in the recycle bin the runbook directed us to check. Restoring it fixed `git diff` and returned history to a whole 96 commits, which made the migration unnecessary for recovery purposes. Getting 2.5 months of work onto the remote quickly mattered more than relocating the folder.
+
+**Rejected:** Proceeding with the fresh clone anyway. Defensible - it also solves the OneDrive root cause - but it would have delayed committing uncommitted work in order to perform a move that can happen at any time afterwards.
+
+**Correction to the earlier entry below:** its accepted-loss list was wrong. `codex/audit-automation-recovery` and `codex/release-safe-cleanup` were **never lost** - both are on GitHub at the exact commits listed as unrecoverable. `stash@{1}` survived the pack restore and is readable. Only `stash@{0}` is genuinely gone; its tree is among 16 still missing, and it is why `git gc` aborts (`gc.auto` is set to 0 locally as a result).
+
+**Still true:** the repository remains inside OneDrive. The root cause is unaddressed.
+
 ## 2026-07-25 - `quantumsec01@gmail.com` named as second admin recovery owner
 
 **Decision:** `quantumsec01@gmail.com` is the second owner. Provisioning steps in `docs/SECOND-RECOVERY-OWNER.md`; the existing owner runs the CLI, not the new account.
@@ -45,6 +81,8 @@ Append-only. Newest at the top. One entry per decision that would otherwise get 
 **Rejected:** Working around it by clearing the lock before each command. It is fragile, and a lock cleared while a real git process is running would corrupt the index.
 
 ## 2026-07-25 - Accent becomes a new hue family, one step per mode
+
+> ⚠️ **Superseded** by "Accent decision reopened" at the top of this file. Its contrast validation covered one surface per mode out of seven, and its separation claim is measurably false. Retained for the reasoning, not the conclusion.
 
 **Decision:** Cyan - `#0891b2` dark / `#0e7490` light. Retires both the Google-blue `--accent` and the unbacked emerald shipping in the sidebar.
 
@@ -79,6 +117,8 @@ Append-only. Newest at the top. One entry per decision that would otherwise get 
 **Rejected:** Unifying them for consistency. Auditing them against product tokens would generate permanent noise, which trains people to ignore the audit - the failure mode that produced the current drift.
 
 ## 2026-07-25 - Repository recovered by fresh clone rather than in-place repair
+
+> ⚠️ **Superseded** by "Repository repaired in place" at the top of this file. The fresh clone did not happen, and the accepted-loss list below overstates what was lost. Retained for the diagnosis, not the outcome.
 
 **Decision:** Clone fresh from GitHub to `C:\dev\talent-consulting`, lay the working tree on top, commit in twelve batches.
 
