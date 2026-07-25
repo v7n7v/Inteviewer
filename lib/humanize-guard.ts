@@ -1,6 +1,6 @@
 /**
  * Humanization Guard — lightweight AI cleanup for all platform output.
- * No API calls. Runs locally on text output from morph, cover letter, Sona, etc.
+ * No API calls. Runs locally on text output from morph, cover letter, Taco, etc.
  * Strips AI punctuation artifacts + runs heuristic detection scoring.
  */
 

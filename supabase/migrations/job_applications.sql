@@ -1,3 +1,11 @@
+-- ============================================================================
+-- SUPERSEDED -- DO NOT BUILD AGAINST THIS.
+-- Postgres DDL from a Supabase design that was never shipped.
+-- The live data layer is Cloud Firestore; see firestore.rules and
+-- TALENT_SUITE_ARCHITECTURE.md. Retained for history only; safe to delete.
+-- Verified 25 July 2026.
+-- ============================================================================
+
 -- Job Applications Tracker Table
 -- This table tracks resume morphing sessions and application status
 

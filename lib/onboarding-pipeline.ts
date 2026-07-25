@@ -25,13 +25,17 @@ export async function runPostOnboardingPipeline(profile: UserProfile) {
         'Original Resume',
         resumeData,
         extractSkillGraph(resumeData),
-        'technical'
+        'technical',
+        {
+          savedFrom: 'onboarding_upload',
+          resumeProvenance: { verified: true, origin: 'onboarding_upload' },
+        }
       )
     );
   }
 
-  // 2. Seed the server-side vault collection (Sona, Cover Letter, Job Fit all read this)
-  //    This is the critical bridge — without it, Sona says "no resume found"
+  // 2. Seed the server-side vault collection (Taco, Cover Letter, Job Fit all read this)
+  //    This is the critical bridge — without it, Taco says "no resume found"
   if (resumeData || resumeText) {
     tasks.push(seedVault(resumeData, resumeText));
   }
@@ -64,7 +68,7 @@ export async function runPostOnboardingPipeline(profile: UserProfile) {
 
 /**
  * Seed the server-side `vault` collection via API route.
- * This is what Sona's fetch_resume, analyze_job_fit, generate_cover_letter,
+ * This is what Taco's fetch_resume, analyze_job_fit, generate_cover_letter,
  * and all other AI tools read from.
  */
 async function seedVault(parsed: any | null, rawText?: string): Promise<void> {
@@ -103,7 +107,7 @@ async function seedVault(parsed: any | null, rawText?: string): Promise<void> {
 
 /**
  * Build a minimal resume structure from raw text when normalizeResume() fails.
- * This ensures Sona at least has the raw content to work with.
+ * This ensures Taco at least has the raw content to work with.
  */
 function buildMinimalResume(text: string): any {
   return {

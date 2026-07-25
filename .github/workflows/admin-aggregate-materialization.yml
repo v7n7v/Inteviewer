@@ -1,0 +1,39 @@
+name: Admin aggregate materialization
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: admin-aggregate-materialization-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    name: Refresh production Admin snapshots
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out the deployed contract
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Use the supported Node runtime
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+
+      - name: Materialize and verify Admin snapshots
+        env:
+          ADMIN_AGGREGATE_BASE_URL: https://talentconsulting.io
+          CRON_SECRET: ${{ secrets.ADMIN_AGGREGATE_CRON_SECRET }}
+        run: node scripts/admin-aggregate-prime.js
+
+      - name: Publish an operator-visible failure
+        if: failure()
+        run: |
+          echo "### Admin aggregate refresh failed" >> "$GITHUB_STEP_SUMMARY"
+          echo "The production Admin Command Grid may become stale. Follow docs/admin-command-grid-operations.md." >> "$GITHUB_STEP_SUMMARY"

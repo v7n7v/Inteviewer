@@ -1,18 +1,18 @@
 /**
  * Referral System
- * "Bring a friend, both get 50% off for 3 months"
+ * "Bring a friend into the founding-member offer"
  *
  * Flow:
  *  1. User generates unique referral code (TC-XXXX-XXXX)
  *  2. Friend signs up with the code
- *  3. When friend upgrades to Pro, both get 50% off 3 months
- *  4. Rewards applied via Stripe promotion codes
+ *  3. When the friend upgrades to Standard or Max, the conversion is recorded
+ *  4. Eligible new subscribers receive the current founding price in checkout
  *
  * Anti-abuse:
  *  - Max 10 referrals per user
  *  - Referee must be a new account (email never seen)
  *  - Self-referral blocked (same email)
- *  - Reward only triggers on Pro upgrade, not just signup
+ *  - Conversion only triggers on a paid upgrade, not just signup
  */
 
 import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, query, where, getDocs } from 'firebase/firestore';
@@ -164,9 +164,9 @@ export async function applyReferralCode(
 }
 
 /**
- * Trigger referral reward when a referred user upgrades to Pro.
+ * Record a referral conversion when a referred user upgrades.
  * Call this from the Stripe webhook after a successful checkout.
- * Both referrer and referee get 50% off for 3 months via Stripe coupon.
+ * Pricing remains governed by the verified Stripe founding offer.
  */
 export async function triggerReferralReward(
   refereeUid: string,
@@ -190,14 +190,12 @@ export async function triggerReferralReward(
     });
   } catch { /* user doc might not exist yet */ }
 
-  monitor.info('Referral Converted! 🎉', `Both users get 50% off 3 months`, [
+  monitor.info('Referral Converted! 🎉', 'Referred user started a paid plan', [
     { name: 'Referrer', value: referrerUid.slice(0, 8) + '…' },
     { name: 'Referee', value: refereeEmail },
   ]);
 
-  // Note: Stripe coupon application happens in the checkout/subscribe route
-  // by checking referredBy and applying the coupon at session creation time.
-  // Alternatively, use stripe.subscriptions.update() to apply mid-cycle.
+  // The founding offer is verified and applied by the checkout routes.
 
   return { rewarded: true, referrerUid };
 }

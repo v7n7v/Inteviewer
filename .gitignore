@@ -67,3 +67,8 @@ YOUR_CREDENTIALS.txt
 # recovery artefacts (25 July 2026) — not source
 /_backup
 /_to_delete
+
+# QA / audit output — regenerable, ~412 MB, never source
+/output
+/test-results
+/.playwright-cli

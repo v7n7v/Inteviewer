@@ -12,6 +12,8 @@ export interface PromoConfig {
   active: boolean;
   /** Promo code users should enter at checkout */
   code: string;
+  /** Whether checkout applies the eligible plan-specific code automatically */
+  automatic: boolean;
   /** Short headline for the banner */
   headline: string;
   /** CTA button text */
@@ -29,12 +31,13 @@ export const promoConfig: PromoConfig = {
   // ✏️  EDIT BELOW TO CHANGE PROMO
   // ═══════════════════════════════════════
   active: true,
-  code: 'LAUNCH50',
-  headline: '🚀 Launch Special — 50% off Pro for 3 months',
-  ctaText: 'Claim Offer',
+  code: 'FOUNDING-2026',
+  automatic: true,
+  headline: 'Founding pricing — Standard $7.99/mo · Max $14.99/mo',
+  ctaText: 'See founding prices',
   ctaUrl: '/suite/upgrade',
   accentColor: '#10b981',
-  expiresAt: '2026-06-01T00:00:00Z', // Auto-expires June 1
+  expiresAt: '2026-11-01T03:59:59Z',
 };
 
 /** Check if promo is currently valid */

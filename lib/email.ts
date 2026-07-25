@@ -1,4 +1,21 @@
+/**
+ * Email Send Functions
+ * All functions use the shared template system from email-templates.ts
+ * and send via Resend.
+ */
 import { Resend } from 'resend';
+import { renderEmail } from './email/render';
+import type { RenderedEmail } from './email/contracts';
+import type { EmailCatalog, ImplementedEmailEventKey } from './email/catalog';
+import type { z } from 'zod';
+import { getBillingPrice } from '@/lib/billing-prices';
+import { type BillingInterval, type BillingPlan } from '@/lib/billing-price-types';
+
+export interface EmailSendResult {
+  ok: boolean;
+  id?: string;
+  error?: string;
+}
 
 let _resend: Resend | null = null;
 function getResend() {
@@ -9,56 +26,149 @@ function getResend() {
   }
   return _resend;
 }
-const FROM_EMAIL = 'TalentConsulting <hello@talentconsulting.io>';
 
-export async function sendUpgradeEmail(toEmail: string, plan: string, months?: number) {
-  try {
-    if (!toEmail) return false;
-
-    const planName = plan === 'studio' ? 'Max Tier' : plan === 'pro' ? 'Pro Tier' : 'Free Tier';
-    const durationText = months ? `for the next ${months} months` : 'permanently';
-
-    const html = `
-      <div style="font-family: -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
-        <div style="background: linear-gradient(135deg, #059669, #0d9488); padding: 20px 24px; border-radius: 12px 12px 0 0;">
-          <h1 style="color: white; margin: 0; font-size: 20px;">Your Account has been Upgraded!</h1>
-        </div>
-        <div style="background: #f9fafb; padding: 24px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
-          <p style="font-size: 16px; color: #1f2937; line-height: 1.6;">
-            Hello,
-          </p>
-          <p style="font-size: 16px; color: #1f2937; line-height: 1.6;">
-            We are excited to let you know that your Talent Consulting account has just been upgraded to the <strong>${planName}</strong>.
-          </p>
-          <div style="margin: 24px 0; padding: 16px; background: white; border: 1px solid #e5e7eb; border-radius: 8px; text-align: center;">
-            <p style="margin: 0; color: #6b7280; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">New Access Level</p>
-            <p style="margin: 8px 0 0; color: #059669; font-size: 24px; font-weight: bold;">${planName}</p>
-            ${months ? `<p style="margin: 4px 0 0; color: #6b7280; font-size: 12px;">Valid ${durationText}</p>` : ''}
-          </div>
-          <p style="font-size: 16px; color: #1f2937; line-height: 1.6;">
-            You now have access to enhanced features, increased AI generation limits, and premium tools.
-          </p>
-          <div style="margin-top: 32px; text-align: center;">
-            <a href="https://talentconsulting.io/suite" style="display: inline-block; background: #059669; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">Go to Dashboard</a>
-          </div>
-          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 32px 0;" />
-          <p style="font-size: 12px; color: #9ca3af; margin: 0; text-align: center;">
-            TalentConsulting.io &bull; The Industrial Tech Forge
-          </p>
-        </div>
-      </div>
-    `;
-
-    await getResend().emails.send({
-      from: FROM_EMAIL,
-      to: [toEmail],
-      subject: `Account Upgrade: ${planName} unlocked!`,
-      html,
-    });
-
-    return true;
-  } catch (error) {
-    console.error('[email] Failed to send upgrade email:', error);
-    return false;
+function providerErrorMessage(error: unknown): string {
+  if (!error) return 'Unknown provider error';
+  if (typeof error === 'string') return error;
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === 'string' && message.trim()) return message;
   }
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return String(error);
+  }
+}
+
+export type EmailSendOptions = {
+  idempotencyKey?: string;
+  additionalTags?: Array<{ name: string; value: string }>;
+};
+
+export async function sendRenderedEmailResult(to: string, email: RenderedEmail, options: EmailSendOptions = {}): Promise<EmailSendResult> {
+  try {
+    if (!to) return { ok: false, error: 'Missing recipient email' };
+    const result = await getResend().emails.send(
+      {
+        from: email.from,
+        to: [to],
+        subject: email.subject,
+        html: email.html,
+        text: email.text,
+        replyTo: email.replyTo,
+        headers: email.headers,
+        tags: [...email.tags, ...(options.additionalTags || [])],
+      },
+      options.idempotencyKey ? { idempotencyKey: options.idempotencyKey } : undefined,
+    ) as {
+      data?: { id?: string } | null;
+      error?: unknown;
+    };
+    if (result.error) {
+      const message = providerErrorMessage(result.error);
+      console.error('[email] Send failed:', message);
+      return { ok: false, error: message };
+    }
+    return { ok: true, id: result.data?.id };
+  } catch (error) {
+    console.error('[email] Send failed:', error);
+    return { ok: false, error: providerErrorMessage(error) };
+  }
+}
+
+/** Typed escape hatch for routes that already own a verified recipient and event payload. */
+export async function sendEmailEventResult<TKey extends ImplementedEmailEventKey>(
+  toEmail: string,
+  event: TKey,
+  payload: z.input<EmailCatalog[TKey]['schema']>,
+  options?: EmailSendOptions,
+): Promise<EmailSendResult> {
+  const email = await renderEmail(event, payload);
+  return sendRenderedEmailResult(toEmail, email, options);
+}
+
+/** Send account upgrade notification (admin-granted) */
+export async function sendUpgradeEmailResult(toEmail: string, plan: string, months?: number): Promise<EmailSendResult> {
+  const email = await renderEmail('account.access_changed', {
+    planName: plan,
+    accessSummary: months
+      ? `Your upgraded access is available for ${months} month${months === 1 ? '' : 's'}.`
+      : 'Your upgraded access is available now.',
+  });
+  return sendRenderedEmailResult(toEmail, email);
+}
+
+export async function sendUpgradeEmail(toEmail: string, plan: string, months?: number): Promise<boolean> {
+  return (await sendUpgradeEmailResult(toEmail, plan, months)).ok;
+}
+
+/** Send welcome email after signup */
+export async function sendWelcomeEmailResult(toEmail: string, name: string): Promise<EmailSendResult> {
+  const email = await renderEmail('account.welcome', { recipientName: name || undefined });
+  return sendRenderedEmailResult(toEmail, email);
+}
+
+export async function sendWelcomeEmail(toEmail: string, name: string): Promise<boolean> {
+  return (await sendWelcomeEmailResult(toEmail, name)).ok;
+}
+
+/** Send subscription confirmation after Stripe checkout */
+export async function sendSubscriptionEmailResult(toEmail: string, name: string, plan: string, interval: string, priceDisplay?: string, options?: EmailSendOptions): Promise<EmailSendResult> {
+  let display = priceDisplay;
+  if (!display && (plan === 'pro' || plan === 'studio') && (interval === 'month' || interval === 'year')) {
+    const price = await getBillingPrice(plan as BillingPlan, interval as BillingInterval);
+    display = price.unitAmount == null ? undefined : price.display;
+  }
+  const email = await renderEmail('billing.subscription_activated', {
+    recipientName: name || undefined,
+    planName: plan,
+    interval: interval === 'month' || interval === 'year' ? interval : 'other',
+    price: display,
+  });
+  return sendRenderedEmailResult(toEmail, email, options);
+}
+
+export async function sendSubscriptionEmail(toEmail: string, name: string, plan: string, interval: string, priceDisplay?: string): Promise<boolean> {
+  return (await sendSubscriptionEmailResult(toEmail, name, plan, interval, priceDisplay)).ok;
+}
+
+/** Send cancellation notice */
+export async function sendCancellationEmailResult(toEmail: string, name: string, accessEndsAt?: string, options?: EmailSendOptions): Promise<EmailSendResult> {
+  const email = await renderEmail('billing.cancellation_scheduled', {
+    recipientName: name || undefined,
+    accessEndsAt,
+  });
+  return sendRenderedEmailResult(toEmail, email, options);
+}
+
+export async function sendCancellationEmail(toEmail: string, name: string, accessEndsAt?: string): Promise<boolean> {
+  return (await sendCancellationEmailResult(toEmail, name, accessEndsAt)).ok;
+}
+
+/** Send trial ending warning */
+export async function sendTrialEndingEmailResult(toEmail: string, name: string, daysLeft: number, options?: EmailSendOptions): Promise<EmailSendResult> {
+  const email = await renderEmail('billing.trial_ending', {
+    recipientName: name || undefined,
+    daysLeft,
+  });
+  return sendRenderedEmailResult(toEmail, email, options);
+}
+
+export async function sendTrialEndingEmail(toEmail: string, name: string, daysLeft: number): Promise<boolean> {
+  return (await sendTrialEndingEmailResult(toEmail, name, daysLeft)).ok;
+}
+
+/** Send plan change notification (upgrade/downgrade) */
+export async function sendPlanChangeEmailResult(toEmail: string, name: string, oldPlan: string, newPlan: string, options?: EmailSendOptions): Promise<EmailSendResult> {
+  const email = await renderEmail('billing.plan_changed', {
+    recipientName: name || undefined,
+    oldPlan,
+    newPlan,
+  });
+  return sendRenderedEmailResult(toEmail, email, options);
+}
+
+export async function sendPlanChangeEmail(toEmail: string, name: string, oldPlan: string, newPlan: string): Promise<boolean> {
+  return (await sendPlanChangeEmailResult(toEmail, name, oldPlan, newPlan)).ok;
 }
