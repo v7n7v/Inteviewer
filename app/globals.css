@@ -12,100 +12,180 @@
 /* Default (dark) — also used by FOUC prevention script */
 :root,
 [data-theme="dark"] {
-  --bg-deep: #0b0b0b;
-  --bg-surface: #131314;
-  --bg-elevated: #1a1a1b;
-  --bg-input: #1e1e1f;
-  --bg-hover: #1f1f21;
-  --border: #444746;
-  --border-subtle: #2d2d2f;
-  --border-hover: #5f6368;
-  --text-primary: #ffffff;
-  --text-secondary: #b0b3b3;
-  --text-tertiary: #8e918f;
-  --text-muted: #70757a;
-  --accent: #a8c7fa;
-  --accent-active: #c2e7ff;
-  --accent-dim: rgba(168, 199, 250, 0.08);
-  --accent-hover: rgba(168, 199, 250, 0.12);
-  --accent-on: #0b0b0b;
-  --danger: #f28b82;
-  --success: #81c995;
-  --warning: #fdd663;
+  --bg-deep: #01081F;
+  --bg-surface: #071231;
+  --bg-elevated: #0B1839;
+  --bg-input: #0B1839;
+  --bg-hover: #122045;
+  --border: #4767AD;
+  --border-subtle: #16264C;
+  --border-hover: #5F82C9;
+  --text-primary: #EEF2FF;
+  --text-secondary: #A8B4D4;
+  --text-tertiary: #8492B6;
+  --text-muted: #7182A8;
+  --accent: #00C2CD;
+  --accent-active: #00E0EC;
+  --accent-dim: rgba(0, 194, 205, 0.08);
+  --accent-hover: rgba(0, 194, 205, 0.12);
+  --accent-on: #01081F;
+  --danger: #FF9A8F;
+  --success: #8AE47A;
+  --warning: #F5C860;
   --icon-static: var(--text-muted);
   --icon-shell-bg: var(--bg-elevated);
   --icon-shell-border: var(--border-subtle);
-  --sidebar-bg: #131314;
-  --sidebar-active: rgba(168, 199, 250, 0.08);
-  --sidebar-text: #8e918f;
-  --sidebar-text-active: #a8c7fa;
-  --card-bg: #1a1a1b;
-  --theme-surface-hover: #1f1f21;
-  --theme-surface-active: #232325;
-  --modal-backdrop: rgba(0, 0, 0, 0.7);
+  /* AnimatedToolIcon sets this per icon from the style prop; .animated-tool-icon
+     in this file reads it. Until now the only declaration lived in the old
+     landing page's module stylesheet, so retiring that file left a global rule
+     pointing at a token nothing defined. The default belongs here. */
+  --tool-accent: var(--accent);
+  --sidebar-bg: #071231;
+  --sidebar-active: rgba(0, 194, 205, 0.08);
+  --sidebar-text: #8492B6;
+  --sidebar-text-active: #00C2CD;
+  --card-bg: #0B1839;
+  --theme-surface-hover: #122045;
+  --theme-surface-active: #122045;
+  --modal-backdrop: rgba(1, 8, 31, 0.7);
 
-  /* Distinct Brand Icons for Dark Mode (google-like palette) */
-  --tag-amber-bg: rgba(253, 214, 99, 0.15);
-  --tag-amber-text: #fdd663;
-  --tag-blue-bg: rgba(168, 199, 250, 0.15);
-  --tag-blue-text: #a8c7fa;
-  --tag-purple-bg: rgba(210, 168, 255, 0.15);
-  --tag-purple-text: #d2a8ff;
-  --tag-green-bg: rgba(129, 201, 149, 0.15);
-  --tag-green-text: #81c995;
-  --tag-rose-bg: rgba(242, 139, 130, 0.15);
-  --tag-rose-text: #f28b82;
+  /* Tag hues, re-solved against the brand accent rather than inherited from
+     Material. Purple resolves to the same pair as blue: purple is not an
+     accent in this system, and a token that quietly keeps one is how it comes
+     back. */
+  --tag-amber-bg: rgba(245, 200, 96, 0.15);
+  --tag-amber-text: #F5C860;
+  --tag-blue-bg: rgba(46, 155, 255, 0.15);
+  --tag-blue-text: #7FB6FF;
+  --tag-purple-bg: rgba(46, 155, 255, 0.15);
+  --tag-purple-text: #7FB6FF;
+  --tag-green-bg: rgba(138, 228, 122, 0.15);
+  --tag-green-text: #8AE47A;
+  --tag-rose-bg: rgba(255, 154, 143, 0.15);
+  --tag-rose-text: #FF9A8F;
 
   color-scheme: dark;
 }
 
 /* ─── LIGHT MODE (AI Studio reference) ─── */
 [data-theme="light"] {
-  --bg-deep: #ffffff;
-  --bg-surface: #f8f9fa;
-  --bg-elevated: #f1f3f4;
-  --bg-input: #ffffff;
-  --bg-hover: #e8eaed;
-  --border: #dadce0;
-  --border-subtle: #e8eaed;
-  --border-hover: #bdc1c6;
-  --text-primary: #000000;
-  --text-secondary: #303030;
-  --text-tertiary: #5f6368;
-  --text-muted: #6b7280;
-  --accent: #1a73e8;
-  --accent-active: #1558bc;
-  --accent-dim: rgba(26, 115, 232, 0.06);
-  --accent-hover: rgba(26, 115, 232, 0.1);
-  --accent-on: #ffffff;
-  --danger: #d93025;
-  --success: #188038;
-  --warning: #e37400;
+  /* The light surfaces are deliberately kept inside a narrow luminance band.
+     docs/design-system-v2-plan.md 3.1: one accent step per mode only works if
+     the surfaces stay inside the band that step can reach, and the old
+     --bg-hover was light enough to put accent-coloured text below 4.5:1
+     wherever a row was hovered. --bg-hover and --theme-surface-active are the
+     darkest of them, and they are what the accent is solved against. */
+  --bg-deep: #FFFFFF;
+  --bg-surface: #F5F7FC;
+  --bg-elevated: #EEF2FA;
+  --bg-input: #FFFFFF;
+  --bg-hover: #EAEFF9;
+  --border: #7C8EB0;
+  --border-subtle: #DFE5F2;
+  --border-hover: #5F7196;
+  --text-primary: #010E2F;
+  --text-secondary: #31405F;
+  --text-tertiary: #47557A;
+  --text-muted: #5C6890;
+  --accent: #00787F;
+  --accent-active: #00666D;
+  --accent-dim: rgba(0, 120, 127, 0.06);
+  --accent-hover: rgba(0, 120, 127, 0.1);
+  --accent-on: #FFFFFF;
+  --danger: #B3261E;
+  --success: #2A7A2E;
+  --warning: #8A5200;
   --icon-static: var(--text-muted);
   --icon-shell-bg: var(--bg-elevated);
   --icon-shell-border: var(--border-subtle);
-  --sidebar-bg: #f8f9fa;
-  --sidebar-active: rgba(26, 115, 232, 0.08);
-  --sidebar-text: #000000;
-  --sidebar-text-active: #000000;
-  --card-bg: #ffffff;
-  --theme-surface-hover: #f1f3f4;
-  --theme-surface-active: #e8eaed;
-  --modal-backdrop: rgba(0, 0, 0, 0.4);
+  --sidebar-bg: #F5F7FC;
+  --sidebar-active: rgba(0, 120, 127, 0.08);
+  --sidebar-text: #31405F;
+  --sidebar-text-active: #010E2F;
+  --card-bg: #FFFFFF;
+  --theme-surface-hover: #EEF2FA;
+  --theme-surface-active: #EAEFF9;
+  --modal-backdrop: rgba(1, 14, 47, 0.4);
 
-  /* Distinct Brand Icons for Light Mode (google-like palette) */
-  --tag-amber-bg: rgba(249, 171, 0, 0.12);
-  --tag-amber-text: #e37400;
-  --tag-blue-bg: rgba(26, 115, 232, 0.12);
-  --tag-blue-text: #1a73e8;
-  --tag-purple-bg: rgba(161, 66, 244, 0.12);
-  --tag-purple-text: #9334e6;
-  --tag-green-bg: rgba(24, 128, 56, 0.12);
-  --tag-green-text: #188038;
-  --tag-rose-bg: rgba(217, 48, 37, 0.12);
-  --tag-rose-text: #d93025;
+  /* Tag hues, re-solved against the brand accent rather than inherited from
+     Material. Purple resolves to the same pair as blue: purple is not an
+     accent in this system. */
+  --tag-amber-bg: rgba(138, 82, 0, 0.12);
+  --tag-amber-text: #8A5200;
+  --tag-blue-bg: rgba(21, 76, 158, 0.12);
+  --tag-blue-text: #154C9E;
+  --tag-purple-bg: rgba(21, 76, 158, 0.12);
+  --tag-purple-text: #154C9E;
+  --tag-green-bg: rgba(42, 122, 46, 0.12);
+  --tag-green-text: #2A7A2E;
+  --tag-rose-bg: rgba(179, 38, 30, 0.12);
+  --tag-rose-text: #B3261E;
 
   color-scheme: light;
+}
+
+/* ===========================================================================
+   THE BRAND SURFACE — .tcl
+
+   The marketing landing page. It is dark-only by decision: choosing a theme
+   belongs to signed-in people, inside the product, so this block sits outside
+   [data-theme] entirely and does not change with the toggle.
+
+   It lives here rather than beside components/landing/talent-landing.css for
+   one reason - this is the file that defines every palette in the system, and
+   the audit's TOKEN_DEF_FILES exists to say so. A second file full of colour
+   literals would be a second source of truth no matter how well commented.
+
+   The second half re-points the app's own token names at this palette for the
+   subtree, because app/globals.css styles bare elements - `textarea` carries
+   `background: var(--bg-input) !important` - and !important cannot be
+   outranked by specificity. Anything that leaks into the landing now leaks in
+   wearing the right colour, in either theme.
+   =========================================================================== */
+.tcl {
+  /* THE MARK — option F, the split. Two hues meeting at a fold.
+     Both ramps START on the same value (#005065) at the apex, so the join is
+     one colour and the mark reads as one folded object; they diverge only as
+     the planes open. Left plane runs to blue (hue 250), right to cyan (196).
+     Matches brand/tc-mark.svg exactly. */
+  --rl0:#005065; --rl1:#005F84; --rl2:#006E9F; --rl3:#2E9BFF;
+  --rr0:#005065; --rr1:#00727E; --rr2:#008B97; --rr3:#00D8DA;
+  --deep:#01081F; --surface:#071231; --elevated:#0B1839; --hover:#122045;
+  --line:#16264C; --line-2:#24376A;
+  --ink:#EEF2FF; --ink-2:#A8B4D4; --ink-3:#8492B6;
+  --accent:#00C2CD; --ok:#6FE3A6; --warn:#F5C860;
+  /* the Taco mark's own ramp - lighter at the apex so the glyph reads at 24px */
+  --taco-0:#4FD8E4; --taco-1:#00C2CD; --taco-2:#2E9BFF;
+  --ramp-text:linear-gradient(104deg,#009BA6,#00C2CD 48%,#00E0EC);
+  --ui:var(--font-inter,Inter),Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  --display:var(--font-poppins,Poppins),Poppins,'Century Gothic','URW Gothic',Futura,'Avenir Next','Trebuchet MS',var(--ui);
+  /* The buttons used to paint themselves from the MARK ramp, which is why they
+     stayed violet after the accent was cooled. They now have their own fill. */
+  --cta:linear-gradient(112deg,#00A9B4,#00D0DB 55%,#00E5F2);
+  --cta-ink:#01081F; --cta-edge:rgba(0,210,222,.5);
+  --gut:20px; --ease:cubic-bezier(.16,.84,.24,1); --r:16px;
+
+  /* ---------------------------------------------------------- theme island
+     The landing is a brand surface and is dark-only by decision: choosing a
+     theme belongs to signed-in people, inside the product.
+
+     app/globals.css styles bare elements - `textarea` carries
+     `background: var(--bg-input) !important`, `h1..h4` carry
+     `color: var(--text-primary)` - and !important beats any specificity this
+     file can reach. So rather than fight those rules, the app's own token
+     names are re-pointed at the landing palette for the subtree. Anything
+     that leaks in now leaks in wearing the right colour, in either theme. */
+  --bg-deep:var(--deep); --bg-surface:var(--surface); --bg-elevated:var(--elevated);
+  --bg-input:var(--elevated); --bg-hover:var(--hover); --card-bg:var(--surface);
+  --border:var(--line-2); --border-subtle:var(--line); --border-hover:var(--line-2);
+  --text-primary:var(--ink); --text-secondary:var(--ink-2);
+  --text-tertiary:var(--ink-3); --text-muted:var(--ink-3);
+  --accent-active:var(--accent); --accent-on:var(--cta-ink);
+  --success:var(--ok); --warning:var(--warn);
+  --theme-bg:var(--deep); --theme-bg-elevated:var(--elevated);
+  --theme-text:var(--ink); --theme-text-secondary:var(--ink-2);
+  --theme-border:var(--line); --theme-accent:var(--accent);
+  --theme-surface-hover:var(--hover); --theme-surface-active:var(--hover);
 }
 
 /* ─── CTA Shimmer Sweep ─── */

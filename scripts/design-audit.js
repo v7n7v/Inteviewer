@@ -45,11 +45,103 @@ const EXCLUDE_PATHS = [
   'lib/resume-templates',
 ];
 
+/**
+ * Files that DEFINE the tokens. Hex literals here are not hardcoded colors -
+ * they are the definitions every other file is supposed to point at, so
+ * counting them as violations means the metric goes up whenever someone does
+ * the right thing and edits a token instead of inlining a value. Same
+ * reasoning as EXCLUDE_PATHS above: noise here trains people to ignore the
+ * tool. These files are still audited for prohibited classes, radii, inline
+ * patterns and undefined tokens - only the hex metrics skip them.
+ */
+const TOKEN_DEF_FILES = [
+  'app/globals.css',
+];
+
+/**
+ * Tokens that ARE defined, just not in any file this script reads.
+ *
+ * next/font/google emits its CSS custom properties at build time from the
+ * `variable` option in app/layout.tsx - there is no stylesheet declaring
+ * --font-inter, so a text scan will always call it undefined. Listing them
+ * here is not an exemption; it is the scanner being told where the definition
+ * actually lives. Anything added to this list needs that same sentence.
+ */
+const EXTERNAL_TOKENS = new Set([
+  '--font-inter', '--font-brand', '--font-mono', '--font-poppins',
+]);
+
 const BASELINE_FILE = '.design-audit-baseline.json';
+
+/* --------------------------------------------------------------------------
+ * Accent contrast across every surface the token system defines.
+ *
+ * docs/design-system-v2-plan.md 3.1 found the real defect: one accent step
+ * per mode only works if the surfaces stay inside the luminance band that
+ * step can reach. Contrast had been validated against ONE surface per mode,
+ * so hover and active - exactly where accent-coloured interactive text lives
+ * - were failing AA unnoticed.
+ *
+ * Nobody re-derives that by hand when they nudge a hover colour, so it is a
+ * metric. It reads the token file directly; the number is how many
+ * (theme x surface) pairs put accent text below 4.5:1, and it must be 0.
+ * ------------------------------------------------------------------------ */
+const ACCENT_SURFACES = [
+  '--bg-deep', '--bg-surface', '--bg-elevated', '--bg-input', '--bg-hover',
+  '--card-bg', '--theme-surface-hover', '--theme-surface-active', '--sidebar-bg',
+];
+
+function relLuminance(hex) {
+  const h = hex.replace('#', '');
+  const ch = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255)
+    .map((c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)));
+  return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2];
+}
+
+function contrast(a, b) {
+  const la = relLuminance(a), lb = relLuminance(b);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+
+function accentContrastFailures(root) {
+  const fails = [];
+  for (const file of TOKEN_DEF_FILES) {
+    let css;
+    try { css = fs.readFileSync(path.join(root, file), 'utf8'); } catch { continue; }
+    for (const theme of ['dark', 'light']) {
+      const i = css.indexOf(`[data-theme="${theme}"]`);
+      if (i < 0) continue;
+      const end = css.indexOf('}', css.indexOf('color-scheme', i));
+      const block = css.slice(i, end < 0 ? undefined : end);
+      const tok = {};
+      for (const m of block.matchAll(/(--[a-z0-9-]+):\s*(#[0-9a-fA-F]{6})\b/g)) tok[m[1]] = m[2];
+      if (!tok['--accent']) continue;
+      for (const su of ACCENT_SURFACES) {
+        if (!tok[su]) continue;
+        const r = contrast(tok['--accent'], tok[su]);
+        if (r < 4.5) fails.push(`${theme} ${su} ${tok[su]} = ${r.toFixed(2)}:1`);
+      }
+    }
+  }
+  return fails;
+}
+
 
 /**
  * Classes the design system prohibits. Each carries the reason, because a
  * violation report that only says "don't" teaches nothing and gets argued with.
+ *
+ * A rule may carry `allowIn: [path, ...]`. That is a NARROW, per-rule, per-path
+ * exception - not a way to switch a rule off. Today the only entry is the
+ * marketing landing surface, which is a brand surface rather than product UI:
+ * gradients and one backdrop-filter are the language there and banned
+ * everywhere else. Everything else on that path - text-white, bg-white/N,
+ * shadows, the purple family - still applies to it.
+ *
+ * The alternative was running `--update` to absorb the landing page's
+ * gradients into the baseline, which would have raised the accepted floor
+ * for the WHOLE codebase and unlocked glass in the admin console and the
+ * suite, where nobody would have noticed until it had spread.
  */
 const PROHIBITED = [
   { key: 'text-white',    re: /\btext-white\b/g,                     why: 'breaks theming; use var(--text-primary)' },
@@ -64,10 +156,12 @@ const PROHIBITED = [
   // The same bans, expressed in CSS. Without these the gate only stops the Tailwind
   // spelling, and "make it look premium" reliably reaches for the CSS one instead.
   { key: 'css-gradient',  re: /(?:linear|radial|conic)-gradient\s*\(/g,
-                          why: 'decorative gradient in CSS; surfaces are flat' },
+                          why: 'decorative gradient in CSS; surfaces are flat',
+                          allowIn: ['components/landing'] },
   { key: 'css-shadow',    re: /box-shadow\s*:\s*(?!none)[^;}]+/g,
                           why: 'elevation is expressed with borders, not shadows' },
   { key: 'css-backdrop',  re: /backdrop-filter\s*:\s*(?!none)[^;}]+/g,
+                          allowIn: ['components/landing'],
                           why: 'glass is banned by the design system' },
 ];
 
@@ -81,6 +175,7 @@ const METRICS = [
   ['routesOffShell',     'Suite routes not using SuiteToolShell','lower'],
   ['tokenDefFiles',      'Files defining CSS custom properties', 'lower'],
   ['undefinedTokens',    'Tokens referenced but never defined',  'lower'],
+  ['accentContrastFails','Accent below 4.5:1 on a surface',      'lower'],
 ];
 
 // ---------------------------------------------------------------- helpers
@@ -145,7 +240,8 @@ function audit() {
     // --- hex colors. Normalise #abc -> #aabbcc and lowercase, so the same
     //     color written three ways counts once.
     const seenHere = new Set();
-    for (const m of src.matchAll(/#([0-9a-fA-F]{3,8})\b/g)) {
+    const isTokenDef = TOKEN_DEF_FILES.includes(rel.split(path.sep).join('/'));
+    for (const m of (isTokenDef ? [] : src.matchAll(/#([0-9a-fA-F]{3,8})\b/g))) {
       let h = m[1].toLowerCase();
       if (h.length === 3) h = h.split('').map((c) => c + c).join('');
       if (h.length !== 6 && h.length !== 8) continue;   // ignore 4/5/7-digit noise
@@ -158,7 +254,9 @@ function audit() {
 
     // --- prohibited classes
     let fileProhibited = 0;
+    const relPosix = rel.split(path.sep).join('/');
     for (const p of PROHIBITED) {
+      if (p.allowIn && p.allowIn.some((a) => relPosix === a || relPosix.startsWith(a + '/'))) continue;
       const n = countMatches(src, p.re);
       if (n) { bump(prohibitedCounts, p.key, n); fileProhibited += n; }
     }
@@ -194,7 +292,10 @@ function audit() {
     if (!/SuiteToolShell|SuiteToolHeader/.test(src)) offShell.push(rel);
   }
 
-  const undefinedTokens = [...tokenUses].filter((t) => !tokenDefs.has(t)).sort();
+  const undefinedTokens = [...tokenUses]
+    .filter((t) => !tokenDefs.has(t) && !EXTERNAL_TOKENS.has(t))
+    .sort();
+  const accentFails = accentContrastFailures(ROOT);
   const prohibitedTotal = [...prohibitedCounts.values()].reduce((a, b) => a + b, 0);
 
   return {
@@ -209,6 +310,7 @@ function audit() {
       routesOffShell: offShell.length,
       tokenDefFiles: tokenDefFiles.size,
       undefinedTokens: undefinedTokens.length,
+      accentContrastFails: accentFails.length,
     },
     detail: {
       sharedButtons,
@@ -216,6 +318,7 @@ function audit() {
       suitePages: suitePages.length,
       offShell,
       undefinedTokenNames: undefinedTokens,
+      accentFailures: accentFails,
       topHex: topN(hexCounts, 15),
       worstHexFiles: topN(hexByFile, 10),
       prohibitedBreakdown: topN(prohibitedCounts, 20),

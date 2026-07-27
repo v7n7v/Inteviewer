@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Google_Sans_Flex, Inter, JetBrains_Mono } from 'next/font/google';
+import { Google_Sans_Flex, Inter, JetBrains_Mono, Poppins } from 'next/font/google';
 import './globals.css';
 import ClientProviders from '@/components/ClientProviders';
 import ConsentAwareAnalytics from '@/components/privacy/ConsentAwareAnalytics';
@@ -29,6 +29,16 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
   variable: '--font-mono',
   display: 'swap',
+});
+
+/* Display face for the landing page. Self-hosted through next/font rather than
+   fetched from fonts.googleapis.com, so the marketing page adds no third-party
+   origin and no render-blocking request. */
+const poppins = Poppins({
+  subsets: ['latin'],
+  variable: '--font-poppins',
+  display: 'swap',
+  weight: ['300', '400', '500', '600', '700'],
 });
 
 export const metadata: Metadata = {
@@ -157,6 +167,14 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
+                /* The .js gate. Every rule that HIDES something on the landing
+                   page is scoped to html.js, so if this line never runs -
+                   script error, blocked inline script, an in-app WebView with
+                   JS off - the page is fully readable instead of blank.
+                   Reveals are an enhancement; they are never the thing that
+                   makes content exist. It sits outside the try below because
+                   it must not be skipped when localStorage throws. */
+                document.documentElement.classList.add('js');
                 try {
                   var s = localStorage.getItem('talent-studio-theme') || 'system';
                   var t = s;
@@ -197,7 +215,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${inter.variable} ${googleSansFlex.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} ${googleSansFlex.variable} ${jetbrainsMono.variable} ${poppins.variable} font-sans antialiased`}>
         <ConsentAwareAnalytics />
         <div className="relative z-10">
           <ClientProviders>{children}</ClientProviders>

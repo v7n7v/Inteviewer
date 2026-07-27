@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { GuidedCareerLanding } from '@/components/landing/GuidedCareerLanding';
+import { TalentLanding } from '@/components/landing/TalentLanding';
 import AuthModal from '@/components/modals/AuthModal';
 import { authHelpers } from '@/lib/firebase';
 import { useStore } from '@/lib/store';
@@ -64,7 +64,7 @@ export default function Home() {
         }}
       />
 
-      <GuidedCareerLanding isAuthenticated={Boolean(user)} onOpenAuth={openAuth} />
+      <TalentLanding isAuthenticated={Boolean(user)} onOpenAuth={openAuth} />
 
       {showAuthModal && (
         <AuthModal

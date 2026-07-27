@@ -1,6 +1,6 @@
 # Design System v2 — "Evidence You Can See"
 
-**Status:** direction approved 25 July 2026. Not started. Metrics and the accent decision re-measured 25 July 2026 — see §1 and §3.1; **the accent choice is reopened and Phase 1 must not implement one until it is confirmed.**
+**Status:** direction approved 25 July 2026. **Phase 1 partially delivered 26 July 2026** — the token layer is on the new accent and the landing module's private palette is retired; see §3.1 for the accent decision, now CLOSED. Metrics below are the 25 July measurement and are stale: re-run `node scripts/design-audit.js` for current values.
 **Prerequisite:** the repository must be recovered and committed first (`GIT-RECOVERY-RUNBOOK.md`). This plan touches nearly every file and is unreviewable against an uncommitted tree.
 **Supersedes on conflict:** `DESIGN.md`, `UI_DESIGN_GUIDE.md`.
 
@@ -111,13 +111,49 @@ The accent is being asked to do two jobs with opposite optimal answers:
 
 Fusing them is what produced the argument that cyan "reads as precise and instrument-like" — brand reasoning applied to a link color, which pushed the choice toward the weakest option on separation and a real contrast failure. Carry distinctiveness in the TACO mark, typography and register, where it costs nothing in comprehension.
 
-### Status: reopened — owner decision
+### Status: CLOSED — cyan/teal, implemented 26 July 2026
 
-**Recommendation: Azure** (`#1e88e5` dark / `#1565c0` light), best or tied-best on both measured criteria, plus per-surface-tier steps to close the hover/active gap.
+**Decision: the cyan/teal family**, chosen by the owner over the course of the
+brand work, not by this table. `#00C2CD` dark / `#00787F` light. The mark, the
+wordmark and the marketing landing were all rebuilt onto it first; the token
+layer followed on 26 July.
 
-**Cobalt** remains the pragmatic alternative — equal AA pass rate and it is already `--admin-cobalt` (`#315cff`), making the admin fold-in nearly free — at the cost of chroma 95, by far the most visually insistent option.
+**This section's recommendation (Azure) was not taken, and the reasoning it
+rested on has been re-derived rather than inherited.** The measurement above
+compared `#0891b2`/`#0e7490` against surfaces — `#1f1f21`, `#e8eaed` — that no
+longer exist: the surface scale moved from Google's greys to the brand's navy
+and paper in the same change. A verdict measured against retired inputs cannot
+be carried forward.
 
-This is a product/brand tradeoff the plan does not settle on measurement alone. **Do not implement an accent until it is confirmed.** Reserved and unchanged either way: success `#188038`, danger `#d93025`, warning `#e37400` (light `#a85200`). Status always ships with an icon and label, never color alone.
+**What survived, and it was the important part:** this section's real finding
+was never the hue. It was that *one accent step per mode only works if the
+surfaces stay inside the luminance band that step can reach*, and that
+validating against one surface per mode hides failures on hover and active —
+exactly where accent-coloured interactive text lives. That was correct, and
+the first implementation reproduced it: light accent measured **4.35:1** on
+`--bg-hover` and `--theme-surface-active`.
+
+Fixed by the second remedy this section proposed — constraining the surfaces
+rather than adding a step per tier. `--bg-hover` and `--theme-surface-active`
+moved `#E3EAF6` → `#EAEFF9`, the shallowest value that clears the floor.
+
+Re-measured across all nine surfaces the token file defines, both modes:
+
+| | worst surface | failing | min hue separation |
+| --- | --- | --- | --- |
+| dark `#00C2CD` | 6.78:1 | **0 / 9** | 68° |
+| light `#00787F` | 4.56:1 | **0 / 9** | 65° |
+
+**Status colours moved too.** They were Google Material, inherited wholesale.
+Success sat 49° from the new accent — nearer than the Teal candidate this
+section rejected at 39°. Now: success `#8AE47A` dark / `#2A7A2E` light, danger
+`#FF9A8F` / `#B3261E`, warning `#F5C860` / `#8A5200`. Status still always ships
+with an icon and label, never colour alone.
+
+**This is now enforced, not documented.** `scripts/design-audit.js` carries an
+`accentContrastFails` metric that reads the token file and checks the accent
+against every surface in both modes on each run. It must be 0. Verified by
+reverting `--bg-hover` to its old value and watching the metric go to 1.
 
 ### 3.2 Admin — fold in, keep density
 

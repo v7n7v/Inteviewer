@@ -1,14 +1,15 @@
 {
-  "updated": "2026-07-25T09:41:13.387Z",
+  "updated": "2026-07-26T22:44:09.634Z",
   "metrics": {
-    "distinctHex": 465,
-    "hexOccurrences": 1553,
-    "prohibitedTotal": 1290,
-    "distinctRadii": 32,
+    "distinctHex": 300,
+    "hexOccurrences": 1183,
+    "prohibitedTotal": 1260,
+    "distinctRadii": 31,
     "inlineButtons": 301,
-    "inlineCards": 1212,
+    "inlineCards": 1167,
     "routesOffShell": 22,
     "tokenDefFiles": 6,
-    "undefinedTokens": 23
+    "undefinedTokens": 20,
+    "accentContrastFails": 0
   }
 }
