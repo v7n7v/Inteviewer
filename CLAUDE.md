@@ -193,6 +193,52 @@ Bannered as superseded on 25 July 2026:
 5. **The global theme cascade has caused the same P0 twice** — a light-theme override inverting an intentionally dark surface while leaving light text. Theme-invariant surfaces need an explicit boundary.
 6. Mobile has **no bottom nav bar**. `MobileQuickToolsRail` sits at the top below 1024px. Sticky bottom bars are for workflow actions only.
 7. **Never fabricate UI content** — no fake scores, mock saved data, or placeholder illustrations. `design-qa.md` strips these repeatedly.
+8. **The landing page went blank on a real device once.** Every CSS rule that
+   *hides* something there is scoped to `html.js`, set by the pre-paint script
+   in `app/layout.tsx`. If that class never lands — script error, blocked inline
+   script, in-app WebView with JS off — the page must stay readable. Do not
+   remove the gate, and do not add a hiding rule that is not gated on it.
+9. **`weakWords` matching is plain substring.** `leverage` does not match
+   `leveraging`; `utilize` does not match `utilizing`. The Career Check silently
+   under-reports. Stem the list or switch to a word-boundary regex — this is a
+   real product bug, not a demo artefact.
+
+---
+
+## 9b. The landing page — `components/landing/`
+
+`app/page.tsx` renders `TalentLanding`. `GuidedCareerLanding` and `LandingPage`
+are retired to `_to_delete/`. Four things about it are deliberate and will look
+like mistakes if you do not know why:
+
+- **`talent-landing.css` is a plain global stylesheet, not a CSS module**, with
+  every selector mechanically scoped under `.tcl`. Converting it to a module
+  breaks the page: `talentLandingMotion.ts` finds elements by those exact class
+  names, and a module would hash them apart.
+- **It contains no colour literals.** The palette is the `.tcl` block in
+  `app/globals.css`, which also re-points the token names the app itself uses
+  (`--bg-input`, `--text-primary`, …) for that subtree. That is not redundancy:
+  `globals.css` styles bare `textarea` with
+  `background: var(--bg-input) !important`, and !important cannot be outranked
+  by specificity. Anything that leaks in now leaks in wearing the right colour.
+- **The landing is dark-only by product decision** — choosing a theme belongs to
+  signed-in people, inside the product. `color-scheme: dark` on `.tcl` keeps the
+  textarea, scrollbars and focus rings dark when the app is in light mode.
+- **Three regions use `dangerouslySetInnerHTML` with module-owned constants**
+  (`#res`, `#rwText`, `#chatLog`). The motion module rewrites their innerHTML;
+  marking them opaque stops React reconciling children it did not write. No user
+  input reaches any of them — the results panel is assembled from a fixed phrase
+  list and integer counts and never echoes the textarea at all.
+
+No `box-shadow` anywhere in it. `scripts/design-audit.js` bans it, and the
+`components/landing` exception is documented as covering gradients and
+`backdrop-filter` only. Elevation there is a solid fill, an accent-tinted border
+and an `outline` ring of page background.
+
+Two audit mechanics to understand before you "fix" a metric: `TOKEN_DEF_FILES`
+exempts token-defining files from the hex counts *only*, and `EXTERNAL_TOKENS`
+tells the scanner that next/font emits `--font-*` at build time. Neither is a
+way to switch a rule off.
 
 ---
 

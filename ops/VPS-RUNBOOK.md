@@ -217,9 +217,16 @@ The site file already exists. Put your hash in it:
 
 ```bash
 sudo nano /etc/caddy/sites/talent.caddy    # replace REPLACE_WITH_HASH
+sudo caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 sudo systemctl reload caddy
 sudo systemctl status caddy --no-pager
 ```
+
+`validate` before `reload`, always. A reload with a broken config takes the
+site down and tells you why in the journal; validate tells you why while the
+site is still up. If it complains about an **unrecognized directive
+`basic_auth`**, the installed Caddy is older than 2.8 — the setup script picks
+the right spelling automatically, so this only bites if you hand-edit.
 
 Open **https://srv1680197.hstgr.cloud** on the phone. The certificate is
 automatic — Caddy fetches one from Let's Encrypt on the first request, which is

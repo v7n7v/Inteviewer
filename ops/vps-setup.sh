@@ -173,6 +173,15 @@ else
   apt-get install -y -qq caddy
 fi
 
+# Caddy renamed `basicauth` to `basic_auth` in v2.8. The stable repo serves
+# current, but pinning the name to the installed version costs six lines and
+# saves an "unrecognized directive" wall that is very hard to diagnose from a
+# phone.
+CADDY_VER=$(caddy version 2>/dev/null | head -1 | sed 's/^v//' | cut -d' ' -f1)
+CADDY_MINOR=$(echo "${CADDY_VER:-2.0.0}" | cut -d. -f2)
+if [ "${CADDY_MINOR:-0}" -ge 8 ] 2>/dev/null; then AUTH_DIRECTIVE=basic_auth; else AUTH_DIRECTIVE=basicauth; fi
+say "Caddy ${CADDY_VER:-unknown}, using '$AUTH_DIRECTIVE'"
+
 # One file per project, so adding or removing a site is one file and a reload
 # rather than an edit to a shared blob you have to get right on a phone.
 install -d /etc/caddy/sites
@@ -190,7 +199,7 @@ for spec in "${PROJECTS[@]}"; do
 #
 # HOSTNAME_GOES_HERE {
 # 	encode zstd gzip
-# 	basic_auth { you HASH_GOES_HERE }
+# 	$AUTH_DIRECTIVE { you HASH_GOES_HERE }
 # 	reverse_proxy 127.0.0.1:$port
 # 	@ws { header Connection *Upgrade*
 # 	      header Upgrade websocket }
@@ -205,7 +214,7 @@ $host {
 
 	# Replace the hash with what \`caddy hash-password\` prints. The password
 	# itself is never written down here.
-	basic_auth {
+	$AUTH_DIRECTIVE {
 		you REPLACE_WITH_HASH
 	}
 
@@ -223,6 +232,10 @@ EOF
     say "Project '$name': wrote $f for $host"
   fi
 done
+
+say "Validating the generated Caddy config"
+caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile 2>&1 | tail -3 \
+  || warn "Caddy config did not validate - fix it before reloading, the site files are in /etc/caddy/sites/"
 
 # --------------------------------------------------------------- 7. firewall
 say "Firewall: 22, 80, 443 in; everything else denied"
