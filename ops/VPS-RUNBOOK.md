@@ -11,88 +11,69 @@ paste with no cursor work, which `nano` is not.
 
 ---
 
-## Step 0 — push, before the box exists
+## Step 0 — DONE
 
-Already committed for you: two commits on `landing/talent-landing`. Nothing is
-pushed, because the shell I have on your machine has no network.
-
-From **Windows**, in the repo:
-
-```powershell
-git push -u origin landing/talent-landing
-```
-
-If git complains about `index.lock`, delete `.git\index.lock` and retry — git
-could not remove its own lock files through the bridge, and I left a few
-`zz-stale-*` files in `.git\` that `Remove-Item .git\zz-stale-*` will clear.
-
-Until this runs, tonight's landing page exists in exactly one place, and that
-place is a OneDrive folder that already reverted `app/globals.css` once.
+Three commits are on GitHub, on `landing/talent-landing`. Verified: local HEAD
+and `origin/landing/talent-landing` are the same SHA, ahead=0 behind=0.
 
 ---
 
-## Step 1 — reinstall the OS
+## Step 1 — the box stays as it is
 
-hPanel → your VPS → **Operating System** → **Reinstall OS** → Ubuntu 24.04.
+**No reinstall.** The setup script was rewritten to be safe on a live machine,
+because this box was never inventoried and a script that assumes an empty
+machine is how you discover what was on it the hard way.
 
-You said the box is empty. If there is any doubt at all, take a snapshot first
-— it is one click and it costs nothing.
+What changed, specifically:
 
-The reinstall gives you a new root password and **changes the host key**, so
-your SSH client will refuse to connect with a scary warning the first time.
-That is expected. On Windows:
+- **It inventories before it writes anything.** OS, memory, disk, accounts,
+  running web servers, docker containers, listening sockets.
+- **It refuses to steal ports 80 or 443.** If anything that is not Caddy holds
+  either one, it prints what it found, changes *nothing*, and exits 2. Override
+  with `FORCE=1 bash setup.sh` only once you know what you would be displacing.
+- **The firewall is additive.** The old version ran `ufw --force reset`, which
+  would have wiped every existing rule. It now only ever *adds* 22/80/443, and
+  if ufw was already active it says so and keeps what is there.
+- **Node is not silently replaced.** If some other major version is installed,
+  it stops and tells you, rather than upgrading underneath whatever depends
+  on it.
+- Existing users, swap, and any Caddy site file already present are left alone.
 
-```powershell
-ssh-keygen -R 187.77.8.98
-ssh-keygen -R srv1680197.hstgr.cloud
-```
+The port check reads `/proc/net/tcp` rather than `ss`/`netstat`, because those
+are absent on minimal images and their absence would otherwise read as "every
+port is free" — a fail-open in the one check meant to prevent damage. If it
+cannot determine a port's state at all, it assumes busy and blocks.
 
 ---
 
-## Step 2 — bootstrap
+## Step 2 — bootstrap, run it twice
 
 ```bash
 ssh root@187.77.8.98
 cat > setup.sh <<'EOF'
 ```
 
-…paste `vps-setup.sh`, then `EOF` on its own line, then:
+…paste `ops/vps-setup.sh`, then `EOF` on its own line, then:
 
 ```bash
 bash setup.sh
 ```
 
-Ten minutes, mostly `apt`. It is safe to re-run if something goes wrong
-partway. What it leaves behind:
+**Pass 1** inventories, installs Node 22, Claude Code, Caddy, swap and the two
+accounts, applies the memory ceilings, writes the Caddy site files — then
+generates a deploy key and prints it, because it cannot clone a private repo
+without one.
 
-| | project 1 | project 2 |
-|---|---|---|
-| account | `dev` | `dev2` |
-| directory | `~/talent` | `~/app2` |
-| dev port | 3000 | 3001 |
-| hostname | `srv1680197.hstgr.cloud` | not set yet |
-| memory | 6 GB soft / 7 GB hard | 6 GB soft / 7 GB hard |
+Add that key at **https://github.com/v7n7v/Inteviewer/settings/keys**, ticking
+**Allow write access** so Claude can push from the box.
 
-Plus Node 22, Claude Code, Caddy, a firewall, 4 GB of swap and a
-phone-friendly tmux config for each account.
+```bash
+bash setup.sh
+```
 
-### What the memory ceilings actually do
-
-Each account gets a systemd slice with `MemoryHigh=6G` and `MemoryMax=7G`.
-Every process that account starts lands in it — tmux sessions included — so a
-Next.js build that runs away gets throttled at 6 GB and killed at 7 GB rather
-than dragging the other project down with it. Two accounts at 7 GB leaves
-about 2 GB for the OS and Caddy, and the 4 GB swapfile absorbs the overlap
-when both build at once.
-
-Adjust later by editing `/etc/systemd/system/user-<uid>.slice.d/50-memory.conf`
-and running `systemctl daemon-reload`.
-
-### Why two accounts and not two folders
-
-`/home/dev` is `750`, so `dev2` cannot read `/home/dev/talent/.env` — or the
-SSH key, or the Claude session. That is the whole point. One mistake in the
-second project does not become an incident in the first.
+**Pass 2** notices the key now authenticates, clones into `~/talent`, checks
+out `landing/talent-landing`, and runs `npm ci`. Every step is idempotent — a
+third run changes nothing.
 
 ---
 

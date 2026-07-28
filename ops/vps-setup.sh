@@ -2,51 +2,144 @@
 # =============================================================================
 # Multi-project VPS bootstrap — Hostinger, 16 GB / 100 GB
 #
-# Run ONCE, as root, on a freshly reinstalled Ubuntu.
+# SAFE ON A LIVE BOX. This version assumes the machine may already be doing
+# something. It inventories first, refuses to break what it finds, and never
+# resets a firewall it did not create.
+#
+# Run as root. Run it TWICE:
 #
 #   ssh root@187.77.8.98
 #   cat > setup.sh <<'EOF'      <- paste, then EOF on its own line, then Enter
-#   bash setup.sh
+#   bash setup.sh               <- pass 1: sets everything up, prints a deploy key
+#   ...paste that key into GitHub...
+#   bash setup.sh               <- pass 2: sees the key works, clones, npm ci
 #
-# (`cat > file <<'EOF'` beats nano on a phone: one paste, no cursor work.)
-#
-# Two projects, two Linux accounts. Neither can read the other's .env or SSH
-# keys, and neither can eat all 16 GB and take the other down with it.
-#
-# What it does NOT do, deliberately:
-#   · it does not disable password SSH login. Locking yourself out of a box you
-#     only reach from a phone is not a recoverable afternoon. That is a later
-#     step in the runbook, after key login is proven from the phone itself.
-#   · it does not touch secrets, tokens or passwords. It prints the exact
-#     commands for those and stops.
-#
-# Safe to re-run: every step checks before it acts.
+# Everything is idempotent. Running it a third time changes nothing.
 # =============================================================================
 set -euo pipefail
 
 # ----------------------------------------------------------------- projects
-# name : linux user : directory : dev-server port : public hostname
-#
-# Project 2's hostname is empty on purpose - you do not have a name for it yet.
-# Leave it empty and Caddy simply will not serve it; fill it in and reload.
+# name : linux user : directory : dev-server port : public hostname : git remote
 PROJECTS=(
-  "talent:dev:talent:3000:srv1680197.hstgr.cloud"
-  "app2:dev2:app2:3001:"
+  "talent:dev:talent:3000:srv1680197.hstgr.cloud:git@github.com:v7n7v/Inteviewer.git"
+  "app2:dev2:app2:3001::"
 )
+BRANCH=landing/talent-landing
 
-NODE_MAJOR=22           # package.json engines: node 22
-SWAP_GB=4               # insurance, not a substitute for RAM
-MEM_HIGH=6G             # soft cap per account: throttle here
-MEM_MAX=7G              # hard cap per account: 2x7 leaves ~2 GB for the OS
+NODE_MAJOR=22
+SWAP_GB=4
+MEM_HIGH=6G
+MEM_MAX=7G
 
 say()  { printf '\n\033[1;36m==>\033[0m %s\n' "$*"; }
-warn() { printf '\n\033[1;33m!!\033[0m %s\n' "$*"; }
+warn() { printf '\033[1;33m !! \033[0m%s\n' "$*"; }
+ok()   { printf '\033[1;32m ok \033[0m%s\n' "$*"; }
 have() { command -v "$1" >/dev/null 2>&1; }
+# Is a TCP port being listened on?
+#
+# This reads /proc/net/tcp FIRST, on purpose. The obvious implementation —
+# `ss || netstat | grep` — reports every port as FREE on any image where
+# neither tool is installed, which is a fail-OPEN in the one check whose job
+# is to stop this script trampling a live service. /proc/net is always there
+# and needs no packages. State 0A is LISTEN; the port is uppercase hex.
+port_busy() {
+  local p="$1" hex
+  hex=$(printf '%04X' "$p")
+  if [ -r /proc/net/tcp ] || [ -r /proc/net/tcp6 ]; then
+    { cat /proc/net/tcp /proc/net/tcp6 2>/dev/null || true; } \
+      | awk -v h="$hex" '{split($2,a,":"); if (a[2]==h && $4=="0A") f=1} END{exit !f}'
+    return $?
+  fi
+  if have ss;      then ss -tlnH 2>/dev/null      | grep -q ":$p "; return $?; fi
+  if have netstat; then netstat -tln 2>/dev/null  | grep -q ":$p "; return $?; fi
+  warn "cannot determine whether port $p is in use — assuming BUSY (fail closed)"
+  return 0
+}
 
 [ "$(id -u)" -eq 0 ] || { echo "run this as root"; exit 1; }
 
+# =============================================================== 0. PREFLIGHT
+# Nothing below this block writes anything. It exists because this box was
+# never inventoried, and a setup script that assumes an empty machine is how
+# you find out what was on it the hard way.
+say "PREFLIGHT — reading the box before touching it"
+
+echo "  os        : $( (. /etc/os-release 2>/dev/null && echo "$PRETTY_NAME") || echo unknown)"
+echo "  kernel    : $(uname -r)"
+echo "  memory    : $(free -h 2>/dev/null | awk '/^Mem:/{print $2" total, "$7" available"}' || echo unknown)"
+echo "  disk /    : $(df -h / 2>/dev/null | awk 'NR==2{print $4" free of "$2}' || echo unknown)"
+echo "  uptime    : $(uptime -p 2>/dev/null || echo unknown)"
+
+EXISTING_USERS=$(awk -F: '$3>=1000 && $3<65534 {print $1}' /etc/passwd 2>/dev/null | tr '\n' ' ' || true)
+echo "  accounts  : ${EXISTING_USERS:-none}"
+
+WEB_SERVERS=""
+for s in nginx apache2 httpd lighttpd caddy; do
+  if systemctl is-active --quiet "$s" 2>/dev/null; then WEB_SERVERS="$WEB_SERVERS $s"; fi
+done
+echo "  web srv   :${WEB_SERVERS:- none running}"
+
+DOCKER_RUNNING="not installed"
+if have docker; then
+  # installed but stopped is normal; pipefail must not turn that into an abort
+  # `|| true` must sit INSIDE the pipeline: with pipefail, a trailing `||`
+  # fires even after wc has already printed, and you get both outputs.
+  DOCKER_RUNNING=$( { docker ps -q 2>/dev/null || true; } | wc -l )
+fi
+echo "  docker    : ${DOCKER_RUNNING} container(s) running"
+
+echo "  listening :"
+{ ss -tlpnH 2>/dev/null || netstat -tlpn 2>/dev/null || true; } \
+  | awk '{print "              "$4"  "$6}' | sort -u | head -15 || true
+
+BLOCKERS=0
+
+# --- port 80/443: Caddy needs both. Taking them from a live service is the
+#     single most destructive thing this script could do.
+for p in 80 443; do
+  if port_busy "$p"; then
+    if [ -n "$WEB_SERVERS" ] && echo "$WEB_SERVERS" | grep -qw caddy; then
+      ok "port $p held by Caddy — that is us, fine"
+    else
+      warn "port $p is IN USE by something that is not Caddy."
+      warn "    Whatever is serving it would break. Not touching it."
+      BLOCKERS=$((BLOCKERS+1))
+    fi
+  else
+    ok "port $p free"
+  fi
+done
+
+# --- dev-server ports
+for spec in "${PROJECTS[@]}"; do
+  IFS=: read -r name user dir port host remote <<< "$spec"
+  if port_busy "$port"; then
+    warn "port $port (wanted by '$name') is in use — pick another in PROJECTS"
+    BLOCKERS=$((BLOCKERS+1))
+  fi
+done
+
+# --- existing firewall we must not clobber
+UFW_WAS_ACTIVE=no
+if have ufw && ufw status 2>/dev/null | grep -q "Status: active"; then
+  UFW_WAS_ACTIVE=yes
+  RULE_COUNT=$(ufw status numbered 2>/dev/null | grep -c '^\[' 2>/dev/null || echo 0)
+  warn "ufw is ALREADY ACTIVE with ${RULE_COUNT} rule(s) — they will be kept."
+  warn "    This script only ADDS 22/80/443. It never resets."
+fi
+
+if [ "$BLOCKERS" -gt 0 ]; then
+  echo
+  warn "$BLOCKERS blocker(s) found. Nothing has been changed."
+  warn "Fix the collisions, or edit PROJECTS at the top, then re-run."
+  warn "To proceed anyway and let this script win, re-run with:  FORCE=1 bash setup.sh"
+  [ "${FORCE:-0}" = "1" ] || exit 2
+  warn "FORCE=1 set — continuing despite blockers."
+fi
+ok "preflight clear — proceeding"
+
 # ------------------------------------------------------------------ 1. base
-say "Updating and installing base packages"
+say "Base packages"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 apt-get install -y -qq \
@@ -54,72 +147,63 @@ apt-get install -y -qq \
   debian-keyring debian-archive-keyring apt-transport-https
 
 # ------------------------------------------------------------------ 2. swap
-# 16 GB is plenty until two Next.js builds overlap. Swap is the difference
-# between "that was slow" and "the OOM killer chose a victim".
-if swapon --show | grep -q .; then
-  say "Swap already configured"
+if swapon --show 2>/dev/null | grep -q .; then
+  ok "swap already configured, leaving it"
 else
   say "Adding ${SWAP_GB}G swap"
   fallocate -l "${SWAP_GB}G" /swapfile
-  chmod 600 /swapfile
-  mkswap -q /swapfile
-  swapon /swapfile
+  chmod 600 /swapfile; mkswap -q /swapfile; swapon /swapfile
   grep -q '^/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
   sysctl -qw vm.swappiness=10
   grep -q '^vm.swappiness' /etc/sysctl.conf || echo 'vm.swappiness=10' >> /etc/sysctl.conf
 fi
-free -h | head -3
 
 # ------------------------------------------------------------------ 3. node
 if have node && [ "$(node -v | cut -c2- | cut -d. -f1)" = "$NODE_MAJOR" ]; then
-  say "Node $(node -v) already installed"
+  ok "Node $(node -v) already installed"
+elif have node; then
+  warn "Node $(node -v) is installed but this repo wants ${NODE_MAJOR}.x."
+  warn "    Installing ${NODE_MAJOR}.x over it — if something else on this box"
+  warn "    depends on the old version, stop now and use nvm instead."
+  [ "${FORCE:-0}" = "1" ] || { warn "re-run with FORCE=1 to accept"; exit 2; }
+  curl -fsSL "https://deb.nodesource.com/setup_${NODE_MAJOR}.x" | bash -
+  apt-get install -y -qq nodejs
 else
-  say "Installing Node ${NODE_MAJOR}.x from NodeSource"
+  say "Installing Node ${NODE_MAJOR}.x"
   curl -fsSL "https://deb.nodesource.com/setup_${NODE_MAJOR}.x" | bash -
   apt-get install -y -qq nodejs
 fi
 node -v; npm -v
 
 # ---------------------------------------------------------- 4. claude code
-# System-wide, so it updates once for both accounts. Authentication is still
-# per-user - it lives in each account's ~/.claude - so the two projects do not
-# share a session.
-if have claude; then
-  say "Claude Code already installed"
-else
+if have claude; then ok "Claude Code present"; else
   say "Installing Claude Code system-wide"
   npm install -g @anthropic-ai/claude-code
 fi
 
 # --------------------------------------------------------------- 5. accounts
 for spec in "${PROJECTS[@]}"; do
-  IFS=: read -r name user dir port host <<< "$spec"
+  IFS=: read -r name user dir port host remote <<< "$spec"
 
   if id "$user" >/dev/null 2>&1; then
-    say "User '$user' exists, leaving it alone"
+    ok "user '$user' exists, leaving it alone"
   else
     say "Creating '$user' for project '$name'"
     adduser --disabled-password --gecos "" "$user"
     usermod -aG sudo "$user"
   fi
 
-  # Home directories are 750, not the Ubuntu default 755. With two accounts on
-  # one box the default means dev2 can read /home/dev/talent/.env.
+  # 750, not Ubuntu's 755: otherwise dev2 can read /home/dev/talent/.env
   chmod 750 "/home/$user"
   install -d -m 700 -o "$user" -g "$user" "/home/$user/.ssh"
 
-  # your existing root key keeps working, so you are never locked out
   if [ -s /root/.ssh/authorized_keys ] && [ ! -s "/home/$user/.ssh/authorized_keys" ]; then
     cp /root/.ssh/authorized_keys "/home/$user/.ssh/authorized_keys"
     chown "$user:$user" "/home/$user/.ssh/authorized_keys"
     chmod 600 "/home/$user/.ssh/authorized_keys"
   fi
 
-  # --- memory ceiling, per account -----------------------------------------
-  # Applies to everything the account runs, tmux sessions included, because
-  # systemd puts every one of that user's processes in this slice. A runaway
-  # build gets throttled at MemoryHigh and killed at MemoryMax instead of
-  # taking the other project down with it.
+  # memory ceiling — catches everything the account runs, tmux included
   uid=$(id -u "$user")
   d="/etc/systemd/system/user-${uid}.slice.d"
   install -d "$d"
@@ -130,7 +214,6 @@ MemoryHigh=${MEM_HIGH}
 MemoryMax=${MEM_MAX}
 EOF
 
-  # --- shell setup ---------------------------------------------------------
   bashrc="/home/$user/.bashrc"
   grep -q 'PROJECT_DIR' "$bashrc" 2>/dev/null || cat >> "$bashrc" <<EOF
 
@@ -141,12 +224,10 @@ export PORT=$port
 cd "\$PROJECT_DIR" 2>/dev/null || true
 EOF
 
-  # tmux: mobile SSH drops constantly - a tunnel, the screen locking. This is
-  # what makes that a non-event rather than a lost build.
   if [ ! -f "/home/$user/.tmux.conf" ]; then
     cat > "/home/$user/.tmux.conf" <<'EOF'
-set -g mouse on                 # scroll and select with a thumb
-set -g history-limit 50000      # long build output survives
+set -g mouse on
+set -g history-limit 50000
 set -g base-index 1
 setw -g mode-keys vi
 set -g status-bg colour17
@@ -157,71 +238,76 @@ set -sg escape-time 0
 EOF
     chown "$user:$user" "/home/$user/.tmux.conf"
   fi
+
+  # deploy key — generated here, pasted into GitHub by you
+  if [ -n "$remote" ] && [ ! -f "/home/$user/.ssh/id_ed25519" ]; then
+    sudo -u "$user" ssh-keygen -q -t ed25519 -C "vps-$name" \
+      -f "/home/$user/.ssh/id_ed25519" -N ""
+    say "New deploy key for '$name'"
+  fi
 done
 systemctl daemon-reload
 
 # ----------------------------------------------------------------- 6. caddy
-if have caddy; then
-  say "Caddy already installed"
-else
-  say "Installing Caddy (this is what gives you HTTPS and the password prompt)"
-  curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' \
-    | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-  curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' \
-    | tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null
-  apt-get update -qq
-  apt-get install -y -qq caddy
+SKIP_WEB=no
+if [ "$BLOCKERS" -gt 0 ] && ! echo "$WEB_SERVERS" | grep -qw caddy; then
+  warn "Skipping Caddy entirely — ports 80/443 belong to something else."
+  SKIP_WEB=yes
 fi
 
-# Caddy renamed `basicauth` to `basic_auth` in v2.8. The stable repo serves
-# current, but pinning the name to the installed version costs six lines and
-# saves an "unrecognized directive" wall that is very hard to diagnose from a
-# phone.
-CADDY_VER=$(caddy version 2>/dev/null | head -1 | sed 's/^v//' | cut -d' ' -f1)
-CADDY_MINOR=$(echo "${CADDY_VER:-2.0.0}" | cut -d. -f2)
-if [ "${CADDY_MINOR:-0}" -ge 8 ] 2>/dev/null; then AUTH_DIRECTIVE=basic_auth; else AUTH_DIRECTIVE=basicauth; fi
-say "Caddy ${CADDY_VER:-unknown}, using '$AUTH_DIRECTIVE'"
+if [ "$SKIP_WEB" = "no" ]; then
+  if have caddy; then ok "Caddy present"; else
+    say "Installing Caddy"
+    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' \
+      | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' \
+      | tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null
+    apt-get update -qq
+    apt-get install -y -qq caddy
+  fi
 
-# One file per project, so adding or removing a site is one file and a reload
-# rather than an edit to a shared blob you have to get right on a phone.
-install -d /etc/caddy/sites
-grep -q 'import sites/' /etc/caddy/Caddyfile 2>/dev/null || \
-  printf '\n# one file per project\nimport sites/*.caddy\n' >> /etc/caddy/Caddyfile
+  # `basicauth` was renamed `basic_auth` in v2.8
+  CADDY_VER=$(caddy version 2>/dev/null | head -1 | sed 's/^v//' | cut -d' ' -f1)
+  CADDY_MINOR=$(echo "${CADDY_VER:-2.0.0}" | cut -d. -f2)
+  if [ "${CADDY_MINOR:-0}" -ge 8 ] 2>/dev/null; then AUTH=basic_auth; else AUTH=basicauth; fi
+  ok "Caddy ${CADDY_VER:-unknown}, directive '$AUTH'"
 
-for spec in "${PROJECTS[@]}"; do
-  IFS=: read -r name user dir port host <<< "$spec"
-  f="/etc/caddy/sites/${name}.caddy"
-  if [ -z "$host" ]; then
-    [ -f "$f" ] || cat > "$f" <<EOF
-# Project '$name' has no hostname yet, so nothing is served for it.
-# When you have one: put the hostname in, add the password hash from
-# \`caddy hash-password\`, uncomment, then \`systemctl reload caddy\`.
+  install -d /etc/caddy/sites
+  grep -q 'import sites/' /etc/caddy/Caddyfile 2>/dev/null || \
+    printf '\n# one file per project\nimport sites/*.caddy\n' >> /etc/caddy/Caddyfile
+
+  for spec in "${PROJECTS[@]}"; do
+    IFS=: read -r name user dir port host remote <<< "$spec"
+    f="/etc/caddy/sites/${name}.caddy"
+    [ -f "$f" ] && { ok "$f exists, not overwriting"; continue; }
+    if [ -z "$host" ]; then
+      cat > "$f" <<EOF
+# '$name' has no hostname yet, so nothing is served for it.
+# Add one, uncomment, put in the hash from \`caddy hash-password\`, reload.
 #
-# HOSTNAME_GOES_HERE {
+# HOSTNAME_HERE {
 # 	encode zstd gzip
-# 	$AUTH_DIRECTIVE { you HASH_GOES_HERE }
+# 	$AUTH { you HASH_HERE }
 # 	reverse_proxy 127.0.0.1:$port
 # 	@ws { header Connection *Upgrade*
 # 	      header Upgrade websocket }
 # 	reverse_proxy @ws 127.0.0.1:$port
 # }
 EOF
-    say "Project '$name': no hostname set, wrote a commented stub"
-  else
-    [ -f "$f" ] || cat > "$f" <<EOF
+    else
+      cat > "$f" <<EOF
 $host {
 	encode zstd gzip
 
-	# Replace the hash with what \`caddy hash-password\` prints. The password
-	# itself is never written down here.
-	$AUTH_DIRECTIVE {
+	# Replace with the output of \`caddy hash-password\`.
+	# The password itself is never written here.
+	$AUTH {
 		you REPLACE_WITH_HASH
 	}
 
 	reverse_proxy 127.0.0.1:$port
 
-	# next dev drives hot reload over a websocket; without this the page
-	# loads once and then never updates, which looks like a broken build.
+	# next dev drives hot reload over a websocket
 	@ws {
 		header Connection *Upgrade*
 		header Upgrade websocket
@@ -229,68 +315,95 @@ $host {
 	reverse_proxy @ws 127.0.0.1:$port
 }
 EOF
-    say "Project '$name': wrote $f for $host"
+    fi
+    ok "wrote $f"
+  done
+
+  caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null 2>&1 \
+    && ok "Caddy config validates" \
+    || warn "Caddy config did not validate — check /etc/caddy/sites/"
+fi
+
+# --------------------------------------------------------------- 7. firewall
+# ADDITIVE ONLY. Never `ufw reset` on a box whose rules we did not write.
+say "Firewall (adding rules, never resetting)"
+ufw allow 22/tcp  >/dev/null 2>&1 || true
+if [ "$SKIP_WEB" = "no" ]; then
+  ufw allow 80/tcp  >/dev/null 2>&1 || true
+  ufw allow 443/tcp >/dev/null 2>&1 || true
+fi
+if [ "$UFW_WAS_ACTIVE" = "yes" ]; then
+  ok "ufw was already active — rules added, existing ones untouched"
+else
+  ufw --force enable >/dev/null 2>&1 || true
+  ok "ufw enabled"
+fi
+ufw status verbose 2>/dev/null | head -12
+
+# Dev ports are never opened. They bind to 127.0.0.1; only Caddy reaches them.
+
+# ================================================== 8. PHASE 2 — clone, if ready
+say "Checking whether the deploy keys work yet"
+CLONED_ANY=no
+for spec in "${PROJECTS[@]}"; do
+  IFS=: read -r name user dir port host remote <<< "$spec"
+  [ -z "$remote" ] && continue
+  target="/home/$user/$dir"
+
+  if [ -d "$target/.git" ]; then
+    ok "'$name' already cloned at $target"
+    CLONED_ANY=yes
+    continue
+  fi
+
+  if sudo -u "$user" ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes \
+       -T git@github.com 2>&1 | grep -q "successfully authenticated"; then
+    say "Deploy key for '$name' works — cloning"
+    sudo -u "$user" git clone -q "$remote" "$target"
+    sudo -u "$user" git -C "$target" checkout -q "$BRANCH" 2>/dev/null || \
+      warn "branch $BRANCH not found; staying on default"
+    say "npm ci for '$name' (a few minutes)"
+    sudo -u "$user" bash -lc "cd '$target' && npm ci" || warn "npm ci failed — run it by hand"
+    CLONED_ANY=yes
+  else
+    warn "Deploy key for '$name' is not on GitHub yet."
+    echo
+    echo "    Add this as a deploy key WITH WRITE ACCESS at:"
+    echo "      https://github.com/v7n7v/Inteviewer/settings/keys"
+    echo
+    sed 's/^/      /' "/home/$user/.ssh/id_ed25519.pub"
+    echo
+    echo "    Then run this same script again — it will clone."
   fi
 done
 
-say "Validating the generated Caddy config"
-caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile 2>&1 | tail -3 \
-  || warn "Caddy config did not validate - fix it before reloading, the site files are in /etc/caddy/sites/"
-
-# --------------------------------------------------------------- 7. firewall
-say "Firewall: 22, 80, 443 in; everything else denied"
-ufw --force reset >/dev/null
-ufw default deny incoming >/dev/null
-ufw default allow outgoing >/dev/null
-ufw allow 22/tcp  >/dev/null   # ssh
-ufw allow 80/tcp  >/dev/null   # http - Let's Encrypt challenge, then redirect
-ufw allow 443/tcp >/dev/null   # https
-ufw --force enable >/dev/null
-ufw status verbose
-
-# Dev server ports are NOT opened. They bind to 127.0.0.1 and only Caddy, from
-# inside the box, can reach them.
-
 # ------------------------------------------------------------------- done
 echo
-say "Base is ready. Accounts, memory ceilings and Caddy site files are in place."
-echo
+say "Done. State of the box:"
 for spec in "${PROJECTS[@]}"; do
-  IFS=: read -r name user dir port host <<< "$spec"
-  printf '  %-8s user=%-6s dir=~/%-8s port=%-5s host=%s\n' \
-    "$name" "$user" "$dir" "$port" "${host:-<not set>}"
+  IFS=: read -r name user dir port host remote <<< "$spec"
+  printf '  %-8s user=%-6s dir=~/%-8s port=%-5s host=%-26s cloned=%s\n' \
+    "$name" "$user" "$dir" "$port" "${host:-<none>}" \
+    "$([ -d "/home/$user/$dir/.git" ] && echo yes || echo no)"
 done
+
 cat <<EOF
 
-Five things only you can do:
+Still yours to do:
 
-  1. Passwords for the accounts (sudo needs one):
-         passwd dev
-         passwd dev2
+  1. passwd dev  /  passwd dev2         (sudo needs a password)
+  2. caddy hash-password                (pick it yourself; never paste it to anyone)
+     then put the hash in /etc/caddy/sites/talent.caddy and:
+       systemctl reload caddy
+  3. If a deploy key was printed above, add it to GitHub and re-run this script.
 
-  2. Deploy key for each project, so the box can clone the private repo:
-         su - dev
-         ssh-keygen -t ed25519 -C "vps-deploy" -f ~/.ssh/id_ed25519 -N ""
-         cat ~/.ssh/id_ed25519.pub
-     Paste at  github.com/v7n7v/Inteviewer  ->  Settings  ->  Deploy keys
-     ->  Add deploy key  ->  tick "Allow write access".
-     Repeat as dev2 against that project's own repo. Separate keys on
-     purpose: revoking one must not disturb the other.
+Once '$(echo "${PROJECTS[0]}" | cut -d: -f1)' shows cloned=yes:
 
-  3. Password hash for each preview site. Pick the passwords yourself and do
-     not paste them into a chat window - not to me, not to anyone:
-         caddy hash-password
-     Put each hash in the matching /etc/caddy/sites/<name>.caddy, then:
-         systemctl reload caddy
+  su - dev
+  tmux new -s dev
+  npm run dev -- -H 127.0.0.1 -p 3000
 
-  4. DNS: nothing needed for '$( echo "${PROJECTS[0]}" | cut -d: -f1 )'.
-     srv1680197.hstgr.cloud already resolves to this box, which is all
-     Let's Encrypt needs. Project 2 needs its own hostname before Caddy will
-     serve it - an A record at 187.77.8.98.
-
-  5. Snapshot the box in hPanel once SSH is locked down. It costs nothing and
-     turns "I broke sshd" into a five-minute problem.
-
-Then follow VPS-RUNBOOK.md from step 3.
+  # then, in another tmux window:
+  claude
 
 EOF
