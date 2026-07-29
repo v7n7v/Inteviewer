@@ -18,6 +18,52 @@ Append-only. Newest at the top. One entry per decision that would otherwise get 
 
 ---
 
+## 2026-07-25 - Visual direction: Studio product, Editorial landing
+
+**Decision:** Two registers, one system. The product surface is a craft tool - dark-first, focused, everything on screen serving the work (Figma/Ableton lineage). The landing is editorial - type at real scale, generous space, one striking idea. Both draw from the same tokens; they differ in scale and rhythm, never in palette.
+
+**Constraint:** Naive restraint produces forgettable, and decoration without a stance produces generic SaaS. Memorable products pair restraint with a point of view. The name is already "Talent Studio", and users genuinely are making something - the craft-tool register is the honest one.
+
+**Rejected:** Instrument (precision-instrument aesthetic - correct for "evidence you can see" but cold, and job searching is already cold). Quiet luxury (addresses the emotional reality but reads unserious when your career is on the line).
+
+## 2026-07-25 - Accent changed from Cyan to Cobalt
+
+**Decision:** Cobalt - `#5a7fff` dark / `#315cff` light. Supersedes the Cyan decision recorded earlier today.
+
+**Constraint:** The shipped brand mark and wordmark are electric blue, approximately `#2b3fff`. Cobalt is the validated family closest to it, and `--admin-cobalt: #315cff` already exists in the admin stylesheet. Cobalt therefore unifies mark, wordmark, product accent and the admin fork in one decision. Cyan would have left the logo saying electric blue while the buttons said teal - a mismatch users feel without being able to name.
+
+**Rejected:** Cyan `#0891b2`/`#0e7490`. It passed contrast validation, which is how it got chosen - but it was selected on measurement alone, before anyone looked at the brand. Method error, not arithmetic error.
+
+## 2026-07-25 - The chevron is the form language
+
+**Decision:** Keep the mark. The folded-ribbon chevron becomes the product's geometry, not just its logo: the fold as section divider, the apex angle as recurring construction, ascent as the motion metaphor for progress.
+
+**Constraint:** It is already yours, it reads as both letter and mark inside the wordmark, and upward motion is the right metaphor for a career product. An owned form language beats an adopted aesthetic.
+
+**Two corrections:** The flat-blue mark becomes canonical; the foil gradient is reserved for large hero use only - it flattens in monochrome, dies at 16px, and the brand doc's own requirement is legibility at 16px monochrome. The secondary chevron inside the "n" of Talent is removed; one idea stated once is stronger.
+
+**Note:** `docs/taco-brand-system.md` describes a TC monogram on a white tile with a cyan-to-blue edge. That is not what shipped. The doc needs rewriting against the actual mark.
+
+## 2026-07-25 - The evidence marks are the signature element
+
+**Decision:** Verified / inferred / draft / missing get a genuinely distinctive visual treatment, and that treatment is the thing the product is recognised by.
+
+**Constraint:** Memorable products have one describable-to-a-friend element. No competitor can copy this one without adopting the truth-lock architecture underneath it, which makes it defensible rather than merely decorative.
+
+## 2026-07-25 - Phone-primary, not phone-capable
+
+**Decision:** The phone is the primary device; desktop is the accessory. This governs information architecture, not just breakpoints.
+
+**Constraint:** The README already claims "mobile-first AI career workspace" and "mobile is a complete product surface" - the product has been positioned this way without being built this way. Job searching happens in gaps: commute, sofa, before a meeting, late at night. 43 routes behind a four-group sidebar is a desktop IA that reflows, which is not the same thing.
+
+**Implication:** The mobile home screen is not a tool grid. Reviewing a resume diff at 390px is the hardest screen in the product and also the core promise - it is the design problem, not an afterthought.
+
+## 2026-07-25 - First design investment goes to the activation path
+
+**Decision:** Upload to matches to packet gets the design work first. Landing second. Admin gets folded in mechanically via tokens and never gets bespoke design.
+
+**Constraint:** The north star is three explainable matches and one review-ready packet within ten minutes. That path *is* the first-run experience, and first-run decides whether a signup was worth acquiring. A beautiful landing that feeds a mediocre activation buys traffic and loses users. Admin is internal - no user ever sees it, so bespoke design there has no return.
+
 ## 2026-07-25 - `quantumsec01@gmail.com` named as second admin recovery owner
 
 **Decision:** `quantumsec01@gmail.com` is the second owner. Provisioning steps in `docs/SECOND-RECOVERY-OWNER.md`; the existing owner runs the CLI, not the new account.
