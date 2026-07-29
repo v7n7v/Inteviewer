@@ -13,8 +13,14 @@ paste with no cursor work, which `nano` is not.
 
 ## Step 0 — DONE
 
-Three commits are on GitHub, on `landing/talent-landing`. Verified: local HEAD
-and `origin/landing/talent-landing` are the same SHA, ahead=0 behind=0.
+`landing/talent-landing` is on GitHub and fully pushed — local HEAD and
+`origin/landing/talent-landing` at the same SHA, ahead=0 behind=0. That now
+includes the visual direction decisions (`55779cd`) and the `mosh` support
+(`7048f95`), both of which were uncommitted on Windows until 28 July.
+
+The surviving Windows stash is published as
+`recovered/flashcards-market-oracle`. Nothing of value now lives only on the
+Windows machine except the two secret files in Step 5.
 
 ---
 
@@ -134,14 +140,19 @@ is the only reason to have one.
 
 ## Step 5 — the secrets the clone does not carry
 
-Four files are gitignored, correctly, so they are **not** in what you cloned:
+Four files are gitignored, correctly, so they are **not** in what you cloned.
+**Only two of them belong on this box** — copy those, and deliberately leave
+the other two behind:
 
-| file | what it is |
-|---|---|
-| `.env` | server-side config |
-| `.env.local` | local overrides |
-| `.env.cloudrun.yaml` | deployment config |
-| `hermes-agent-keys.txt` | agent keys |
+| file | what it is | onto the box? |
+|---|---|---|
+| `.env` | server-side config | **yes** — copy |
+| `.env.local` | local overrides | **yes** — copy |
+| `.env.cloudrun.yaml` | Cloud Run deployment config | **no** — this box does not deploy to Cloud Run |
+| `hermes-agent-keys.txt` | agent keys | **no** — rotate first, then copy only if something on the box needs it |
+
+The `scp` block below therefore copies two files, not four. That is deliberate,
+not an omission.
 
 `.env.production` **is** tracked and did come across — correctly. Read key by
 key, it holds only `NEXT_PUBLIC_*` Firebase config and the Stripe
@@ -289,6 +300,108 @@ mosh as the default rather than an add-on.
 
 ---
 
+## Step 10 — handing the work over to the session on the box
+
+A new Claude session inherits **files, not conversation**. Everything below is
+either not in git, or is in git but easy to misread without the reason. Read
+this section first from the box; it is the whole handover.
+
+### Objective
+
+Move day-to-day work off the Windows machine and onto this box, so that
+`npm run dev`, `npm run build`, `git push` and `node scripts/design-audit.js`
+all run where Claude can see their output. The Windows copy stays as a safety
+net until the first successful push *from here*.
+
+### First action, specifically
+
+```bash
+mkdir -p ~/talent/.claude/skills
+cp -r ~/talent/docs/claude-skills/* ~/talent/.claude/skills/
+ls ~/talent/.claude/skills
+```
+
+**Do this before anything else.** `/.claude` is gitignored on purpose —
+`docs/claude-skills/` is the tracked source of truth and `.claude/skills/` is
+the install target, so tracking both would let the two copies drift. The
+consequence is that a fresh clone has **no active skills** until you run the
+copy above. Four should appear: `build-loop`, `plan-handoff`,
+`talent-studio-design`, `ui-verify`.
+
+### Verification
+
+```bash
+node scripts/verify.js          # types, build, tests, design drift, CVE
+node scripts/design-audit.js    # every metric should read "=" against baseline
+```
+
+`verify.js` is the single gate — use it instead of remembering the individual
+npm scripts. Add `node scripts/ui-verify.js <route>` for anything that renders;
+it needs `npm run dev` alive in another tmux window.
+
+Node here is 22, matching `engines` in `package.json`. That is not a
+coincidence to preserve casually — the build is pinned to it.
+
+### Do NOT copy the Windows git config
+
+The Windows clone carries four local settings that exist **only** to work
+around damage specific to that clone. This box has a clean clone from GitHub
+and needs none of them. Copying them would disable real safety mechanisms for
+no reason:
+
+| setting | why it exists on Windows | here |
+|---|---|---|
+| `gc.auto=0`, `gc.autodetach=false` | `stash@{0}` has an unreadable tree, so `git gc` aborts every time | **leave default** — no broken objects here |
+| `maintenance.auto=false`, `maintenance.strategy=none` | background maintenance was racing commits and stranding `HEAD.lock` | **leave default** |
+| `core.safecrlf=false` | silenced CRLF warnings that PowerShell 5.1 turned into terminating errors | **not applicable** — no PowerShell here |
+| `core.autocrlf=true` | Windows checkout convention | **must stay false/input on Linux** |
+
+### What is on the remote that you might not expect
+
+- **`recovered/flashcards-market-oracle`** (`f899b2c`) — a surviving stash from
+  the Windows clone, published so it would outlive that machine: ~1,240 new
+  lines in `app/suite/flashcards/page.tsx`, plus `market-oracle` changes. It is
+  **not** merged anywhere and its base is not an ancestor of `main`. Review it
+  on its own terms before assuming it applies.
+- **`codex/audit-automation-recovery`** and **`codex/release-safe-cleanup`** —
+  both alive on the remote at the exact commits `GIT-RECOVERY-RUNBOOK.md` lists
+  as unrecoverable. That runbook is wrong about them. Their local
+  remote-tracking refs on Windows read `: gone`; a `git fetch --prune` fixes
+  that cosmetic staleness.
+- The one genuine loss is **`stash@{0}`**, whose tree is among 16 objects still
+  missing. Do not spend time trying to recover it.
+
+### Ground truth that contradicts the older documents
+
+- **`node scripts/design-audit.js` is the authority for drift metrics**, not any
+  table in a markdown file. The hand counts that predate it are wrong in both
+  directions — most importantly inline cards are **1,212, not 488**.
+- **The accent is Cobalt**, changed from Cyan. See `docs/DECISIONS.md`. The
+  Cyan entry is bannered as superseded; its stated justification failed
+  re-measurement.
+- Whichever accent is in play, contrast must be validated **per surface tier,
+  not per mode** — the token system defines seven surfaces per mode and no
+  single step clears 4.5:1 on all of them.
+- `GIT-RECOVERY-RUNBOOK.md` is historical. The repository was repaired in place
+  by restoring the missing pack, not by the fresh clone it describes.
+
+### What has not been verified from the Windows side
+
+Stated plainly, because an untested assumption reported as verified is the
+expensive kind:
+
+- **Nobody has opened the landing page in a real browser on a real phone.** It
+  passed the JS-off render, fourteen viewport and reduced-motion
+  configurations, the security scan and the design audit — all headless. Step 7
+  is that gate and it is still open.
+- `mosh` and the UDP 60000-61000 rule were added to `ops/vps-setup.sh` but have
+  **never been executed on this box**. Pass 1 of the bootstrap is their first
+  real run.
+- No Windows key is authorised on this box. Every step in this runbook was
+  written to be pasted by a human from a phone, not driven remotely.
+
+---
+
 ## Adding the second project
 
 When you know what it is:
@@ -319,5 +432,11 @@ its own DB and user rather than running two servers.
   as "let me just try something".
 - **The gaming PC stays the safety net** until the first successful push *from*
   the VPS. Do not wipe the Windows working copy before then.
-- **`docs/DECISIONS.md`** is still uncommitted on Windows. It was already
-  modified before this session, so I left it alone — it is yours to look at.
+- **`docs/DECISIONS.md` is committed and pushed** (`55779cd`) — the six visual
+  direction entries, including the Cyan → Cobalt change. It is no longer a
+  Windows-only file.
+- **The `mosh` support in `ops/vps-setup.sh` is committed and pushed**
+  (`7048f95`). This matters more than it looks: before that commit it existed
+  only in the Windows working copy, so pasting the script from a fresh clone
+  would have produced a box with no `mosh` and no UDP rule — and the whole
+  phone-primary workflow depends on it.
