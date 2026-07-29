@@ -144,7 +144,8 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 apt-get install -y -qq \
   curl ca-certificates gnupg git build-essential ufw tmux htop unzip jq \
-  debian-keyring debian-archive-keyring apt-transport-https
+  debian-keyring debian-archive-keyring apt-transport-https \
+  mosh
 
 # ------------------------------------------------------------------ 2. swap
 if swapon --show 2>/dev/null | grep -q .; then
@@ -328,6 +329,12 @@ fi
 # ADDITIVE ONLY. Never `ufw reset` on a box whose rules we did not write.
 say "Firewall (adding rules, never resetting)"
 ufw allow 22/tcp  >/dev/null 2>&1 || true
+# mosh — the reason this box is usable from a phone at all. Unlike ssh it
+# survives the IP changing, the handset sleeping, and wifi/cellular handoff,
+# so a tmux session stays put instead of stranding a half-typed command.
+# Each session takes one UDP port from this range; the range is not a login
+# path of its own — mosh authenticates over ssh/22 first, then hands off.
+ufw allow 60000:61000/udp >/dev/null 2>&1 || true
 if [ "$SKIP_WEB" = "no" ]; then
   ufw allow 80/tcp  >/dev/null 2>&1 || true
   ufw allow 443/tcp >/dev/null 2>&1 || true

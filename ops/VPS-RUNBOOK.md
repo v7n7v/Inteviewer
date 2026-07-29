@@ -268,6 +268,25 @@ server in the other:
 - **Ctrl-b n** / **Ctrl-b p** — next / previous
 - **Ctrl-b d** — detach
 
+### Connect with `mosh`, not `ssh`, from the phone
+
+```bash
+mosh dev@187.77.8.98
+```
+
+Plain ssh over cellular drops every time the handset sleeps, switches tower or
+moves between wifi and mobile data — and it drops *mid-keystroke*, which on a
+phone means losing whatever you were part-way through typing. mosh survives all
+three: it keeps the session across an IP change and redraws locally, so typing
+stays responsive on a slow link instead of echoing a character at a time.
+
+It is not a second way in. mosh authenticates over ssh on port 22 first and
+only then hands off to its own UDP port, so closing the door in Step 8 secures
+mosh at the same time. The setup script installs it and opens UDP 60000-61000.
+
+Termius and Blink both speak mosh. Blink is the better phone client — it treats
+mosh as the default rather than an add-on.
+
 ---
 
 ## Adding the second project
