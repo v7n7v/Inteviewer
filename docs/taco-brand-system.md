@@ -1,5 +1,15 @@
 # Taco assistant brand system
 
+> ⚠️ **The mark description in this document does not match what shipped.**
+> Verified 29 July 2026. §"The Taco mark" describes a navy `TC` monogram on a
+> white rounded tile with a cyan-to-blue edge. The mark and wordmark that
+> actually ship are electric blue (~`#2b3fff`), and the product accent settled
+> on cyan/teal `#00C2CD`/`#00787F` — see `docs/DECISIONS.md`.
+>
+> The naming rules below (Taco vs TACO, TA + CO) are still correct and still
+> apply. **Do not use this file as the source for mark geometry or colour**
+> until it has been rewritten against the shipped assets in `public/brand/`.
+
 ## Identity
 
 The customer-facing name is **Taco**. The formal wordmark is **TACO**. The name comes directly from the first two letters of **TA**lent **CO**nsulting. In normal sentences, buttons, notifications, email, and speech, write “Taco.” Reserve “TACO” for the wordmark and the TA + CO explanation.

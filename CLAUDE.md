@@ -119,20 +119,21 @@ A UI change is **not complete** until: `type-check` passes, `build` passes, and 
 
 ## 6. Design system
 
-**Current state is fragmented.** Run `node scripts/design-audit.js` — **it is the authority, not this table.** Snapshot of 25 July 2026, `app/` + `components/` (411 files):
+**Current state is fragmented.** Run `node scripts/design-audit.js` — **it is the authority, not this table.** Baseline of 26 July 2026, `app/` + `components/`:
 
 | Metric | Value |
 | --- | --- |
-| Distinct hardcoded hex | 465 (1,553 occurrences) |
-| Prohibited class occurrences | 1,290 (includes CSS-level, which a `.tsx`-only scan misses) |
-| Distinct radius values | 32 against a documented single 12px standard |
+| Distinct hardcoded hex | 300 (1,183 occurrences) |
+| Prohibited class occurrences | 1,260 (includes CSS-level, which a `.tsx`-only scan misses) |
+| Distinct radius values | 31 against a documented single 12px standard |
 | Buttons inline vs `btn-*` | 301 vs 22 |
-| Cards inline vs shared | 1,212 vs 68 |
+| Cards inline vs shared | 1,167 vs 68 |
 | Suite routes outside `SuiteToolShell` | 22 of 43 |
 | Token definition files | 6 |
-| Tokens referenced but never defined | 23 |
+| Tokens referenced but never defined | 20 |
+| Accent below 4.5:1 on a surface | 0 — CI-gated |
 
-Earlier hand counts (508 hex, 1,231 prohibited, 344 buttons, 488 cards, 18 routes, 28 tokens) are superseded. The inline-card figure matters most: **1,212, not 488** — Phase 3 is ~2.5× its planned size.
+**This table has gone stale twice**: once when the tool superseded the original hand counts (508/1,231/344/488/18/28), again when the brand rebuild moved every hex-derived figure. That is the argument for the tool, not for a better table. The figure that changes planning is inline cards — **1,167, not 488** — putting Phase 3 at roughly 2.4× its original scope.
 
 Counterpoint: **8,101 `var()` calls** — the token habit is strong. Infrastructure is fine; enforcement is absent.
 
@@ -141,13 +142,13 @@ Counterpoint: **8,101 `var()` calls** — the token habit is strong. Infrastruct
 **Direction is decided** — see `docs/design-system-v2-plan.md`:
 
 1. **Evidence-first semantics.** Color encodes epistemic status: verified / inferred / draft / missing.
-2. **New accent hue family**, replacing both the Google-blue token and the stray emerald. **Which family is reopened** — Cyan was chosen on a justification that failed re-measurement (it fails AA on hover/active in both themes, and is the second-closest candidate to the status hues, not the furthest). Recommendation is Azure. See §3.1 of the plan and `docs/DECISIONS.md`. **Do not implement an accent until an owner confirms one.**
+2. **Accent — DONE, do not reopen.** Cyan/teal `#00C2CD` dark / `#00787F` light, shipped 26 July 2026. Chosen against the brand mark, not against a contrast table: the mark and wordmark are electric blue, and an accent from a different family would have made the logo and the buttons disagree. The old Google-blue token and the unbacked emerald are both retired. `design-audit.js` gates it via `accentContrastFails`, which must stay 0.
 3. **Admin folds into the main system**, keeping its density via a modifier rather than a 30-token fork.
 4. **TACO = assistant, TC = company.** Retire the `brand-*` and Sona mark systems.
 
 Do not start the design work until the repo is recovered, committed **and pushed** (§4 — the push is outstanding). It touches every file.
 
-A structural finding worth carrying: the accent cannot be **one step per mode**. The token system defines seven surfaces per mode and no candidate clears 4.5:1 on all of them — it needs a step per *surface tier*. Validate contrast per surface, never per mode.
+A method lesson worth carrying, now that the arithmetic is automated: **validate contrast per surface, never per mode.** Measured against the old Google-grey scale, no accent candidate cleared 4.5:1 on all seven surfaces — hover and active always failed. The brand rebuild replaced those surfaces with navy and paper, and one step per mode now clears everything. Both facts were true; only the surfaces changed. That is why `design-audit.js` computes `accentContrastFails` across every theme × surface pair rather than trusting a recorded verdict — a number measured against retired inputs is worse than no number.
 
 ### Where things live
 

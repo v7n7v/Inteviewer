@@ -10,19 +10,24 @@
 
 The problem was never a missing philosophy. It was that the existing one is **unenforceable and self-contradictory**, so drift was the predictable outcome.
 
-Measured drift, `app/` + `components/` (411 files), re-measured by `node scripts/design-audit.js` on 25 July 2026:
+Measured drift, `app/` + `components/`, from `.design-audit-baseline.json` (re-measured 26 July 2026, after the brand and landing work):
 
-| Metric | Value | Earlier hand count |
-| --- | --- | --- |
-| Distinct hardcoded hex | **465** (1,553 occurrences) | 508 |
-| Prohibited class occurrences | **1,290** | 1,231 |
-| Distinct radius values vs one documented standard | **32** | ~70 |
-| Buttons: inline vs `btn-*` | **301 vs 22** | 344 vs 22 |
-| Cards: inline vs shared | **1,212 vs 68** | 488 vs 68 |
-| Suite routes outside `SuiteToolShell` | **22 of 43** | 18 of 43 |
-| Token definition files | **6** | 6 |
-| Tokens referenced but never defined | **23** | 28 |
-| Competing brand mark systems | 4 *(not tool-measured)* | 4 |
+| Metric | Now | 25 Jul | Original hand count |
+| --- | --- | --- | --- |
+| Distinct hardcoded hex | **300** (1,183 occurrences) | 465 | 508 |
+| Prohibited class occurrences | **1,260** | 1,290 | 1,231 |
+| Distinct radius values vs one documented standard | **31** | 32 | ~70 |
+| Buttons: inline vs `btn-*` | **301 vs 22** | 301 vs 22 | 344 vs 22 |
+| Cards: inline vs shared | **1,167 vs 68** | 1,212 vs 68 | 488 vs 68 |
+| Suite routes outside `SuiteToolShell` | **22 of 43** | 22 of 43 | 18 of 43 |
+| Token definition files | **6** | 6 | 6 |
+| Tokens referenced but never defined | **20** | 23 | 28 |
+| Accent below 4.5:1 on any surface | **0** *(CI-gated)* | — | — |
+| Competing brand mark systems | 4 *(not tool-measured)* | 4 | 4 |
+
+**`node scripts/design-audit.js` is the authority. This table is a snapshot and has already gone stale twice** — once when the tool superseded the hand counts, again when the brand work moved every hex-derived figure. Re-run the tool; do not cite this table.
+
+The inline-card figure is the one that changes planning: **1,167, not 488**. Phase 3 is roughly 2.4× the size it was originally scoped at.
 
 **`scripts/design-audit.js` is the authority for these numbers, not this table.** The first column is a snapshot; re-run the tool rather than trusting it.
 
@@ -67,7 +72,13 @@ The "Silicon Valley clean" quality is the *output* of that restraint, not a styl
 
 The old `--accent` (`#a8c7fa` dark / `#1a73e8` light) reads as generic Google, and a stray emerald ships in the sidebar with no token behind it. Both retire.
 
-> ⚠️ **This section was re-measured on 25 July 2026 and its original recommendation did not survive.** Two claims below were wrong: that one step per mode is sufficient, and that Cyan gives the greatest separation from the status hues. The decision is **reopened** — see the bottom of this section. Nothing has been implemented against it yet.
+> ⚠️ **This section is history. The decision is CLOSED — see "Status" below.**
+> The accent shipped on 26 July 2026 as the cyan/teal family, `#00C2CD` dark /
+> `#00787F` light, chosen against the brand mark rather than against the table
+> below. The measurements that follow compared candidates against Google's grey
+> surface scale, which has since been replaced by the brand's navy and paper.
+> **They are retained as method, not as verdict** — every number in them was
+> taken against inputs that no longer exist.
 
 **Original structural finding:** no single hex clears 4.5:1 on both a near-black and a near-white surface, so the accent is a **hue family with one step per mode**.
 
@@ -192,7 +203,7 @@ The repository was repaired **in place** by restoring the missing pack file, not
 - Collapse 6 token files into one canonical token module. Handle the **7 admin tokens that shadow global names with different values** (§3.2) as part of this — `admin-command-grid.css` holds 60 of the 256 definitions, and collapsing without resolving the collision will silently restyle admin.
 - Define or delete the **23** phantom tokens (tool-measured; this document previously said 28). Each is a judgment call — deleting a referenced-but-undefined token changes rendering by falling back to inherited or initial. Produce the list with a proposed disposition and get it approved rather than deciding 23 things inside a whole-repo diff.
 - Resolve every `DESIGN.md` / `UI_DESIGN_GUIDE.md` contradiction; both become pointers to this document.
-- Introduce the four evidence-state tokens. **The accent family is blocked** pending the reopened decision in §3.1 — and whichever family wins needs a step per surface tier, not one per mode.
+- Introduce the four evidence-state tokens. **The accent is already done** — cyan/teal `#00C2CD` / `#00787F` shipped 26 July 2026 and `design-audit.js` gates it with `accentContrastFails`, which must stay at 0. Do not reopen it; extend the evidence tokens around it.
 - Rename `.glass-card` → `.surface-card`. The current name describes a banned treatment.
 
 *Exit: one token file, zero undefined tokens, both legacy docs superseded, no shadowed token names.*
@@ -257,20 +268,21 @@ The current failure is not that marketing looks different. It's that marketing i
 
 ## 6. Definition of done
 
-Baselines below are the tool-measured values recorded in `.design-audit-baseline.json` on 25 July 2026. Re-run `node scripts/design-audit.js` rather than trusting them.
+Baselines below are from `.design-audit-baseline.json`, re-measured 26 July 2026. Re-run `node scripts/design-audit.js` rather than trusting them.
 
-- [ ] One token file; **0** undefined tokens (from 23)
+- [ ] One token file; **0** undefined tokens (from 20)
 - [ ] No token name shadowed with a different value (from 7)
-- [ ] Distinct hardcoded hex in `app/` + `components/` **< 20** (from **465**)
-- [ ] Prohibited class occurrences **0** (from **1,290**)
-- [ ] Distinct radius values **≤ 6** (from **32**)
+- [ ] Distinct hardcoded hex in `app/` + `components/` **< 20** (from **300**)
+- [ ] Prohibited class occurrences **0** (from **1,260**)
+- [ ] Distinct radius values **≤ 6** (from **31**)
 - [ ] Inline button patterns **< 20** (from **301**)
-- [ ] Inline card patterns **< 30** (from **1,212**)
+- [ ] Inline card patterns **< 30** (from **1,167**)
 - [ ] All 43 suite routes on `SuiteToolShell` (from **22** off-shell)
+- [x] **Accent clears 4.5:1 on every surface in both themes** — done, and `accentContrastFails` keeps it that way
 - [ ] `design-audit.js --ci` green and gating CI
 - [ ] One brand mark system
 - [ ] PDF/DOCX exports match the web preview
-- [ ] WCAG 2.2 AA across both themes — **validated per surface tier, not per mode** (see §3.1)
+- [ ] WCAG 2.2 AA across both themes — validate **per surface**, which `design-audit.js` now does automatically for the accent
 - [ ] Browser run clean at 320/390/430/768/1024/1440px in both themes, via `node scripts/ui-verify.js`
 - [ ] Screenshot baselines gating CI — static audit cannot catch the theme-cascade P0 class
 - [ ] `node scripts/verify.js` green (types, build, tests, design drift, CVE)

@@ -26,7 +26,19 @@ Append-only. Newest at the top. One entry per decision that would otherwise get 
 
 **Rejected:** Instrument (precision-instrument aesthetic - correct for "evidence you can see" but cold, and job searching is already cold). Quiet luxury (addresses the emotional reality but reads unserious when your career is on the line).
 
+## 2026-07-26 - Accent settled: cyan/teal, and the surface scale moved with it
+
+**Decision:** `--accent: #00C2CD` dark / `#00787F` light. This is what shipped and what `app/globals.css` holds. It supersedes both the Cyan entry and the Cobalt entry below.
+
+**Constraint:** The brand rebuild changed the inputs, not just the answer. The surface scale moved off Google's greys onto the brand's navy (`#01081F` → `#122045`) and paper (`#FFFFFF` → `#EAEFF9`) in the same change. Every contrast verdict recorded before 26 July was measured against surfaces that no longer exist.
+
+**Consequence worth keeping:** against the old greys, no candidate cleared 4.5:1 on all seven surfaces — hover and active always failed, which is what made "one step per mode" look structurally impossible. Against navy and paper, one step per mode clears everything. The rule that survived is not a value but a method: **validate per surface, every time, mechanically.** `design-audit.js` now computes `accentContrastFails` across every theme × surface pair, and it must stay 0.
+
+**Rejected:** carrying forward any of the three earlier recommendations (Cyan on measurement, Azure on hue separation, Cobalt on mark-matching). Each was reasonable against the inputs available at the time. None was re-derived after the surfaces changed, which is the only reason to trust a contrast number.
+
 ## 2026-07-25 - Accent changed from Cyan to Cobalt
+
+> ⚠️ **Superseded** by the 26 July entry above. Cobalt was never implemented; the shipped accent is cyan/teal `#00C2CD`/`#00787F`. The brand reasoning here is still the right *kind* of reasoning — it is why the decision moved off a pure contrast argument — but the value is wrong.
 
 **Decision:** Cobalt - `#5a7fff` dark / `#315cff` light. Supersedes the Cyan decision recorded earlier today.
 
