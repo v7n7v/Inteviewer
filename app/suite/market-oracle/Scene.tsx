@@ -28,10 +28,12 @@ export interface JobStar {
 
 export interface BridgeSkill {
   skill: string;
-  impact: number;
+  // impact, salaryIncrease and newFitScore are gone. impact was an LLM-estimated
+  // 1-10 score (or `4 + index` in the client fallback), salaryIncrease was dollars
+  // from the same guess, and newFitScore was derived from impact — so a fabricated
+  // input produced a fabricated score. newPosition stays: it is only where the node
+  // is drawn in 3D space, not a claim about the user.
   newPosition: [number, number, number];
-  salaryIncrease: number;
-  newFitScore: number;
 }
 
 export interface MarketAnalysis {
@@ -41,7 +43,6 @@ export interface MarketAnalysis {
   missingSkills: string[];
   bridgeSkills: BridgeSkill[];
   jobs: JobStar[];
-  marketTrends: { skill: string; growth: number }[];
   industryInsights: string[];
 }
 
@@ -407,7 +408,6 @@ export default function OracleScene({
           startPosition={analysis.currentPosition}
           endPosition={bs.newPosition}
           skillName={bs.skill}
-          salaryIncrease={bs.salaryIncrease}
           active={activeBridgeSkill?.skill === bs.skill}
         />
       ))}

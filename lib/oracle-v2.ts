@@ -123,7 +123,10 @@ interface LegacyOracleAnalysis {
   redFlags?: Array<{ flag: string; severity: 'low' | 'medium' | 'high'; explanation: string }>;
   hiddenRequirements?: Array<{ stated: string; actual: string }>;
   roleLevel?: string;
-  bridgeSkills?: Array<{ skill: string; impact: number; salaryIncrease: number }>;
+  // Skill names only — `impact` and `salaryIncrease` were model-estimated numbers
+  // with no data behind them, rendered to the user as a fit score and a dollar
+  // figure. See app/api/oracle/analyze/route.ts.
+  bridgeSkills?: Array<{ skill: string }>;
   industryInsights?: string[];
 }
 

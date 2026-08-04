@@ -47,8 +47,7 @@ interface LegacyAnalysis {
   salaryIntel: { min: number; max: number; userPosition: number; withBridgeSkills: number; currency: string };
   redFlags: Array<{ flag: string; severity: 'low' | 'medium' | 'high'; explanation: string }>;
   hiddenRequirements: Array<{ stated: string; actual: string }>;
-  bridgeSkills: Array<{ skill: string; impact: number; salaryIncrease: number }>;
-  marketTrends: Array<{ skill: string; growth: number }>;
+  bridgeSkills: Array<{ skill: string }>;
   industryInsights: string[];
 }
 
@@ -87,15 +86,18 @@ function formatResumeToText(content: any) {
 function buildMapAnalysis(report: OracleV2Report | null, legacy: LegacyAnalysis | null, jobs: JobStar[]): MarketAnalysis & { jobDataSource: string } {
   const fit = report?.decision.fitScore || legacy?.fitScore || 50;
   const currentPosition: [number, number, number] = [0, 0, (fit / 100) * 6 - 3];
-  const bridgeSkills = (legacy?.bridgeSkills || report?.packetPlan.linkedinKeywords.slice(0, 3).map((skill, index) => ({
-    skill,
-    impact: 4 + index,
-    salaryIncrease: 5000 + index * 2500,
-  })) || []).slice(0, 3).map((skill, index) => ({
-    ...skill,
-    newPosition: [index * 1.8 - 1.8, 1 + index * 0.8, currentPosition[2] + 1.5 + index * 0.4] as [number, number, number],
-    newFitScore: Math.min(0.95, (fit + skill.impact * 3) / 100),
-  }));
+  // The fallback here used to synthesise `impact: 4 + index` and
+  // `salaryIncrease: 5000 + index * 2500` from the array index, and newFitScore was
+  // computed from that invented impact. Those rendered to the user as a skill's
+  // worth in dollars and a projected fit score. Skill names are real — they come
+  // from the packet plan's LinkedIn keywords, which come from the JD and resume —
+  // so the names stay and the numbers go. newPosition is 3D layout only.
+  const bridgeSkills = (legacy?.bridgeSkills || report?.packetPlan.linkedinKeywords.slice(0, 3).map(skill => ({ skill })) || [])
+    .slice(0, 3)
+    .map((skill, index) => ({
+      skill: skill.skill,
+      newPosition: [index * 1.8 - 1.8, 1 + index * 0.8, currentPosition[2] + 1.5 + index * 0.4] as [number, number, number],
+    }));
 
   return {
     currentPosition,
@@ -104,7 +106,6 @@ function buildMapAnalysis(report: OracleV2Report | null, legacy: LegacyAnalysis 
     missingSkills: report?.breakdown.keywordMap.missing || legacy?.gapSkills || [],
     bridgeSkills,
     jobs,
-    marketTrends: legacy?.marketTrends || [],
     industryInsights: legacy?.industryInsights || [],
     jobDataSource: jobs.length > 0 ? `${jobs.length} live roles` : 'Analysis map only',
   };
@@ -842,16 +843,25 @@ export default function MarketOraclePage() {
                         <p className="mt-2 text-3xl font-semibold text-[var(--text-primary)]">{displaySalary(legacyAnalysis?.salaryIntel?.min, legacyAnalysis?.salaryIntel?.max)}</p>
                         <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">Confidence: {oracleReport.sourceQuality.salary.replaceAll('_', ' ')}.</p>
                       </div>
+                      {/* Was "Bridge upside", listing each skill against a "+$NK"
+                          figure. That number came from `5000 + index * 2500` or from
+                          a language model asked to estimate dollars — nothing
+                          measured it, and shown to a between-roles person it reads
+                          as what the skill is worth. The skills themselves are real
+                          gaps from the JD, so they stay; the money does not, and no
+                          replacement number is invented to fill the space. */}
                       <div className="rounded-[18px] border border-[var(--border-subtle)] bg-[var(--card-bg)] p-4">
-                        <p className="text-xs font-semibold text-[var(--text-primary)]">Bridge upside</p>
+                        <p className="text-xs font-semibold text-[var(--text-primary)]">Skills this role asks for that your resume does not show</p>
                         <div className="mt-3 space-y-2">
                           {(legacyAnalysis?.bridgeSkills || []).slice(0, 4).map(skill => (
-                            <div key={skill.skill} className="flex items-center justify-between rounded-[12px] border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2">
-                              <span className="text-xs text-[var(--text-secondary)]">{skill.skill}</span>
-                              <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">+${Math.round(skill.salaryIncrease / 1000)}K</span>
+                            <div key={skill.skill} className="flex items-center rounded-[12px] border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2">
+                              <span className="min-w-0 text-xs text-[var(--text-secondary)]">{skill.skill}</span>
                             </div>
                           ))}
                         </div>
+                        <p className="mt-3 text-[11px] leading-5 text-[var(--text-muted)]">
+                          Taken from this job description. We do not estimate what a skill is worth in salary — we have no data that would make such a number true.
+                        </p>
                       </div>
                     </div>
                   )}

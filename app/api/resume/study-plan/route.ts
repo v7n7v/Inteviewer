@@ -89,7 +89,14 @@ RULES:
 4. Final ${timeUnit}: Interview prep — practice explaining the skill
 5. Keep tasks CONCISE — max 3 bullet points per ${timeUnit}, each under 15 words
 6. Use FREE resources: YouTube, official docs, Coursera audit, freeCodeCamp
-7. Each resource needs a real, plausible URL
+7. Do NOT invent URLs. "Plausible" is not good enough — a link you construct from a
+   pattern is a fabricated citation with a click target, and it sends a user who
+   trusts us to a 404 or, worse, to someone else's page. Give a URL ONLY when it is
+   one you are certain exists, and prefer a site root you know is real
+   (freecodecamp.org, developer.mozilla.org, the vendor's own docs) over a deep link
+   you are reconstructing. Otherwise omit the url field entirely and put what to
+   search for in "searchFor" — a search term the user can act on is honest; a dead
+   link dressed as a citation is not.
 8. Be SPECIFIC — no vague "learn about X"
 ${platforms && platforms.length > 0 ? `9. PRIORITIZE these platforms: ${platforms.join(', ')}. Use them for at least 70% of resources.` : ''}
 
@@ -101,7 +108,7 @@ Return JSON:
       "focus": "Short focus title (max 8 words)",
       "tasks": ["Concise task 1", "Concise task 2"],
       "resources": [
-        { "title": "Resource Name", "url": "https://...", "type": "video" }
+        { "title": "Resource Name", "url": "https://... (OMIT unless you are certain this exact URL exists)", "searchFor": "what to search for, when url is omitted", "type": "video" }
       ],
       "timeEstimate": "${isHourBased ? Math.round(totalHours / days * 10) / 10 + 'h' : '2h'}"
     }

@@ -9,11 +9,15 @@ interface WarpLaneProps {
   startPosition: [number, number, number];
   endPosition: [number, number, number];
   skillName: string;
-  salaryIncrease: number;
   active: boolean;
 }
 
-export default function WarpLane({ startPosition, endPosition, skillName, salaryIncrease, active }: WarpLaneProps) {
+// salaryIncrease was a prop here and rendered as "+$NK" beside the skill. Nothing
+// measured it: the API asked a language model to estimate dollars, and the client
+// fallback computed `5000 + index * 2500` from the array index. Both reached a
+// between-roles user as a salary outcome. Removed rather than re-sourced — there
+// is no honest source for it.
+export default function WarpLane({ startPosition, endPosition, skillName, active }: WarpLaneProps) {
   const tubeRef = useRef<THREE.Mesh>(null);
   const ghostRef = useRef<THREE.Mesh>(null);
   const progressRef = useRef(0);
@@ -113,7 +117,6 @@ export default function WarpLane({ startPosition, endPosition, skillName, salary
           }}
         >
           <span style={{ color: '#a78bfa', fontSize: 11, fontWeight: 600 }}>+{skillName}</span>
-          <span style={{ color: '#4ade80', fontSize: 10, marginLeft: 6 }}>+${(salaryIncrease / 1000).toFixed(0)}K</span>
         </div>
       </Html>
     </group>

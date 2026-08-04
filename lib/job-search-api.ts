@@ -134,6 +134,22 @@ function timeAgo(dateString: string): string {
  * Free tier: 250/day, 2500/month
  */
 export async function searchJobsAdzuna(params: JobSearchParams): Promise<JobSearchResult> {
+    // Off unless explicitly licensed. Adzuna's terms allow a 14-day trial "strictly
+    // for the purpose of validating the general coverage and quality of the data";
+    // any ongoing commercial use needs a written licence. They also require a
+    // "Jobs by Adzuna" attribution of at least 116x23px wherever listings appear,
+    // which this codebase renders in exactly zero places, and they forbid using the
+    // data "in aggregation (including but not limited to vacancy counts, average
+    // salaries etc)" — which is what passing their `count` through as totalCount was.
+    //
+    // Calling it anyway while shipping to real users is a breach, so the switch is
+    // off by default rather than on. Remotive is the fallback and needs no licence.
+    // To re-enable: obtain the written licence, add the attribution component to the
+    // job-search and market-oracle result lists, then set ADZUNA_LICENSED=true.
+    if (process.env.ADZUNA_LICENSED !== 'true') {
+        return { jobs: [], totalCount: 0, source: 'adzuna (unlicensed - disabled)' };
+    }
+
     const appId = process.env.ADZUNA_APP_ID;
     const apiKey = process.env.ADZUNA_API_KEY;
 
@@ -196,7 +212,11 @@ export async function searchJobsAdzuna(params: JobSearchParams): Promise<JobSear
 
         const result: JobSearchResult = {
             jobs,
-            totalCount: data.count || jobs.length,
+            // Their `data.count` is a market-wide vacancy count, and using their data
+            // "in aggregation (including but not limited to vacancy counts...)" is
+            // forbidden without written consent. Publishing the listings themselves
+            // is permitted, so report only how many we are actually showing.
+            totalCount: jobs.length,
             source: 'Adzuna',
         };
 

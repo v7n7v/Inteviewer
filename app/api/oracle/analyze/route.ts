@@ -24,8 +24,13 @@ interface GPTAnalysis {
   hiddenRequirements: { stated: string; actual: string }[];
   keywordsToAdd: string[];
   roleLevel: string;
-  bridgeSkills: { skill: string; impact: number; salaryIncrease: number }[];
-  marketTrends: { skill: string; growth: number }[];
+  // No numbers here, deliberately. `impact` (1-10) and `salaryIncrease` (dollars)
+  // used to be asked of the model, and `marketTrends[].growth` was a percentage
+  // growth figure. A language model has no labour-market data, so each was an
+  // invented number rendered to a between-roles user as a measurement — the exact
+  // thing this product promises it does not do. A salary figure is also an
+  // earnings claim. The skill NAME is real: it comes from the JD and resume text.
+  bridgeSkills: { skill: string }[];
 }
 
 interface OracleValidation {
@@ -89,9 +94,13 @@ You MUST return a JSON object with this exact structure:
   "hiddenRequirements": [{"stated": "what JD says", "actual": "what they really mean"}],
   "keywordsToAdd": ["keywords from JD to add to resume"],
   "roleLevel": "Junior|Mid|Senior|Staff|Principal|Lead|Director|VP",
-  "bridgeSkills": [{"skill": "name", "impact": 1-10, "salaryIncrease": estimated_dollars}],
-  "marketTrends": [{"skill": "name", "growth": percent_growth}]
+  "bridgeSkills": [{"skill": "name"}]
 }
+
+Never output a number you cannot derive from the supplied resume and job description.
+You have no labour-market data, no salary dataset and no hiring statistics. Do not
+estimate a salary increase, a skill impact score, or a market growth percentage —
+those fields were removed for exactly that reason. Name the skill and stop.
 
 Red flag detection rules:
 - 15+ requirements = unicorn hunt (high severity)
@@ -218,8 +227,10 @@ Cross-validate GPT's analysis. Refine the salary estimates for ${location || 'US
       redFlags: allRedFlags,
       hiddenRequirements: allHiddenReqs,
       roleLevel: gptAnalysis.roleLevel,
-      bridgeSkills: gptAnalysis.bridgeSkills,
-      marketTrends: gptAnalysis.marketTrends,
+      // Skill names only. The model is no longer asked for impact scores, salary
+      // increases or growth percentages, and marketTrends is gone entirely — it
+      // carried nothing but an invented percentage.
+      bridgeSkills: (gptAnalysis.bridgeSkills || []).map(b => ({ skill: b.skill })),
       industryInsights: oracleValidation?.industryInsights || [],
     };
     const oracleV2 = buildOracleV2Report({
