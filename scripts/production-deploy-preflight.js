@@ -282,12 +282,24 @@ function validateProductionDeploy(buildEnv, runtimeEnv) {
     if (buildEnv.NEXT_PUBLIC_ADMIN_COMMAND_GRID_V2 !== 'true') {
       errors.push('admin:mutations_require_command_grid_rollout');
     }
-    if (!/^[^\s,@<>]+@[^\s,@<>]+\.[^\s,@<>]+$/.test(runtimeEnv.ADMIN_SMOKE_OWNER_EMAIL || '')) {
-      errors.push('admin:smoke_owner_email_required');
-    }
-    if (!runtimeEnv.ADMIN_SMOKE_MFA_ID_TOKEN || runtimeEnv.ADMIN_SMOKE_MFA_ID_TOKEN.length < 100) {
-      errors.push('admin:fresh_mfa_smoke_token_required');
-    }
+  }
+  // These two used to live inside the mutations block above, which meant that with
+  // ADMIN_MUTATIONS_V2_ENABLED=false they were never evaluated. But deploy-fix.js
+  // runs scripts/admin-production-smoke.js after EVERY deploy, and a throw there
+  // triggers the automatic rollback — so a missing ADMIN_SMOKE_OWNER_EMAIL passed
+  // preflight and then reverted a deploy that had already fully succeeded: hosting
+  // released, Cloud Run function updated, aggregates primed. Preflight has to
+  // assert whatever post-deploy verification needs, or the cheapest possible
+  // failure surfaces at the most expensive possible moment.
+  if (!/^[^\s,@<>]+@[^\s,@<>]+\.[^\s,@<>]+$/.test(runtimeEnv.ADMIN_SMOKE_OWNER_EMAIL || '')) {
+    errors.push('admin:smoke_owner_email_required');
+  }
+  // The smoke only takes its MFA branch when enforcement is on, and that branch
+  // hard-requires a token it cannot mint for itself. Mutations already require MFA
+  // enforcement above, so this still covers the mutation-enabled case it came from.
+  if (runtimeEnv.ADMIN_MFA_ENFORCED === 'true'
+    && (!runtimeEnv.ADMIN_SMOKE_MFA_ID_TOKEN || runtimeEnv.ADMIN_SMOKE_MFA_ID_TOKEN.length < 100)) {
+    errors.push('admin:fresh_mfa_smoke_token_required');
   }
   if (runtimeEnv.ADMIN_AGGREGATE_BASE_URL) {
     try {

@@ -56,10 +56,40 @@ const runtimeEnv = {
   ADMIN_MUTATIONS_V2_ENABLED: 'false',
   ADMIN_RECOVERY_OWNERS_VERIFIED: 'false',
   ADMIN_REFERENCE_SECRET: 'approved_admin_reference_secret_with_32_characters',
+  ADMIN_SMOKE_OWNER_EMAIL: 'owner@example.com',
 };
 
 test('production preflight accepts aligned live build and runtime configuration', () => {
   assert.deepEqual(validateProductionDeploy(publicEnv, runtimeEnv), { ready: true, errors: [] });
+});
+
+test('production preflight requires the smoke owner email even with mutations disabled', () => {
+  // These checks used to sit inside the ADMIN_MUTATIONS_V2_ENABLED block, so with
+  // mutations off they never ran. But deploy-fix.js runs admin-production-smoke.js
+  // after EVERY deploy and a throw there triggers the rollback, so a missing
+  // ADMIN_SMOKE_OWNER_EMAIL reverted a deploy that had already fully succeeded.
+  assert.equal(runtimeEnv.ADMIN_MUTATIONS_V2_ENABLED, 'false', 'guard: this is the mutations-off path');
+  for (const bad of [undefined, '', '   ', 'not-an-email']) {
+    const { ready, errors } = validateProductionDeploy(publicEnv, { ...runtimeEnv, ADMIN_SMOKE_OWNER_EMAIL: bad });
+    assert.equal(ready, false, `expected rejection for ${JSON.stringify(bad)}`);
+    assert.ok(errors.includes('admin:smoke_owner_email_required'));
+  }
+
+  // With MFA off the smoke never takes its MFA branch, so a token must not be demanded.
+  assert.equal(
+    validateProductionDeploy(publicEnv, runtimeEnv).errors.includes('admin:fresh_mfa_smoke_token_required'),
+    false,
+  );
+  // With MFA enforced it must be, even when mutations stay off.
+  const mfaOn = { ...runtimeEnv, ADMIN_MFA_ENFORCED: 'true', FIREBASE_MFA_PROJECT_ENABLED: 'true' };
+  assert.ok(validateProductionDeploy({ ...publicEnv, FIREBASE_MFA_PROJECT_ENABLED: 'true' }, mfaOn)
+    .errors.includes('admin:fresh_mfa_smoke_token_required'));
+  assert.equal(
+    validateProductionDeploy({ ...publicEnv, FIREBASE_MFA_PROJECT_ENABLED: 'true' },
+      { ...mfaOn, ADMIN_SMOKE_MFA_ID_TOKEN: 'x'.repeat(120) })
+      .errors.includes('admin:fresh_mfa_smoke_token_required'),
+    false,
+  );
 });
 
 test('production preflight blocks test mode, staging markers, drift and duplicate prices', () => {
@@ -103,6 +133,11 @@ test('production preflight validates every enabled observability production prer
     ...runtimeEnv,
     FIREBASE_MFA_PROJECT_ENABLED: 'true',
     ADMIN_MFA_ENFORCED: 'true',
+    // With enforcement on, admin-production-smoke.js takes its MFA branch and
+    // throws firebase:mfa_smoke_id_token_required without this — which, running
+    // post-deploy, would roll back an otherwise successful deploy. A config with
+    // MFA enforced and no smoke token is not actually deployable.
+    ADMIN_SMOKE_MFA_ID_TOKEN: 'x'.repeat(120),
     USER_OBSERVABILITY_V1_ENABLED: 'true',
     OBSERVABILITY_NOTICE_VERSION: 'observability-privacy-v1',
     OBSERVABILITY_RETENTION_POLICY_APPROVED: 'true',
@@ -186,6 +221,9 @@ test('mutation-enabled production requires a fresh MFA smoke identity and pins a
       ADMIN_MFA_ENFORCED: 'true',
       ADMIN_MUTATIONS_V2_ENABLED: 'true',
       ADMIN_RECOVERY_OWNERS_VERIFIED: 'true',
+      // The shared fixture now carries a valid address, since preflight requires
+      // one on every deploy. Blank it explicitly to keep asserting the rejection.
+      ADMIN_SMOKE_OWNER_EMAIL: '',
     },
   );
   assert.equal(enabled.ready, false);
