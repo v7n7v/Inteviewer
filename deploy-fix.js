@@ -111,8 +111,13 @@ function captureProductionRollbackPoint(dependencies = {}) {
     `${PRODUCTION_FIREBASE_PROJECT}:${ROLLBACK_CHANNEL}`,
     '--project',
     PRODUCTION_FIREBASE_PROJECT,
+    // No --force here. hosting:clone takes no options beyond --help in the
+    // firebase-tools version pinned in runFirebase, and --force is not a global
+    // either, so passing it made commander exit 1 with "unknown option
+    // '--force'" before the clone ran. --non-interactive is a real global and is
+    // what actually makes this safe to run unattended: it errors out rather than
+    // waiting on a prompt.
     '--non-interactive',
-    '--force',
   ]), 'Firebase Hosting rollback capture');
   const revisionResult = gcloud([
     'run',
@@ -173,8 +178,10 @@ function restoreProductionRollbackPoint(rollback, dependencies = {}) {
     `${PRODUCTION_FIREBASE_PROJECT}:live`,
     '--project',
     PRODUCTION_FIREBASE_PROJECT,
+    // Same as the capture path above — no --force. This one matters more: it is
+    // the automatic restore, so an unknown-option exit here would strand
+    // production on a half-deployed state instead of rolling it back.
     '--non-interactive',
-    '--force',
   ]), 'Firebase Hosting rollback');
   assertSucceeded(gcloud([
     'run',

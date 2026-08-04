@@ -20,6 +20,7 @@ const {
   captureProductionRollbackPoint,
   deployFirebase,
   isExpectedHostingConflict,
+  restoreProductionRollbackPoint,
 } = require('../deploy-fix');
 
 const publicEnv = Object.fromEntries(PUBLIC_BUILD_KEYS.map(key => [key, `${key.toLowerCase()}_approved_value`]));
@@ -281,6 +282,42 @@ test('Firebase deployment preserves the original config and limits fallback to a
   assert.match(source, /--format=json\(status\.traffic\)/);
   assert.doesNotMatch(source, /\['deploy', '--only', '[^']*storage/);
   assert.match(source, /finally\s*\{[\s\S]*writeFileSync\(firebaseJsonPath, originalContent\)/);
+});
+
+test('hosting:clone is never passed flags the pinned firebase-tools rejects', () => {
+  // `firebase hosting:clone` declares no options but --help, and --force is not a
+  // global either, so commander exits 1 with "unknown option '--force'" before the
+  // clone runs. Both rollback paths passed it, so `npm run deploy` died at the
+  // very first step every time. Verified against the exact version pinned in
+  // runFirebase.
+  //
+  // The restore path is the dangerous one: an unknown-option exit there fires
+  // while production is mid-deploy, so the thing meant to put production back
+  // would itself have thrown.
+  const calls = [];
+  const record = { runFirebase: args => { calls.push(args); return { status: 0, stdout: '', stderr: '' }; } };
+
+  captureProductionRollbackPoint({
+    ...record,
+    runGcloud: () => ({
+      status: 0,
+      stdout: JSON.stringify({ status: { traffic: [{ revisionName: 'ssrtalentconsultingacf1-00156-loh', percent: 100 }] } }),
+      stderr: '',
+    }),
+  });
+  restoreProductionRollbackPoint(
+    { traffic: [{ revision: 'ssrtalentconsultingacf1-00156-loh', percent: 100 }] },
+    { ...record, runGcloud: () => ({ status: 0, stdout: '', stderr: '' }) },
+  );
+
+  const clones = calls.filter(args => args[0] === 'hosting:clone');
+  assert.equal(clones.length, 2, 'both capture and restore must clone');
+  for (const args of clones) {
+    assert.equal(args.includes('--force'), false, `hosting:clone rejects --force: ${args.join(' ')}`);
+    // --non-interactive is a real global and is what makes this safe unattended.
+    assert.equal(args.includes('--non-interactive'), true);
+    assert.equal(args.includes('--project'), true);
+  }
 });
 
 test('rollback capture ignores tag-only revisions that carry no percent', () => {
