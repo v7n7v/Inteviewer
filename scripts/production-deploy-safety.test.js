@@ -19,7 +19,9 @@ const {
   buildStaticFallbackConfig,
   captureProductionRollbackPoint,
   deployFirebase,
+  DISPOSABLE_BUILD_CACHES,
   isExpectedHostingConflict,
+  pruneBuildCaches,
   restoreProductionRollbackPoint,
 } = require('../deploy-fix');
 
@@ -284,6 +286,49 @@ test('Firebase deployment preserves the original config and limits fallback to a
   assert.match(source, /finally\s*\{[\s\S]*writeFileSync\(firebaseJsonPath, originalContent\)/);
 });
 
+test('deploy prunes .next dev and build caches before the adapter build', () => {
+  // Firebase's framework adapter copies .next wholesale into the function bundle,
+  // and nothing excludes the caches: hosting.ignore only governs hosting, and there
+  // is no functions key or .gcloudignore. A single `next dev` run took .next to
+  // 7.4 GB, the packaged upload to 4.67 GB, and the Cloud Run function update to
+  // "timed out after 1500000ms" - a 25-minute failed deploy.
+  const removed = [];
+  const present = new Set(['.next/dev', '.next/cache']);
+  const pruned = pruneBuildCaches({
+    existsSync: p => present.has(p),
+    rmSync: (p, opts) => {
+      assert.equal(opts.recursive, true);
+      assert.equal(opts.force, true);
+      removed.push(p);
+    },
+  });
+  assert.deepEqual(removed, ['.next/dev', '.next/cache']);
+  assert.deepEqual(pruned, ['.next/dev', '.next/cache']);
+
+  // Only caches. Removing these would delete the build itself.
+  for (const keep of ['.next/server', '.next/standalone', '.next/static', '.next']) {
+    assert.equal(DISPOSABLE_BUILD_CACHES.includes(keep), false, `${keep} must never be pruned`);
+  }
+
+  // Absent directories are skipped rather than removed.
+  assert.deepEqual(pruneBuildCaches({ existsSync: () => false, rmSync: () => assert.fail('must not remove absent paths') }), []);
+
+  // And it must run before the deploy command, since the adapter builds from
+  // whatever .next holds at that moment.
+  const order = [];
+  deployFirebase({
+    fileSystem: {
+      readFileSync: () => '{"hosting":{}}',
+      writeFileSync: () => {},
+      existsSync: () => true,
+    },
+    runPreflight: () => order.push('preflight'),
+    pruneBuildCaches: () => order.push('prune'),
+    runFirebase: args => { order.push(`firebase:${args[0]}`); return { status: 0, stdout: '', stderr: '' }; },
+  });
+  assert.deepEqual(order.slice(0, 3), ['preflight', 'prune', 'firebase:deploy']);
+});
+
 test('hosting:clone is never passed flags the pinned firebase-tools rejects', () => {
   // `firebase hosting:clone` declares no options but --help, and --force is not a
   // global either, so commander exits 1 with "unknown option '--force'" before the
@@ -407,6 +452,8 @@ test('Firebase deployment restores bytes after fallback failure and never runs a
         : localEnvContent,
     writeFileSync: (file, content) => writes.push({ file, content }),
     existsSync: () => true,
+    // deployFirebase prunes .next/dev and .next/cache before the adapter build.
+    rmSync: (file, options) => writes.push({ file, removed: true, options }),
   };
   let calls = 0;
   assert.throws(() => deployFirebase({
@@ -447,6 +494,8 @@ test('Firebase deployment treats unrelated 409 errors as fatal and restores conf
           : localEnvContent,
       writeFileSync: (file, content) => writes.push({ file, content }),
       existsSync: () => true,
+      // deployFirebase prunes .next/dev and .next/cache before the adapter build.
+      rmSync: (file, options) => writes.push({ file, removed: true, options }),
     },
     runPreflight: () => {},
     runFirebase: () => ({ status: 1, stdout: '', stderr: 'Backend service update failed: 409 ALREADY_EXISTS' }),
