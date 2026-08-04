@@ -31,6 +31,15 @@ yarn-error.log*
 .env*.local
 .env
 
+# Backups and copies of the secret-bearing env files. `.env*.local` above only
+# matches names that END in `.local`, so `.env.local.bak.1785877071` was
+# commit-eligible with live Stripe keys in it. Anything derived from .env.local
+# carries the same secrets and must be ignored too.
+.env.local.*
+.env*.bak*
+.env*.orig
+.env*.save
+
 # secrets & credentials
 *.key
 *serviceAccount*.json
