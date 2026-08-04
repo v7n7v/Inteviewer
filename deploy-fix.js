@@ -140,7 +140,14 @@ function captureProductionRollbackPoint(dependencies = {}) {
   for (const entry of parsedTraffic) {
     const revision = String(entry?.revisionName || '').trim();
     const percent = Number(entry?.percent);
-    if (percent <= 0) continue;
+    // Tag-only entries carry no `percent`, and Number(undefined) is NaN. NaN <= 0
+    // is false, so a bare `percent <= 0` did NOT skip them: each one added
+    // 0 + NaN, Number.isInteger(NaN) failed the check below, and the whole
+    // capture threw. Firebase Hosting leaves one `fh-`-tagged revision behind per
+    // preview channel it has ever created — production carries 69 of them against
+    // a single revision actually serving traffic, so this threw every time on real
+    // data while the fixtures, which only ever had percent-bearing entries, passed.
+    if (!Number.isFinite(percent) || percent <= 0) continue;
     trafficByRevision.set(revision, (trafficByRevision.get(revision) || 0) + percent);
   }
   const traffic = [...trafficByRevision].map(([revision, percent]) => ({ revision, percent }));

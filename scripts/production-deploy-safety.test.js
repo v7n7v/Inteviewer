@@ -17,6 +17,7 @@ const {
   buildFrameworksConfig,
   buildFirebaseRuntimeEnv,
   buildStaticFallbackConfig,
+  captureProductionRollbackPoint,
   deployFirebase,
   isExpectedHostingConflict,
 } = require('../deploy-fix');
@@ -280,6 +281,66 @@ test('Firebase deployment preserves the original config and limits fallback to a
   assert.match(source, /--format=json\(status\.traffic\)/);
   assert.doesNotMatch(source, /\['deploy', '--only', '[^']*storage/);
   assert.match(source, /finally\s*\{[\s\S]*writeFileSync\(firebaseJsonPath, originalContent\)/);
+});
+
+test('rollback capture ignores tag-only revisions that carry no percent', () => {
+  const stub = payload => ({
+    runFirebase: () => ({ status: 0, stdout: '', stderr: '' }),
+    runGcloud: () => ({ status: 0, stdout: JSON.stringify(payload), stderr: '' }),
+  });
+
+  // Firebase Hosting leaves one `fh-`-tagged Cloud Run revision behind for every
+  // preview channel it has ever created. Production carries 69 of them against a
+  // single revision actually serving traffic. They have no `percent` field at all.
+  //
+  // Number(undefined) is NaN and NaN <= 0 is false, so a bare `percent <= 0` guard
+  // did not skip them — each added 0 + NaN, Number.isInteger(NaN) then failed the
+  // resolved-assignment check, and capture threw on every real deploy. The suite
+  // missed it because every fixture here had a percent. Keep a percent-less entry
+  // in this one.
+  const withTags = {
+    status: {
+      traffic: [
+        { revisionName: 'ssrtalentconsultingacf1-00010-jiw', tag: 'fh-a3518d8f7bcc0775' },
+        { revisionName: 'ssrtalentconsultingacf1-00154-lon', tag: 'fh-939ee7351fd343d9' },
+        { latestRevision: true, percent: 100, revisionName: 'ssrtalentconsultingacf1-00156-loh' },
+      ],
+    },
+  };
+  assert.deepEqual(
+    captureProductionRollbackPoint(stub(withTags)),
+    { traffic: [{ revision: 'ssrtalentconsultingacf1-00156-loh', percent: 100 }] },
+  );
+
+  // Split traffic still merges per revision, and a tagged entry alongside it is ignored.
+  assert.deepEqual(
+    captureProductionRollbackPoint(stub({
+      status: {
+        traffic: [
+          { revisionName: 'ssrtalentconsultingacf1-00041-sta', percent: 60 },
+          { revisionName: 'ssrtalentconsultingacf1-00041-sta', percent: 20 },
+          { revisionName: 'ssrtalentconsultingacf1-00042-can', percent: 20 },
+          { revisionName: 'ssrtalentconsultingacf1-00009-old', tag: 'fh-legacy' },
+        ],
+      },
+    })),
+    {
+      traffic: [
+        { revision: 'ssrtalentconsultingacf1-00041-sta', percent: 80 },
+        { revision: 'ssrtalentconsultingacf1-00042-can', percent: 20 },
+      ],
+    },
+  );
+
+  // Ignoring percent-less entries must not make the validation permissive.
+  for (const invalid of [
+    { status: { traffic: [{ revisionName: 'ssrtalentconsultingacf1-00156-loh', percent: 60 }] } },
+    { status: { traffic: [{ revisionName: 'ssrtalentconsultingacf1-00156-loh', tag: 'fh-only' }] } },
+    { status: { traffic: [{ revisionName: 'ssrtalentconsultingacf1-00156-loh', percent: 150 }] } },
+    { status: { traffic: [] } },
+  ]) {
+    assert.throws(() => captureProductionRollbackPoint(stub(invalid)), /invalid resolved traffic assignment/);
+  }
 });
 
 test('Firebase deployment stages validated runtime values without reserved Firebase keys', () => {
