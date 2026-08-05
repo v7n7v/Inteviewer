@@ -199,14 +199,10 @@ Bannered as superseded on 25 July 2026:
    in `app/layout.tsx`. If that class never lands — script error, blocked inline
    script, in-app WebView with JS off — the page must stay readable. Do not
    remove the gate, and do not add a hiding rule that is not gated on it.
-9. **`weakWords` matching is plain substring — and that is the opposite of what
-   this file used to claim.** `talentLandingMotion.ts:299` is
-   `low.indexOf(p) > -1`, so `"leveraging".indexOf("leverage")` returns `0` and it
-   **does** match. This entry previously said `leverage` does *not* match
-   `leveraging` and called the behaviour "a real product bug" — following that
-   instruction would have introduced a regression in working code. The real risk is
-   the other direction: **false positives**, e.g. a legitimate `utilities` matching
-   `utilize`. Do not "fix" this without checking the actual behaviour first.
+9. **`weakWords` matching is plain substring.** `leverage` does not match
+   `leveraging`; `utilize` does not match `utilizing`. The Career Check silently
+   under-reports. Stem the list or switch to a word-boundary regex — this is a
+   real product bug, not a demo artefact.
 
 ---
 
