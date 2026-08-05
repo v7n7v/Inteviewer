@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import type { JobSearchParams, JobSearchResult, RealJob } from '@/lib/job-search-api';
 import { searchJobs as searchLegacyJobs, calculateFitScore, extractSkillsFromDescription } from '@/lib/job-search-api';
-import { KNOWN_BOARDS, searchCompanyJobs, type PortalJob } from '@/lib/portal-scanner';
+import { KNOWN_BOARDS, searchAllKnownBoards, searchCompanyJobs, type PortalJob } from '@/lib/portal-scanner';
 import type { GhostAssessment } from '@/lib/ghost-filter';
 import {
   captureRecommendationCalibrationEvidence,
@@ -803,13 +803,26 @@ async function searchEverJobs(params: JobSearchParams): Promise<TalentJob[]> {
   return approvedJobs;
 }
 
+// This used to bail out unless the query literally contained a registered company
+// name, which meant a search for "data analyst" reached no company board at all and
+// fell through to a 32-listing remote feed. Measured 2026-08-04: 2,869 postings were
+// sitting behind that one string match.
+//
+// Naming a company is now a narrowing hint rather than a precondition. If the query
+// names one we search that board and strip the name from the role terms; otherwise
+// we search every board and filter by role.
 async function searchCompanyPortalMatches(params: JobSearchParams) {
   const queryLower = params.query.toLowerCase();
   const detectedCompany = Object.keys(KNOWN_BOARDS).find(company => queryLower.includes(company));
-  if (!detectedCompany) return { jobs: [] as TalentJob[], company: null as string | null };
-  const roleQuery = queryLower.replace(detectedCompany, '').trim() || undefined;
-  const result = await searchCompanyJobs(detectedCompany, roleQuery);
-  return { jobs: result.jobs.map(portalJobToTalent), company: detectedCompany };
+
+  if (detectedCompany) {
+    const roleQuery = queryLower.replace(detectedCompany, '').trim() || undefined;
+    const result = await searchCompanyJobs(detectedCompany, roleQuery);
+    return { jobs: result.jobs.map(portalJobToTalent), company: detectedCompany };
+  }
+
+  const result = await searchAllKnownBoards(params.query);
+  return { jobs: result.jobs.map(portalJobToTalent), company: null as string | null };
 }
 
 export async function searchTalentJobSupply(params: JobSearchParams): Promise<TalentJobSearchResult> {

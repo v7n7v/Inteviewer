@@ -34,8 +34,12 @@ const PORTAL_CACHE_TTL = 10 * 60 * 1000;
 // Docs: https://developers.greenhouse.io/job-board.html
 // Endpoint: https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs
 // ============================================================
-export async function searchGreenhouse(companySlug: string, query?: string): Promise<PortalSearchResult> {
-  const cacheKey = `gh:${companySlug}:${query || ''}`;
+// `limit` is part of the cache key on purpose: the cache stores the already-sliced
+// result, so a 50-capped entry must not satisfy a later request for the full board.
+// The default of 50 is right for looking at one company; the index needs everything,
+// and Databricks alone posts 807.
+export async function searchGreenhouse(companySlug: string, query?: string, limit = 50): Promise<PortalSearchResult> {
+  const cacheKey = `gh:${companySlug}:${query || ''}:${limit}`;
   const cached = portalCache.get(cacheKey);
   if (cached && Date.now() < cached.expiry) return { ...cached.data };
 
@@ -72,7 +76,7 @@ export async function searchGreenhouse(companySlug: string, query?: string): Pro
     }
 
     const result: PortalSearchResult = {
-      jobs: jobs.slice(0, 50),
+      jobs: jobs.slice(0, limit),
       totalCount: jobs.length,
       source: 'Greenhouse',
       company: data.name || companySlug,
@@ -90,8 +94,8 @@ export async function searchGreenhouse(companySlug: string, query?: string): Pro
 // LEVER — Public postings API
 // Endpoint: https://api.lever.co/v0/postings/{company}
 // ============================================================
-export async function searchLever(companySlug: string, query?: string): Promise<PortalSearchResult> {
-  const cacheKey = `lv:${companySlug}:${query || ''}`;
+export async function searchLever(companySlug: string, query?: string, limit = 50): Promise<PortalSearchResult> {
+  const cacheKey = `lv:${companySlug}:${query || ''}:${limit}`;
   const cached = portalCache.get(cacheKey);
   if (cached && Date.now() < cached.expiry) return { ...cached.data };
 
@@ -127,7 +131,7 @@ export async function searchLever(companySlug: string, query?: string): Promise<
     }
 
     const result: PortalSearchResult = {
-      jobs: jobs.slice(0, 50),
+      jobs: jobs.slice(0, limit),
       totalCount: jobs.length,
       source: 'Lever',
       company: companySlug,
@@ -145,8 +149,8 @@ export async function searchLever(companySlug: string, query?: string): Promise<
 // ASHBY — Public job board API
 // Endpoint: https://api.ashbyhq.com/posting-api/job-board/{board_slug}
 // ============================================================
-export async function searchAshby(companySlug: string, query?: string): Promise<PortalSearchResult> {
-  const cacheKey = `ash:${companySlug}:${query || ''}`;
+export async function searchAshby(companySlug: string, query?: string, limit = 50): Promise<PortalSearchResult> {
+  const cacheKey = `ash:${companySlug}:${query || ''}:${limit}`;
   const cached = portalCache.get(cacheKey);
   if (cached && Date.now() < cached.expiry) return { ...cached.data };
 
@@ -182,7 +186,7 @@ export async function searchAshby(companySlug: string, query?: string): Promise<
     }
 
     const result: PortalSearchResult = {
-      jobs: jobs.slice(0, 50),
+      jobs: jobs.slice(0, limit),
       totalCount: jobs.length,
       source: 'Ashby',
       company: data.organizationName || companySlug,
@@ -232,27 +236,43 @@ export async function scanCompanyPortals(
 
 // ── Well-known company → ATS slug mapping ──
 // These are public board slugs — easily verified
+// Every entry below was called live on 2026-08-04 and the posting count recorded.
+// Six rows were wrong before that check: netflix and twitch were registered on
+// Lever and both 404 (Netflix has left Lever entirely), and ramp, notion, plaid and
+// benchling were registered on Greenhouse where all four 404 — they are on Ashby,
+// and between them carry 391 postings that were unreachable. 'ramp-ashby' was a
+// duplicate key pointing at the same board as 'ramp'.
+//
+// A wrong platform is silent: the adapter gets a 404, returns empty, and search
+// simply finds nothing for that company. Re-verify counts before trusting them; a
+// board can empty out or migrate at any time. An Ashby board that returns 200 with
+// zero jobs (vercel today) is indistinguishable from a wrong slug — both are valid
+// responses, so neither can be auto-detected as an error.
 export const KNOWN_BOARDS: Record<string, { platform: 'greenhouse' | 'lever' | 'ashby'; slug: string }> = {
-  // Greenhouse companies
-  'stripe': { platform: 'greenhouse', slug: 'stripe' },
-  'airbnb': { platform: 'greenhouse', slug: 'airbnb' },
-  'coinbase': { platform: 'greenhouse', slug: 'coinbase' },
-  'figma': { platform: 'greenhouse', slug: 'figma' },
-  'notion': { platform: 'greenhouse', slug: 'notion' },
-  'databricks': { platform: 'greenhouse', slug: 'databricks' },
-  'cloudflare': { platform: 'greenhouse', slug: 'cloudflare' },
-  'plaid': { platform: 'greenhouse', slug: 'plaid' },
-  'discord': { platform: 'greenhouse', slug: 'discord' },
-  'duolingo': { platform: 'greenhouse', slug: 'duolingo' },
-  'ramp': { platform: 'greenhouse', slug: 'ramp' },
-  'benchling': { platform: 'greenhouse', slug: 'benchling' },
-  // Lever companies
-  'netflix': { platform: 'lever', slug: 'netflix' },
-  'twitch': { platform: 'lever', slug: 'twitch' },
-  // Ashby companies
-  'vercel': { platform: 'ashby', slug: 'vercel' },
-  'linear': { platform: 'ashby', slug: 'linear' },
-  'ramp-ashby': { platform: 'ashby', slug: 'ramp' },
+  // Greenhouse — 2,350 postings verified 2026-08-04
+  'databricks': { platform: 'greenhouse', slug: 'databricks' }, // 807
+  'stripe': { platform: 'greenhouse', slug: 'stripe' },         // 550
+  'cloudflare': { platform: 'greenhouse', slug: 'cloudflare' }, // 290
+  'airbnb': { platform: 'greenhouse', slug: 'airbnb' },         // 189
+  'figma': { platform: 'greenhouse', slug: 'figma' },           // 177
+  'coinbase': { platform: 'greenhouse', slug: 'coinbase' },     // 163
+  'duolingo': { platform: 'greenhouse', slug: 'duolingo' },     // 65
+  'twitch': { platform: 'greenhouse', slug: 'twitch' },         // 62 — was on Lever (404)
+  'discord': { platform: 'greenhouse', slug: 'discord' },       // 47
+
+  // Ashby — 416 postings verified 2026-08-04
+  'ramp': { platform: 'ashby', slug: 'ramp' },             // 120 — was on Greenhouse (404)
+  'notion': { platform: 'ashby', slug: 'notion' },         // 111 — was on Greenhouse (404)
+  'plaid': { platform: 'ashby', slug: 'plaid' },           // 108 — was on Greenhouse (404)
+  'benchling': { platform: 'ashby', slug: 'benchling' },   // 52  — was on Greenhouse (404)
+  'linear': { platform: 'ashby', slug: 'linear' },         // 25
+  'vercel': { platform: 'ashby', slug: 'vercel' },         // 0 — valid 200, empty board
+
+  // Lever — 103 postings verified 2026-08-04
+  'spotify': { platform: 'lever', slug: 'spotify' },       // 103
+  // netflix and twitch were here and both 404. Netflix is no longer on Lever;
+  // twitch moved to Greenhouse above. They were costing a request per scan and
+  // returning nothing.
 };
 
 /**
@@ -276,6 +296,77 @@ export async function searchCompanyJobs(
 
   // Unknown company — try all three with the company name as slug
   return scanCompanyPortals(normalizedCompany, query);
+}
+
+// ============================================================
+// SEARCH EVERY KNOWN BOARD — role-first, not company-first
+// ============================================================
+// The caller used to reach these boards only when the user's query literally
+// contained a registered company name (`queryLower.includes(company)`), so a search
+// for "data analyst" hit zero boards and fell through to a 32-listing remote feed,
+// while ~2,869 verified postings sat here unreachable. People search for roles, not
+// for employers they have already chosen.
+//
+// Each board is fetched with NO query so the per-board cache key is shared by every
+// user's search, then filtered in memory. Sixteen boards populate the cache once and
+// serve every query for the TTL. Filtering per board instead would mint a new cache
+// entry per phrase and re-hit all sixteen APIs on every keystroke-ish search.
+//
+// allSettled, not all: one dead or migrated board must never empty the whole result.
+// Per board, not overall. The largest board seen is 807 (Databricks); 2,000 leaves
+// headroom without being unbounded, since these responses are already in memory.
+const BOARD_FETCH_LIMIT = 2000;
+
+export async function searchAllKnownBoards(
+  query?: string,
+  limit = 60,
+): Promise<PortalSearchResult & { boardsSucceeded: number; boardsFailed: number }> {
+  const entries = Object.entries(KNOWN_BOARDS);
+
+  const settled = await Promise.allSettled(
+    // BOARD_FETCH_LIMIT, not the 50 default: the adapters cap per board, and with
+    // the default this fan-out returned 722 of the ~2,869 postings that exist —
+    // Databricks alone posts 807, so it was losing 94% of one board. Measured, not
+    // assumed: the first version of this function shipped with the default and the
+    // shortfall only showed up when the totals were actually counted.
+    entries.map(([, board]) => {
+      switch (board.platform) {
+        case 'greenhouse': return searchGreenhouse(board.slug, undefined, BOARD_FETCH_LIMIT);
+        case 'lever': return searchLever(board.slug, undefined, BOARD_FETCH_LIMIT);
+        case 'ashby': return searchAshby(board.slug, undefined, BOARD_FETCH_LIMIT);
+      }
+    }),
+  );
+
+  const all: PortalJob[] = [];
+  let ok = 0;
+  let failed = 0;
+  for (const r of settled) {
+    if (r.status === 'fulfilled' && r.value) { ok++; all.push(...r.value.jobs); }
+    else failed++;
+  }
+
+  // Match on title and location only. Descriptions are megabytes of boilerplate and
+  // matching them turns every query into a near-universal match — "remote" appears
+  // in most benefits sections. Every term must appear, so extra words narrow rather
+  // than widen, which is what a searcher expects.
+  const terms = (query || '').toLowerCase().split(/\s+/).filter(t => t.length > 1);
+  const matched = terms.length === 0
+    ? all
+    : all.filter(job => {
+        const hay = `${job.title} ${job.location || ''} ${job.company || ''}`.toLowerCase();
+        return terms.every(t => hay.includes(t));
+      });
+
+  return {
+    jobs: matched.slice(0, limit),
+    // What we are actually showing, not a market-wide estimate.
+    totalCount: matched.length,
+    source: `${ok} company boards`,
+    company: '',
+    boardsSucceeded: ok,
+    boardsFailed: failed,
+  };
 }
 
 // ── HTML strip utility ──

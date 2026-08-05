@@ -241,9 +241,33 @@ function cleanTitle(title: string): string {
 }
 
 /**
- * Remotive API — Free fallback, remote jobs only
+ * Remotive API — DISABLED. We were in breach of their terms.
+ *
+ * Remotive ships its terms in-band on every response, in the `0-legal-notice`
+ * field. Read live on 2026-08-04, it says, verbatim:
+ *
+ *   "Displaying our jobs in order to collect signups/email addresses to show a
+ *    listing constitutes a breach of our terms of services."
+ *
+ * Taco gates job matches behind signup, so every Remotive listing we showed was
+ * exactly that. The same notice also requires a link back to the Remotive URL AND
+ * naming Remotive as the source (we did neither), imposes a deliberate 24-hour
+ * delay so attribution accrues to them, and advises at most ~4 requests per day —
+ * we called it per search. Their paid API "starting budget is $5k/mo".
+ *
+ * Turning it off rather than remediating: the feed returns 32 listings TOTAL
+ * (job-count 32, total-job-count 32 — not per page), skewed to micro and freelance
+ * employers. Since searchAllKnownBoards now reaches ~2,869 postings across the
+ * company boards, this feed contributes almost nothing and carries a live breach.
+ *
+ * Re-enabling would mean: ungating listings from signup, rendering the link-back
+ * and source credit, honouring the 24-hour delay, and caching to ~4 calls/day.
  */
-export async function searchJobsRemotive(params: JobSearchParams): Promise<JobSearchResult> {
+export async function searchJobsRemotive(_params: JobSearchParams): Promise<JobSearchResult> {
+    return { jobs: [], totalCount: 0, source: 'remotive (disabled - terms)' };
+}
+
+async function searchJobsRemotiveDisabled(params: JobSearchParams): Promise<JobSearchResult> {
     try {
         const url = `https://remotive.com/api/remote-jobs?limit=50`;
         const response = await fetch(url);
