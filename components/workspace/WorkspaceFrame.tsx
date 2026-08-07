@@ -145,8 +145,13 @@ export default function WorkspaceFrame({
             : <SuiteSidebar />}
         </Suspense>
       )}
+      {/* No right margin is reserved for the context panel any more. It minimises to a
+          launcher and expands as an OVERLAY, so content keeps the full width in both
+          states - which was most of the point: with SuiteToolShell capping at 1120px, a
+          1536px viewport minus the 276px sidebar minus the old 328px reservation left
+          about 932px. */}
       <main
-        className={`mobile-app-page min-h-dvh ${isAdminWorkspace ? 'overflow-x-clip' : 'overflow-x-hidden'} transition-[margin] duration-200 ${showWorkspaceChrome ? 'lg:ml-[var(--suite-sidebar-content-offset,276px)] lg:pt-0' : ''} ${showAssistantContextPanel ? '2xl:mr-[328px]' : ''} ${isAdminWorkspace ? 'workspace-admin-canvas' : ''}`}
+        className={`mobile-app-page min-h-dvh ${isAdminWorkspace ? 'overflow-x-clip' : 'overflow-x-hidden'} transition-[margin] duration-200 ${showWorkspaceChrome ? 'lg:ml-[var(--suite-sidebar-content-offset,276px)] lg:pt-0' : ''} ${isAdminWorkspace ? 'workspace-admin-canvas' : ''}`}
       >
         {showWorkspaceChrome && !isAssistantReview && !isAdminWorkspace && <MobileQuickToolsRail />}
         {children}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useStore } from '@/lib/store';
 import { authFetch } from '@/lib/auth-fetch';
@@ -22,6 +22,7 @@ import {
   summarizeSonaContext,
   type SonaExecutionContext,
 } from '@/lib/assistant/execution-context';
+import { ASSISTANT_OPEN_EVENT, ASSISTANT_STORAGE_KEYS } from '@/lib/assistant/browser-compatibility';
 import { SonaMark } from '@/components/sona';
 import SonaCapabilityDrawer from '@/components/sona/SonaCapabilityDrawer';
 
@@ -279,6 +280,28 @@ export default function SonaContextPanel() {
   const [twin, setTwin] = useState<CareerTwinSummary | null>(null);
   const [twinLoading, setTwinLoading] = useState(false);
   const [twinError, setTwinError] = useState(false);
+
+  /**
+   * Minimised or expanded.
+   *
+   * The rail became collapsible because the page reads as crowded, so `false` is the
+   * default and the quiet state is what you get without asking for it.
+   *
+   * It starts `false` on the server too, and the stored preference is read in an effect
+   * below rather than during render. This component is dynamically imported WITHOUT
+   * `ssr: false`, so it server-renders - touching localStorage in the initial render
+   * would be a hydration mismatch, and the visible symptom would be the panel flashing
+   * open on every page load. Same pattern as useApplicationKitContext.
+   */
+  const [expanded, setExpanded] = useState(false);
+  const launcherRef = useRef<HTMLButtonElement | null>(null);
+  const drawerRef = useRef<HTMLDivElement | null>(null);
+  /* Set when a collapse should hand focus back. It cannot be done inside the collapse
+     handler: the launcher does not exist at that moment - it is the other render branch -
+     so `launcherRef.current` is still null and the node focus came FROM has just
+     unmounted. Measured: Escape collapsed correctly and left focus on <body>. The restore
+     has to happen in an effect, after the re-render. */
+  const restoreFocusRef = useRef(false);
   const { context: kitContext } = useApplicationKitContext();
   const capabilities = useMemo(() => getSonaCapabilitiesForPath(pathname), [pathname]);
   const primaryCapability = capabilities[0];
@@ -300,6 +323,76 @@ export default function SonaContextPanel() {
   const artifactCount = capabilities.filter(item => item.createsArtifacts).length;
   const canBackground = capabilities.some(item => item.canRunInBackground);
   const pageLabel = context.pageLabel || 'Workspace';
+
+  useEffect(() => {
+    try {
+      setExpanded(window.localStorage.getItem(ASSISTANT_STORAGE_KEYS.contextPanelExpanded) === 'true');
+    } catch {
+      // Storage can throw in private modes. Minimised is the safe default.
+    }
+  }, []);
+
+  const collapse = useCallback(() => {
+    setExpanded(false);
+    try {
+      window.localStorage.setItem(ASSISTANT_STORAGE_KEYS.contextPanelExpanded, 'false');
+    } catch {
+      // Preference is best-effort.
+    }
+    restoreFocusRef.current = true;
+  }, []);
+
+  const expand = useCallback(() => {
+    setExpanded(true);
+    try {
+      window.localStorage.setItem(ASSISTANT_STORAGE_KEYS.contextPanelExpanded, 'true');
+    } catch {
+      // Preference is best-effort.
+    }
+  }, []);
+
+  /* The other half of the focus round-trip: once the minimised branch has rendered, put
+     focus on the launcher. Guarded by a flag so it only fires after a deliberate collapse
+     and never steals focus on first mount. */
+  useEffect(() => {
+    if (expanded || !restoreFocusRef.current) return;
+    restoreFocusRef.current = false;
+    launcherRef.current?.focus();
+  }, [expanded]);
+
+  /* Escape collapses, and focus moves into the drawer on open.
+   *
+   * Deliberately NOT a focus trap and NOT a body scroll lock, though the repo's
+   * AdminDetailDrawer has both. This is a complementary rail sitting beside the page, not
+   * a modal over it: trapping Tab would stop a keyboard user reaching the content the
+   * panel is describing, and `aria-modal` would hide that content from a screen reader
+   * while the rail is merely open. */
+  useEffect(() => {
+    if (!expanded) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        collapse();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    const focusTimer = window.setTimeout(() => {
+      drawerRef.current?.querySelector<HTMLElement>('button, a[href]')?.focus();
+    }, 0);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      window.clearTimeout(focusTimer);
+    };
+  }, [expanded, collapse]);
+
+  /* When the assistant chat opens, the rail gets out of its way. Every trigger inside this
+     panel dispatches that event, and the chat panel renders in the same corner - without
+     this they overlap. */
+  useEffect(() => {
+    const onAssistantOpen = () => setExpanded(false);
+    window.addEventListener(ASSISTANT_OPEN_EVENT, onAssistantOpen);
+    return () => window.removeEventListener(ASSISTANT_OPEN_EVENT, onAssistantOpen);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -337,9 +430,42 @@ export default function SonaContextPanel() {
 
   if (pathname === '/suite/agent') return null;
 
+  /* MINIMISED. The launcher, and nothing else in the corner.
+   *
+   * `2xl:` only, matching exactly where this panel has always lived. Below 1536px the
+   * floating orb already owns bottom-right (it is `lg:flex 2xl:hidden`), so a second
+   * bubble there would collide with it - and CLAUDE.md reserves sticky bottom furniture
+   * for workflow actions.
+   *
+   * No shadow, no blur, no accent: elevation is a fill plus a hairline plus an outline
+   * ring of page background, and the accent is frozen pending an owner decision. */
+  if (!expanded) {
+    return (
+      <button
+        ref={launcherRef}
+        type="button"
+        onClick={expand}
+        aria-expanded={false}
+        aria-controls="taco-context-panel"
+        className="fixed bottom-4 right-4 z-30 hidden h-14 w-14 place-items-center rounded-[20px] border border-[var(--border-subtle)] bg-[var(--card-bg)] outline outline-4 outline-[var(--bg-deep)] transition hover:border-[var(--border)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/30 2xl:grid"
+        aria-label="Open Taco context"
+      >
+        <SonaMark size="sm" state={user ? 'idle' : 'locked'} />
+        {/* The count is the reason to open it: it says there is something in there. */}
+        {contextLines.length > 0 && (
+          <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-1 text-[10px] font-semibold text-[var(--text-primary)]">
+            {contextLines.length}
+          </span>
+        )}
+      </button>
+    );
+  }
+
   return (
     <aside
-      className="fixed bottom-4 right-4 top-4 z-30 hidden w-[304px] flex-col overflow-hidden rounded-[22px] border border-[var(--border-subtle)] bg-[var(--card-bg)] shadow-sm 2xl:flex"
+      id="taco-context-panel"
+      ref={drawerRef}
+      className="fixed bottom-4 right-4 top-4 z-30 hidden w-[304px] flex-col overflow-hidden rounded-[22px] border border-[var(--border-subtle)] bg-[var(--card-bg)] outline outline-4 outline-[var(--bg-deep)] 2xl:flex"
       aria-label="Taco context panel"
     >
       <div className="border-b border-[var(--border-subtle)] p-4">
@@ -358,14 +484,28 @@ export default function SonaContextPanel() {
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => router.push('/suite/agent')}
-            className="inline-grid h-9 w-9 shrink-0 place-items-center rounded-[12px] border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--text-muted)] transition hover:border-[var(--border)] hover:text-[var(--text-primary)]"
-            aria-label="Open full Taco agent"
-          >
-            <Icon name="open_in_full" className="text-[18px]" />
-          </button>
+          <div className="flex shrink-0 items-center gap-1.5">
+            {/* Two controls, two glyphs, and they must not both be open_in_full - that one
+                already means "go to /suite/agent" here AND in the orb's header. */}
+            <button
+              type="button"
+              onClick={collapse}
+              aria-expanded
+              aria-controls="taco-context-panel"
+              className="inline-grid h-9 w-9 place-items-center rounded-[12px] border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--text-muted)] transition hover:border-[var(--border)] hover:text-[var(--text-primary)]"
+              aria-label="Minimise Taco context"
+            >
+              <Icon name="close_fullscreen" className="text-[18px]" />
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push('/suite/agent')}
+              className="inline-grid h-9 w-9 place-items-center rounded-[12px] border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--text-muted)] transition hover:border-[var(--border)] hover:text-[var(--text-primary)]"
+              aria-label="Open full Taco agent"
+            >
+              <Icon name="open_in_full" className="text-[18px]" />
+            </button>
+          </div>
         </div>
       </div>
 

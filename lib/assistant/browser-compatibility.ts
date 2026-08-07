@@ -10,6 +10,10 @@ export const ASSISTANT_STORAGE_KEYS = {
   legacyAudioReplies: 'sona-audio-replies',
   promoDismissed: 'tc_promo_taco_dismissed',
   legacyPromoDismissed: 'tc_promo_sona_dismissed',
+  /* Whether the context rail is expanded. Absent means minimised, which is the default -
+     the rail was made collapsible because the page read as crowded, so the quiet state is
+     the one you get without asking. No legacy key: this preference did not exist before. */
+  contextPanelExpanded: 'tc_taco_context_expanded',
 } as const;
 
 export function readAssistantStorage(storage: Storage, key: string, legacyKey: string): string | null {

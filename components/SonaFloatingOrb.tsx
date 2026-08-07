@@ -383,7 +383,7 @@ export default function SonaFloatingOrb() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.92 }}
             transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-            className="fixed inset-x-2 bottom-[calc(var(--mobile-appbar-height,0px)+5.5rem)] sm:absolute sm:inset-x-auto sm:bottom-16 sm:right-0 w-auto overflow-hidden rounded-2xl sm:w-[340px] md:w-[380px] 2xl:right-[320px] flex flex-col"
+            className="fixed inset-x-2 bottom-[calc(var(--mobile-appbar-height,0px)+5.5rem)] sm:absolute sm:inset-x-auto sm:bottom-16 sm:right-0 w-auto overflow-hidden rounded-2xl sm:w-[340px] md:w-[380px] flex flex-col"
             style={{
               height: 'min(480px, 70vh)',
               background: isLight ? '#fff' : '#111114',
