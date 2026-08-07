@@ -40,7 +40,9 @@ interface Ctx {
   observe: (o: IntersectionObserver) => IntersectionObserver;
 }
 
-/* the phrase list is the product's own weakWords from careerLandingContent.ts */
+/* the phrase list is local to this file. It used to cite a shared `weakWords`
+   constant in careerLandingContent.ts; that file was dead code and no such shared
+   constant exists anywhere in the product. */
 const WEAK_PRODUCT = [
   'responsible for', 'improving', 'operational efficiency', 'multiple stakeholders',
   'excited to apply', 'comprehensive background', 'aligns well', 'esteemed organization',

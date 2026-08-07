@@ -24,7 +24,7 @@
  *     reaches any of them - the results panel is assembled from a fixed phrase
  *     list and integer counts and never echoes the textarea at all.
  *
- * Copy, tool names, modes and examples come from careerLandingContent.ts.
+ * Copy, tool names, modes and examples are inline below and in talentLandingMotion.ts.
  * Nothing here is invented, which is also the product's whole claim.
  * ------------------------------------------------------------------------- */
 
@@ -467,7 +467,7 @@ export function TalentLanding({ isAuthenticated, onOpenAuth }: TalentLandingProp
           <h2 className="rise">Start free. Grow into the system.</h2>
           <p className="lede rise">Three plans. <b>Free</b> covers the Career Check, the Detector and the basic
             tools with no account. <b>Standard</b> adds saved workflows and larger limits;
-            <b>Studio</b> adds Taco’s context, job tracking and exports.</p>
+            <b>Max</b> adds Taco’s context, job tracking and exports.</p>
           <div className="plan-row rise">
             <a className="btn" href="#check">Run a free check</a>
             <a className="plan-link" href="/pricing">Compare the three plans →</a>
