@@ -31,8 +31,8 @@ const INDUSTRIES = [
 const FAQS = [
   { q: 'How does AI interview practice work?', a: 'You select a target role and company. Our AI generates realistic interview questions, listens to your answers, and provides structured feedback based on the STAR method, answer specificity, and relevance to the role.' },
   { q: 'Is this like talking to a real interviewer?', a: 'Our AI adapts to your responses with follow-up questions, just like a real interviewer. It\'s not a static Q&A — it\'s a dynamic conversation designed to simulate actual interview pressure.' },
-  { q: 'What roles are supported?', a: 'We cover 50+ industries and roles including software engineering, product management, data science, consulting, finance, healthcare, marketing, and more. If your role exists, we have questions for it.' },
-  { q: 'Will this actually help me get a job?', a: 'Practice is the #1 predictor of interview performance. Candidates who do 5+ mock interviews are 3x more likely to receive offers. Our AI gives you unlimited, on-demand practice with expert-level feedback.' },
+  { q: 'What roles are supported?', a: 'Software engineering, product management, data science, marketing, finance, healthcare, consulting, sales, operations, design, human resources and legal. Pick the closest one and the questions adapt to the role you name.' },
+  { q: 'What does a session actually give me?', a: 'Six interviewer personas, from a friendly HR screen to a FAANG lead to a structured case, and seven modes running from a quick drill to a full mock with a debrief afterwards. Feedback is structured on the STAR method, how specific your answer was, and how relevant it was to the role.' },
   { q: 'Is there a free version?', a: 'Yes — you get 3 free practice sessions. Standard unlocks unlimited sessions, advanced scoring analytics, session history, and priority question generation.' },
 ];
 
@@ -143,7 +143,7 @@ export default function InterviewPrepLanding() {
             Tailored for your industry
           </h2>
           <p className={`text-sm text-center mb-8 ${isLight ? 'text-gray-500' : 'text-white/25'}`}>
-            Our AI generates role-specific questions across 50+ industries
+            Role-specific questions for each of these
           </p>
           <div className="flex flex-wrap justify-center gap-2 max-w-2xl mx-auto">
             {INDUSTRIES.map((ind, i) => (
@@ -218,7 +218,7 @@ export default function InterviewPrepLanding() {
               The best interview prep is practice
             </h2>
             <p className={`text-sm mb-6 max-w-lg mx-auto ${isLight ? 'text-gray-500' : 'text-white/30'}`}>
-              Candidates who practice 5+ mock interviews are 3x more likely to get offers. Start your first session free — no credit card, no commitment.
+              Six interviewer personas, seven session modes, and a debrief after each one. Start your first session free — no credit card, no commitment.
             </p>
             <SeoTrackedLink href="/suite/skill-bridge" eventName="seo_interview_prep_click" className="inline-block rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-blue-500">
               Start Mock Interview Free →

@@ -223,7 +223,7 @@ export default function ResumeBuilderLanding() {
               Ready to build a resume that works?
             </h2>
             <p className={`text-sm mb-6 max-w-lg mx-auto ${isLight ? 'text-gray-500' : 'text-white/30'}`}>
-              Join thousands of job seekers who landed interviews with AI-optimized resumes. Free to start, no credit card required.
+              Twenty signature templates, an ATS score as you type, and a designed PDF with a linear Word companion. Free to start, no credit card required.
             </p>
             <SeoTrackedLink href="/suite/resume" eventName="seo_resume_builder_click" className="inline-block rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-blue-500">
               Build Your Resume Free →
