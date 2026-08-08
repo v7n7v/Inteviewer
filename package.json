@@ -34,7 +34,7 @@
     "admin:accounts": "node --env-file=.env.local scripts/admin-account-provision.js",
     "admin:smoke": "node --env-file=.env.local scripts/admin-production-smoke.js",
     "test:admin-accounts": "node --test scripts/admin-accounts.test.js",
-    "test:admin-command-grid": "node --test scripts/admin-accounts.test.js scripts/admin-aggregate-materialization.test.js scripts/admin-aggregate-prime.test.js scripts/admin-release-orchestration.test.js",
+    "test:admin-command-grid": "node --test scripts/admin-accounts.test.js scripts/admin-aggregate-materialization.test.js scripts/admin-aggregate-prime.test.js scripts/admin-release-orchestration.test.js scripts/admin-user-meters.test.js",
     "test:observability": "node --test scripts/observability-foundation.test.js scripts/analytics-privacy-contract.test.js scripts/observability-integration-contract.test.js scripts/observability-shard-load.test.js",
     "test:observability:emulator": "npx --yes firebase-tools@14.17.0 emulators:exec --config firebase.observability-emulator.json --only auth,firestore --project demo-talent-consulting-observability \"node --test scripts/observability-firestore-emulator.test.js\"",
     "admin:aggregates:prime": "node --env-file=.env.local scripts/admin-aggregate-prime.js",

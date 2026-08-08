@@ -47,8 +47,39 @@ interface DirectoryResponse {
   };
 }
 
+interface UsageMeter {
+  key: string;
+  label: string;
+  used: number;
+  /** null means unmetered on this plan. Never render it as a limit of zero. */
+  cap: number | null;
+  unit: 'count' | 'minutes' | 'words';
+}
+
+interface UserActivity {
+  onboardingCompleted: boolean;
+  applications: number;
+  resumeVersions: number;
+  meters: UsageMeter[];
+}
+
 interface DetailResponse {
   user: UserDetail;
+  activity?: UserActivity;
+}
+
+function meterValue(meter: UsageMeter) {
+  const unit = meter.unit === 'count' ? '' : ` ${meter.unit}`;
+  if (meter.cap === null) return `${meter.used.toLocaleString()}${unit} · no limit`;
+  return `${meter.used.toLocaleString()} of ${meter.cap.toLocaleString()}${unit}`;
+}
+
+/** Only a real cap can be "at" or "near" it. An unmetered counter is neither. */
+function meterTone(meter: UsageMeter) {
+  if (meter.cap === null || meter.cap === 0) return 'info' as const;
+  if (meter.used >= meter.cap) return 'critical' as const;
+  if (meter.used >= meter.cap * 0.8) return 'degraded' as const;
+  return 'healthy' as const;
 }
 
 interface PendingUserChange {
@@ -109,8 +140,6 @@ export function UsersCommandCenter() {
   const [appliedQuery, setAppliedQuery] = useState('');
   const [planFilter, setPlanFilter] = useState<'all' | UserPlan>('all');
   const [stateFilter, setStateFilter] = useState<'all' | 'active' | 'disabled' | 'unverified'>('all');
-  const [pageTokens, setPageTokens] = useState<Array<string | null>>([null]);
-  const [pageIndex, setPageIndex] = useState(0);
   const [directory, setDirectory] = useState<DirectoryResponse | null>(null);
   const [loading, setLoading] = useState(canRead);
   const [refreshing, setRefreshing] = useState(false);
@@ -118,6 +147,7 @@ export function UsersCommandCenter() {
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
   const [selectedUid, setSelectedUid] = useState<string | null>(null);
   const [detail, setDetail] = useState<UserDetail | null>(null);
+  const [activity, setActivity] = useState<UserActivity | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState('');
   const [pendingChange, setPendingChange] = useState<PendingUserChange | null>(null);
@@ -133,7 +163,6 @@ export function UsersCommandCenter() {
   const detailRequest = useRef(0);
   const detailController = useRef<AbortController | null>(null);
 
-  const activePageToken = pageTokens[pageIndex] || null;
 
   const loadDirectory = useCallback(async (background = false) => {
     if (!canRead) {
@@ -148,8 +177,9 @@ export function UsersCommandCenter() {
     if (background || hasDirectory.current) setRefreshing(true);
     else setLoading(true);
     setDirectoryError('');
+    /* Never sends `pageToken`. The route rejects it outright with
+       ADMIN_USER_ENUMERATION_BLOCKED, so sending one is a guaranteed 400. */
     const params = new URLSearchParams({ limit: '25' });
-    if (activePageToken) params.set('pageToken', activePageToken);
     if (appliedQuery) params.set('search', appliedQuery);
 
     try {
@@ -174,7 +204,7 @@ export function UsersCommandCenter() {
         setRefreshing(false);
       }
     }
-  }, [activePageToken, appliedQuery, canRead]);
+  }, [appliedQuery, canRead]);
 
   useEffect(() => {
     void loadDirectory(false);
@@ -190,6 +220,7 @@ export function UsersCommandCenter() {
     detailController.current = controller;
     if (!background) {
       setDetail(null);
+      setActivity(null);
       setDetailLoading(true);
     }
     setDetailError('');
@@ -204,6 +235,9 @@ export function UsersCommandCenter() {
       }
       if (sequence !== detailRequest.current) return;
       setDetail(payload.user);
+      /* Optional on purpose. An older deployment of the route returns no `activity`, and
+         the drawer degrades to the evidence sections rather than rendering empty meters. */
+      setActivity(payload.activity ?? null);
     } catch (error) {
       if (controller.signal.aborted || sequence !== detailRequest.current) return;
       setDetailError(error instanceof Error ? error.message : 'The user evidence could not be loaded.');
@@ -239,12 +273,10 @@ export function UsersCommandCenter() {
 
   function applySearch() {
     const nextQuery = query.trim().slice(0, 160);
-    if (nextQuery === appliedQuery && pageIndex === 0) {
+    if (nextQuery === appliedQuery) {
       void loadDirectory(true);
       return;
     }
-    setPageTokens([null]);
-    setPageIndex(0);
     setAppliedQuery(nextQuery);
   }
 
@@ -253,18 +285,6 @@ export function UsersCommandCenter() {
     setAppliedQuery('');
     setPlanFilter('all');
     setStateFilter('all');
-    setPageTokens([null]);
-    setPageIndex(0);
-  }
-
-  function nextPage() {
-    if (!directory?.nextPageToken) return;
-    setPageTokens(current => {
-      const next = current.slice(0, pageIndex + 1);
-      next.push(directory.nextPageToken);
-      return next;
-    });
-    setPageIndex(current => current + 1);
   }
 
   async function applyStatusChange() {
@@ -474,31 +494,17 @@ export function UsersCommandCenter() {
             {stale ? 'Last good evidence' : 'Verified page'}
           </AdminStatusBadge>
         )}
+        /* No pagination. `GET /api/admin/users` returns `nextPageToken: null`
+           unconditionally and rejects any `pageToken` with
+           ADMIN_USER_ENUMERATION_BLOCKED - directory enumeration is deliberately
+           disabled. The Previous/Next buttons that used to sit here predated that
+           decision and could never advance; a disabled control that can never enable
+           reads as a broken feature rather than an absent one. */
         footer={(
           <div className="users-pagination">
             <div>
-              <strong>Page {pageIndex + 1}</strong>
-              <span>{directory?.nextPageToken ? 'More pages are available' : 'No next page token returned'}</span>
-            </div>
-            <div>
-              <AdminButton
-                icon="chevron_left"
-                size="sm"
-                variant="ghost"
-                disabled={pageIndex === 0 || refreshing}
-                onClick={() => setPageIndex(current => Math.max(0, current - 1))}
-              >
-                Previous
-              </AdminButton>
-              <AdminButton
-                trailingIcon="chevron_right"
-                size="sm"
-                variant="ghost"
-                disabled={!directory?.nextPageToken || refreshing}
-                onClick={nextPage}
-              >
-                Next
-              </AdminButton>
+              <strong>Exact lookup only</strong>
+              <span>Directory enumeration is disabled. Search by full email address or Firebase UID.</span>
             </div>
           </div>
         )}
@@ -573,6 +579,7 @@ export function UsersCommandCenter() {
         onClose={() => {
           setSelectedUid(null);
           setDetail(null);
+          setActivity(null);
           setDetailError('');
         }}
         footer={detail ? (
@@ -645,6 +652,46 @@ export function UsersCommandCenter() {
                   <div><dt>Support review</dt><dd>{detail.billingSupportStatus || 'No current case'}</dd></div>
                 </dl>
               </section>
+
+              {activity ? (
+                <section className="users-detail-section">
+                  <header>
+                    <span className="material-symbols-rounded" aria-hidden="true">monitoring</span>
+                    <h3>Product activity</h3>
+                  </header>
+                  <dl className="users-detail-list">
+                    <div><dt>Onboarding</dt><dd>{activity.onboardingCompleted ? 'Completed' : 'Not completed'}</dd></div>
+                    <div><dt>Applications</dt><dd>{activity.applications.toLocaleString()}</dd></div>
+                    <div><dt>Resume versions</dt><dd>{activity.resumeVersions.toLocaleString()}</dd></div>
+                  </dl>
+                  {/* Counts, never contents. `applications` carries employer names, job
+                      descriptions and offer amounts, and `profile/main` carries the full
+                      resume in plaintext - none of it belongs on a support operator's
+                      screen just because an admin token can read it. */}
+                  <p className="users-detail-note">
+                    Counts only. Resume text, application contents and contacts are not read by this console.
+                  </p>
+                </section>
+              ) : null}
+
+              {activity && activity.meters.length > 0 ? (
+                <section className="users-detail-section">
+                  <header>
+                    <span className="material-symbols-rounded" aria-hidden="true">speed</span>
+                    <h3>Usage against caps</h3>
+                  </header>
+                  <dl className="users-detail-list">
+                    {activity.meters.map(meter => (
+                      <div key={meter.key}>
+                        <dt>{meter.label}</dt>
+                        <dd>
+                          <AdminStatusBadge tone={meterTone(meter)}>{meterValue(meter)}</AdminStatusBadge>
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </section>
+              ) : null}
 
               {!mutationEligible && canManage ? (
                 <div className="users-rollout-lock">

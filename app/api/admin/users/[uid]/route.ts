@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { requireAdmin, requireAdminMutation } from '@/lib/admin-auth';
 import { readBoundedJson } from '@/lib/admin/bounded-json';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase-admin';
+import { planOf, usageMeters } from '@/lib/admin/user-usage-meters';
 import {
   adminMutationClaimIsRunning,
   adminMutationLeaseFields,
@@ -40,10 +41,33 @@ export async function GET(
     return NextResponse.json({ error: 'Invalid user.', code: 'ADMIN_USER_INVALID' }, { status: 400, headers: PRIVATE_HEADERS });
   }
   try {
-    const [user, subscription, supportReceipt] = await Promise.all([
+    /* Nine reads, all document gets or count aggregations - no collection scans and no
+       new Firestore indexes. Everything below already existed in the product and none of
+       it was reachable from the admin console: `grep` across app/api/admin/ for any of
+       these collections returned nothing before this change. */
+    const userDoc = getAdminDb().collection('users').doc(uid);
+    const [
+      user,
+      subscription,
+      supportReceipt,
+      usageLifetime,
+      usageVoice,
+      usageWriting,
+      usageAgent,
+      profileMain,
+      applicationCount,
+      resumeVersionCount,
+    ] = await Promise.all([
       getAdminAuth().getUser(uid),
-      getAdminDb().collection('users').doc(uid).collection('subscription').doc('current').get(),
-      getAdminDb().collection('users').doc(uid).collection('billingSupport').doc('current').get(),
+      userDoc.collection('subscription').doc('current').get(),
+      userDoc.collection('billingSupport').doc('current').get(),
+      userDoc.collection('usage').doc('lifetime').get(),
+      userDoc.collection('usage').doc('voice_monthly').get(),
+      userDoc.collection('usage').doc('writing_monthly').get(),
+      userDoc.collection('usage').doc('sona').get(),
+      userDoc.collection('profile').doc('main').get(),
+      userDoc.collection('applications').count().get(),
+      userDoc.collection('resume_versions').count().get(),
     ]);
     const subscriptionData = subscription.data() || {};
     const receipt = supportReceipt.data() || {};
@@ -63,6 +87,27 @@ export async function GET(
           billingSupportStatus: receipt.status === 'new' || receipt.status === 'reviewing' || receipt.status === 'resolved'
             ? receipt.status
             : null,
+        },
+        /* Deliberately NOT included, and the omissions are the considered part:
+           `profile/main.base_resume_text` carries the user's full resume in plaintext,
+           and `applications` carries employer names, job descriptions and offer amounts.
+           Counts answer "how much has this person done" without putting their career on
+           a support operator's screen. Only `onboarding_completed` is read from the
+           profile document. */
+        activity: {
+          onboardingCompleted: profileMain.data()?.onboarding_completed === true,
+          applications: applicationCount.data().count,
+          resumeVersions: resumeVersionCount.data().count,
+          /* A meter absent from Firestore means the feature was never used, which is a
+             measured zero. A meter we could not read would be null - but these are `.get()`
+             on a known path, so absence is genuinely "never incremented". */
+          meters: usageMeters(
+            usageLifetime.data(),
+            usageVoice.data(),
+            usageWriting.data(),
+            usageAgent.data(),
+            planOf(subscriptionData),
+          ),
         },
       },
       { headers: PRIVATE_HEADERS },
