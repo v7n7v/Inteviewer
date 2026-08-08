@@ -51,8 +51,10 @@ function assertMetadataEssentials(template) {
 
 test('catalog registers the 28 source IDs and exactly 17 new signatures', () => {
   const page = fs.readFileSync(pagePath, 'utf8');
-  assert.match(page, /const ALL_TEMPLATES = TEMPLATE_CATALOG;/);
-  assert.doesNotMatch(page, /const ALL_TEMPLATES = \[/);
+  // The ALL_TEMPLATES alias was removed as unused. What mattered was that the page
+  // never re-declares the template list locally, which the negative assertion below
+  // still guards - now for any local array, not just one named ALL_TEMPLATES.
+  assert.doesNotMatch(page, /const (ALL_)?TEMPLATES = \[/);
   assert.equal(baselineRegisteredIds.length, 28);
   assert.deepEqual([...catalog.NEW_SIGNATURE_TEMPLATE_IDS], expectedNew);
   assert.equal(catalog.LEGACY_TEMPLATE_IDS.length, 25);

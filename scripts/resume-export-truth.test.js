@@ -143,6 +143,11 @@ test('PDF and Word download paths consume the same prepared truth-locked resume'
   assert.match(page, /const resume = prepared\.resume as ResumeData;/);
   assert.match(page, /setOriginalResume\(prev => applyUpdate\(prev\)\);/);
   assert.equal((page.match(/saveResumeVersion\(/g) || []).length, 4);
-  assert.equal((page.match(/const prepared = getPreparedOutboundResume\(/g) || []).length, 6);
+  // Five, not six. The sixth call lived in `handleSave`, which was declared and never
+  // referenced - a dead outbound path. The five that remain are every real one:
+  // saveVersionOnly, confirmSave, handleCreateApplication, downloadPDF, downloadWord.
+  // The contract is "no outbound action bypasses the prepared resume", and it is now
+  // exactly satisfied rather than satisfied plus one corpse.
+  assert.equal((page.match(/const prepared = getPreparedOutboundResume\(/g) || []).length, 5);
   assert.match(page, /const preparedMorph = prepareResumeForExport\(\{/);
 });

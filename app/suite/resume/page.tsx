@@ -6,7 +6,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { saveResumeVersion, getResumeVersions, createJobApplication, deleteResumeVersion, updateResumeVersion, type ResumeVersion } from '@/lib/database-suite';
 import { useStore } from '@/lib/store';
 import { showToast } from '@/components/Toast';
-import { SuiteToolHeader, SuiteToolShell } from '@/components/suite/SuiteToolChrome';
+import { SuiteToolShell } from '@/components/suite/SuiteToolChrome';
 import { downloadResumePDF } from '@/lib/pdf-templates';
 import { cleanResumeText, isResumeTextMissing, normalizeResume, serializeResumeToText } from '@/lib/resume-normalizer';
 import { canPersistPreparedResume, prepareResumeForExport } from '@/lib/resume-export-truth';
@@ -15,7 +15,6 @@ import { CuratedTemplateMiniature } from '@/components/resume-templates/curated'
 import { getHeaderPreset } from '@/components/resume-templates/header-system';
 import {
   NEW_SIGNATURE_TEMPLATE_IDS,
-  TEMPLATE_CATALOG,
   getDefaultPaletteId,
   getPersistedResumePaletteId,
   getPersistedResumeTemplateId,
@@ -59,7 +58,7 @@ import {
   type ResumeMorphConsentStatus,
 } from '@/lib/resume-morph-safety';
 import { ResumeReviewWorkbench } from '@/components/resume-studio/ResumeReviewWorkbench';
-import { ResumeStudioProgress, type ResumeStudioStage } from '@/components/resume-studio/ResumeStudioProgress';
+import type { ResumeStudioStage } from '@/components/resume-studio/ResumeStudioProgress';
 import { ResumeStudioHeader } from '@/components/resume-studio/ResumeStudioHeader';
 import {
   DEFAULT_RESUME_REVIEW_STATE,
@@ -87,12 +86,6 @@ interface ResumeData {
   certifications?: string[];
 }
 
-interface RecommendationDeckItem {
-  id: string;
-  text: string;
-  why: string;
-  direction: string;
-}
 
 interface ResumeMorphGuardrailReportView {
   requestedMorphPercentage?: number;
@@ -126,7 +119,6 @@ const EMPTY_RESUME: ResumeData = {
 
 const ENABLE_RESUME_REVIEW_WORKBENCH = true;
 
-const ALL_TEMPLATES = TEMPLATE_CATALOG;
 const TEMPLATES = getSelectableTemplates();
 const PAID_TEMPLATE_PLAN_LABEL = PLAN_IDENTITIES.pro.label;
 
@@ -261,10 +253,6 @@ function PaletteDots({
   );
 }
 
-const SKILL_CATEGORIES = [
-  'Technical', 'Programming Languages', 'Frameworks', 'Tools & Platforms',
-  'Soft Skills', 'Leadership', 'Languages', 'Certifications'
-];
 
 // ============ HELPER: Check if resume has data ============
 function hasResumeData(resume: ResumeData | null): resume is ResumeData {
@@ -277,25 +265,8 @@ function skillLabels(resume: ResumeData | null) {
   return normalizeResume(resume).skills.flatMap(group => group.items).filter(Boolean);
 }
 
-const STUDIO_FLOW = [
-  { icon: 'upload_file', label: 'Import', detail: 'PDF, Word, or TXT' },
-  { icon: 'my_location', label: 'Target', detail: 'Paste a role and company brief' },
-  { icon: 'auto_awesome', label: 'Improve', detail: 'Rewrite, score, and verify fit' },
-  { icon: 'file_download', label: 'Export', detail: 'Save, track, or download' },
-];
 
-const CONNECTED_ACTIONS = [
-  { icon: 'work_history', label: 'Applications', detail: 'Attach this version to a tracked opportunity' },
-  { icon: 'edit_note', label: 'Cover Letter', detail: 'Carry resume context into a tailored letter' },
-  { icon: 'badge', label: 'LinkedIn', detail: 'Turn resume proof into a profile refresh' },
-  { icon: 'record_voice_over', label: 'Interview Prep', detail: 'Practice from the exact role narrative' },
-];
 
-const STUDIO_ASSURANCES = [
-  { label: 'Formats', value: 'PDF · DOCX · TXT' },
-  { label: 'Workflow', value: 'Draft saved locally' },
-  { label: 'Output', value: 'PDF and Word export' },
-];
 
 const STARTING_POINTS = [
   { id: 'upload', label: 'Upload Resume', icon: 'upload_file', detail: 'Best when you have a PDF, Word, or TXT file ready.' },
@@ -567,7 +538,6 @@ export default function LiquidResumePage() {
   const prefersReducedMotion = useReducedMotion();
   const isReviewDemo = process.env.NODE_ENV !== 'production' && searchParams.get('reviewDemo') === '1';
   const isSourceConfirmDemo = process.env.NODE_ENV !== 'production' && searchParams.get('sourceConfirmDemo') === '1';
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const resumeRef = useRef<HTMLDivElement>(null);
   const mobileCheckFocusHandledRef = useRef(false);
   const templateDeepLinkHandledRef = useRef(false);
@@ -607,7 +577,7 @@ export default function LiquidResumePage() {
   const [showBlueprintModal, setShowBlueprintModal] = useState(false);
 
   // Tier awareness
-  const { tier, isPro, canUse, remaining, caps, loading: tierLoading, refetch: refetchUsage } = useUserTier();
+  const { tier, isPro, remaining, caps, loading: tierLoading } = useUserTier();
 
   // UI state
   const [selectedTemplate, setSelectedTemplate] = useState(TEMPLATES[0]);
@@ -620,17 +590,10 @@ export default function LiquidResumePage() {
   const [sourcePasteText, setSourcePasteText] = useState('');
   const [showSourceConfirmation, setShowSourceConfirmation] = useState(false);
   const [templateFilter, setTemplateFilter] = useState<typeof TEMPLATE_FILTERS[number]['id']>('all');
-  const [dragActive, setDragActive] = useState(false);
-  const [buildStep, setBuildStep] = useState(0);
   const [aiSuggesting, setAiSuggesting] = useState(false);
   const [processingStage, setProcessingStage] = useState<'uploading' | 'extracting' | 'parsing' | null>(null);
 
   // Enhance step state
-  const [enhancePhase, setEnhancePhase] = useState<'idle' | 'checking' | 'fixing' | 'cover-letter' | 'linkedin'>('idle');
-  const [enhancePipelineStage, setEnhancePipelineStage] = useState(0); // 0=idle, 1=AI writing, 2=AI checking, 3=refining
-  const [autoFixing, setAutoFixing] = useState(false);
-  const [preFixScore, setPreFixScore] = useState<number | null>(null);
-  const [handledRecommendations, setHandledRecommendations] = useState<Record<string, 'applied' | 'kept' | 'passed' | 'ignored'>>({});
   const [resumeReview, setResumeReview] = useState<ResumeReviewState>({
     ...DEFAULT_RESUME_REVIEW_STATE,
     decisions: {},
@@ -732,21 +695,6 @@ export default function LiquidResumePage() {
 
   const [lastMatchScore, setLastMatchScore] = useState<number | undefined>(undefined);
 
-  // No-navigate sent state for Cover Letter / LinkedIn
-  const [coverLetterSent, setCoverLetterSent] = useState(false);
-  const [linkedInSent, setLinkedInSent] = useState(false);
-
-  // Saved blueprints from localStorage
-  const [savedBlueprints, setSavedBlueprints] = useState<{ id: string; content: string; targetRole: string; createdAt: string }[]>([]);
-  const [showSavedBlueprints, setShowSavedBlueprints] = useState(false);
-
-  // Load saved blueprints on mount
-  useEffect(() => {
-    try {
-      const stored = JSON.parse(localStorage.getItem('tc_blueprints') || '[]');
-      setSavedBlueprints(stored);
-    } catch {}
-  }, []);
 
   useEffect(() => {
     if (searchParams.get('mobileAction') !== 'check' || mobileCheckFocusHandledRef.current) return;
@@ -1265,7 +1213,6 @@ export default function LiquidResumePage() {
       setShowBlueprintModal(true);
       // Persist blueprint so it can be re-opened from Applications tracker
       try {
-        const companyName = originalResume.experience?.[0]?.company || 'Unknown';
         const stored = JSON.parse(localStorage.getItem('tc_blueprints') || '[]');
         stored.unshift({
           id: `bp_${Date.now()}`,
@@ -1275,7 +1222,6 @@ export default function LiquidResumePage() {
         });
         const trimmed = stored.slice(0, 10);
         localStorage.setItem('tc_blueprints', JSON.stringify(trimmed));
-        setSavedBlueprints(trimmed);
       } catch {}
       showToast('Day-Zero Blueprint ready!', 'check_circle');
     } catch (error) {
@@ -1319,7 +1265,6 @@ export default function LiquidResumePage() {
       setGuardrailReport(nextGuardrailReport || null);
       // Clear stale enhance results from previous resume version
       setResumeCheckResult(null);
-      setPreFixScore(null);
       setResumeReview({ ...DEFAULT_RESUME_REVIEW_STATE, decisions: {} });
       setDraftSaveState('idle');
       setStep(ENABLE_RESUME_REVIEW_WORKBENCH ? 'enhance' : isPro ? 'enhance' : 'template');
@@ -1423,16 +1368,6 @@ export default function LiquidResumePage() {
     return prepared;
   };
 
-  const handleSave = () => {
-    const prepared = getPreparedOutboundResume('saving or tracking');
-    if (!prepared?.resume) return;
-    const resume = prepared.resume as ResumeData;
-    if (!requireEducationInstitutionBefore('saving or tracking', resume)) return;
-    setSaveVersionName(resume.title || 'My Resume');
-    setSaveCompanyName(applicationData.companyName || '');
-    setSaveSuccess(false);
-    setShowSaveModal(true);
-  };
 
   const saveVersionOnly = async () => {
     setSaveInlineStatus(null);
@@ -1807,7 +1742,7 @@ export default function LiquidResumePage() {
       return;
     }
     // Dynamic import to avoid naming conflicts with @react-pdf/renderer
-    const { Document: DocxDocument, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, Table, TableRow, TableCell, WidthType, ShadingType, TableBorders } = await import('docx');
+    const { Document: DocxDocument, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, Table, TableRow, TableCell, WidthType, ShadingType } = await import('docx');
     const tc = selectedTemplateColors;
     const p = tc.primary.replace('#', '');
     const a = tc.accent.replace('#', '');
@@ -2400,72 +2335,13 @@ export default function LiquidResumePage() {
   };
 
   // ===== DUAL-AI TOOLS STATE =====
-  const [coverLetterResult, setCoverLetterResult] = useState<{ coverLetter: string; score: number; refined: boolean; modelAgreement: string } | null>(null);
-  const [coverLetterLoading, setCoverLetterLoading] = useState(false);
-  const [coverLetterTone, setCoverLetterTone] = useState<'professional' | 'friendly' | 'bold'>('professional');
-  const [coverLetterCompany, setCoverLetterCompany] = useState('');
-  const [showCoverLetterPanel, setShowCoverLetterPanel] = useState(false);
 
   const [resumeCheckResult, setResumeCheckResult] = useState<any>(null);
   const [resumeCheckLoading, setResumeCheckLoading] = useState(false);
-  const [showResumeCheckPanel, setShowResumeCheckPanel] = useState(false);
 
-  useEffect(() => {
-    setHandledRecommendations({});
-  }, [resumeCheckResult?.atsScore, resumeCheckResult?.issues?.join('|'), resumeCheckResult?.suggestions?.join('|')]);
 
-  const [linkedinResult, setLinkedinResult] = useState<any>(null);
-  const [linkedinLoading, setLinkedinLoading] = useState(false);
-  const [showLinkedinPanel, setShowLinkedinPanel] = useState(false);
 
   // ===== DUAL-AI HANDLERS =====
-  const generateCoverLetter = async () => {
-    const displayResume = getDisplayResume();
-    if (!displayResume) return showToast('No resume data available', 'cancel');
-    setCoverLetterLoading(true);
-    setCoverLetterResult(null);
-    setShowCoverLetterPanel(true);
-    try {
-      const resumeText = [
-        displayResume.name, displayResume.title, displayResume.email, displayResume.phone,
-        displayResume.summary,
-        ...(displayResume.experience || []).map((e: any) => `${e.title} at ${e.company}: ${(e.achievements || []).join('. ')}`),
-        ...(displayResume.skills || []),
-      ].filter(Boolean).join('\n');
-
-      const res = await authFetch('/api/resume/cover-letter', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          resumeText,
-          jobDescription: jobDescription || 'General professional position',
-          companyName: coverLetterCompany,
-          tone: coverLetterTone,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        // 401 + requiresAuth is the signed-out answer; the upgrade modal is the
-        // wrong door for someone who has no account yet.
-        /* Return, do not throw. The catch below turns anything thrown into a
-           red `cancel` toast, so opening a modal and throwing fired both at
-           once - the way out and a failure notice about it, together. The
-           Blueprint handler above already had this right: raise the door, say
-           why with a lock icon, stop. */
-        if (data.requiresAuth) { setShowDownloadAuth('signup'); return; }
-        if (data.upgrade || res.status === 403) {
-          setShowUpgradeModal(true);
-          showToast(data.error || 'Cover Letter is a Standard feature', 'lock');
-          return;
-        }
-        throw new Error(data.error || 'Failed to generate cover letter');
-      }
-      setCoverLetterResult(data);
-      showToast(`Cover letter generated! Score: ${data.score}/100${data.refined ? ' (Dual-AI refined)' : ''}`, 'check_circle');
-    } catch (err: any) {
-      showToast(err.message || 'Failed to generate cover letter', 'cancel');
-    } finally { setCoverLetterLoading(false); }
-  };
 
   // Skills serialization and normalization are handled by lib/resume-normalizer.ts
   // Use normalizeResume() for data, serializeResumeToText() for AI prompts
@@ -2475,7 +2351,6 @@ export default function LiquidResumePage() {
     if (!displayResume) return showToast('No resume data available', 'cancel');
     setResumeCheckLoading(true);
     setResumeCheckResult(null);
-    setShowResumeCheckPanel(true);
     try {
       const resumeText = serializeResumeToText(normalizeResume(displayResume));
 
@@ -2513,112 +2388,8 @@ export default function LiquidResumePage() {
     } finally { setResumeCheckLoading(false); }
   };
 
-  const generateLinkedIn = async () => {
-    const displayResume = getDisplayResume();
-    if (!displayResume) return showToast('No resume data available', 'cancel');
-    setLinkedinLoading(true);
-    setLinkedinResult(null);
-    setShowLinkedinPanel(true);
-    try {
-      const resumeText = serializeResumeToText(normalizeResume(displayResume));
 
-      const res = await authFetch('/api/resume/linkedin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resumeText, targetRole: displayResume.title }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        // Return, not throw - see the note in the cover-letter handler.
-        if (data.requiresAuth) { setShowDownloadAuth('signup'); return; }
-        if (data.upgrade || res.status === 403) {
-          setShowUpgradeModal(true);
-          showToast(data.error || 'LinkedIn Optimizer is a Standard feature', 'lock');
-          return;
-        }
-        throw new Error(data.error || 'Failed to generate LinkedIn profile');
-      }
-      setLinkedinResult(data);
-      showToast(`LinkedIn profile generated! Score: ${data.score}/100${data.refined ? ' (Dual-AI refined)' : ''}`, 'check_circle');
-    } catch (err: any) {
-      showToast(err.message || 'Failed to generate LinkedIn profile', 'cancel');
-    } finally { setLinkedinLoading(false); setEnhancePhase('idle'); setEnhancePipelineStage(0); }
-  };
 
-  const autoFixResume = async () => {
-    if (!resumeCheckResult?.suggestions?.length && !resumeCheckResult?.issues?.length) return showToast('Run Resume Check first', 'cancel');
-    const currentResume = getDisplayResume();
-    if (!currentResume) return;
-    setAutoFixing(true);
-    setEnhancePhase('fixing');
-    setEnhancePipelineStage(1);
-    setPreFixScore(resumeCheckResult.atsScore);
-    try {
-      const resumeText = serializeResumeToText(normalizeResume(currentResume));
-
-      setEnhancePipelineStage(2);
-      const res = await authFetch('/api/resume/auto-fix', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          resumeText,
-          resume: currentResume,
-          suggestions: [...(resumeCheckResult.suggestions || []), ...(resumeCheckResult.issues || [])],
-          targetJD: jobDescription || undefined,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        if (data.upgrade || res.status === 403) setShowUpgradeModal(true);
-        throw new Error(data.error || 'Failed to auto-fix resume');
-      }
-
-      setEnhancePipelineStage(3);
-      // Apply improved resume data
-      if (data.improvedResume) {
-        // Use centralized normalizer — handles skills format, field names, etc.
-        const improved = normalizeResume({
-          ...currentResume,
-          ...data.improvedResume,
-        }, currentResume) as any;
-        if (mode === 'morph') setMorphedResume(improved);
-        else setBuildResume(improved);
-        showToast(`Resume improved. Score: ${data.score}/100`, 'check_circle');
-
-        // Save skill gap analysis for Skill Bridge
-        try {
-          const originalSkills = (currentResume.skills || []).flatMap((s: any) => s.items || []).map((s: string) => s.toLowerCase().trim());
-          const improvedSkills = (improved.skills || []).flatMap((s: any) => s.items || []).map((s: string) => s.toLowerCase().trim());
-          const aiAddedSkills = improvedSkills.filter((s: string) => !originalSkills.includes(s));
-          const existingSkills = improvedSkills.filter((s: string) => originalSkills.includes(s));
-          const gaps = [
-            ...aiAddedSkills.map((s: string) => ({ skill: s.charAt(0).toUpperCase() + s.slice(1), confidence: 'ai-added', category: 'technical' })),
-            ...existingSkills.slice(0, 2).map((s: string) => ({ skill: s.charAt(0).toUpperCase() + s.slice(1), confidence: 'weak', category: 'technical' })),
-          ];
-          if (gaps.length > 0) {
-            localStorage.setItem('tc_skill_gaps', JSON.stringify({ gaps, timestamp: Date.now() }));
-          }
-        } catch {}
-
-        // Re-run check for before/after comparison
-        setTimeout(() => checkResume(), 500);
-      }
-    } catch (err: any) {
-      showToast(err.message || 'Failed to auto-fix resume', 'cancel');
-    } finally { setAutoFixing(false); setEnhancePhase('idle'); setEnhancePipelineStage(0); }
-  };
-
-  const resolveRecommendation = (id: string, action: 'applied' | 'kept' | 'passed' | 'ignored') => {
-    setHandledRecommendations(prev => ({ ...prev, [id]: action }));
-    const message = action === 'applied'
-      ? 'Recommendation applied to the review deck'
-      : action === 'kept'
-        ? 'Recommendation kept for later'
-        : action === 'passed'
-          ? 'Recommendation passed'
-          : 'Recommendation ignored';
-    showToast(message, action === 'ignored' ? 'visibility_off' : 'check_circle');
-  };
 
   const generateSummary = async () => {
     if (!buildResume.title) return showToast('Add a job title first', 'cancel');
@@ -2676,31 +2447,6 @@ export default function LiquidResumePage() {
     finally { setAiSuggesting(false); }
   };
 
-  const suggestSkills = async () => {
-    if (!buildResume.title) return showToast('Add a job title first', 'cancel');
-    const sourceSkills = buildResume.skills.flatMap(group => group.items || []).map(item => item.trim()).filter(Boolean);
-    if (sourceSkills.length === 0) {
-      showToast('Add your real skills first. AI can organize them, but it will not infer skills from a job title.', 'cancel');
-      return;
-    }
-    setAiSuggesting(true);
-    try {
-      const res = await authFetch('/api/resume/ai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'suggest_skills', text: `Source skills:\n${sourceSkills.join('\n')}` }),
-      });
-      if (!res.ok) {
-        const errData = await res.json();
-        if (errData.upgrade || res.status === 403) setShowUpgradeModal(true);
-        throw new Error(errData.error || 'Failed');
-      }
-      const data = await res.json();
-      setBuildResume(prev => ({ ...prev, skills: data.skills || [] }));
-      showToast('Skills suggested!', 'check_circle');
-    } catch { showToast('Failed to suggest', 'cancel'); }
-    finally { setAiSuggesting(false); }
-  };
 
   const resetAll = () => {
     setMode('choose');
@@ -2721,7 +2467,6 @@ export default function LiquidResumePage() {
     setResumeReview({ ...DEFAULT_RESUME_REVIEW_STATE, decisions: {} });
     setDraftSaveState('idle');
     setDraftSavedAt(null);
-    setBuildStep(0);
     if (isReviewDemo) {
       try { sessionStorage.removeItem('talent-resume-review-demo'); } catch {}
     }
@@ -3043,72 +2788,6 @@ export default function LiquidResumePage() {
     const activeOptimizationMode = optimizationModes.reduce((closest, mode) => (
       Math.abs(mode.value - morphPercentage) < Math.abs(closest.value - morphPercentage) ? mode : closest
     ), optimizationModes[1]);
-    const intelligenceScores = [
-      { label: 'Role Fit', value: matchScore || proofData?.optimizedScore || 0, icon: 'my_location', hint: 'JD alignment' },
-      { label: 'ATS', value: resumeCheckResult?.atsScore || matchScore || 0, icon: 'fact_check', hint: 'Machine readability' },
-      { label: 'Clarity', value: resumeCheckResult?.sectionScores?.content || resumeCheckResult?.sectionScores?.summary || resumeCheckResult?.atsScore || 0, icon: 'notes', hint: 'Readable signal' },
-      { label: 'Proof Strength', value: proofData?.optimizedScore || matchScore || 0, icon: 'verified', hint: 'Evidence density' },
-    ];
-    const recommendationGroups = [
-      {
-        id: 'safe-polish',
-        label: 'Safe Polish',
-        kicker: 'Highest impact',
-        icon: 'shield',
-        tone: 'emerald',
-        items: (resumeCheckResult?.issues || []).slice(0, 3).map((text: string, index: number) => ({
-          id: `safe-polish-${index}-${text.slice(0, 36)}`,
-          text,
-          why: 'This is the kind of mismatch recruiters and ATS notice before they read deeply.',
-          direction: 'Use precise, role-aligned evidence while preserving the facts already in your resume.',
-        })),
-        empty: 'No high-priority cleanup items found yet.',
-      },
-      {
-        id: 'should-improve',
-        label: 'Should Improve',
-        kicker: 'Strength builders',
-        icon: 'tune',
-        tone: 'amber',
-        items: (resumeCheckResult?.suggestions || []).slice(0, 4).map((text: string, index: number) => ({
-          id: `should-improve-${index}-${text.slice(0, 36)}`,
-          text,
-          why: 'These changes raise skim value and make the resume easier to match to the job.',
-          direction: 'Clarify scope, keywords, tools, and outcomes without over-writing your experience.',
-        })),
-        empty: 'Run the scan to reveal targeted improvements.',
-      },
-      {
-        id: 'polish',
-        label: 'Polish',
-        kicker: 'Final pass',
-        icon: 'auto_fix_high',
-        tone: 'cyan',
-        items: [
-          'Tighten the opening summary around the target role.',
-          'Keep quantified outcomes near the top of each role.',
-          'Confirm the final template preserves conventional, clearly labeled headings.',
-        ].map((text, index) => ({
-          id: `polish-${index}-${text.slice(0, 36)}`,
-          text,
-          why: 'Small presentation choices change what a recruiter remembers after the first skim.',
-          direction: 'Keep the final version concise, evidence-led, and easy to scan.',
-        })),
-        empty: '',
-      },
-    ].map(group => ({
-      ...group,
-      visibleItems: group.items.filter((item: RecommendationDeckItem) => !handledRecommendations[item.id]),
-      handledItems: group.items.filter((item: RecommendationDeckItem) => handledRecommendations[item.id]),
-    }));
-    const visibleRecommendations = recommendationGroups.flatMap(group => group.visibleItems);
-    const missingKeywords = proofData?.topJDTerms?.filter(term => term.matchedIn === 'neither' || term.matchedIn === 'original_only').slice(0, 8) || [];
-    const coveredKeywords = proofData?.topJDTerms?.filter(term => term.matchedIn === 'both' || term.matchedIn === 'morphed_only').slice(0, 8) || [];
-    const skimHighlights = [
-      displayResume?.title,
-      displayResume?.summary?.split('.').filter(Boolean)[0],
-      skillLabels(displayResume).slice(0, 5).join(', '),
-    ].filter(Boolean);
     const templateSignalText = [
       jdSignals.role,
       jdSignals.keywords.join(' '),

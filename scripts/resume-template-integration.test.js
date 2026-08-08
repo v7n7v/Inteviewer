@@ -51,7 +51,9 @@ function loadRegistry() {
 
 test('Studio consumes the canonical catalog and exposes focusable entitlement-aware cards', () => {
   const page = read('app/suite/resume/page.tsx');
-  assert.match(page, /const ALL_TEMPLATES = TEMPLATE_CATALOG;/);
+  // ALL_TEMPLATES was an alias nothing read - tsc --noUnusedLocals confirmed it. The
+  // real contract, that the Studio reads the canonical catalog rather than a local
+  // array, is the assertion below and is unaffected by the alias going away.
   assert.match(page, /const TEMPLATES = getSelectableTemplates\(\);/);
   assert.doesNotMatch(page, /FEATURED_TEMPLATE_IDS/);
   assert.match(page, /recommendTemplateIds\(signalText, 3\)/);
