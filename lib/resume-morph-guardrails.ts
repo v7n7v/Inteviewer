@@ -342,7 +342,10 @@ function isPhrasePreservingRewrite(original: string, target: string) {
     && originalUnits.every((unit, index) => unit === targetUnits[index]);
 }
 
-function isExactStringPermutation(original: unknown[], target: unknown[]) {
+// Exported for lib/resume-rewrite-guardrails.ts, which reuses this exact evidence-unit
+// normalization and numeric extraction so the rewrite admissibility filter speaks the
+// same language as the morph guardrails. Do not fork these.
+export function isExactStringPermutation(original: unknown[], target: unknown[]) {
   if (!original.every((item) => typeof item === 'string')
     || !target.every((item) => typeof item === 'string')
     || original.length !== target.length) {
@@ -353,13 +356,29 @@ function isExactStringPermutation(original: unknown[], target: unknown[]) {
   return source.every((item, index) => item === attempted[index]);
 }
 
-function numericClaims(value: string | number) {
+export function numericClaims(value: string | number) {
   const text = String(value);
   return [
     ...(text.match(NUMERIC_CLAIM_PATTERN) || []),
     ...(text.match(NUMBER_WORD_CLAIM_PATTERN) || []),
   ].map((claim) => claim.toLowerCase().replace(/[\s,]+/g, ''));
 }
+
+/**
+ * numericClaims as a multiset (claim -> count). The rewrite filter needs counts, not a
+ * set: a source line "raised revenue 20% and cut cost 20%" carries 20% twice, and a
+ * rewrite may keep both but not invent a third. Subset-by-count catches that; a plain Set
+ * would not.
+ */
+export function numericClaimsMultiset(value: string | number): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const claim of numericClaims(value)) {
+    counts.set(claim, (counts.get(claim) ?? 0) + 1);
+  }
+  return counts;
+}
+
+export { normalizeEvidenceUnit };
 
 function alignToOriginalStructure(
   original: unknown,
