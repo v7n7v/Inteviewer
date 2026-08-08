@@ -237,6 +237,15 @@ export function proveResumeDelta(
 
 /**
  * Flatten a resume object to plain text for TF-IDF analysis.
+ *
+ * Reads BOTH the canonical field names (lib/resume-normalizer.ts:
+ * experience.achievements, education.institution, skills [{category, items}]) and the
+ * older loose names (bullets/items, school, s.name). The morph route hands this a
+ * *canonical* resume, and the canonical names were the ones this function did not read -
+ * so the entire body of the resume (every bullet, every skill, every institution) was
+ * dropped before scoring, and the Fit number was computed over name + title + company +
+ * degree alone. That is the "Fit 11" on a strong resume. Both spellings are read now so
+ * the score reflects the whole document whatever shape a caller passes.
  */
 export function flattenResume(resume: any): string {
   const parts: string[] = [];
@@ -252,8 +261,9 @@ export function flattenResume(resume: any): string {
     if (exp.company) parts.push(exp.company);
     if (exp.description) parts.push(exp.description);
     if (exp.role) parts.push(exp.role);
-    const bullets = exp.bullets || exp.items || [];
-    for (const b of bullets) {
+    // achievements is the canonical name; bullets/items are the legacy ones.
+    const lines = exp.achievements || exp.bullets || exp.items || [];
+    for (const b of lines) {
       if (typeof b === 'string') parts.push(b);
     }
   }
@@ -264,6 +274,14 @@ export function flattenResume(resume: any): string {
     for (const s of skills) {
       if (typeof s === 'string') parts.push(s);
       else if (s?.name) parts.push(s.name);
+      // Canonical skill group: { category, items: string[] }. Both carry JD-matchable
+      // terms - "Salesforce", "Gainsight" - and both were being dropped.
+      else if (s?.category || Array.isArray(s?.items)) {
+        if (s.category) parts.push(s.category);
+        for (const item of s.items || []) {
+          if (typeof item === 'string') parts.push(item);
+        }
+      }
     }
   }
 
@@ -271,8 +289,11 @@ export function flattenResume(resume: any): string {
   const education = resume.education || [];
   for (const edu of education) {
     if (edu.degree) parts.push(edu.degree);
+    // institution is the canonical name; school is the legacy one.
+    if (edu.institution) parts.push(edu.institution);
     if (edu.school) parts.push(edu.school);
     if (edu.title) parts.push(edu.title);
+    if (edu.details) parts.push(edu.details);
     const items = edu.items || [];
     for (const item of items) {
       if (typeof item === 'string') parts.push(item);
