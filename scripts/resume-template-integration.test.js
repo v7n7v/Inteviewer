@@ -67,7 +67,12 @@ test('Studio consumes the canonical catalog and exposes focusable entitlement-aw
   assert.match(page, /draft\.selectedTemplateId && !requestedQueryTemplateId/);
   assert.match(page, /requireSelectedTemplateEntitlementBefore\('PDF export'\)/);
   assert.match(page, /requireSelectedTemplateEntitlementBefore\('Word export'\)/);
-  assert.match(page, /getContrastSafeTemplateColors\(/);
+  // The contrast gate moved with the colourways into lib/resume-templates/palettes.ts.
+  // The contract is unchanged - no palette reaches a render without passing through it -
+  // so the assertion follows the code rather than being deleted.
+  assert.match(read('lib/resume-templates/palettes.ts'), /getContrastSafeTemplateColors\(/);
+  assert.doesNotMatch(page, /TEMPLATE_PALETTE_GROUPS\s*[:=]/,
+    'colourways belong in lib/resume-templates, not inline in the page');
   assert.match(page, /const PAID_TEMPLATE_PLAN_LABEL = PLAN_IDENTITIES\.pro\.label;/);
   assert.ok((page.match(/\{PAID_TEMPLATE_PLAN_LABEL\}/g) || []).length >= 2);
   assert.match(page, /selectedTemplate\.tier === 'pro' \? PAID_TEMPLATE_PLAN_LABEL/);

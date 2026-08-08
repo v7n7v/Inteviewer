@@ -23,7 +23,7 @@
     "security:cve:test": "node --test scripts/security-cve-audit.test.js",
     "test:career-twin": "node --test scripts/career-twin-client.test.js",
     "test:resume-guardrails": "node --test scripts/resume-morph-guardrails.test.js scripts/resume-export-truth.test.js scripts/resume-morph-consent.test.js",
-    "test:resume": "node --test scripts/resume-morph-guardrails.test.js scripts/resume-export-truth.test.js scripts/resume-morph-consent.test.js scripts/resume-review-ledger.test.js scripts/resume-template-catalog.test.js scripts/resume-template-integration.test.js scripts/resume-signature-docx.test.js scripts/resume-signature-pdf.test.js scripts/resume-signature-html.test.js scripts/editorial-authority-template.test.js scripts/sona-resume-upload-context.test.js scripts/file-upload-state.test.js",
+    "test:resume": "node --test scripts/resume-morph-guardrails.test.js scripts/resume-export-truth.test.js scripts/resume-morph-consent.test.js scripts/resume-review-ledger.test.js scripts/resume-template-catalog.test.js scripts/resume-template-palettes.test.js scripts/resume-template-integration.test.js scripts/resume-signature-docx.test.js scripts/resume-signature-pdf.test.js scripts/resume-signature-html.test.js scripts/editorial-authority-template.test.js scripts/sona-resume-upload-context.test.js scripts/file-upload-state.test.js",
     "test:recommendations": "node --test scripts/job-recommendation-learning.test.js scripts/job-recommendation-score.test.js scripts/ever-jobs-staging-canary.test.js",
     "test:job-supply": "node --test scripts/job-supply-health.test.js scripts/ever-jobs-staging-canary.test.js",
     "test:recommendation-calibration": "node --test scripts/recommendation-calibration.test.js",
