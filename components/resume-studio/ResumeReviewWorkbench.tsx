@@ -225,7 +225,8 @@ export function ResumeReviewWorkbench({
     : saveState === 'error'
       ? 'Save needs attention'
       : 'Saving locally';
-  const fitLabel = fitScore === null ? 'Fit pending' : `Fit ${fitScore}`;
+  // fitScore null means the alignment was never measured (no scorable job description),
+  // not "fit is zero". It renders as the missing-evidence treatment, never a number.
   const atsLabel = atsScore === null ? 'ATS pending' : `ATS ${atsScore}`;
   const proofLabel = proofScore === null ? 'Proof pending' : 'Proof verified';
 
@@ -257,7 +258,13 @@ export function ResumeReviewWorkbench({
 
       <section className="resume-review-toolbar" aria-label="Review status and view">
         <div className="resume-review-toolbar__signals">
-          <span><strong>{fitLabel}</strong></span>
+          {fitScore === null ? (
+            <span className="resume-review-signal-missing" title="Add a job description to score role alignment">
+              Fit — not scored yet
+            </span>
+          ) : (
+            <span><strong>Fit {fitScore}</strong></span>
+          )}
           {/* There was a `Clarity strong` chip here. It was a hardcoded string - no
               clarityScore, no computeClarity, nothing anywhere in the codebase produced
               it. Sat between Fit and Proof, both of which are real, so it read as a
@@ -334,10 +341,24 @@ export function ResumeReviewWorkbench({
 
           <footer className="resume-review-decision-dock">
             <div className="resume-review-decision-dock__summary">
-              <span>{selected ? 'Selected change' : 'Review complete'}</span>
-              <strong>{selected?.title || 'No source differences need a decision'}</strong>
+              {/* Three distinct states, told honestly. The old copy said "Review complete /
+                  No source differences need a decision" whenever nothing was selected -
+                  which read as success even when the tailoring pass had changed NOTHING at
+                  all (0 of 0). That is the "maximum morph did nothing" the owner flagged.
+                  The safe pass only reorders your own lines; when your order already fits,
+                  it moves nothing, and saying so is more honest than implying it worked. */}
+              <span>{selected ? 'Selected change' : validChanges.length === 0 ? 'Nothing to reorder' : 'Review complete'}</span>
+              <strong>
+                {selected?.title
+                  || (validChanges.length === 0
+                    ? 'Your lines already sit in a strong order for this role'
+                    : 'Every change has a decision')}
+              </strong>
               <p>
-                {selected?.description || 'The tailored version preserves the source order and wording.'}
+                {selected?.description
+                  || (validChanges.length === 0
+                    ? 'The safe pass only reorders your existing lines, and it found none worth moving — so your order and wording are unchanged. Rewriting lines to fit the role is a separate, reviewed step.'
+                    : 'The tailored version preserves the source order and wording you approved.')}
               </p>
               {selected && (
                 <small>

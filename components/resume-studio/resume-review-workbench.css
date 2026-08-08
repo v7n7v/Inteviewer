@@ -71,6 +71,16 @@
   color: var(--resume-studio-green);
 }
 
+/* The missing-evidence treatment for an unmeasured Fit: dashed outline + muted ink and
+   NO number, per "unknown evidence stays unknown, never a measured zero." */
+.resume-review-toolbar__signals .resume-review-signal-missing {
+  padding: 2px 8px;
+  border: 1px dashed color-mix(in srgb, var(--border) 55%, transparent);
+  border-radius: var(--radius-full, 999px);
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
 .resume-review-toolbar__signals button {
   cursor: pointer;
 }

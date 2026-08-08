@@ -182,7 +182,11 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       morphedResume: morphedData,
-      matchScore: proof?.optimizedScore ?? proof?.baselineScore ?? 0,
+      // null, not 0. proof is null when the JD is too short to score (the >20-char guard
+      // above), and rendering an unmeasured signal as a measured zero is the exact
+      // "never a measured zero" rule. The client and buildResumeVersionMetadata both
+      // already treat this as nullable.
+      matchScore: proof?.optimizedScore ?? proof?.baselineScore ?? null,
       proof,
       effectiveMorphPercentage: morphAccess.effectiveMorphPercentage,
       maxAllowedMorphPercentage: morphAccess.maxAllowedMorphPercentage,
