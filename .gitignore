@@ -84,7 +84,7 @@ YOUR_CREDENTIALS.txt
 
 # recovery/tooling artefacts
 /_to_delete
-/.ui-verify
+/.ui-verify*
 
 # Installed skills. Source of truth is docs/claude-skills/ (tracked);
 # .claude/skills is the local install target, per docs/claude-skills/README.md.

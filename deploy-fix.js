@@ -9,6 +9,13 @@ const DEPLOY_LOCAL_ONLY_ENV_KEYS = new Set([
   'ADMIN_SMOKE_MFA_ID_TOKEN',
   'ADMIN_SMOKE_OWNER_EMAIL',
   'ADMIN_AGGREGATE_BASE_URL',
+  // Local demo auth bypass (lib/demo-mode.ts). It has to live in .env.local to run the
+  // browser gate against a seeded user, and this file merges .env.local into the
+  // deployed runtime env - so without this line a developer's local flag rides along
+  // into a production build, where NEXT_PUBLIC_* is baked into the client bundle.
+  // isDemoModeEnabled() also refuses when NODE_ENV is production, but one guard is not
+  // a safety margin for an auth bypass. Excluded here so it cannot travel at all.
+  'NEXT_PUBLIC_DISABLE_AUTH_GATE',
 ]);
 const PRODUCTION_FIREBASE_PROJECT = 'talent-consulting-acf16';
 const PRODUCTION_SSR_SERVICE = 'ssrtalentconsultingacf1';

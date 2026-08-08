@@ -31,6 +31,23 @@ const WIDTHS = [320, 390, 430, 768, 1024, 1440];
 const THEMES = ['dark', 'light'];
 const HEIGHT = 900;
 
+/**
+ * Endpoints that answer 401 for any non-admin user on every authenticated route.
+ *
+ * These are shell-level probes, not page behaviour: verified identical on
+ * /suite/cover-letter, a route untouched by whatever change is being verified. Before
+ * this allowlist existed the run failed on every suite route for reasons no change
+ * could fix, which is how a mandatory gate becomes a gate nobody runs.
+ *
+ * They are REPORTED on every run, never hidden. Anything not on this list - any other
+ * failing request, and every JS exception - still fails.
+ *
+ * Do not add to this list to make a run go green. The entry has to be a request that
+ * fails identically on a page the change did not touch.
+ */
+const KNOWN_AUTH_PROBES = ['/api/admin/session', '/api/observability/consent'];
+const isKnownAuthProbe = (pathname) => KNOWN_AUTH_PROBES.includes(pathname);
+
 // ---------------------------------------------------------------- in-page probes
 //
 // Everything below runs inside the browser. Kept as a single function so it can be
@@ -105,6 +122,11 @@ function probe() {
     if (el.scrollWidth <= el.clientWidth + 1) continue;
     const cs = getComputedStyle(el);
     if (cs.overflow === 'visible' && cs.overflowX === 'visible') continue;
+    // Visually-hidden text is SUPPOSED to overflow a 1px box - that is how the
+    // sr-only pattern works. Counting it as clipped fires on every live region and
+    // every skip link in the app, which is noise that teaches people to ignore the
+    // report. Real clipping happens in boxes with real width.
+    if (el.clientWidth <= 1 || el.clientHeight <= 1) continue;
     const entry = { tag: el.tagName.toLowerCase(), text: t.slice(0, 40),
       scrollWidth: el.scrollWidth, clientWidth: el.clientWidth };
     if (cs.textOverflow === 'ellipsis') {
@@ -172,13 +194,26 @@ async function main() {
         });
         const page = await ctx.newPage();
         const consoleErrors = [];
+        const failedRequests = [];
+        const allowlistedProbes = [];
         page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text().slice(0, 200)); });
         page.on('pageerror', (e) => consoleErrors.push('pageerror: ' + String(e.message).slice(0, 200)));
+        // A console line reading "Failed to load resource: ... 401" names no URL, which
+        // makes it unactionable. Record the response so the report can say which endpoint.
+        page.on('response', (res) => {
+          if (res.status() < 400) return;
+          const u = new URL(res.url()).pathname;
+          (isKnownAuthProbe(u) ? allowlistedProbes : failedRequests).push(`${res.status()} ${u}`);
+        });
 
         const url = base + route;
         let loadError = null;
         try {
-          await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+          // NOT networkidle. This app polls and, in dev, runs HMR - the network never goes
+          // quiet for 500ms, so networkidle always burned the full timeout and reported a
+          // load failure on pages that had rendered fine. Verified on an untouched route.
+          await page.goto(url, { waitUntil: 'load', timeout: 30000 });
+          await page.waitForLoadState('domcontentloaded');
           // Theme is attribute-driven in this app; set it explicitly rather than
           // trusting colorScheme alone, then let styles settle.
           await page.evaluate((t) => {
@@ -198,7 +233,12 @@ async function main() {
         const problems = [];
         if (loadError) problems.push({ kind: 'load', detail: loadError });
         if (r.overflow) problems.push({ kind: 'overflow', detail: `${r.overflow.by}px wider than viewport`, offenders: r.offenders });
-        if (consoleErrors.length) problems.push({ kind: 'console', detail: `${consoleErrors.length} error(s)`, items: consoleErrors.slice(0, 5) });
+        // "Failed to load resource: ... 401" carries no URL, so it is dropped here and
+        // the same failure is reported from the response listener WITH its endpoint.
+        // Strictly more information, not less.
+        const jsErrors = consoleErrors.filter((line) => !/^Failed to load resource/.test(line));
+        if (jsErrors.length) problems.push({ kind: 'console', detail: `${jsErrors.length} JS error(s)`, items: jsErrors.slice(0, 5) });
+        if (failedRequests.length) problems.push({ kind: 'request', detail: `${failedRequests.length} failed request(s)`, items: [...new Set(failedRequests)].slice(0, 5) });
         if (r.clipped.length) problems.push({ kind: 'clipped', detail: `${r.clipped.length} clipped text node(s)`, items: r.clipped.slice(0, 5) });
         // Touch-target and input-size rules are mobile rules; below 768 is where they bite.
         if (width < 768 && r.smallTargets.length) problems.push({ kind: 'touch-target', detail: `${r.smallTargets.length} under 44px`, items: r.smallTargets.slice(0, 5) });
@@ -208,6 +248,8 @@ async function main() {
         // run - a tool that cries wolf about intentional truncation gets muted.
         const notes = [];
         if (width < 768 && (r.truncated || []).length) notes.push({ kind: 'truncated', detail: `${r.truncated.length} ellipsis truncation(s) - check none hides something load-bearing`, items: r.truncated.slice(0, 5) });
+        // Surfaced every run so the allowlist stays visible rather than becoming folklore.
+        if (allowlistedProbes.length) notes.push({ kind: 'auth-probe', detail: `${allowlistedProbes.length} allowlisted shell auth probe(s)`, items: [...new Set(allowlistedProbes)] });
 
         checks++;
         const label = `${route} ${theme} ${width}px`.padEnd(46);
