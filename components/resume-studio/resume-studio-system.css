@@ -1,7 +1,7 @@
 .resume-studio-system-shell {
-  --resume-studio-blue: #4d82ff;
-  --resume-studio-blue-soft: rgba(77, 130, 255, 0.12);
-  --resume-studio-green: #63d5a1;
+  --resume-studio-blue: var(--accent);
+  --resume-studio-blue-soft: var(--accent-hover);
+  --resume-studio-green: var(--success);
   --resume-studio-rule: color-mix(in srgb, var(--border-subtle) 78%, transparent);
 }
 
@@ -9,26 +9,8 @@
   transition-property: none !important;
 }
 
-[data-theme] .resume-source-shell.resume-studio-system-shell {
-  background: var(--bg-deep) !important;
-}
-
 [data-theme] .resume-studio-system-shell .resume-source-shell__content {
   max-width: 1480px;
-}
-
-.resume-studio-system-shell .resume-source-console {
-  --source-bg: var(--bg-deep);
-  --source-panel: var(--bg-surface);
-  --source-panel-strong: var(--bg-elevated);
-  --source-line: var(--resume-studio-rule);
-  --source-line-strong: var(--border-subtle);
-  --source-text: var(--text-primary);
-  --source-muted: var(--text-secondary);
-  --source-subtle: var(--text-muted);
-  --source-blue: var(--resume-studio-blue);
-  --source-blue-strong: #2457c8;
-  --source-green: var(--resume-studio-green);
 }
 
 .resume-studio-system-shell .resume-source-confirmation {
@@ -172,12 +154,12 @@
 
 .resume-studio-header__primary {
   border: 1px solid color-mix(in srgb, var(--resume-studio-blue) 78%, white);
-  background: #2f67df;
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-on);
 }
 
 .resume-studio-header__primary:hover:not(:disabled) {
-  background: #3c73ea;
+  background: var(--accent-active);
 }
 
 .resume-studio-header__primary:disabled {
@@ -251,7 +233,7 @@
 .resume-studio-progress li.is-current .resume-studio-progress__marker {
   border-color: var(--resume-studio-blue);
   background: var(--resume-studio-blue);
-  color: #fff;
+  color: var(--accent-on);
 }
 
 .resume-studio-progress li.is-complete {

@@ -1,9 +1,21 @@
 @media screen {
+  /**
+   * The source console follows the app theme. It used to pin itself dark:
+   *
+   *   color-scheme: dark;
+   *   background: #07111d !important;
+   *   color:      #f8fafc !important;
+   *
+   * on a [data-theme] selector - which is CLAUDE.md gotcha #5, the pattern that has
+   * shipped the same P0 twice: a surface forced dark while the cascade recolours the
+   * text on top of it. resume-studio-system.css was already fighting it with a
+   * counter-!important, so the effective colour came down to which of two forced
+   * declarations was more specific. Both are gone; the tokens decide.
+   */
   [data-theme] .resume-source-shell {
-    color-scheme: dark;
     min-height: 100dvh;
-    background: #07111d !important;
-    color: #f8fafc !important;
+    background: var(--bg-deep);
+    color: var(--text-primary);
   }
 
   [data-theme] .resume-source-shell__content {
@@ -12,17 +24,17 @@
   }
 
   .resume-source-console {
-    --source-bg: #07111d;
-    --source-panel: #0b1724;
-    --source-panel-strong: #0e1d2d;
-    --source-line: rgba(148, 163, 184, 0.2);
-    --source-line-strong: rgba(148, 163, 184, 0.34);
-    --source-text: #f8fafc;
-    --source-muted: #a7b2c1;
-    --source-subtle: #7f8da0;
-    --source-blue: #2f6df6;
-    --source-blue-strong: #1749c7;
-    --source-green: #44d79c;
+    --source-bg: var(--bg-deep);
+    --source-panel: var(--bg-surface);
+    --source-panel-strong: var(--bg-elevated);
+    --source-line: color-mix(in srgb, var(--border) 20%, transparent);
+    --source-line-strong: color-mix(in srgb, var(--border) 34%, transparent);
+    --source-text: var(--text-primary);
+    --source-muted: var(--text-secondary);
+    --source-subtle: var(--text-tertiary);
+    --source-blue: var(--accent);
+    --source-blue-strong: var(--accent-active);
+    --source-green: var(--success);
     display: flex;
     min-height: calc(100dvh - 48px);
     flex-direction: column;
@@ -36,7 +48,7 @@
 
   .resume-source-console button:focus-visible,
   .resume-source-console textarea:focus-visible {
-    outline: 2px solid #6d99ff;
+    outline: 2px solid var(--accent);
     outline-offset: 3px;
   }
 
@@ -129,13 +141,13 @@
   }
 
   .resume-source-console__modes button:hover {
-    background: rgba(47, 109, 246, 0.08);
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
     color: var(--source-text);
   }
 
   .resume-source-console__modes button.is-active {
     background: var(--source-blue-strong);
-    color: #fff;
+    color: var(--accent-on);
   }
 
   .resume-source-console__modes .material-symbols-rounded {
@@ -150,19 +162,16 @@
     position: relative;
     overflow: hidden;
     padding: 30px;
-    border: 1px solid rgba(68, 215, 156, 0.28);
+    border: 1px solid color-mix(in srgb, var(--success) 28%, transparent);
     border-radius: 17px;
-    background:
-      radial-gradient(circle at 7% 0%, rgba(68, 215, 156, 0.1), transparent 30%),
-      linear-gradient(145deg, #0b1825 0%, #0a1521 72%);
-    box-shadow: 0 18px 55px rgba(0, 0, 0, 0.2);
+    background: var(--bg-elevated);
   }
 
   .resume-source-confirmation::before {
     position: absolute;
     inset: 0 0 auto;
     height: 2px;
-    background: linear-gradient(90deg, var(--source-green), rgba(47, 109, 246, 0.72), transparent 82%);
+    background: var(--source-green);
     content: "";
   }
 
@@ -187,10 +196,10 @@
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
-    border: 1px solid rgba(68, 215, 156, 0.3);
+    border: 1px solid color-mix(in srgb, var(--success) 30%, transparent);
     border-radius: 14px;
-    background: rgba(68, 215, 156, 0.1);
-    color: #6ee7b7;
+    background: color-mix(in srgb, var(--success) 10%, transparent);
+    color: var(--success);
     font-size: 27px;
   }
 
@@ -198,7 +207,7 @@
   .resume-source-confirmation__meta-item p,
   .resume-source-error p {
     margin: 1px 0 0;
-    color: #72dcae;
+    color: var(--success);
     font-size: 10px;
     font-weight: 800;
     letter-spacing: 0.15em;
@@ -262,20 +271,19 @@
   }
 
   .resume-source-confirmation__replace:hover {
-    border-color: rgba(148, 163, 184, 0.52);
+    border-color: color-mix(in srgb, var(--border) 52%, transparent);
     color: var(--source-text);
   }
 
   .resume-source-confirmation__continue {
-    border: 1px solid #477cf6;
+    border: 1px solid var(--accent);
     background: var(--source-blue);
-    color: #fff;
-    box-shadow: 0 10px 30px rgba(47, 109, 246, 0.2);
+    color: var(--accent-on);
   }
 
   .resume-source-confirmation__continue:hover {
-    border-color: #77a0ff;
-    background: #3d77fa;
+    border-color: var(--accent);
+    background: var(--accent-active);
   }
 
   .resume-source-confirmation__meta {
@@ -297,7 +305,7 @@
   }
 
   .resume-source-confirmation__meta-item > .material-symbols-rounded {
-    color: #709cff;
+    color: var(--accent);
     font-size: 20px;
   }
 
@@ -348,8 +356,8 @@
     justify-content: center;
     flex: 0 0 auto;
     border-radius: 10px;
-    background: rgba(47, 109, 246, 0.12);
-    color: #80a6ff;
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    color: var(--accent);
     font-size: 21px;
   }
 
@@ -386,10 +394,10 @@
 
   .resume-source-confirmation__skills > span {
     padding: 6px 10px;
-    border: 1px solid rgba(68, 215, 156, 0.17);
+    border: 1px solid color-mix(in srgb, var(--success) 17%, transparent);
     border-radius: 999px;
-    background: rgba(68, 215, 156, 0.08);
-    color: #83dfb6;
+    background: color-mix(in srgb, var(--success) 8%, transparent);
+    color: var(--success);
     font-size: 10px;
     font-weight: 700;
   }
@@ -426,7 +434,7 @@
     padding: 30px;
     border: 1px solid rgba(248, 113, 113, 0.25);
     border-radius: 15px;
-    background: linear-gradient(135deg, rgba(127, 29, 29, 0.1), var(--source-panel));
+    background: color-mix(in srgb, var(--danger) 8%, var(--source-panel));
   }
 
   .resume-source-error__icon {
@@ -438,12 +446,12 @@
     border: 1px solid rgba(248, 113, 113, 0.25);
     border-radius: 14px;
     background: rgba(248, 113, 113, 0.08);
-    color: #fca5a5;
+    color: var(--danger);
     font-size: 27px;
   }
 
   .resume-source-error p {
-    color: #fca5a5;
+    color: var(--danger);
   }
 
   .resume-source-error__actions {
@@ -458,7 +466,7 @@
   }
 
   .resume-source-error__actions button:last-child {
-    border-color: #477cf6;
+    border-color: var(--accent);
     background: var(--source-blue);
   }
 
@@ -469,15 +477,15 @@
     align-items: center;
     gap: 34px;
     padding: 40px 54px;
-    border: 1px dashed rgba(148, 163, 184, 0.38);
+    border: 1px dashed color-mix(in srgb, var(--border) 38%, transparent);
     border-radius: 15px;
     background: var(--source-panel);
     transition: border-color 160ms ease, background-color 160ms ease;
   }
 
   .resume-arrival-dropzone.is-dragging {
-    border-color: #6d99ff;
-    background: #0d2038;
+    border-color: var(--accent);
+    background: var(--bg-elevated);
   }
 
   .resume-arrival-dropzone__message {
@@ -496,7 +504,7 @@
     flex: 0 0 auto;
     border: 1px solid var(--source-line-strong);
     border-radius: 50%;
-    color: #6d99ff;
+    color: var(--accent);
     font-size: 38px;
   }
 
@@ -533,10 +541,10 @@
     justify-content: center;
     gap: 9px;
     padding: 0 22px;
-    border: 1px solid #477cf6;
+    border: 1px solid var(--accent);
     border-radius: 10px;
     background: var(--source-blue);
-    color: #fff;
+    color: var(--accent-on);
     cursor: pointer;
     font-size: 13px;
     font-weight: 800;
@@ -545,8 +553,8 @@
 
   .resume-arrival-dropzone__action button:hover,
   .resume-source-console__paste > button:hover {
-    border-color: #77a0ff;
-    background: #3d77fa;
+    border-color: var(--accent);
+    background: var(--accent-active);
   }
 
   .resume-arrival-dropzone__action button:disabled,
@@ -591,7 +599,7 @@
   }
 
   .resume-source-console__paste-copy > .material-symbols-rounded {
-    color: #6d99ff;
+    color: var(--accent);
     font-size: 28px;
   }
 
@@ -615,7 +623,7 @@
     padding: 15px;
     border: 1px solid var(--source-line-strong);
     border-radius: 11px;
-    background: #07131f;
+    background: var(--bg-surface);
     color: var(--source-text);
     font-size: 13px;
     line-height: 1.55;
@@ -707,8 +715,8 @@
     width: fit-content;
     padding: 5px 9px;
     border-radius: 999px;
-    background: rgba(47, 109, 246, 0.14);
-    color: #8eb0ff;
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
+    color: var(--accent);
     font-size: 10px;
     font-weight: 750;
   }
@@ -733,7 +741,7 @@
   }
 
   .resume-source-console__actions button:hover {
-    background: rgba(148, 163, 184, 0.09);
+    background: color-mix(in srgb, var(--border) 9%, transparent);
     color: var(--source-text);
   }
 

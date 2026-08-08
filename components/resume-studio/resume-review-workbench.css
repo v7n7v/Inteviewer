@@ -168,7 +168,6 @@
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  backdrop-filter: blur(8px);
 }
 
 .resume-review-document header {
@@ -280,8 +279,8 @@
 }
 
 .resume-review-document.is-tailored .is-selected-line {
-  border-color: rgba(77, 130, 255, 0.58);
-  background: rgba(77, 130, 255, 0.1);
+  border-color: color-mix(in srgb, var(--accent) 58%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
   color: #1555bd;
 }
 
@@ -328,8 +327,8 @@
   margin-top: 14px;
   border: 1px solid color-mix(in srgb, var(--resume-studio-blue) 55%, transparent);
   border-radius: 999px;
-  background: #2f67df;
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-on);
   font-size: 20px;
   font-style: normal;
 }

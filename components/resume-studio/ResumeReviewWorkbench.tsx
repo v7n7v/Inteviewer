@@ -258,7 +258,12 @@ export function ResumeReviewWorkbench({
       <section className="resume-review-toolbar" aria-label="Review status and view">
         <div className="resume-review-toolbar__signals">
           <span><strong>{fitLabel}</strong></span>
-          <span>Clarity strong</span>
+          {/* There was a `Clarity strong` chip here. It was a hardcoded string - no
+              clarityScore, no computeClarity, nothing anywhere in the codebase produced
+              it. Sat between Fit and Proof, both of which are real, so it read as a
+              measured verdict. In a product whose whole claim is that nothing is
+              invented, an invented verdict is the worst possible thing to leave in the
+              one surface that shows the user their own evidence. */}
           <span className="is-verified">{proofLabel}</span>
           <span>Truth Lock · {protectedCount === null ? 'Protected' : `${protectedCount} fields`}</span>
           <span>Morph {morphStrength}%</span>
