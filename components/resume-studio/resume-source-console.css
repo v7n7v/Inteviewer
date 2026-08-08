@@ -495,7 +495,15 @@
     gap: 28px;
   }
 
-  .resume-arrival-dropzone__icon {
+  /**
+   * Doubled class on purpose. The Material Symbols stylesheet sets `display` and
+   * `font-size: 24px` on `.material-symbols-rounded`, and this element carries both
+   * classes - so a single-class rule lost, `display` fell back to block, and
+   * align-items/justify-content stopped applying. The glyph rendered at the top-left
+   * corner of an otherwise empty 76px circle, which is what shipped.
+   * globals.css:1070 already solves this the same way for .upload-dropzone__icon.
+   */
+  .resume-arrival-dropzone__icon.material-symbols-rounded {
     width: 76px;
     height: 76px;
     display: inline-flex;
@@ -506,6 +514,7 @@
     border-radius: 50%;
     color: var(--accent);
     font-size: 38px;
+    line-height: 1;
   }
 
   [data-theme] .resume-arrival-dropzone h2 {
